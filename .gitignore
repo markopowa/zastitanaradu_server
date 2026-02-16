@@ -1,0 +1,5 @@
+requirements/
+
+backend/core/settings.py
+backend/.venv/
+
