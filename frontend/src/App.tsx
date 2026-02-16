@@ -19,17 +19,17 @@ class App extends Component {
     render() {
         return (
             <Routes>
-                <Route path="/auth/login" element={<LoginPage />} />
+                <Route path="/login" element={<LoginPage />} />
                 <Route
-                    path="/auth/profile"
+                    path="/profile"
                     element={<ProtectedRoute element={<UserProfilePage />} />}
                 />
                 <Route
-                    path="/auth/users"
+                    path="/users"
                     element={<ProtectedRoute element={<UsersListPage />} />}
                 />
                 <Route
-                    path="/auth/roles"
+                    path="/roles"
                     element={<ProtectedRoute element={<RolesListPage />} />}
                 />
                 <Route

@@ -18,12 +18,12 @@ class RedirectComponent extends Component<Props> {
         const { isAuthenticated, user } = this.props;
 
         if (!isAuthenticated || !user) {
-            return <Navigate to="/auth/login" replace />;
+            return <Navigate to="/login" replace />;
         }
 
         const permissions = user.permissions ?? [];
 
-        let targetPath = "/auth/profile";
+        let targetPath = "/profile";
         if (hasPermissionWithPrefix(permissions, "view_training")) {
             targetPath = "/trainings";
         } else if (hasPermissionWithPrefix(permissions, "view_document")) {
