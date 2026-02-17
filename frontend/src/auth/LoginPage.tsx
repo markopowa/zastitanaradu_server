@@ -3,6 +3,7 @@ import type { ChangeEvent, SubmitEvent } from "react";
 
 import { TextField, Button, Box, Typography, Paper } from "@mui/material";
 import { connect } from "react-redux";
+import { Navigate } from "react-router-dom";
 
 import { login } from "../store/authSlice";
 import type { RootState } from "../store";
@@ -10,6 +11,7 @@ import type { RootState } from "../store";
 interface StateProps {
     loading: boolean;
     error?: string;
+    isAuthenticated: boolean;
 }
 
 interface DispatchProps {
@@ -36,7 +38,11 @@ class LoginPage extends Component<Props, State> {
     };
 
     render() {
-        const { loading, error } = this.props;
+        const { loading, error, isAuthenticated } = this.props;
+
+        if (isAuthenticated) {
+            return <Navigate to="/" replace />;
+        }
 
         return (
             <Box
@@ -45,12 +51,12 @@ class LoginPage extends Component<Props, State> {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    backgroundColor: "#f5f5f5",
+                    bgcolor: "background.default",
                 }}
             >
                 <Paper elevation={3} sx={{ p: 4, width: 400 }}>
-                    <Typography variant="h5" component="h1" gutterBottom>
-                        Prijava
+                    <Typography variant="h5" component="h1" gutterBottom style={{ display: "flex" }}>
+                        Prijava <img src="favicon.svg" style={{ width: 32 }} alt="icon" />
                     </Typography>
                     <Box component="form" onSubmit={this.handleSubmit}>
                         <TextField
@@ -101,6 +107,7 @@ class LoginPage extends Component<Props, State> {
 const mapStateToProps = (state: RootState): StateProps => ({
     loading: state.auth.loading,
     error: state.auth.error,
+    isAuthenticated: state.auth.isAuthenticated,
 });
 
 const mapDispatchToProps: DispatchProps = {

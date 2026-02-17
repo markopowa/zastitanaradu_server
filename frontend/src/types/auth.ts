@@ -1,28 +1,37 @@
 export interface AuthUser {
-    id: string;
+    id: number;
     username: string;
-    firstName: string;
-    lastName: string;
+    first_name: string;
+    last_name: string;
     email: string;
-    roles: string[];
-    permissions: string[];
+    is_active: boolean;
+    roles?: number[];
+    permissions?: string[];
+}
+
+export interface Permission {
+    id: number;
+    codename: string;
+    name: string;
 }
 
 export interface Role {
-    id: string;
+    id: number;
     name: string;
-    permissions: string[];
+    permissions: Permission[] | number[];
 }
 
 export interface AuthState {
     accessToken?: string;
     refreshToken?: string;
-    user?: AuthUser;
+    user?: AuthUser & { permissions?: string[] };
     isAuthenticated: boolean;
+    initialized: boolean;
     loading: boolean;
     error?: string;
     users: AuthUser[];
     roles: Role[];
+    permissions: Permission[];
     adminLoading: boolean;
     adminError?: string;
 }

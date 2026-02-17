@@ -1,19 +1,19 @@
 export interface DocumentCategory {
-    id: string;
+    id: number;
     code: string;
     name: string;
     description?: string;
 }
 
 export interface DocumentFile {
-    id: string;
+    id: number;
     category: DocumentCategory;
     title: string;
     file: string;
-    uploadedAt: string;
-    uploadedBy: string;
-    validFrom?: string;
-    validUntil?: string;
+    uploaded_at: string;
+    uploaded_by: number | string;
+    valid_from?: string;
+    valid_until?: string;
     version?: string;
     language?: string;
 }

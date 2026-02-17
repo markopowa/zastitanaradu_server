@@ -3,7 +3,6 @@ import { connect } from "react-redux";
 import {
     Box,
     Paper,
-    Typography,
     Table,
     TableHead,
     TableRow,
@@ -11,16 +10,20 @@ import {
     TableBody,
 } from "@mui/material";
 
-import type { RootState } from "../store";
-import { fetchTrainingsDashboard } from "../store/trainingsSlice";
-import type { TrainingAttendance } from "../types/trainings";
+import type { RootState, AppDispatch } from "../store";
+import { fetchTrainingsDashboard, fetchEmployees } from "../store/trainingsSlice";
+import type { TrainingAttendance, Employee } from "../types/trainings";
+import { setLastPath } from "../store/locationSlice";
 
 interface StateProps {
     items: TrainingAttendance[];
+    employees: Employee[];
 }
 
 interface DispatchProps {
     fetchTrainingsDashboard: () => void;
+    fetchEmployees: () => void;
+    setLastPath: (path: string) => void;
 }
 
 type Props = StateProps & DispatchProps;
@@ -30,16 +33,20 @@ interface State {}
 class TrainingsDashboardPage extends Component<Props, State> {
     componentDidMount(): void {
         this.props.fetchTrainingsDashboard();
+        this.props.fetchEmployees();
+        this.props.setLastPath("/trainings");
     }
 
     render() {
-        const { items } = this.props;
+        const { items, employees } = this.props;
+        const list = Array.isArray(items) ? items : [];
+        const employeeName = (id: number) => {
+            const e = employees.find((x) => x.id === id);
+            return e ? `${e.first_name} ${e.last_name}`.trim() : String(id);
+        };
 
         return (
             <Box sx={{ p: 4 }}>
-                <Typography variant="h5" gutterBottom>
-                    Rokovi obuka
-                </Typography>
                 <Paper>
                     <Table>
                         <TableHead>
@@ -50,11 +57,11 @@ class TrainingsDashboardPage extends Component<Props, State> {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {items.map((item) => (
+                            {list.map((item) => (
                                 <TableRow key={item.id}>
-                                    <TableCell>{item.employeeId}</TableCell>
-                                    <TableCell>{item.validUntil}</TableCell>
-                                    <TableCell>{item.status}</TableCell>
+                                    <TableCell>{employeeName(item.employee)}</TableCell>
+                                    <TableCell>{item.valid_until}</TableCell>
+                                    <TableCell>{item.status ?? "—"}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -67,11 +74,14 @@ class TrainingsDashboardPage extends Component<Props, State> {
 
 const mapStateToProps = (state: RootState): StateProps => ({
     items: state.trainings.dashboardItems,
+    employees: state.trainings.employees,
 });
 
-const mapDispatchToProps: DispatchProps = {
-    fetchTrainingsDashboard,
-};
+const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
+    fetchTrainingsDashboard: () => dispatch(fetchTrainingsDashboard()),
+    fetchEmployees: () => dispatch(fetchEmployees()),
+    setLastPath: (path) => dispatch(setLastPath(path)),
+});
 
 export default connect(
     mapStateToProps,
