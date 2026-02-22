@@ -1,4 +1,8 @@
 requirements/
+deploy.conf
+backend.env
+deploy.conf.example
+backend.env.example
 
 backend/core/settings.py
 backend/.venv/

@@ -1,0 +1,45 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${PZNR_POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+    volumes:
+      - pznr_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ${PZNR_ENV_FILE:-.env}
+    environment:
+      PZNR_DB_HOST: postgres
+      PZNR_DB_PORT: "5432"
+      PZNR_DB_NAME: ${PZNR_DB_NAME:-pznr}
+      PZNR_DB_USER: ${PZNR_DB_USER:-pznr_user}
+      PZNR_DB_PASSWORD: ${PZNR_DB_PASSWORD}
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: "false"
+      DJANGO_ALLOWED_HOSTS: ${PZNR_DOMAIN:-cuprija.pznr.in.rs}
+      CORS_ALLOWED_ORIGINS: ${PZNR_CORS_ORIGIN:-https://cuprija.pznr.in.rs}
+      LOG_DIR: /app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - backend_media:/app/media
+      - ${PZNR_LOG_DIR:-/var/log/pznr}/backend:/app/logs
+
+volumes:
+  pznr_pgdata:
+  backend_media:
