@@ -2,12 +2,10 @@ from rest_framework import serializers
 
 from .models import Employee, TrainingAttendance, TrainingProgram, TrainingSession, TrainingType
 
-
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = ("id", "first_name", "last_name", "email", "org_unit", "position")
-
 
 class TrainingTypeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -21,12 +19,10 @@ class TrainingTypeSerializer(serializers.ModelSerializer):
             "is_for_high_risk_positions",
         )
 
-
 class TrainingProgramSerializer(serializers.ModelSerializer):
     class Meta:
         model = TrainingProgram
         fields = ("id", "training_type", "title", "document_file", "created_at", "updated_at")
-
 
 class TrainingSessionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -40,7 +36,6 @@ class TrainingSessionSerializer(serializers.ModelSerializer):
             "instructor",
             "notes",
         )
-
 
 class TrainingAttendanceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,5 +58,3 @@ class TrainingAttendanceSerializer(serializers.ModelSerializer):
         if request and request.user and not validated_data.get("created_by"):
             validated_data["created_by"] = request.user
         return super().create(validated_data)
-
-

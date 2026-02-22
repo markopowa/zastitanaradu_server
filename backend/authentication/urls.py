@@ -13,13 +13,11 @@ from .views import (
     permissions_list_view,
 )
 
-
 app_name = "authentication"
 
 router = DefaultRouter()
 router.register("users", UserViewSet, basename="auth-users")
 router.register("roles", GroupViewSet, basename="auth-roles")
-
 
 urlpatterns = [
     path("login/", LoginView.as_view(), name="auth-login"),
@@ -31,6 +29,3 @@ urlpatterns = [
     path("permissions/", permissions_list_view, name="auth-permissions-list"),
     path("", include(router.urls)),
 ]
-
-
-

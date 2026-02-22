@@ -4,7 +4,6 @@ from rest_framework.response import Response
 from documents.models import DocumentFile, DocumentFileAIFormat, DocumentAIFormat
 from documents.serializers import DocumentFileAIFormatSerializer
 
-
 class RunAIProcessingView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -40,7 +39,6 @@ class RunAIProcessingView(views.APIView):
         serializer = DocumentFileAIFormatSerializer(mapping)
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
 
-
 class DocumentAIStatusView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -55,4 +53,3 @@ class DocumentAIStatusView(views.APIView):
         )
         serializer = DocumentFileAIFormatSerializer(mappings, many=True)
         return Response(serializer.data)
-

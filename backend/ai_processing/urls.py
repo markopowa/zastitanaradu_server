@@ -2,7 +2,6 @@ from django.urls import path
 
 from .views import DocumentAIStatusView, RunAIProcessingView
 
-
 app_name = "ai_processing"
 
 urlpatterns = [
@@ -17,6 +16,3 @@ urlpatterns = [
         name="ai-document-status",
     ),
 ]
-
-
-

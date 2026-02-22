@@ -14,12 +14,10 @@ from .serializers import (
     TrainingTypeSerializer,
 )
 
-
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset = Employee.objects.all().order_by("id")
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.DjangoModelPermissions]
-
 
 class TrainingTypeViewSet(viewsets.ModelViewSet):
     queryset = TrainingType.objects.all().order_by("id")
@@ -33,7 +31,6 @@ class TrainingTypeViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(Q(code__icontains=search) | Q(name__icontains=search))
         return queryset
 
-
 class TrainingProgramViewSet(viewsets.ModelViewSet):
     queryset = TrainingProgram.objects.all().order_by("id")
     serializer_class = TrainingProgramSerializer
@@ -45,7 +42,6 @@ class TrainingProgramViewSet(viewsets.ModelViewSet):
         if training_type_id:
             queryset = queryset.filter(training_type_id=training_type_id)
         return queryset
-
 
 class TrainingSessionViewSet(viewsets.ModelViewSet):
     queryset = TrainingSession.objects.all().order_by("-session_date")
@@ -64,7 +60,6 @@ class TrainingSessionViewSet(viewsets.ModelViewSet):
         if to_date:
             queryset = queryset.filter(session_date__lte=to_date)
         return queryset
-
 
 class TrainingAttendanceViewSet(viewsets.ModelViewSet):
     queryset = TrainingAttendance.objects.select_related(
@@ -123,5 +118,3 @@ class TrainingAttendanceViewSet(viewsets.ModelViewSet):
             return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-

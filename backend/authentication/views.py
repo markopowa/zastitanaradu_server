@@ -21,9 +21,7 @@ from .serializers import (
     PermissionSerializer
 )
 
-
 User = get_user_model()
-
 
 class LoginView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
@@ -47,7 +45,6 @@ class LoginView(generics.GenericAPIView):
         )
         set_jwt_cookies(response, access, refresh)
         return response
-
 
 class RefreshTokenView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
@@ -75,7 +72,6 @@ class RefreshTokenView(generics.GenericAPIView):
         set_jwt_cookies(response, access, refresh)
         return response
 
-
 class LogoutView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = TokenRefreshSerializer
@@ -93,7 +89,6 @@ class LogoutView(generics.GenericAPIView):
         clear_jwt_cookies(response)
         return response
 
-
 class MeView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
@@ -110,7 +105,6 @@ class MeView(generics.RetrieveUpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(UserSerializer(instance).data)
-
 
 class ChangePasswordView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -132,7 +126,6 @@ class ChangePasswordView(generics.GenericAPIView):
         user.set_password(new_password)
         user.save(update_fields=["password"])
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by("id")
@@ -169,7 +162,6 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save(update_fields=["is_active"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
 class GroupViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
 
@@ -189,7 +181,6 @@ class GroupViewSet(viewsets.ModelViewSet):
             return GroupSerializer
         return GroupAdminSerializer
 
-
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def permissions_view(request):
@@ -207,7 +198,6 @@ def permissions_view(request):
         }
     )
 
-
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def permissions_list_view(request):
@@ -220,4 +210,3 @@ def permissions_list_view(request):
     )
     serializer = PermissionSerializer(perms, many=True)
     return Response(serializer.data)
-

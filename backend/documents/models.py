@@ -1,7 +1,6 @@
 from django.conf import settings
 from django.db import models
 
-
 class DocumentCategory(models.Model):
     code = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=255)
@@ -13,7 +12,6 @@ class DocumentCategory(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
 
 class DocumentAIFormat(models.Model):
     code = models.CharField(max_length=128, unique=True)
@@ -28,7 +26,6 @@ class DocumentAIFormat(models.Model):
 
     def __str__(self) -> str:
         return self.code
-
 
 class DocumentFile(models.Model):
     category = models.ForeignKey(
@@ -55,7 +52,6 @@ class DocumentFile(models.Model):
 
     def __str__(self) -> str:
         return self.title
-
 
 class DocumentFileAIFormat(models.Model):
     STATUS_PENDING = "PENDING"
@@ -92,4 +88,3 @@ class DocumentFileAIFormat(models.Model):
         verbose_name = "Document file AI format"
         verbose_name_plural = "Document file AI formats"
         unique_together = ("document_file", "ai_format")
-

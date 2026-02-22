@@ -9,7 +9,6 @@ from .views import (
     TrainingTypeViewSet,
 )
 
-
 app_name = "trainings"
 
 router = DefaultRouter()
@@ -19,9 +18,6 @@ router.register("programs", TrainingProgramViewSet, basename="training-programs"
 router.register("sessions", TrainingSessionViewSet, basename="training-sessions")
 router.register("attendance", TrainingAttendanceViewSet, basename="training-attendance")
 
-
 urlpatterns = [
     path("", include(router.urls)),
 ]
-
-

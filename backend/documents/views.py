@@ -7,12 +7,10 @@ from .serializers import (
     DocumentFileSerializer,
 )
 
-
 class DocumentCategoryViewSet(viewsets.ModelViewSet):
     queryset = DocumentCategory.objects.all().order_by("id")
     serializer_class = DocumentCategorySerializer
     permission_classes = [permissions.DjangoModelPermissions]
-
 
 class DocumentFileViewSet(viewsets.ModelViewSet):
     queryset = DocumentFile.objects.select_related("category", "uploaded_by").all().order_by(
@@ -24,9 +22,7 @@ class DocumentFileViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(uploaded_by=self.request.user)
 
-
 class DocumentAIFormatViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DocumentAIFormat.objects.filter(is_active=True).order_by("id")
     serializer_class = DocumentAIFormatSerializer
     permission_classes = [permissions.IsAuthenticated]
-

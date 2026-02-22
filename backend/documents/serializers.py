@@ -2,18 +2,15 @@ from rest_framework import serializers
 
 from .models import DocumentAIFormat, DocumentCategory, DocumentFile, DocumentFileAIFormat
 
-
 class DocumentCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentCategory
         fields = ("id", "code", "name", "description")
 
-
 class DocumentAIFormatSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentAIFormat
         fields = ("id", "code", "name", "description", "prompt_template", "is_active")
-
 
 class DocumentFileSerializer(serializers.ModelSerializer):
     category = DocumentCategorySerializer(read_only=True)
@@ -46,7 +43,6 @@ class DocumentFileSerializer(serializers.ModelSerializer):
             validated_data["uploaded_by"] = request.user
         return super().create(validated_data)
 
-
 class DocumentFileAIFormatSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentFileAIFormat
@@ -58,5 +54,3 @@ class DocumentFileAIFormatSerializer(serializers.ModelSerializer):
             "status",
             "error_message",
         )
-
-

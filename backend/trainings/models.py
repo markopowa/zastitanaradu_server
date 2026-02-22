@@ -3,7 +3,6 @@ from django.db import models
 
 from documents.models import DocumentFile
 
-
 class Employee(models.Model):
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
@@ -18,7 +17,6 @@ class Employee(models.Model):
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
 
-
 class TrainingType(models.Model):
     code = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=255)
@@ -32,7 +30,6 @@ class TrainingType(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
 
 class TrainingProgram(models.Model):
     training_type = models.ForeignKey(
@@ -58,7 +55,6 @@ class TrainingProgram(models.Model):
     def __str__(self) -> str:
         return self.title
 
-
 class TrainingSession(models.Model):
     training_type = models.ForeignKey(
         TrainingType,
@@ -83,7 +79,6 @@ class TrainingSession(models.Model):
 
     def __str__(self) -> str:
         return f"{self.training_type.name} - {self.session_date}"
-
 
 class TrainingAttendance(models.Model):
     STATUS_ACTIVE = "ACTIVE"
@@ -127,5 +122,3 @@ class TrainingAttendance(models.Model):
 
     def __str__(self) -> str:
         return f"{self.employee} - {self.training_session}"
-
-

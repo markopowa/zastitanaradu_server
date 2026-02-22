@@ -5,7 +5,7 @@ sudo apt-get update
 sudo apt-get install -y git
 ```
 
-## 2. 
+## 2.
 
 ```bash
 sudo mkdir -p /var/www
