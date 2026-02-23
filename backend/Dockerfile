@@ -1,5 +1,12 @@
 FROM python:3.12-slim
-RUN groupadd -r www-data && useradd -r -g www-data www-data
+
+# Ensure www-data group and user exist in an idempotent way
+RUN if ! getent group www-data >/dev/null; then \
+        groupadd -r www-data; \
+    fi && \
+    if ! id -u www-data >/dev/null 2>&1; then \
+        useradd -r -g www-data www-data; \
+    fi
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev gcc && rm -rf /var/lib/apt/lists/*

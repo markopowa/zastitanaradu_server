@@ -134,16 +134,18 @@ If that succeeds, run the real SSL step (issues the cert; skipped if a cert for 
 
 ---
 
-## 5. Run the deploy script
+## 5. Run the deploy script (safe to re-run)
 
 ```bash
 cd /var/www/zastitanaradu_server
 ./deploy.sh ./deploy.conf all
 ```
 
-1. **initialSetup** – Docker, docker compose, add your user to `www-data` and `docker`, create certbot webroot and log dir
-2. **setupDatabase** – start Postgres container, create DB and user
-3. **setupDocker** – build backend image, start postgres + backend, build frontend, run migrations and collectstatic
+This command is **idempotent** – you can safely run it again if something fails mid-way or after you fix a config issue.
+
+1. **initialSetup** – install Docker if missing, configure Docker repo/key once, add your user to `www-data` and `docker`, create certbot webroot and log dir
+2. **setupDatabase** – start Postgres container, create DB and user if they don’t exist yet
+3. **setupDocker** – build backend image (with an idempotent `www-data` user creation in the Dockerfile), start postgres + backend, build frontend, run migrations and collectstatic
 4. **setupNginx** – install nginx, write HTTP (80) vhost with redirect to HTTPS and ACME path
 5. **setupSsl** – obtain Let’s Encrypt cert (skipped if one already exists for DOMAIN), append HTTPS (443) vhost, reload nginx
 6. **setupFirewall** – UFW: allow 22, 80, 443; default deny
@@ -151,7 +153,7 @@ cd /var/www/zastitanaradu_server
 
 ---
 
-## 6. Run a single step (re-deploy or fix)
+## 6. Run a single step (re-deploy or fix; also safe to re-run)
 
 ```bash
 cd /var/www/zastitanaradu_server
@@ -159,6 +161,8 @@ cd /var/www/zastitanaradu_server
 ```
 
 Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupNginx` | `setupSsl` | `setupFirewall` | `setupCron`.
+
+- **You can re-run any step** after fixing config or code – the script checks existing state where needed (e.g. DB/user creation, SSL certs, cron) and uses idempotent operations (`mkdir -p`, `ufw allow`, `docker compose up -d`, Django `migrate`/`collectstatic`). If in doubt, just rerun the step.
 
 ---
 
