@@ -24,12 +24,25 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import DownloadIcon from "@mui/icons-material/Download";
 import { PermissionGate } from "../components/PermissionGate";
 
 import type { RootState, AppDispatch } from "../store";
-import { fetchDocuments, fetchDocumentCategories, createDocument, updateDocument } from "../store/documentsSlice";
+import {
+    fetchDocuments,
+    fetchDocumentCategories,
+    createDocument,
+    updateDocument,
+} from "../store/documentsSlice";
 import type { DocumentFile, DocumentCategory } from "../types/documents";
 import { setLastPath } from "../store/locationSlice";
+
+const formatDateTimeSr = (value?: string | null): string => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleString("sr-RS");
+};
 
 interface StateProps {
     documents: DocumentFile[];
@@ -231,7 +244,7 @@ class DocumentsListPage extends Component<Props, State> {
                                             ? doc.category?.name ?? "—"
                                             : "—"}
                                     </TableCell>
-                                    <TableCell>{doc.uploaded_at ?? "—"}</TableCell>
+                                    <TableCell>{formatDateTimeSr(doc.uploaded_at)}</TableCell>
                                     <TableCell align="right">
                                         <PermissionGate permission="documents.change_documentfile">
                                             <IconButton
@@ -286,6 +299,22 @@ class DocumentsListPage extends Component<Props, State> {
                                 <Typography component="span" color="error"> *</Typography>
                             )}
                         </Typography>
+                        {editingDoc != null && editingDoc.file && (
+                            <Box sx={{ mb: 1.5 }}>
+                                <Button
+                                    component="a"
+                                    href={editingDoc.file}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    download
+                                    variant="outlined"
+                                    size="small"
+                                    startIcon={<DownloadIcon />}
+                                >
+                                    Preuzmi trenutni fajl
+                                </Button>
+                            </Box>
+                        )}
                         <Box
                             onClick={() => this.fileInputRef.current?.click()}
                             onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}

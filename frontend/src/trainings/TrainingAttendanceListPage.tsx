@@ -29,7 +29,14 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { PermissionGate } from "../components/PermissionGate";
 
 import type { RootState, AppDispatch } from "../store";
-import { fetchTrainingAttendance, fetchEmployees, fetchTrainingSessions, createTrainingAttendance, updateTrainingAttendance, deleteTrainingAttendance } from "../store/trainingsSlice";
+import {
+    fetchTrainingAttendance,
+    fetchEmployees,
+    fetchTrainingSessions,
+    createTrainingAttendance,
+    updateTrainingAttendance,
+    deleteTrainingAttendance,
+} from "../store/trainingsSlice";
 import type {
     TrainingAttendance,
     Employee,
@@ -53,6 +60,13 @@ interface DispatchProps {
     deleteTrainingAttendance: (id: number) => void;
     setLastPath: (path: string) => void;
 }
+
+const formatDateSr = (value?: string | null): string => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleDateString("sr-RS");
+};
 
 type Props = StateProps & DispatchProps;
 
@@ -231,7 +245,7 @@ class TrainingAttendanceListPage extends Component<Props, State> {
                                 <TableRow key={item.id}>
                                     <TableCell>{employeeName(item.employee)}</TableCell>
                                     <TableCell>{sessionLabel(item.training_session)}</TableCell>
-                                    <TableCell>{item.valid_until}</TableCell>
+                                    <TableCell>{formatDateSr(item.valid_until)}</TableCell>
                                     <TableCell>{item.passed ? "Da" : "Ne"}</TableCell>
                                     <TableCell align="right">
                                         <PermissionGate permission="trainings.change_trainingattendance">

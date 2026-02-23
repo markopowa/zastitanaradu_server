@@ -1,14 +1,6 @@
 import { Component } from "react";
 import { connect } from "react-redux";
-import {
-    Box,
-    Paper,
-    Table,
-    TableHead,
-    TableRow,
-    TableCell,
-    TableBody,
-} from "@mui/material";
+import { Box, Paper, Table, TableHead, TableRow, TableCell, TableBody } from "@mui/material";
 
 import type { RootState, AppDispatch } from "../store";
 import { fetchTrainingsDashboard, fetchEmployees } from "../store/trainingsSlice";
@@ -25,6 +17,13 @@ interface DispatchProps {
     fetchEmployees: () => void;
     setLastPath: (path: string) => void;
 }
+
+const formatDateSr = (value?: string | null): string => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    return d.toLocaleDateString("sr-RS");
+};
 
 type Props = StateProps & DispatchProps;
 
@@ -60,7 +59,7 @@ class TrainingsDashboardPage extends Component<Props, State> {
                             {list.map((item) => (
                                 <TableRow key={item.id}>
                                     <TableCell>{employeeName(item.employee)}</TableCell>
-                                    <TableCell>{item.valid_until}</TableCell>
+                                    <TableCell>{formatDateSr(item.valid_until)}</TableCell>
                                     <TableCell>{item.status ?? "—"}</TableCell>
                                 </TableRow>
                             ))}
