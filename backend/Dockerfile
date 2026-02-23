@@ -12,9 +12,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev gcc p
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
 RUN mkdir -p /app/logs && python manage.py collectstatic --noinput
 RUN chown -R www-data:www-data /app
 RUN chown www-data:www-data /app/logs
-USER www-data
 EXPOSE 8000
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "/app/logs/access.log", "--error-logfile", "/app/logs/error.log", "core.wsgi:application"]
