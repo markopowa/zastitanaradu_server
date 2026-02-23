@@ -8,7 +8,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 fi
 source "$CONFIG_FILE"
 [ -z "$APP_DIR" ] && read -p "APP_DIR (path to code): " APP_DIR
-[ -z "$DOMAIN" ] && read -p "DOMAIN (e.g. cuprija.pznr.in.rs): " DOMAIN
+[ -z "$DOMAIN" ] && read -p "DOMAIN (e.g. mak-total-safety.pznr.in.rs): " DOMAIN
 [ -z "$ENV_FILE" ] && read -p "ENV_FILE (path to backend env): " ENV_FILE
 APP_DIR="$(realpath "$APP_DIR")"
 ENV_FILE="$(realpath "$ENV_FILE")"
@@ -16,6 +16,9 @@ DEPLOY_USER="${SUDO_USER:-$(whoami)}"
 API_BASE_URL="${API_BASE_URL:-https://${DOMAIN}}"
 LOG_DIR="${LOG_DIR:-/var/log/pznr}"
 CERTBOT_WEBROOT="${CERTBOT_WEBROOT:-/var/www/certbot}"
+CERTBOT_DNS_MODE="${CERTBOT_DNS_MODE:-webroot}"
+CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
+CLOUDFLARE_API_TOKEN_FILE="${CLOUDFLARE_API_TOKEN_FILE:-/root/.secrets/certbot/cloudflare.ini}"
 FRONTEND_BUILD_DIR="${APP_DIR}/frontend/dist"
 BACKEND_DIR="${APP_DIR}/backend"
 NGINX_SITE="/etc/nginx/sites-available/${DOMAIN}"
@@ -160,8 +163,32 @@ NGINX_443
 
 setupSsl() {
     apt-get install -y certbot python3-certbot-nginx
-    if [ ! -d "/etc/letsencrypt/live/$DOMAIN" ]; then
-        certbot certonly --webroot -w "$CERTBOT_WEBROOT" -d "$DOMAIN" --non-interactive --agree-tos --register-unsafely-without-email || true
+    if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+        echo "Certificate for $DOMAIN already exists, skipping issuance."
+    else
+        if [ "$CERTBOT_DNS_MODE" = "cloudflare" ]; then
+            apt-get install -y python3-certbot-dns-cloudflare
+            if [ ! -f "$CLOUDFLARE_API_TOKEN_FILE" ]; then
+                echo "Cloudflare API token file not found at $CLOUDFLARE_API_TOKEN_FILE"
+                echo "Create it with 'dns_cloudflare_api_token = <YOUR_TOKEN>' and chmod 600."
+                exit 1
+            fi
+            EMAIL_ARG="--register-unsafely-without-email"
+            if [ -n "$CERTBOT_EMAIL" ]; then
+                EMAIL_ARG="--email $CERTBOT_EMAIL"
+            fi
+            certbot certonly \
+                --dns-cloudflare \
+                --dns-cloudflare-credentials "$CLOUDFLARE_API_TOKEN_FILE" \
+                -d "$DOMAIN" \
+                --non-interactive --agree-tos $EMAIL_ARG || true
+        else
+            EMAIL_ARG="--register-unsafely-without-email"
+            if [ -n "$CERTBOT_EMAIL" ]; then
+                EMAIL_ARG="--email $CERTBOT_EMAIL"
+            fi
+            certbot certonly --webroot -w "$CERTBOT_WEBROOT" -d "$DOMAIN" --non-interactive --agree-tos $EMAIL_ARG || true
+        fi
     fi
     if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
         grep -q "listen 443" "$NGINX_SITE" 2>/dev/null || writeNginxSsl
@@ -174,13 +201,14 @@ setupFirewall() {
     ufw allow 22/tcp
     ufw allow 80/tcp
     ufw allow 443/tcp
+    ufw allow 25/tcp
     ufw default deny incoming
     ufw --force enable
 }
 
 setupCron() {
     CRON_CMD="0 0 * * 0 certbot renew --quiet --deploy-hook 'systemctl reload nginx'"
-    (crontab -l 2>/dev/null | grep -v "certbot renew" ; echo "$CRON_CMD") | crontab - 2>/dev/null || (echo "$CRON_CMD" | crontab -)
+    (crontab -u root -l 2>/dev/null | grep -v "certbot renew" ; echo "$CRON_CMD") | crontab -u root -
 }
 
 runAll() {

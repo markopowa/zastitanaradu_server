@@ -28,8 +28,8 @@ services:
       PZNR_DB_PASSWORD: ${PZNR_DB_PASSWORD}
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
       DJANGO_DEBUG: "false"
-      DJANGO_ALLOWED_HOSTS: ${PZNR_DOMAIN:-cuprija.pznr.in.rs}
-      CORS_ALLOWED_ORIGINS: ${PZNR_CORS_ORIGIN:-https://cuprija.pznr.in.rs}
+      DJANGO_ALLOWED_HOSTS: ${PZNR_DOMAIN:-mak-total-safety.pznr.in.rs}
+      CORS_ALLOWED_ORIGINS: ${PZNR_CORS_ORIGIN:-https://mak-total-safety.pznr.in.rs}
       LOG_DIR: /app/logs
     depends_on:
       postgres:
