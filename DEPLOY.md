@@ -168,6 +168,7 @@ Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupNginx` | `setupS
 ## 7. After deploy
 
 - **App:** `https://<DOMAIN>` (e.g. `https://mak-total-safety.pznr.in.rs`)
+- **Static files (on host):** `$APP_DIR/staticfiles/` — served directly by nginx, populated by `setupDocker`
 - **Logs (on host):**
   - Nginx: `$LOG_DIR/nginx-access.log`, `$LOG_DIR/nginx-error.log`
   - Backend: `$LOG_DIR/backend/access.log`, `$LOG_DIR/backend/error.log`, `$LOG_DIR/backend/django.log`

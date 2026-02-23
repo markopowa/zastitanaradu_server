@@ -20,6 +20,7 @@ CERTBOT_DNS_MODE="${CERTBOT_DNS_MODE:-webroot}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
 CLOUDFLARE_API_TOKEN_FILE="${CLOUDFLARE_API_TOKEN_FILE:-/root/.secrets/certbot/cloudflare.ini}"
 FRONTEND_BUILD_DIR="${APP_DIR}/frontend/dist"
+STATIC_DIR="${APP_DIR}/staticfiles"
 BACKEND_DIR="${APP_DIR}/backend"
 NGINX_SITE="/etc/nginx/sites-available/${DOMAIN}"
 NGINX_ENABLED="/etc/nginx/sites-enabled/${DOMAIN}"
@@ -92,6 +93,9 @@ setupDocker() {
     docker compose exec -T backend python manage.py makemigrations documents trainings 2>/dev/null || true
     docker compose exec -T backend python manage.py migrate --noinput 2>/dev/null || true
     docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
+    mkdir -p "$STATIC_DIR"
+    docker compose cp backend:/app/staticfiles/. "$STATIC_DIR/"
+    chown -R www-data:www-data "$STATIC_DIR" 2>/dev/null || true
     docker compose restart backend
 }
 
@@ -134,8 +138,9 @@ server {
         proxy_set_header X-Forwarded-Proto \$scheme;
     }
     location /static/ {
-        proxy_pass http://127.0.0.1:8000;
-        proxy_set_header Host \$host;
+        alias $STATIC_DIR/;
+        expires 365d;
+        add_header Cache-Control "public, immutable";
     }
     location /auth/ {
         proxy_pass http://127.0.0.1:8000;
