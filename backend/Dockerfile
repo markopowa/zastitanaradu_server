@@ -1,6 +1,5 @@
 FROM python:3.12-slim
 
-# Ensure www-data group and user exist in an idempotent way
 RUN if ! getent group www-data >/dev/null; then \
         groupadd -r www-data; \
     fi && \
@@ -9,10 +8,11 @@ RUN if ! getent group www-data >/dev/null; then \
     fi
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
-RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev gcc && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends libpq-dev gcc procps && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
+RUN python manage.py collectstatic --noinput
 RUN chown -R www-data:www-data /app
 RUN mkdir -p /app/logs && chown www-data:www-data /app/logs
 USER www-data
