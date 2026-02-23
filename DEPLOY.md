@@ -120,7 +120,6 @@ From the server, with `deploy.conf` and the Cloudflare token file in place:
 ```bash
 cd /var/www/zastitanaradu_server
 source ./deploy.conf
-# Dry-run: validates Cloudflare DNS-01 only; does not issue a cert
 sudo certbot certonly --dns-cloudflare \
   --dns-cloudflare-credentials "${CLOUDFLARE_API_TOKEN_FILE:-/root/.secrets/certbot/cloudflare.ini}" \
   -d "$DOMAIN" --dry-run
