@@ -89,6 +89,7 @@ setupDocker() {
         fi
     fi
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
+    docker compose exec -T backend python manage.py makemigrations documents trainings 2>/dev/null || true
     docker compose exec -T backend python manage.py migrate --noinput 2>/dev/null || true
     docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
 }
