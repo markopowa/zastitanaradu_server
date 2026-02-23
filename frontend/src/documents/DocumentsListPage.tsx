@@ -37,11 +37,15 @@ import {
 import type { DocumentFile, DocumentCategory } from "../types/documents";
 import { setLastPath } from "../store/locationSlice";
 
-const formatDateTimeSr = (value?: string | null): string => {
+const pad = (n: number) => String(n).padStart(2, "0");
+
+const formatDateTimeISO = (value?: string | null): string => {
     if (!value) return "—";
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
-    return d.toLocaleString("sr-RS");
+    const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+    const h = d.getHours(), min = d.getMinutes(), s = d.getSeconds();
+    return `${y}-${pad(m)}-${pad(day)} ${pad(h)}:${pad(min)}:${pad(s)}`;
 };
 
 interface StateProps {
@@ -244,7 +248,7 @@ class DocumentsListPage extends Component<Props, State> {
                                             ? doc.category?.name ?? "—"
                                             : "—"}
                                     </TableCell>
-                                    <TableCell>{formatDateTimeSr(doc.uploaded_at)}</TableCell>
+                                    <TableCell>{formatDateTimeISO(doc.uploaded_at)}</TableCell>
                                     <TableCell align="right">
                                         <PermissionGate permission="documents.change_documentfile">
                                             <IconButton

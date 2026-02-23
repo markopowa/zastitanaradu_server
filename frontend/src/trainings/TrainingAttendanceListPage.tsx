@@ -61,11 +61,14 @@ interface DispatchProps {
     setLastPath: (path: string) => void;
 }
 
-const formatDateSr = (value?: string | null): string => {
+const pad = (n: number) => String(n).padStart(2, "0");
+
+const formatDateISO = (value?: string | null): string => {
     if (!value) return "—";
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
-    return d.toLocaleDateString("sr-RS");
+    const y = d.getFullYear(), m = d.getMonth() + 1, day = d.getDate();
+    return `${y}-${pad(m)}-${pad(day)}`;
 };
 
 type Props = StateProps & DispatchProps;
@@ -245,7 +248,7 @@ class TrainingAttendanceListPage extends Component<Props, State> {
                                 <TableRow key={item.id}>
                                     <TableCell>{employeeName(item.employee)}</TableCell>
                                     <TableCell>{sessionLabel(item.training_session)}</TableCell>
-                                    <TableCell>{formatDateSr(item.valid_until)}</TableCell>
+                                    <TableCell>{formatDateISO(item.valid_until)}</TableCell>
                                     <TableCell>{item.passed ? "Da" : "Ne"}</TableCell>
                                     <TableCell align="right">
                                         <PermissionGate permission="trainings.change_trainingattendance">
