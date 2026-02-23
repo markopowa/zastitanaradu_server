@@ -27,7 +27,6 @@ class DocumentFileSerializer(serializers.ModelSerializer):
         queryset=DocumentCategory.objects.all(),
         write_only=True,
     )
-    # Force relative URL so browser uses current https origin
     file = serializers.SerializerMethodField()
 
     class Meta:
@@ -51,7 +50,6 @@ class DocumentFileSerializer(serializers.ModelSerializer):
         f = getattr(obj, "file", None)
         if not f:
             return None
-        # This is typically something like "/media/documents/xxx.docx"
         return f.url
 
     def create(self, validated_data):
