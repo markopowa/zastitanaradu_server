@@ -79,7 +79,6 @@ setupDocker() {
     chown 33:33 "$LOG_DIR/backend" 2>/dev/null || true
     cd "$APP_DIR"
     docker compose build backend
-    # Media volume permissions are fixed by backend entrypoint on every container start.
     docker compose up -d postgres backend
     if [ ! -d "$FRONTEND_BUILD_DIR" ] || [ -z "$(ls -A "$FRONTEND_BUILD_DIR" 2>/dev/null)" ]; then
         cd "$APP_DIR/frontend"
