@@ -308,8 +308,6 @@ class DocumentsListPage extends Component<Props, State> {
                                 <Button
                                     component="a"
                                     href={editingDoc.file}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
                                     download
                                     variant="outlined"
                                     size="small"
