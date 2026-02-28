@@ -73,6 +73,8 @@ Za svaku **vrstu obaveze** definišu se šabloni koji kažu **šta da se uradi**
   - **Generisanje dokumenta** — iz izabranog šablona dokumenta (za ON_SCHEDULED u `run_process_binding`).
   - **Slanje emaila** — primaoca biraš po tipu: glavni email klijenta, email zaposlenog, interna uloga ili prilagođena adresa; predmet i telo podržavaju Jinja2 (npr. `{{ valid_until }}`, `{{ process_type_name }}`).
 
+**Kako radi generisanje dokumenta.** Kad šablon procesa ima uključeno „generiši dokument“ i izabran šablon dokumenta, sistem pri pokretanju run-a: (1) sastavi **kontekst** iz snapshot-a subjekta (ime, email, inventarski broj itd.), datuma run-a (`scheduled_for`, `performed_at`, `valid_until`), naziva vrste obaveze i polja `field_1`, `field_2` iz snapshot-a; (2) ako šablon ima **DOCX fajl**, učitava ga i u svim paragrafima zamenjuje Jinja2 placeholdere (`{{ key }}`) vrednostima iz konteksta; (3) ako ima samo **template_body** (tekst) ili DOCX nije uspeo, renderuje telo šablona Jinja2-om; (4) kreira **DocumentFile** u izabranoj kategoriji, sa naslovom tipa „Ime šablona – Run #123“, snima generisani fajl i vezuje ga za run preko **ProcessRunDocument** (usage: izveštaj). Dokument se vodi kao upload-ovan od „sistemskog“ korisnika (npr. prvog superuser-a).
+
 Jedna vrsta obaveze može imati više šablona (npr. jedan za „pri zakazivanju“ – email + dokument, drugi za „pri završetku“).
 
 #### 3.3 Raspored obaveze (ProcessBinding)
@@ -105,7 +107,7 @@ Primer: „Obuka – zaštita na radu“ za zaposlenog Marko Marković, sledeći
   1. Nađe sve **aktivne ProcessBinding** gde je `next_run_at <= danas`.
   2. Za svaki takav binding pozove `run_process_binding(binding_id)`:
      - kreira **ProcessRun** (pending), sa snapshot-om subjekta;
-     - primeni sve **ON_SCHEDULED** šablone (email se šalje ako je podešen; generisanje dokumenta je placeholder);
+     - primeni sve **ON_SCHEDULED** šablone (email se šalje ako je podešen; dokument se generiše iz šablona — Jinja2 za telo, DOCX za fajl sa placehold-erima);
      - označi run kao **završen**, postavi `performed_at`, `valid_until` (npr. danas + period u mesecima);
      - ažurira binding: `last_run_at`, `next_run_at` = kraj perioda važenja.
 - Na serveru se ovo **već zakazuje** korakom **setupTaskRunner** u `deploy.sh`: systemd timer pokreće komandu svakog dana u 06:00 (v. DEPLOY.md, odeljak o task runneru i logu `run_due_processes.log`).
@@ -160,5 +162,4 @@ Produkcijski deploy: **DEPLOY.md** — `deploy.sh` (Docker, nginx, SSL, env), ko
 
 ## Šta možemo dopuniti
 - **AI obrada**: Nije implementirano; potrebno je uraditi (parsiranje dokumenata / AI formati, worker ili eksterni servis, prelazak stanja u DONE ili FAILED).
-- **Generisanje dokumenata**: Kada/da li planirate implementaciju generisanja dokumenta iz šablona u `run_process_binding` (trenutno samo log „not implemented yet“).
 - **Trigger ON_COMPLETED**: pri ručnom „complete“ run-a poziva se `run_on_completed_trigger` — trenutno samo logovanje; ostaje da se dopuni (npr. slanje emaila, generisanje dokumenta po šablonu).

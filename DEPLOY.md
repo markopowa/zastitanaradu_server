@@ -54,7 +54,11 @@ nano backend.env
 - `DJANGO_SECRET_KEY` – long random string (e.g. `openssl rand -base64 48`)
 - `PZNR_DOMAIN` – same as `DOMAIN` in deploy.conf
 - `PZNR_CORS_ORIGIN` – same as `API_BASE_URL` (e.g. `https://mak-total-safety.pznr.in.rs`)
-- **Email (Amazon SES):** `EMAIL_FROM_ADDRESS` – verified sender address (e.g. `noreply@yourdomain.com`). AWS credentials via `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`; optional `AWS_REGION` (default `eu-central-1`).
+- **Email (Amazon SES):**
+  - `EMAIL_FROM_ADDRESS` – verified sender (e.g. `noreply@mak-total-safety.pznr.in.rs`)
+  - `AWS_ACCESS_KEY_ID` – IAM key for SES
+  - `AWS_SECRET_ACCESS_KEY` – IAM secret for SES
+  - `AWS_REGION` – e.g. `eu-central-1`
 
 **4.3 – Permissions**
 
