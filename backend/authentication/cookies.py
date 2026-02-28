@@ -13,7 +13,7 @@ def _cookie_kwargs():
     }
 
 
-def set_jwt_cookies(response: HttpResponse, access: str, refresh: str) -> None:
+def set_jwt_cookies(response: HttpResponse, access: str, refresh: str, request=None) -> None:
     access_name, refresh_name = get_jwt_cookie_names()
     from django.conf import settings
     max_age = getattr(settings, "JWT_COOKIE_MAX_AGE_DAYS", 180) * 24 * 60 * 60
@@ -26,6 +26,8 @@ def clear_jwt_cookies(response: HttpResponse) -> None:
     access_name, refresh_name = get_jwt_cookie_names()
     kwargs = _cookie_kwargs()
     response.delete_cookie(
-        access_name, path=kwargs["path"], samesite=kwargs["samesite"])
+        access_name, path=kwargs["path"], samesite=kwargs["samesite"]
+    )
     response.delete_cookie(
-        refresh_name, path=kwargs["path"], samesite=kwargs["samesite"])
+        refresh_name, path=kwargs["path"], samesite=kwargs["samesite"]
+    )

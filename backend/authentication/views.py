@@ -29,6 +29,23 @@ class LoginView(generics.GenericAPIView):
     serializer_class = TokenObtainPairSerializer
 
     def post(self, request, *args, **kwargs):
+        if request.user and request.user.is_authenticated:
+            user = request.user
+            refresh = RefreshToken.for_user(user)
+            access = str(refresh.access_token)
+            refresh_str = str(refresh)
+            user_data = UserSerializer(user).data
+            response = Response(
+                {
+                    "access": access,
+                    "refresh": refresh_str,
+                    "user": user_data,
+                },
+                status=status.HTTP_200_OK,
+            )
+            set_jwt_cookies(response, access, refresh_str, request=request)
+            return response
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         tokens = serializer.validated_data
@@ -44,7 +61,7 @@ class LoginView(generics.GenericAPIView):
             },
             status=status.HTTP_200_OK,
         )
-        set_jwt_cookies(response, access, refresh)
+        set_jwt_cookies(response, access, refresh, request=request)
         return response
 
 
@@ -197,6 +214,8 @@ class GroupViewSet(viewsets.ModelViewSet):
 @permission_classes([permissions.IsAuthenticated])
 def permissions_view(request):
     user = request.user
+    if hasattr(user, "_perm_cache"):
+        del user._perm_cache
     relevant_apps = ("auth", "documents", "partners", "processes")
     all_perms = list(user.get_all_permissions())
     filtered_perms = [
