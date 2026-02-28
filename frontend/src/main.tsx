@@ -16,45 +16,48 @@ import { darkThemeOptions, lightThemeOptions } from "./theme";
 store.dispatch(loadMe());
 
 function getPrefersDark(): boolean {
-  if (typeof matchMedia !== "undefined") {
-    return matchMedia("(prefers-color-scheme: dark)").matches;
-  }
-  return false;
+    if (typeof matchMedia !== "undefined") {
+        return matchMedia("(prefers-color-scheme: dark)").matches;
+    }
+    return false;
 }
 
 function ThemeWrapper({ children }: { children: React.ReactNode }) {
-  const [prefersDark, setPrefersDark] = useState(getPrefersDark);
+    const [prefersDark, setPrefersDark] = useState(getPrefersDark);
 
-  useEffect(() => {
-    const m = matchMedia("(prefers-color-scheme: dark)");
-    const handler = (): void => setPrefersDark(m.matches);
-    m.addEventListener("change", handler);
-    return () => m.removeEventListener("change", handler);
-  }, []);
+    useEffect(() => {
+        const m = matchMedia("(prefers-color-scheme: dark)");
+        const handler = (): void => setPrefersDark(m.matches);
+        m.addEventListener("change", handler);
+        return () => m.removeEventListener("change", handler);
+    }, []);
 
-  const theme = useMemo(
-    () => createTheme(prefersDark ? darkThemeOptions : lightThemeOptions),
-    [prefersDark],
-  );
+    const theme = useMemo(
+        () => createTheme(prefersDark ? darkThemeOptions : lightThemeOptions),
+        [prefersDark],
+    );
 
-  return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
+    return <ThemeProvider theme={theme}>{children}</ThemeProvider>;
 }
 
 createRoot(document.getElementById("root") as HTMLElement).render(
-  <StrictMode>
-    <Provider store={store}>
-      <BrowserRouter>
-        <ThemeWrapper>
-          <CssBaseline />
-          <SnackbarProvider
-            maxSnack={3}
-            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-            autoHideDuration={3000}
-          >
-            <App />
-          </SnackbarProvider>
-        </ThemeWrapper>
-      </BrowserRouter>
-    </Provider>
-  </StrictMode>,
+    <StrictMode>
+        <Provider store={store}>
+            <BrowserRouter>
+                <ThemeWrapper>
+                    <CssBaseline />
+                    <SnackbarProvider
+                        maxSnack={3}
+                        anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
+                        }}
+                        autoHideDuration={3000}
+                    >
+                        <App />
+                    </SnackbarProvider>
+                </ThemeWrapper>
+            </BrowserRouter>
+        </Provider>
+    </StrictMode>,
 );

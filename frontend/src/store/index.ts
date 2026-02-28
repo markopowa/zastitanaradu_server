@@ -5,11 +5,11 @@ import documentsReducer from "./documentsSlice";
 import locationReducer from "./locationSlice";
 
 export const store = configureStore({
-  reducer: {
-    auth: authReducer,
-    documents: documentsReducer,
-    location: locationReducer,
-  },
+    reducer: {
+        auth: authReducer,
+        documents: documentsReducer,
+        location: locationReducer,
+    },
 });
 
 export type RootState = ReturnType<typeof store.getState>;

@@ -42,7 +42,8 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_permissions(self, obj: User) -> list[str]:
-        user = User.objects.prefetch_related("groups__permissions").get(pk=obj.pk)
+        user = User.objects.prefetch_related(
+            "groups__permissions").get(pk=obj.pk)
         if hasattr(user, "_perm_cache"):
             del user._perm_cache
         return list(user.get_all_permissions())
