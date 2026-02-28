@@ -149,7 +149,7 @@ This command is **idempotent** – you can safely run it again if something fail
 
 1. **initialSetup** – install Docker if missing, configure Docker repo/key once, add your user to `www-data` and `docker`, create certbot webroot and log dir
 2. **setupDatabase** – start Postgres container, create DB and user if they don’t exist yet
-3. **setupDocker** – build backend image (with an idempotent `www-data` user creation in the Dockerfile), start postgres + backend, build frontend, run migrations and collectstatic
+3. **setupDocker** – build backend image (with an idempotent `www-data` user creation in the Dockerfile), start postgres + backend, **clean rebuild frontend** (briše `frontend/dist` pa gradi iznova da deploy uvek servira svežu verziju), run migrations and collectstatic
 4. **setupNginx** – install nginx, write HTTP (80) vhost with redirect to HTTPS and ACME path
 5. **setupSsl** – obtain Let’s Encrypt cert (skipped if one already exists for DOMAIN), append HTTPS (443) vhost, reload nginx
 6. **setupFirewall** – UFW: allow 22, 80, 443; default deny

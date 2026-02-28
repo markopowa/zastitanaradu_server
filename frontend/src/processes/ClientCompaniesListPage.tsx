@@ -1,5 +1,6 @@
 import { Component } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import {
     Box,
     Paper,
@@ -365,5 +366,11 @@ const Connected = connect<null, DispatchProps, OwnProps, RootState>(
 
 export default function ClientCompaniesListPageWrapper(): React.ReactElement {
     const navigate = useNavigate();
-    return <Connected navigate={navigate} />;
+    const dispatch = useDispatch<AppDispatch>();
+    return (
+        <Connected
+            navigate={navigate}
+            setLastPath={(path: string) => dispatch(setLastPath(path))}
+        />
+    );
 }

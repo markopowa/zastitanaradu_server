@@ -89,14 +89,13 @@ setupDocker() {
     cd "$APP_DIR"
     docker compose build backend
     docker compose up -d postgres backend
-    if [ ! -d "$FRONTEND_BUILD_DIR" ] || [ -z "$(ls -A "$FRONTEND_BUILD_DIR" 2>/dev/null)" ]; then
-        cd "$APP_DIR/frontend"
-        if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
-            npm ci
-            VITE_API_BASE_URL="${API_BASE_URL}" npm run build
-        else
-            docker run --rm -v "$APP_DIR/frontend:/app" -w /app -e VITE_API_BASE_URL="${API_BASE_URL}" node:20-slim sh -c "npm ci && npm run build"
-        fi
+    rm -rf "$FRONTEND_BUILD_DIR"
+    cd "$APP_DIR/frontend"
+    if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+        npm ci
+        VITE_API_BASE_URL="${API_BASE_URL}" npm run build
+    else
+        docker run --rm -v "$APP_DIR/frontend:/app" -w /app -e VITE_API_BASE_URL="${API_BASE_URL}" node:20-slim sh -c "rm -rf dist && npm ci && npm run build"
     fi
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
     docker compose exec -T backend python manage.py makemigrations documents partners processes 2>/dev/null || true

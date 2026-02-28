@@ -20,10 +20,7 @@ const ALLOWED_HOME_PATHS = new Set<string>([
     paths.processRuns,
     paths.documents,
     paths.documentCategories,
-    paths.trainings,
-    paths.trainingSessions,
-    paths.trainingAttendance,
-    paths.trainingPrograms,
+    paths.documentTemplates,
 ]);
 
 interface StateProps {
@@ -61,7 +58,7 @@ class RedirectComponent extends Component<Props> {
         if (hasPermissionWithPrefix(permissions, "processes.view_processrun")) {
             targetPath = paths.dashboard;
         } else if (
-            hasPermissionWithPrefix(permissions, "trainings.view_clientcompany")
+            hasPermissionWithPrefix(permissions, "partners.view_clientcompany")
         ) {
             targetPath = paths.clientCompanies;
         } else if (
@@ -69,9 +66,9 @@ class RedirectComponent extends Component<Props> {
         ) {
             targetPath = paths.documents;
         } else if (
-            hasPermissionWithPrefix(permissions, "trainings.view_training")
+            hasPermissionWithPrefix(permissions, "auth.view_user")
         ) {
-            targetPath = paths.trainings;
+            targetPath = paths.users;
         }
 
         return <Navigate to={targetPath} replace />;
