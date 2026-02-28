@@ -213,7 +213,9 @@ class GroupViewSet(viewsets.ModelViewSet):
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def permissions_view(request):
-    user = request.user
+    user = User.objects.prefetch_related("groups__permissions").get(
+        pk=request.user.pk
+    )
     if hasattr(user, "_perm_cache"):
         del user._perm_cache
     relevant_apps = ("auth", "documents", "partners", "processes")

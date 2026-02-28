@@ -1,10 +1,10 @@
 from django.http import HttpResponse
+from django.conf import settings
 
 from core.middleware import get_jwt_cookie_names
 
 
 def _cookie_kwargs():
-    from django.conf import settings
     return {
         "httponly": True,
         "samesite": getattr(settings, "JWT_COOKIE_SAMESITE", "Lax"),
@@ -15,7 +15,6 @@ def _cookie_kwargs():
 
 def set_jwt_cookies(response: HttpResponse, access: str, refresh: str, request=None) -> None:
     access_name, refresh_name = get_jwt_cookie_names()
-    from django.conf import settings
     max_age = getattr(settings, "JWT_COOKIE_MAX_AGE_DAYS", 180) * 24 * 60 * 60
     kwargs = _cookie_kwargs()
     response.set_cookie(access_name, access, max_age=max_age, **kwargs)

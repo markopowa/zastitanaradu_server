@@ -42,9 +42,10 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_permissions(self, obj: User) -> list[str]:
-        if hasattr(obj, "_perm_cache"):
-            del obj._perm_cache
-        return list(obj.get_all_permissions())
+        user = User.objects.prefetch_related("groups__permissions").get(pk=obj.pk)
+        if hasattr(user, "_perm_cache"):
+            del user._perm_cache
+        return list(user.get_all_permissions())
 
 
 class ProfileUpdateSerializer(serializers.ModelSerializer):
