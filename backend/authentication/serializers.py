@@ -4,10 +4,12 @@ from rest_framework import serializers
 
 User = get_user_model()
 
+
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Permission
         fields = ("id", "codename", "name")
+
 
 class GroupSerializer(serializers.ModelSerializer):
     permissions = PermissionSerializer(many=True, read_only=True)
@@ -15,6 +17,7 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ("id", "name", "permissions")
+
 
 class UserSerializer(serializers.ModelSerializer):
     roles = serializers.SlugRelatedField(
@@ -41,10 +44,12 @@ class UserSerializer(serializers.ModelSerializer):
     def get_permissions(self, obj: User) -> list[str]:
         return list(obj.get_all_permissions())
 
+
 class ProfileUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ("username", "first_name", "last_name")
+
 
 class UserAdminSerializer(serializers.ModelSerializer):
     roles = serializers.PrimaryKeyRelatedField(
@@ -92,11 +97,13 @@ class UserAdminSerializer(serializers.ModelSerializer):
 
         return instance
 
+
 class GroupAdminSerializer(serializers.ModelSerializer):
     permissions = serializers.PrimaryKeyRelatedField(
         many=True,
         queryset=Permission.objects.filter(
-            content_type__app_label__in=("auth", "documents", "trainings")
+            content_type__app_label__in=(
+                "auth", "documents", "partners", "processes")
         ).exclude(content_type__model="permission"),
     )
 

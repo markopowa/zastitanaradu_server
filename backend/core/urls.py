@@ -1,9 +1,19 @@
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
+from django.views.generic import RedirectView
 from .views import serve_media_attachment
 
+admin.site.site_header = "Protivpozarna zastita i zastita na radu"
+admin.site.site_title = "Protivpozarna zastita i zastita na radu"
+admin.site.index_title = "Administracija"
+
 urlpatterns = [
+    path(
+        "favicon.ico",
+        RedirectView.as_view(url=settings.STATIC_URL +
+                             "favicon.ico", permanent=True),
+    ),
     path("admin/", admin.site.urls),
     path("auth/", include(("authentication.urls", "authentication"), namespace="auth")),
     path(
@@ -12,8 +22,12 @@ urlpatterns = [
     ),
     path("api/ai/", include(("ai_processing.urls", "ai_processing"), namespace="ai")),
     path(
-        "api/trainings/",
-        include(("trainings.urls", "trainings"), namespace="trainings"),
+        "api/partners/",
+        include(("partners.urls", "partners"), namespace="partners"),
+    ),
+    path(
+        "api/processes/",
+        include(("processes.urls", "processes"), namespace="processes"),
     ),
 ]
 

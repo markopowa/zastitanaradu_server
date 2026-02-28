@@ -2,8 +2,9 @@
 set -e
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 CONFIG_FILE="${1:-./deploy.conf}"
+NUCLEAR_FLAG="${3:-}"
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Config $CONFIG_FILE not found. Usage: $0 [deploy.conf]"
+    echo "Config $CONFIG_FILE not found. Usage: $0 [deploy.conf] [target] [--nuclear]"
     exit 1
 fi
 source "$CONFIG_FILE"
@@ -29,6 +30,14 @@ export PZNR_ENV_FILE="$ENV_FILE"
 export PZNR_DOMAIN="$DOMAIN"
 export PZNR_CORS_ORIGIN="https://${DOMAIN}"
 export PZNR_LOG_DIR="$LOG_DIR"
+
+maybeNuclearReset() {
+    if [ "$NUCLEAR_FLAG" = "--nuclear" ]; then
+        echo "NUCLEAR mode enabled: running 'docker compose down -v' in $APP_DIR"
+        cd "$APP_DIR"
+        docker compose down -v || true
+    fi
+}
 
 initialSetup() {
     if ! command -v docker >/dev/null 2>&1; then
@@ -90,7 +99,7 @@ setupDocker() {
         fi
     fi
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
-    docker compose exec -T backend python manage.py makemigrations documents trainings 2>/dev/null || true
+    docker compose exec -T backend python manage.py makemigrations documents partners processes 2>/dev/null || true
     docker compose exec -T backend python manage.py migrate --noinput 2>/dev/null || true
     docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
     mkdir -p "$STATIC_DIR"
@@ -224,7 +233,80 @@ setupCron() {
     (crontab -u root -l 2>/dev/null | grep -v "certbot renew" ; echo "$CRON_CMD") | crontab -u root -
 }
 
+setupTaskRunner() {
+    mkdir -p "$LOG_DIR"
+    TASK_SVC="/etc/systemd/system/pznr-run-due-processes.service"
+    TASK_TMR="/etc/systemd/system/pznr-run-due-processes.timer"
+    cat > "$TASK_SVC" << EOF
+[Unit]
+Description=PZNR run due process bindings (processes/tasks)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=$APP_DIR
+ExecStart=/usr/bin/docker compose exec -T backend python manage.py run_due_processes
+StandardOutput=append:$LOG_DIR/run_due_processes.log
+StandardError=append:$LOG_DIR/run_due_processes.log
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    cat > "$TASK_TMR" << EOF
+[Unit]
+Description=Run PZNR due processes daily at 06:00
+Requires=pznr-run-due-processes.service
+
+[Timer]
+OnCalendar=*-*-* 06:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+    SVC2="/etc/systemd/system/pznr-run-expired-reminders.service"
+    TMR2="/etc/systemd/system/pznr-run-expired-reminders.timer"
+    cat > "$SVC2" << EOF
+[Unit]
+Description=PZNR run expired reminders (ON_EXPIRED process templates)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=$APP_DIR
+ExecStart=/usr/bin/docker compose exec -T backend python manage.py run_expired_reminders
+StandardOutput=append:$LOG_DIR/run_expired_reminders.log
+StandardError=append:$LOG_DIR/run_expired_reminders.log
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    cat > "$TMR2" << EOF
+[Unit]
+Description=Run PZNR expired reminders daily at 07:00
+Requires=pznr-run-expired-reminders.service
+
+[Timer]
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+    systemctl daemon-reload
+    systemctl enable pznr-run-due-processes.timer
+    systemctl start pznr-run-due-processes.timer
+    systemctl enable pznr-run-expired-reminders.timer
+    systemctl start pznr-run-expired-reminders.timer
+    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-expired-reminders.timer (daily 07:00). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_expired_reminders.log"
+}
+
 runAll() {
+    maybeNuclearReset
     initialSetup
     setupDatabase
     setupDocker
@@ -232,16 +314,18 @@ runAll() {
     setupSsl
     setupFirewall
     setupCron
+    setupTaskRunner
 }
 
 case "${2:-all}" in
-    initialSetup)    initialSetup ;;
-    setupDatabase)  setupDatabase ;;
-    setupDocker)    setupDocker ;;
-    setupNginx)     setupNginx ;;
-    setupSsl)       setupSsl ;;
-    setupFirewall)  setupFirewall ;;
-    setupCron)      setupCron ;;
-    all)            runAll ;;
-    *)              echo "Unknown target: $2. Use: initialSetup|setupDatabase|setupDocker|setupNginx|setupSsl|setupFirewall|setupCron|all"; exit 1 ;;
+    initialSetup)     initialSetup ;;
+    setupDatabase)   setupDatabase ;;
+    setupDocker)     setupDocker ;;
+    setupNginx)      setupNginx ;;
+    setupSsl)        setupSsl ;;
+    setupFirewall)   setupFirewall ;;
+    setupCron)       setupCron ;;
+    setupTaskRunner) setupTaskRunner ;;
+    all)             runAll ;;
+    *)               echo "Unknown target: $2. Use: initialSetup|setupDatabase|setupDocker|setupNginx|setupSsl|setupFirewall|setupCron|setupTaskRunner|all"; exit 1 ;;
 esac

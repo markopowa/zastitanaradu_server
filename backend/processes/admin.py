@@ -1,0 +1,46 @@
+from django.contrib import admin
+
+from .models import ProcessBinding, ProcessRun, ProcessTemplate, ProcessType, TaskAssignment
+
+
+@admin.register(ProcessType)
+class ProcessTypeAdmin(admin.ModelAdmin):
+    list_display = ("code", "name", "subject_kind",
+                    "default_period_months", "lead_time_days", "is_active")
+    search_fields = ("code", "name")
+    list_filter = ("subject_kind", "is_active")
+
+
+@admin.register(ProcessTemplate)
+class ProcessTemplateAdmin(admin.ModelAdmin):
+    list_display = ("process_type", "trigger",
+                    "generate_document", "send_email", "email_to_kind")
+    list_filter = ("process_type", "trigger")
+    search_fields = ("process_type__name", "email_subject_template")
+
+
+@admin.register(ProcessBinding)
+class ProcessBindingAdmin(admin.ModelAdmin):
+    list_display = ("process_type", "subject_kind", "employee",
+                    "equipment_item", "client_company", "next_run_at", "is_active")
+    list_filter = ("process_type", "subject_kind", "is_active")
+    search_fields = ("process_type__name",)
+    raw_id_fields = ("employee", "equipment_item", "client_company")
+
+
+@admin.register(ProcessRun)
+class ProcessRunAdmin(admin.ModelAdmin):
+    list_display = ("process_type", "process_binding",
+                    "scheduled_for", "performed_at", "valid_until", "status")
+    list_filter = ("status", "process_type")
+    search_fields = ("process_binding__process_type__name",)
+    raw_id_fields = ("process_binding",)
+
+
+@admin.register(TaskAssignment)
+class TaskAssignmentAdmin(admin.ModelAdmin):
+    list_display = ("title", "process_run",
+                    "assigned_to", "due_date", "status")
+    list_filter = ("status",)
+    search_fields = ("title", "description")
+    raw_id_fields = ("process_run", "assigned_to")

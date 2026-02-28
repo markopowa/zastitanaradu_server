@@ -54,6 +54,7 @@ nano backend.env
 - `DJANGO_SECRET_KEY` – long random string (e.g. `openssl rand -base64 48`)
 - `PZNR_DOMAIN` – same as `DOMAIN` in deploy.conf
 - `PZNR_CORS_ORIGIN` – same as `API_BASE_URL` (e.g. `https://mak-total-safety.pznr.in.rs`)
+- **Email (Amazon SES):** `EMAIL_FROM_ADDRESS` – verified sender address (e.g. `noreply@yourdomain.com`). AWS credentials via `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`; optional `AWS_REGION` (default `eu-central-1`).
 
 **4.3 – Permissions**
 
@@ -149,6 +150,7 @@ This command is **idempotent** – you can safely run it again if something fail
 5. **setupSsl** – obtain Let’s Encrypt cert (skipped if one already exists for DOMAIN), append HTTPS (443) vhost, reload nginx
 6. **setupFirewall** – UFW: allow 22, 80, 443; default deny
 7. **setupCron** – install root cron: Sunday midnight `certbot renew` + nginx reload
+8. **setupTaskRunner** – systemd services + timers: daily at 06:00 `run_due_processes` (due bindings), daily at 07:00 `run_expired_reminders` (ON_EXPIRED email podsetnici); logovi: `$LOG_DIR/run_due_processes.log`, `$LOG_DIR/run_expired_reminders.log` (v. [Django Tasks](https://docs.djangoproject.com/en/6.0/topics/tasks/))
 
 ---
 
@@ -159,7 +161,7 @@ cd /var/www/zastitanaradu_server
 ./deploy.sh ./deploy.conf <step>
 ```
 
-Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupNginx` | `setupSsl` | `setupFirewall` | `setupCron`.
+Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupNginx` | `setupSsl` | `setupFirewall` | `setupCron` | `setupTaskRunner`.
 
 - **You can re-run any step** after fixing config or code – the script checks existing state where needed (e.g. DB/user creation, SSL certs, cron) and uses idempotent operations (`mkdir -p`, `ufw allow`, `docker compose up -d`, Django `migrate`/`collectstatic`). If in doubt, just rerun the step.
 
@@ -172,6 +174,7 @@ Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupNginx` | `setupS
 - **Logs (on host):**
   - Nginx: `$LOG_DIR/nginx-access.log`, `$LOG_DIR/nginx-error.log`
   - Backend: `$LOG_DIR/backend/access.log`, `$LOG_DIR/backend/error.log`, `$LOG_DIR/backend/django.log`
+  - Task runner (due processes): `$LOG_DIR/run_due_processes.log`; podsetnici na istekle: `$LOG_DIR/run_expired_reminders.log`
 - **Containers:** `cd $APP_DIR && docker compose ps`
 - **Backend only on localhost:** port 8000 is bound to `127.0.0.1`; only nginx is exposed on 80/443.
 

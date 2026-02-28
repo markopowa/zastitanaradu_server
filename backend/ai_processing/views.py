@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from documents.models import DocumentFile, DocumentFileAIFormat, DocumentAIFormat
 from documents.serializers import DocumentFileAIFormatSerializer
 
+
 class RunAIProcessingView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -20,7 +21,8 @@ class RunAIProcessingView(views.APIView):
         if format_id is not None:
             ai_format = DocumentAIFormat.objects.filter(pk=format_id).first()
         if ai_format is None and format_code:
-            ai_format = DocumentAIFormat.objects.filter(code=format_code).first()
+            ai_format = DocumentAIFormat.objects.filter(
+                code=format_code).first()
 
         if ai_format is None:
             return Response(
@@ -38,6 +40,7 @@ class RunAIProcessingView(views.APIView):
 
         serializer = DocumentFileAIFormatSerializer(mapping)
         return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+
 
 class DocumentAIStatusView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]

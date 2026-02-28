@@ -7,14 +7,18 @@ from django.http import Http404
 
 logger = logging.getLogger(__name__)
 
+
 def _get_access_cookie_name():
     return getattr(settings, "JWT_ACCESS_COOKIE_NAME", "access_token")
+
 
 def _get_refresh_cookie_name():
     return getattr(settings, "JWT_REFRESH_COOKIE_NAME", "refresh_token")
 
+
 def get_jwt_cookie_names():
     return _get_access_cookie_name(), _get_refresh_cookie_name()
+
 
 class JWTCookieToAuthMiddleware:
     def __init__(self, get_response):
@@ -28,6 +32,7 @@ class JWTCookieToAuthMiddleware:
         response = self.get_response(request)
         return response
 
+
 class IgnoreDisallowedHost(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         exc_info = record.exc_info
@@ -37,6 +42,7 @@ class IgnoreDisallowedHost(logging.Filter):
         if exc_type is DisallowedHost:
             return False
         return True
+
 
 class PageNotFoundMiddleware:
     def __init__(self, get_response):
@@ -50,6 +56,7 @@ class PageNotFoundMiddleware:
             raise
         return response
 
+
 class ErrorLoggingMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -62,12 +69,14 @@ class ErrorLoggingMiddleware:
             raise
         return response
 
+
 class CorrelationIdMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        correlation_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
+        correlation_id = request.headers.get(
+            "X-Request-ID") or str(uuid.uuid4())
         request.correlation_id = correlation_id
         response = self.get_response(request)
         response.headers["X-Request-ID"] = correlation_id

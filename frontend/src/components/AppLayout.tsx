@@ -3,15 +3,15 @@ import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import type { AuthUser } from "../types/auth";
 import { connect } from "react-redux";
 import {
-    Box,
-    Typography,
-    Avatar,
-    Menu,
-    MenuItem,
-    IconButton,
-    BottomNavigation,
-    BottomNavigationAction,
-    Divider,
+  Box,
+  Typography,
+  Avatar,
+  Menu,
+  MenuItem,
+  IconButton,
+  BottomNavigation,
+  BottomNavigationAction,
+  Divider,
 } from "@mui/material";
 import PersonIcon from "@mui/icons-material/Person";
 import PeopleIcon from "@mui/icons-material/People";
@@ -20,442 +20,608 @@ import FolderIcon from "@mui/icons-material/Folder";
 import CategoryIcon from "@mui/icons-material/Category";
 import SchoolIcon from "@mui/icons-material/School";
 import EventIcon from "@mui/icons-material/Event";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import LogoutIcon from "@mui/icons-material/Logout";
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import BusinessIcon from "@mui/icons-material/Business";
+import BuildIcon from "@mui/icons-material/Build";
 
 import type { RootState, AppDispatch } from "../store";
 import { logout } from "../store/authSlice";
 import { hasPermissionWithPrefix } from "../utils/permissions";
 import { getPageTitle } from "../locations";
-
+import type { ProcessType } from "../types/processes";
+import { getProcessTypes } from "../api/processes";
 
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 600;
 const APP_TITLE = "Zaštita na radu";
 
-type NavGroup = "documents" | "trainings" | "attendance" | "users";
+type NavGroup =
+  | "overview"
+  | "clients"
+  | "activities"
+  | "documents"
+  | "settings"
+  | "users";
 
 interface NavItem {
-    path: string;
-    label: string;
-    icon: React.ReactNode;
-    group: NavGroup;
-    permissionPrefix?: string;
+  path: string;
+  label: string;
+  icon: React.ReactNode;
+  group: NavGroup;
+  permissionPrefix?: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-    {
-        path: "/documents",
-        label: "Dokumenti",
-        icon: <FolderIcon />,
-        group: "documents",
-        permissionPrefix: "documents.view_document",
-    },
-    {
-        path: "/documents/categories",
-        label: "Kategorije dokumenata",
-        icon: <CategoryIcon />,
-        group: "documents",
-        permissionPrefix: "documents.view_document",
-    },
-    {
-        path: "/trainings",
-        label: "Obuke",
-        icon: <SchoolIcon />,
-        group: "trainings",
-        permissionPrefix: "trainings.view_training",
-    },
-    {
-        path: "/trainings/types",
-        label: "Tipovi obuka",
-        icon: <SchoolIcon />,
-        group: "trainings",
-        permissionPrefix: "trainings.view_trainingtype",
-    },
-    {
-        path: "/trainings/programs",
-        label: "Programi obuka",
-        icon: <MenuBookIcon />,
-        group: "trainings",
-        permissionPrefix: "trainings.view_trainingprogram",
-    },
-    {
-        path: "/trainings/sessions",
-        label: "Sesije obuka",
-        icon: <EventIcon />,
-        group: "trainings",
-        permissionPrefix: "trainings.view_trainingsession",
-    },
-    {
-        path: "/trainings/employees",
-        label: "Zaposleni",
-        icon: <PeopleIcon />,
-        group: "trainings",
-        permissionPrefix: "trainings.view_employee",
-    },
-    {
-        path: "/trainings/attendance",
-        label: "Prisustvo",
-        icon: <CheckCircleIcon />,
-        group: "attendance",
-        permissionPrefix: "trainings.view_trainingattendance",
-    },
-    {
-        path: "/users",
-        label: "Korisnici",
-        icon: <PeopleIcon />,
-        group: "users",
-        permissionPrefix: "auth.view_user",
-    },
-    {
-        path: "/roles",
-        label: "Role",
-        icon: <BadgeIcon />,
-        group: "users",
-        permissionPrefix: "auth.view_group",
-    },
+const STATIC_NAV_ITEMS: NavItem[] = [
+  {
+    path: "/dashboard",
+    label: "Dashboard",
+    icon: <DashboardIcon />,
+    group: "overview",
+    permissionPrefix: "processes.view_processrun",
+  },
+  {
+    path: "/client-companies",
+    label: "Klijenti",
+    icon: <BusinessIcon />,
+    group: "clients",
+    permissionPrefix: "partners.view_clientcompany",
+  },
+  {
+    path: "/equipment",
+    label: "Oprema",
+    icon: <BuildIcon />,
+    group: "clients",
+    permissionPrefix: "partners.view_equipmentitem",
+  },
+  {
+    path: "/processes/types",
+    label: "Vrste obaveza",
+    icon: <SchoolIcon />,
+    group: "settings",
+    permissionPrefix: "processes.view_processtype",
+  },
+  {
+    path: "/processes/templates",
+    label: "Šabloni procesa",
+    icon: <MenuBookIcon />,
+    group: "settings",
+    permissionPrefix: "processes.view_processtemplate",
+  },
+  {
+    path: "/processes/bindings",
+    label: "Rasporedi",
+    icon: <EventIcon />,
+    group: "settings",
+    permissionPrefix: "processes.view_processbinding",
+  },
+  {
+    path: "/processes/runs",
+    label: "Aktivnosti",
+    icon: <EventIcon />,
+    group: "settings",
+    permissionPrefix: "processes.view_processrun",
+  },
+  {
+    path: "/documents",
+    label: "Dokumenti",
+    icon: <FolderIcon />,
+    group: "documents",
+    permissionPrefix: "documents.view_document",
+  },
+  {
+    path: "/documents/categories",
+    label: "Kategorije dokumenata",
+    icon: <CategoryIcon />,
+    group: "documents",
+    permissionPrefix: "documents.view_document",
+  },
+  {
+    path: "/documents/templates",
+    label: "Šabloni dokumenata",
+    icon: <MenuBookIcon />,
+    group: "documents",
+    permissionPrefix: "documents.view_documenttemplate",
+  },
+  {
+    path: "/users",
+    label: "Korisnici",
+    icon: <PeopleIcon />,
+    group: "users",
+    permissionPrefix: "auth.view_user",
+  },
+  {
+    path: "/roles",
+    label: "Role",
+    icon: <BadgeIcon />,
+    group: "users",
+    permissionPrefix: "auth.view_group",
+  },
 ];
 
-const NAV_GROUP_ORDER: NavGroup[] = ["documents", "trainings", "attendance", "users"];
+const NAV_GROUP_ORDER: NavGroup[] = [
+  "overview",
+  "clients",
+  "activities",
+  "documents",
+  "settings",
+  "users",
+];
 
 const NAV_GROUP_LABEL: Record<NavGroup, string> = {
-    documents: "Dokumenti",
-    trainings: "Obuke",
-    attendance: "Prisustvo",
-    users: "Korisnici i role",
+  overview: "Pregled",
+  clients: "Klijenti",
+  activities: "Aktivnosti",
+  documents: "Dokumenti",
+  settings: "Procesi",
+  users: "Korisnici / Role",
 };
 
-function visibleNavItems(permissions: string[]): NavItem[] {
-    return NAV_ITEMS.filter((item) => {
-        if (!item.permissionPrefix) return true;
-        return hasPermissionWithPrefix(permissions, item.permissionPrefix);
-    });
+const NAV_GROUP_ICON: Record<NavGroup, React.ReactNode> = {
+  overview: <DashboardIcon />,
+  clients: <BusinessIcon />,
+  activities: <EventIcon />,
+  documents: <FolderIcon />,
+  settings: <SchoolIcon />,
+  users: <PeopleIcon />,
+};
+
+function buildNavItems(processTypes: ProcessType[]): NavItem[] {
+  const dynamicActivityItems: NavItem[] = processTypes.map((pt) => ({
+    path: `/processes/runs?process_type_id=${pt.id}`,
+    label: pt.name,
+    icon: <EventIcon />,
+    group: "activities" as NavGroup,
+    permissionPrefix: "processes.view_processrun",
+    showInBottomNav: false,
+  }));
+  return [...STATIC_NAV_ITEMS, ...dynamicActivityItems];
+}
+
+function visibleNavItems(
+  permissions: string[],
+  processTypes: ProcessType[],
+): NavItem[] {
+  const allItems = buildNavItems(processTypes);
+  return allItems.filter((item) => {
+    if (!item.permissionPrefix) return true;
+    return hasPermissionWithPrefix(permissions, item.permissionPrefix);
+  });
 }
 
 interface StateProps {
-    user?: AuthUser;
+  user?: AuthUser;
 }
 
 interface DispatchProps {
-    onLogout: () => void;
+  onLogout: () => void;
 }
 
 interface OwnProps {
-    pathname: string;
-    navigate: (path: string) => void;
+  pathname: string;
+  navigate: (path: string) => void;
 }
 
 type Props = StateProps & DispatchProps & OwnProps;
 
 interface State {
-    isMobile: boolean;
-    anchorEl: HTMLElement | null;
+  isMobile: boolean;
+  anchorEl: HTMLElement | null;
+  processTypes: ProcessType[];
+  mobileOpenGroup: NavGroup | null;
 }
 
 class AppLayoutInner extends Component<Props, State> {
-    private removeResizeListener: (() => void) | null = null;
+  private removeResizeListener: (() => void) | null = null;
 
-    state: State = { isMobile: false, anchorEl: null };
+  state: State = {
+    isMobile: false,
+    anchorEl: null,
+    processTypes: [],
+    mobileOpenGroup: null,
+  };
 
-    componentDidMount(): void {
-        const checkMobile = (): void => {
-            if (typeof matchMedia !== "undefined") {
-                const m = matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
-                this.setState((s) => (s.isMobile === m.matches ? s : { ...s, isMobile: m.matches }));
-            }
-        };
-        checkMobile();
-        if (typeof matchMedia !== "undefined") {
-            const m = matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
-            const handle = (): void => this.setState((s) => ({ ...s, isMobile: m.matches }));
-            m.addEventListener("change", handle);
-            this.removeResizeListener = () => m.removeEventListener("change", handle);
-        }
+  componentDidMount(): void {
+    const checkMobile = (): void => {
+      if (typeof matchMedia !== "undefined") {
+        const m = matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+        this.setState((s) =>
+          s.isMobile === m.matches ? s : { ...s, isMobile: m.matches },
+        );
+      }
+    };
+    checkMobile();
+    if (typeof matchMedia !== "undefined") {
+      const m = matchMedia(`(max-width: ${MOBILE_BREAKPOINT}px)`);
+      const handle = (): void =>
+        this.setState((s) => ({ ...s, isMobile: m.matches }));
+      m.addEventListener("change", handle);
+      this.removeResizeListener = () => m.removeEventListener("change", handle);
     }
 
-    componentWillUnmount(): void {
-        this.removeResizeListener?.();
-    }
+    // Učitaj tipove procesa za dinamičku sekciju "Aktivnosti"
+    getProcessTypes()
+      .then((types) => {
+        this.setState((s) => ({ ...s, processTypes: types }));
+      })
+      .catch(() => {
+        // ako padne, samo nemamo dinamičke stavke u meniju
+      });
+  }
 
-    handleAvatarClick = (event: React.MouseEvent<HTMLElement>): void => {
-        this.setState({ anchorEl: event.currentTarget });
-    };
+  componentWillUnmount(): void {
+    this.removeResizeListener?.();
+  }
 
-    handleMenuClose = (): void => {
-        this.setState({ anchorEl: null });
-    };
+  handleAvatarClick = (event: React.MouseEvent<HTMLElement>): void => {
+    this.setState({ anchorEl: event.currentTarget });
+  };
 
-    handleLogout = (): void => {
-        this.props.onLogout();
-        this.handleMenuClose();
-    };
+  handleMenuClose = (): void => {
+    this.setState({ anchorEl: null });
+  };
 
-    getInitials(username: string): string {
-        if (!username) return "?";
-        const parts = username.trim().split(/\s+/);
-        if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-        return username.substring(0, 2).toUpperCase();
-    }
+  handleLogout = (): void => {
+    this.props.onLogout();
+    this.handleMenuClose();
+  };
 
-    render() {
-        const { user, pathname } = this.props;
-        const { isMobile, anchorEl } = this.state;
-        const permissions = user?.permissions ?? [];
-        const items = visibleNavItems(permissions);
-        const pageTitle = getPageTitle(pathname);
-        const menuOpen = Boolean(anchorEl);
-        const bottomNavValue = Math.max(
+  getInitials(username: string): string {
+    if (!username) return "?";
+    const parts = username.trim().split(/\s+/);
+    if (parts.length >= 2)
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return username.substring(0, 2).toUpperCase();
+  }
+
+  render() {
+    const { user, pathname } = this.props;
+    const { isMobile, anchorEl, processTypes, mobileOpenGroup } = this.state;
+    const permissions = user?.permissions ?? [];
+    const items = visibleNavItems(permissions, processTypes);
+    const pageTitle = getPageTitle(pathname);
+    const menuOpen = Boolean(anchorEl);
+    const currentFull =
+      pathname + (typeof window !== "undefined" ? window.location.search : "");
+    const activeItem =
+      items.find((i) => i.path === currentFull || i.path === pathname) ?? null;
+    const visibleGroups: NavGroup[] = NAV_GROUP_ORDER.filter((groupKey) =>
+      items.some((i) => i.group === groupKey),
+    );
+    const bottomNavItems = visibleGroups.map((groupKey) => ({
+      group: groupKey,
+      label: NAV_GROUP_LABEL[groupKey],
+      icon: NAV_GROUP_ICON[groupKey],
+    }));
+    const activeGroup: NavGroup | null =
+      activeItem?.group ??
+      (bottomNavItems.length > 0 ? bottomNavItems[0].group : null);
+    const bottomNavValue =
+      activeGroup != null
+        ? Math.max(
             0,
-            items.findIndex((i) => i.path === pathname)
-        );
+            bottomNavItems.findIndex((g) => g.group === activeGroup),
+          )
+        : 0;
 
-        return (
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          bgcolor: "background.default",
+          color: "text.primary",
+        }}
+      >
+        {!isMobile && (
+          <Box
+            component="nav"
+            sx={{
+              width: SIDEBAR_WIDTH,
+              borderRight: 1,
+              borderColor: "divider",
+              p: 3,
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+              overflow: "hidden",
+              height: "100vh",
+            }}
+          >
+            <Box sx={{ fontWeight: 600, flexShrink: 0 }}>{APP_TITLE}</Box>
             <Box
-                sx={{
-                    minHeight: "100vh",
-                    display: "flex",
-                    bgcolor: "background.default",
-                    color: "text.primary",
-                }}
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 1.5,
+                mt: 2,
+                overflowY: "auto",
+                flex: 1,
+                minHeight: 0,
+              }}
             >
-                {!isMobile && (
-                    <Box
-                        component="nav"
-                        sx={{
-                            width: SIDEBAR_WIDTH,
-                            borderRight: 1,
-                            borderColor: "divider",
-                            p: 3,
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 2,
-                            overflow: "hidden",
-                            height: "100vh",
-                        }}
+              {NAV_GROUP_ORDER.map((groupKey) => {
+                const groupItems = items.filter((i) => i.group === groupKey);
+                if (groupItems.length === 0) return null;
+
+                return (
+                  <Box
+                    key={groupKey}
+                    sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                  >
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        px: 2,
+                        mb: 0.5,
+                        textTransform: "uppercase",
+                        color: "text.secondary",
+                      }}
                     >
-                        <Box sx={{ fontWeight: 600, flexShrink: 0 }}>{APP_TITLE}</Box>
+                      {NAV_GROUP_LABEL[groupKey]}
+                    </Typography>
+                    {groupItems.map((item) => {
+                      const fullPath = item.path;
+                      const isActive =
+                        pathname + (window.location.search ?? "") ===
+                          fullPath ||
+                        pathname === fullPath ||
+                        (fullPath.startsWith("/processes/runs?") &&
+                          pathname === "/processes/runs" &&
+                          window.location.search !== "" &&
+                          fullPath.endsWith(window.location.search));
+                      return (
                         <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 1.5,
-                                mt: 2,
-                                overflowY: "auto",
-                                flex: 1,
-                                minHeight: 0,
-                            }}
-                        >
-                            {NAV_GROUP_ORDER.map((groupKey) => {
-                                const groupItems = items.filter((i) => i.group === groupKey);
-                                if (groupItems.length === 0) return null;
-
-                                return (
-                                    <Box key={groupKey} sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
-                                        <Typography
-                                            variant="caption"
-                                            sx={{ px: 2, mb: 0.5, textTransform: "uppercase", color: "text.secondary" }}
-                                        >
-                                            {NAV_GROUP_LABEL[groupKey]}
-                                        </Typography>
-                                        {groupItems.map((item) => {
-                                            const isActive = pathname === item.path;
-                                            return (
-                                                <Box
-                                                    key={item.path}
-                                                    onClick={() => {
-                                                        if (this.props.pathname !== item.path) {
-                                                            this.props.navigate(item.path);
-                                                        }
-                                                    }}
-                                                    sx={{
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        gap: 1.5,
-                                                        px: 2,
-                                                        py: 1.25,
-                                                        borderRadius: 1,
-                                                        cursor: "pointer",
-                                                        bgcolor: isActive ? "primary.main" : "transparent",
-                                                        color: isActive ? "primary.contrastText" : "text.primary",
-                                                        "&:hover": {
-                                                            bgcolor: isActive ? "primary.dark" : "action.hover",
-                                                        },
-                                                    }}
-                                                >
-                                                    {item.icon}
-                                                    <Typography
-                                                        variant="body2"
-                                                        fontWeight={isActive ? 600 : 400}
-                                                    >
-                                                        {item.label}
-                                                    </Typography>
-                                                </Box>
-                                            );
-                                        })}
-                                        {!["users"].includes(groupKey) && (
-                                            <Divider sx={{ mt: 1.25, opacity: 0.6 }} />
-                                        )}
-                                    </Box>
-                                );
-                            })}
-                        </Box>
-                    </Box>
-                )}
-
-                <Box
-                    component="main"
-                    sx={{
-                        flex: 1,
-                        display: "flex",
-                        flexDirection: "column",
-                    }}
-                >
-                    <Box
-                        sx={{
+                          key={fullPath}
+                          onClick={() => {
+                            this.props.navigate(fullPath);
+                          }}
+                          sx={{
                             display: "flex",
-                            justifyContent: "space-between",
                             alignItems: "center",
-                            px: isMobile ? 2 : 4,
-                            py: 1.5,
-                            borderBottom: 1,
-                            borderColor: "divider",
-                            bgcolor: "background.paper",
-                        }}
-                    >
-                        <Typography
-                            variant="body1"
-                            fontWeight={600}
-                            sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                            gap: 1.5,
+                            px: 2,
+                            py: 1.25,
+                            borderRadius: 1,
+                            cursor: "pointer",
+                            bgcolor: isActive ? "primary.main" : "transparent",
+                            color: isActive
+                              ? "primary.contrastText"
+                              : "text.primary",
+                            "&:hover": {
+                              bgcolor: isActive
+                                ? "primary.dark"
+                                : "action.hover",
+                            },
+                          }}
                         >
-                            {pageTitle}
-                        </Typography>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <IconButton
-                                onClick={this.handleAvatarClick}
-                                sx={{ p: 0 }}
-                                aria-controls={menuOpen ? "user-menu" : undefined}
-                                aria-haspopup="true"
-                                aria-expanded={menuOpen ? "true" : undefined}
-                            >
-                                <Avatar
-                                    sx={{
-                                        width: isMobile ? 32 : 40,
-                                        height: isMobile ? 32 : 40,
-                                        bgcolor: "primary.main",
-                                        fontSize: isMobile ? "0.875rem" : "1rem",
-                                        cursor: "pointer",
-                                    }}
-                                >
-                                    {user ? this.getInitials(user.username) : "?"}
-                                </Avatar>
-                            </IconButton>
+                          {item.icon}
+                          <Typography
+                            variant="body2"
+                            fontWeight={isActive ? 600 : 400}
+                          >
+                            {item.label}
+                          </Typography>
                         </Box>
-                        <Menu
-                            id="user-menu"
-                            anchorEl={anchorEl}
-                            open={menuOpen}
-                            onClose={this.handleMenuClose}
-                            anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                            transformOrigin={{ vertical: "top", horizontal: "right" }}
-                        >
-                            <MenuItem disabled sx={{ opacity: 1, cursor: "default" }}>
-                                <Typography variant="body2" fontWeight={600}>
-                                    {user?.username ?? ""}
-                                </Typography>
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => {
-                                    this.handleMenuClose();
-                                    this.props.navigate("/profile");
-                                }}
-                            >
-                                <PersonIcon sx={{ mr: 1, fontSize: 20 }} />
-                                Profil
-                            </MenuItem>
-                            <MenuItem onClick={this.handleLogout}>
-                                <LogoutIcon sx={{ mr: 1, fontSize: 20 }} />
-                                Odjava
-                            </MenuItem>
-                        </Menu>
-                    </Box>
-
-                    <Box
-                        sx={{
-                            flex: 1,
-                            overflow: "auto",
-                            p: isMobile ? 2 : 3,
-                            pb: isMobile && items.length > 0 ? 8 : undefined,
-                        }}
-                    >
-                        <Outlet />
-                    </Box>
-
-                    {isMobile && items.length > 0 && (
-                        <Box
-                            sx={{
-                                position: "fixed",
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
-                                width: "100vw",
-                                borderTop: 1,
-                                borderColor: "divider",
-                                bgcolor: "background.paper",
-                                overflowX: "auto",
-                                overflowY: "hidden",
-                            }}
-                        >
-                            <BottomNavigation
-                                showLabels
-                                value={bottomNavValue}
-                                onChange={(_, newValue) => {
-                                    const item = items[newValue];
-                                    if (item && this.props.pathname !== item.path) {
-                                        this.props.navigate(item.path);
-                                    }
-                                }}
-                                sx={{
-                                    minWidth: "max-content",
-                                    width: "100%",
-                                }}
-                            >
-                                {items.map((item) => (
-                                    <BottomNavigationAction
-                                        key={item.path}
-                                        label={item.label}
-                                        icon={item.icon as React.ReactElement}
-                                    />
-                                ))}
-                            </BottomNavigation>
-                        </Box>
+                      );
+                    })}
+                    {!["users"].includes(groupKey) && (
+                      <Divider sx={{ mt: 1.25, opacity: 0.6 }} />
                     )}
-                </Box>
+                  </Box>
+                );
+              })}
             </Box>
-        );
-    }
+          </Box>
+        )}
+
+        <Box
+          component="main"
+          sx={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              px: isMobile ? 2 : 4,
+              py: 1.5,
+              borderBottom: 1,
+              borderColor: "divider",
+              bgcolor: "background.paper",
+            }}
+          >
+            <Typography
+              variant="body1"
+              fontWeight={600}
+              sx={{ display: "flex", alignItems: "center", gap: 1 }}
+            >
+              {pageTitle}
+            </Typography>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <IconButton
+                onClick={this.handleAvatarClick}
+                sx={{ p: 0 }}
+                aria-controls={menuOpen ? "user-menu" : undefined}
+                aria-haspopup="true"
+                aria-expanded={menuOpen ? "true" : undefined}
+              >
+                <Avatar
+                  sx={{
+                    width: isMobile ? 32 : 40,
+                    height: isMobile ? 32 : 40,
+                    bgcolor: "primary.main",
+                    fontSize: isMobile ? "0.875rem" : "1rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  {user ? this.getInitials(user.username) : "?"}
+                </Avatar>
+              </IconButton>
+            </Box>
+            <Menu
+              id="user-menu"
+              anchorEl={anchorEl}
+              open={menuOpen}
+              onClose={this.handleMenuClose}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              <MenuItem disabled sx={{ opacity: 1, cursor: "default" }}>
+                <Typography variant="body2" fontWeight={600}>
+                  {user?.username ?? ""}
+                </Typography>
+              </MenuItem>
+              <MenuItem
+                onClick={() => {
+                  this.handleMenuClose();
+                  this.props.navigate("/profile");
+                }}
+              >
+                <PersonIcon sx={{ mr: 1, fontSize: 20 }} />
+                Profil
+              </MenuItem>
+              <MenuItem onClick={this.handleLogout}>
+                <LogoutIcon sx={{ mr: 1, fontSize: 20 }} />
+                Odjava
+              </MenuItem>
+            </Menu>
+          </Box>
+
+          <Box
+            sx={{
+              flex: 1,
+              overflow: "auto",
+              p: isMobile ? 2 : 3,
+              pb: isMobile && bottomNavItems.length > 0 ? 8 : undefined,
+            }}
+          >
+            <Outlet />
+          </Box>
+
+          {isMobile && bottomNavItems.length > 0 && (
+            <>
+              {mobileOpenGroup && (
+                <Box
+                  sx={{
+                    position: "fixed",
+                    left: 0,
+                    right: 0,
+                    bottom: 56,
+                    width: "100vw",
+                    bgcolor: "background.paper",
+                    borderTop: 1,
+                    borderColor: "divider",
+                    boxShadow: 3,
+                    zIndex: 1201,
+                  }}
+                >
+                  {items
+                    .filter((item) => item.group === mobileOpenGroup)
+                    .map((item) => (
+                      <Box
+                        key={item.path}
+                        onClick={() => {
+                          this.setState({ mobileOpenGroup: null });
+                          this.props.navigate(item.path);
+                        }}
+                        sx={{
+                          px: 2,
+                          py: 1.25,
+                          borderBottom: 1,
+                          borderColor: "divider",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {item.icon}
+                        <Typography variant="body2">{item.label}</Typography>
+                      </Box>
+                    ))}
+                </Box>
+              )}
+              <Box
+                sx={{
+                  position: "fixed",
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  width: "100vw",
+                  borderTop: 1,
+                  borderColor: "divider",
+                  bgcolor: "background.paper",
+                  overflowX: "auto",
+                  overflowY: "hidden",
+                }}
+              >
+                <BottomNavigation
+                  showLabels
+                  value={bottomNavValue}
+                  onChange={(_, newValue) => {
+                    const groupItem = bottomNavItems[newValue];
+                    if (!groupItem) return;
+                    this.setState((s) => ({
+                      ...s,
+                      mobileOpenGroup:
+                        s.mobileOpenGroup === groupItem.group
+                          ? null
+                          : groupItem.group,
+                    }));
+                  }}
+                  sx={{
+                    minWidth: "max-content",
+                    width: "100%",
+                  }}
+                >
+                  {bottomNavItems.map((item) => (
+                    <BottomNavigationAction
+                      key={item.group}
+                      label={item.label}
+                      icon={item.icon as React.ReactElement}
+                    />
+                  ))}
+                </BottomNavigation>
+              </Box>
+            </>
+          )}
+        </Box>
+      </Box>
+    );
+  }
 }
 
 const mapStateToProps = (state: RootState): StateProps => ({
-    user: state.auth.user,
+  user: state.auth.user,
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
-    onLogout: () => dispatch(logout()),
+  onLogout: () => dispatch(logout()),
 });
 
 function AppLayoutWithRouter() {
-    const location = useLocation();
-    const navigate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    return (
-        <AppLayoutConnected pathname={location.pathname} navigate={navigate} />
-    );
+  return (
+    <AppLayoutConnected pathname={location.pathname} navigate={navigate} />
+  );
 }
 
-const AppLayoutConnected = connect<StateProps, DispatchProps, OwnProps, RootState>(
-    mapStateToProps,
-    mapDispatchToProps,
+const AppLayoutConnected = connect<
+  StateProps,
+  DispatchProps,
+  OwnProps,
+  RootState
+>(
+  mapStateToProps,
+  mapDispatchToProps,
 )(AppLayoutInner);
 
 export const AppLayout = AppLayoutWithRouter;

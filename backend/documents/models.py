@@ -1,17 +1,19 @@
 from django.conf import settings
 from django.db import models
 
+
 class DocumentCategory(models.Model):
     code = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
     class Meta:
-        verbose_name = "Document category"
-        verbose_name_plural = "Document categories"
+        verbose_name = "Kategorija dokumenata"
+        verbose_name_plural = "Kategorije dokumenata"
 
     def __str__(self) -> str:
         return self.name
+
 
 class DocumentAIFormat(models.Model):
     code = models.CharField(max_length=128, unique=True)
@@ -21,11 +23,12 @@ class DocumentAIFormat(models.Model):
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        verbose_name = "Document AI format"
-        verbose_name_plural = "Document AI formats"
+        verbose_name = "AI format dokumenta"
+        verbose_name_plural = "AI formati dokumenata"
 
     def __str__(self) -> str:
         return self.code
+
 
 class DocumentFile(models.Model):
     category = models.ForeignKey(
@@ -47,11 +50,55 @@ class DocumentFile(models.Model):
     language = models.CharField(max_length=8, blank=True)
 
     class Meta:
-        verbose_name = "Document file"
-        verbose_name_plural = "Document files"
+        verbose_name = "Dokument"
+        verbose_name_plural = "Dokumenti"
 
     def __str__(self) -> str:
         return self.title
+
+
+class DocumentTemplate(models.Model):
+    CONTEXT_EMPLOYEE = "EMPLOYEE"
+    CONTEXT_EQUIPMENT = "EQUIPMENT"
+    CONTEXT_CLIENT_COMPANY = "CLIENT_COMPANY"
+    CONTEXT_MIXED = "MIXED"
+
+    CONTEXT_CHOICES = (
+        (CONTEXT_EMPLOYEE, "Zaposleni"),
+        (CONTEXT_EQUIPMENT, "Oprema"),
+        (CONTEXT_CLIENT_COMPANY, "Klijentska firma"),
+        (CONTEXT_MIXED, "Mešovito"),
+    )
+
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    category = models.ForeignKey(
+        DocumentCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="templates",
+    )
+    template_body = models.TextField(blank=True)
+    template_file = models.FileField(
+        upload_to="document_templates/",
+        null=True,
+        blank=True,
+    )
+    source_document_file_id = models.PositiveIntegerField(
+        null=True, blank=True)
+    context_type = models.CharField(
+        max_length=32,
+        choices=CONTEXT_CHOICES,
+    )
+
+    class Meta:
+        verbose_name = "Šablon dokumenta"
+        verbose_name_plural = "Šabloni dokumenata"
+
+    def __str__(self) -> str:
+        return self.name
+
 
 class DocumentFileAIFormat(models.Model):
     STATUS_PENDING = "PENDING"
@@ -60,10 +107,10 @@ class DocumentFileAIFormat(models.Model):
     STATUS_FAILED = "FAILED"
 
     STATUS_CHOICES = (
-        (STATUS_PENDING, "Pending"),
-        (STATUS_IN_PROGRESS, "In progress"),
-        (STATUS_DONE, "Done"),
-        (STATUS_FAILED, "Failed"),
+        (STATUS_PENDING, "Na čekanju"),
+        (STATUS_IN_PROGRESS, "U toku"),
+        (STATUS_DONE, "Završeno"),
+        (STATUS_FAILED, "Neuspešno"),
     )
 
     document_file = models.ForeignKey(
@@ -85,6 +132,6 @@ class DocumentFileAIFormat(models.Model):
     error_message = models.TextField(blank=True)
 
     class Meta:
-        verbose_name = "Document file AI format"
-        verbose_name_plural = "Document file AI formats"
+        verbose_name = "AI format dokumenta (instanca)"
+        verbose_name_plural = "AI formati dokumenata (instance)"
         unique_together = ("document_file", "ai_format")

@@ -23,6 +23,7 @@ from .serializers import (
 
 User = get_user_model()
 
+
 class LoginView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = TokenObtainPairSerializer
@@ -45,6 +46,7 @@ class LoginView(generics.GenericAPIView):
         )
         set_jwt_cookies(response, access, refresh)
         return response
+
 
 class RefreshTokenView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
@@ -72,13 +74,15 @@ class RefreshTokenView(generics.GenericAPIView):
         set_jwt_cookies(response, access, refresh)
         return response
 
+
 class LogoutView(generics.GenericAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = TokenRefreshSerializer
 
     def post(self, request, *args, **kwargs):
         _, refresh_name = get_jwt_cookie_names()
-        refresh_token = request.COOKIES.get(refresh_name) or request.data.get("refresh")
+        refresh_token = request.COOKIES.get(
+            refresh_name) or request.data.get("refresh")
         if refresh_token:
             try:
                 token = RefreshToken(refresh_token)
@@ -88,6 +92,7 @@ class LogoutView(generics.GenericAPIView):
         response = Response(status=status.HTTP_204_NO_CONTENT)
         clear_jwt_cookies(response)
         return response
+
 
 class MeView(generics.RetrieveUpdateAPIView):
     def get_object(self):
@@ -101,10 +106,12 @@ class MeView(generics.RetrieveUpdateAPIView):
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop("partial", True)
         instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer = self.get_serializer(
+            instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(UserSerializer(instance).data)
+
 
 class ChangePasswordView(generics.GenericAPIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -127,6 +134,7 @@ class ChangePasswordView(generics.GenericAPIView):
         user.save(update_fields=["password"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by("id")
     serializer_class = UserAdminSerializer
@@ -137,7 +145,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
         user = getattr(self.request, "user", None)
         if user is not None and not user.is_superuser:
-            queryset = queryset.filter(is_superuser=False).exclude(groups__name="Admin")
+            queryset = queryset.filter(
+                is_superuser=False).exclude(groups__name="Admin")
 
         search = self.request.query_params.get("search")
         is_active = self.request.query_params.get("is_active")
@@ -162,12 +171,14 @@ class UserViewSet(viewsets.ModelViewSet):
         user.save(update_fields=["is_active"])
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 class GroupViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
 
     def get_queryset(self):
         queryset = Group.objects.filter(
-            permissions__content_type__app_label__in=("auth", "documents", "trainings")
+            permissions__content_type__app_label__in=(
+                "auth", "documents", "partners", "processes")
         ).distinct().order_by("id")
 
         user = getattr(self.request, "user", None)
@@ -181,11 +192,12 @@ class GroupViewSet(viewsets.ModelViewSet):
             return GroupSerializer
         return GroupAdminSerializer
 
+
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def permissions_view(request):
     user = request.user
-    relevant_apps = ("auth", "documents", "trainings")
+    relevant_apps = ("auth", "documents", "partners", "processes")
     all_perms = list(user.get_all_permissions())
     filtered_perms = [
         p for p in all_perms
@@ -198,10 +210,11 @@ def permissions_view(request):
         }
     )
 
+
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def permissions_list_view(request):
-    relevant_apps = ("auth", "documents", "trainings")
+    relevant_apps = ("auth", "documents", "partners", "processes")
     perms = (
         Permission.objects.select_related("content_type")
         .filter(content_type__app_label__in=relevant_apps)

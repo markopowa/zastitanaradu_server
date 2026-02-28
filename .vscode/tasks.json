@@ -1,0 +1,63 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Format All Python Files",
+            "type": "process",
+            "command": "backend\\.venv\\Scripts\\python.exe",
+            "args": [
+                "-m",
+                "autopep8",
+                "--in-place",
+                "--recursive",
+                "backend"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Format All TypeScript/JavaScript Files",
+            "command": "npx",
+            "type": "process",
+            "args": [
+                "prettier",
+                "--write",
+                "frontend/src/**/*.{ts,tsx,js,jsx}",
+                "frontend/**/*.{ts,tsx,js,jsx,json}"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        },
+        {
+            "label": "Format All Files",
+            "dependsOn": [
+                "Format All Python Files",
+                "Format All TypeScript/JavaScript Files"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            }
+        }
+    ]
+}
