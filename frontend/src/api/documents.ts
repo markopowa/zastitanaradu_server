@@ -10,6 +10,7 @@ export interface DocumentTemplate {
     template_file?: string | null;
     source_document_file_id?: number | null;
     context_type: "EMPLOYEE" | "EQUIPMENT" | "CLIENT_COMPANY" | "MIXED";
+    generation_config?: Record<string, unknown> | null;
 }
 
 type ListResponse<T> = T[] | { results?: T[] };
@@ -111,4 +112,81 @@ export async function updateDocumentTemplate(
 
 export async function deleteDocumentTemplate(id: number): Promise<void> {
     await api.delete(`/api/documents/templates/${id}/`);
+}
+
+export async function getDocumentTemplatePreviewHtml(
+    id: number,
+): Promise<string> {
+    const { data } = await api.get<{ html: string }>(
+        `/api/documents/templates/${id}/preview-html/`,
+    );
+    return data.html ?? "";
+}
+
+export interface DocxStructureCell {
+    id: string;
+    type: "table_cell";
+    table_index: number;
+    row_index: number;
+    cell_index: number;
+    text: string;
+    vmerge_continuation?: boolean;
+}
+
+export interface DocxStructureRow {
+    row_index: number;
+    cells: DocxStructureCell[];
+}
+
+export interface DocxStructureTable {
+    id: string;
+    type: "table";
+    table_index: number;
+    rows: DocxStructureRow[];
+}
+
+export interface DocxStructureParagraph {
+    id: string;
+    type: "paragraph";
+    block_index: number;
+    text: string;
+}
+
+export type DocxStructureBlock = DocxStructureParagraph | DocxStructureTable;
+
+export interface StructuralPlaceholder {
+    id: string;
+    fieldKey: string;
+    docx_ref: {
+        type: "table_cell" | "paragraph";
+        table_index?: number;
+        row_index?: number;
+        cell_index?: number;
+        block_index?: number;
+    };
+}
+
+export async function getDocumentTemplateStructure(
+    id: number,
+): Promise<DocxStructureBlock[]> {
+    const { data } = await api.get<DocxStructureBlock[]>(
+        `/api/documents/templates/${id}/structure/`,
+    );
+    return data;
+}
+
+export async function saveDocumentTemplatePlaceholders(
+    id: number,
+    placeholders: StructuralPlaceholder[],
+): Promise<DocumentTemplate> {
+    const { data } = await api.patch<DocumentTemplate>(
+        `/api/documents/templates/${id}/`,
+        {
+            generation_config: {
+                mode: "STRUCTURAL",
+                placeholders,
+            },
+        },
+    );
+    return data;
 }

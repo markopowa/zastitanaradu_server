@@ -86,6 +86,17 @@ class ProcessTemplate(models.Model):
     email_subject_template = models.CharField(max_length=255, blank=True)
     email_body_template = models.TextField(blank=True)
     custom_email_recipient = models.EmailField(blank=True)
+    followup_process_type = models.ForeignKey(
+        "ProcessType",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="followup_templates",
+        help_text=(
+            "Opciona sledeća vrsta obaveze koja se automatski povezuje "
+            "za isti subjekt nakon završetka ove obaveze."
+        ),
+    )
 
     class Meta:
         verbose_name = "Šablon procesa"

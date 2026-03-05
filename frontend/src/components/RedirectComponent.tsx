@@ -65,9 +65,7 @@ class RedirectComponent extends Component<Props> {
             hasPermissionWithPrefix(permissions, "documents.view_document")
         ) {
             targetPath = paths.documents;
-        } else if (
-            hasPermissionWithPrefix(permissions, "auth.view_user")
-        ) {
+        } else if (hasPermissionWithPrefix(permissions, "auth.view_user")) {
             targetPath = paths.users;
         }
 

@@ -112,7 +112,10 @@ class DashboardExpiringPage extends Component<Props, State> {
     }
 
     handleFilterChange = (key: keyof State, value: string | number): void => {
-        this.setState((prev) => ({ ...prev, [key]: value }), () => this.load());
+        this.setState(
+            (prev) => ({ ...prev, [key]: value }),
+            () => this.load(),
+        );
     };
 
     render(): React.ReactNode {

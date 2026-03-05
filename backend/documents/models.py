@@ -1,9 +1,10 @@
 from django.conf import settings
 from django.db import models
-
+from django.utils.text import slugify
+import uuid
 
 class DocumentCategory(models.Model):
-    code = models.CharField(max_length=64, unique=True)
+    code = models.CharField(max_length=64, unique=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
@@ -13,6 +14,16 @@ class DocumentCategory(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    def save(self, *args, **kwargs) -> None:
+        if not self.code:
+            base = slugify(self.name or "") or "category"
+            for _ in range(10):
+                candidate = f"{base}-{uuid.uuid4().hex[:8]}"
+                if not DocumentCategory.objects.filter(code=candidate).exists():
+                    self.code = candidate
+                    break
+        super().save(*args, **kwargs)
 
 
 class DocumentAIFormat(models.Model):
@@ -91,6 +102,7 @@ class DocumentTemplate(models.Model):
         max_length=32,
         choices=CONTEXT_CHOICES,
     )
+    generation_config = models.JSONField(blank=True, null=True, default=dict)
 
     class Meta:
         verbose_name = "Šablon dokumenta"

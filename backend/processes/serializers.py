@@ -36,6 +36,7 @@ class ProcessTemplateSerializer(serializers.ModelSerializer):
             "email_subject_template",
             "email_body_template",
             "custom_email_recipient",
+            "followup_process_type",
         )
 
 

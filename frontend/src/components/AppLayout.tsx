@@ -25,6 +25,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import BusinessIcon from "@mui/icons-material/Business";
 import BuildIcon from "@mui/icons-material/Build";
+import { enqueueSnackbar } from "notistack";
 
 import type { RootState, AppDispatch } from "../store";
 import { loadMe, logout } from "../store/authSlice";
@@ -246,13 +247,14 @@ class AppLayoutInner extends Component<Props, State> {
                 m.removeEventListener("change", handle);
         }
 
-        // Učitaj tipove procesa za dinamičku sekciju "Aktivnosti"
         getProcessTypes()
             .then((types) => {
                 this.setState((s) => ({ ...s, processTypes: types }));
             })
             .catch(() => {
-                // ako padne, samo nemamo dinamičke stavke u meniju
+                enqueueSnackbar("Greška pri učitavanju tipova procesa", {
+                    variant: "error",
+                });
             });
     }
 

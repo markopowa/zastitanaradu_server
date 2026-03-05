@@ -93,6 +93,7 @@ export interface ProcessTemplate {
     email_subject_template?: string;
     email_body_template?: string;
     custom_email_recipient?: string;
+    followup_process_type?: number | null;
 }
 
 export interface TaskAssignment {

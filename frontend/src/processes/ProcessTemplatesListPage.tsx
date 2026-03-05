@@ -92,6 +92,7 @@ interface State {
     form_email_subject_template: string;
     form_email_body_template: string;
     form_custom_email_recipient: string;
+    form_followup_process_type_id: string;
 }
 
 class ProcessTemplatesListPageInner extends Component<Props, State> {
@@ -114,6 +115,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
         form_email_subject_template: "",
         form_email_body_template: "",
         form_custom_email_recipient: "",
+        form_followup_process_type_id: "",
     };
 
     load = (): void => {
@@ -171,6 +173,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_email_subject_template: "",
             form_email_body_template: "",
             form_custom_email_recipient: "",
+            form_followup_process_type_id: "",
         });
     };
 
@@ -189,6 +192,9 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_email_subject_template: row.email_subject_template ?? "",
             form_email_body_template: row.email_body_template ?? "",
             form_custom_email_recipient: row.custom_email_recipient ?? "",
+            form_followup_process_type_id: row.followup_process_type
+                ? String(row.followup_process_type)
+                : "",
         });
     };
 
@@ -205,6 +211,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_email_subject_template: "",
             form_email_body_template: "",
             form_custom_email_recipient: "",
+            form_followup_process_type_id: "",
         });
     };
 
@@ -220,6 +227,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_email_subject_template,
             form_email_body_template,
             form_custom_email_recipient,
+            form_followup_process_type_id,
         } = this.state;
 
         if (!form_process_type_id || !form_trigger) return;
@@ -245,6 +253,9 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                 form_send_email && form_email_to_kind === "CUSTOM"
                     ? form_custom_email_recipient || ""
                     : "",
+            followup_process_type: form_followup_process_type_id
+                ? Number(form_followup_process_type_id)
+                : null,
         };
 
         const op =
@@ -295,6 +306,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_email_subject_template,
             form_email_body_template,
             form_custom_email_recipient,
+            form_followup_process_type_id,
         } = this.state;
 
         const selectedType =
@@ -544,6 +556,27 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                 {docTemplates.map((d) => (
                                     <MenuItem key={d.id} value={String(d.id)}>
                                         {d.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel>Sledeća vrsta obaveze</InputLabel>
+                            <Select
+                                value={form_followup_process_type_id}
+                                label="Sledeća vrsta obaveze"
+                                onChange={(e) =>
+                                    this.setState({
+                                        form_followup_process_type_id:
+                                            e.target.value as string,
+                                    })
+                                }
+                            >
+                                <MenuItem value="">—</MenuItem>
+                                {types.map((t) => (
+                                    <MenuItem key={t.id} value={String(t.id)}>
+                                        {t.name}
                                     </MenuItem>
                                 ))}
                             </Select>

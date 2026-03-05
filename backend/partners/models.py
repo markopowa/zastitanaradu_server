@@ -35,6 +35,36 @@ class Employee(models.Model):
     email = models.EmailField(blank=True)
     org_unit = models.CharField(max_length=255, blank=True)
     position = models.CharField(max_length=255, blank=True)
+    father_name = models.CharField(
+        max_length=150,
+        blank=True,
+        help_text="Ime oca zaposlenog (za potrebe lekarskih obrazaca).",
+    )
+    jmbg = models.CharField(
+        max_length=13,
+        blank=True,
+        help_text="JMBG zaposlenog.",
+    )
+    date_of_birth = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Datum rođenja zaposlenog.",
+    )
+    place_of_birth = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Mesto rođenja zaposlenog.",
+    )
+    occupation = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Zanimanje zaposlenog (prema lekarskom obrascu).",
+    )
+    high_risk_position_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Naziv radnog mesta sa povećanim rizikom.",
+    )
 
     class Meta:
         verbose_name = "Zaposleni klijenta"

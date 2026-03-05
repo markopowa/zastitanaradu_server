@@ -1,4 +1,4 @@
-import { Component, createRef } from "react";
+import { Component, useState } from "react";
 import {
     Box,
     Paper,
@@ -23,14 +23,15 @@ import {
     RadioGroup,
     FormControlLabel,
     Radio,
-    List,
-    ListItem,
-    ListItemText,
-    Chip,
+    Menu
 } from "@mui/material";
+import { enqueueSnackbar } from "notistack";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import BuildIcon from "@mui/icons-material/Build";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import TemplateStructureEditorDialog from "./TemplateStructureEditorDialog";
 
 import type { DocumentCategory, DocumentFile } from "../types/documents";
 import {
@@ -56,102 +57,6 @@ type Props = DispatchProps;
 
 type ContextType = DocumentTemplate["context_type"] | "";
 
-interface TemplateField {
-    key: string;
-    label: string;
-    snippet: string;
-}
-
-const EMPLOYEE_FIELDS: TemplateField[] = [
-    {
-        key: "employee.first_name",
-        label: "Ime zaposlenog",
-        snippet: "{{ employee.first_name }}",
-    },
-    {
-        key: "employee.last_name",
-        label: "Prezime zaposlenog",
-        snippet: "{{ employee.last_name }}",
-    },
-    {
-        key: "employee.full_name",
-        label: "Ime i prezime",
-        snippet: "{{ employee.first_name }} {{ employee.last_name }}",
-    },
-    {
-        key: "employee.org_unit",
-        label: "Organizaciona jedinica",
-        snippet: "{{ employee.org_unit }}",
-    },
-    {
-        key: "employee.position",
-        label: "Pozicija",
-        snippet: "{{ employee.position }}",
-    },
-    {
-        key: "employee.email",
-        label: "Email zaposlenog",
-        snippet: "{{ employee.email }}",
-    },
-];
-
-const EQUIPMENT_FIELDS: TemplateField[] = [
-    {
-        key: "equipment.name",
-        label: "Naziv opreme/mašine",
-        snippet: "{{ equipment.name }}",
-    },
-    {
-        key: "equipment.category",
-        label: "Kategorija opreme",
-        snippet: "{{ equipment.category }}",
-    },
-    {
-        key: "equipment.inventory_number",
-        label: "Inventarski broj",
-        snippet: "{{ equipment.inventory_number }}",
-    },
-    {
-        key: "equipment.location",
-        label: "Lokacija opreme",
-        snippet: "{{ equipment.location }}",
-    },
-];
-
-const CLIENT_FIELDS: TemplateField[] = [
-    { key: "client.name", label: "Naziv firme", snippet: "{{ client.name }}" },
-    { key: "client.pib", label: "PIB", snippet: "{{ client.pib }}" },
-    {
-        key: "client.address",
-        label: "Adresa firme",
-        snippet: "{{ client.address }}",
-    },
-    {
-        key: "client.phone",
-        label: "Telefon firme",
-        snippet: "{{ client.phone }}",
-    },
-    {
-        key: "client.email",
-        label: "Email firme",
-        snippet: "{{ client.email }}",
-    },
-    {
-        key: "client.website",
-        label: "Web sajt firme",
-        snippet: "{{ client.website }}",
-    },
-];
-
-function fieldsForContext(context: ContextType): TemplateField[] {
-    if (context === "EMPLOYEE") return EMPLOYEE_FIELDS;
-    if (context === "EQUIPMENT") return EQUIPMENT_FIELDS;
-    if (context === "CLIENT_COMPANY") return CLIENT_FIELDS;
-    if (context === "MIXED") {
-        return [...EMPLOYEE_FIELDS, ...EQUIPMENT_FIELDS, ...CLIENT_FIELDS];
-    }
-    return [...EMPLOYEE_FIELDS, ...EQUIPMENT_FIELDS];
-}
 
 interface State {
     items: DocumentTemplate[];
@@ -166,7 +71,6 @@ interface State {
     description: string;
     category_id: string;
     context_type: ContextType;
-    template_body: string;
     create_mode: "FROM_DOCUMENT" | "FROM_FILE";
     document_file_id: string;
     upload_file: File | null;
@@ -195,14 +99,13 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
         description: "",
         category_id: "",
         context_type: "",
-        template_body: "",
         create_mode: "FROM_DOCUMENT",
         document_file_id: "",
         upload_file: null,
         filter_context_type: "",
     };
 
-    private templateBodyRef = createRef<HTMLTextAreaElement>();
+
 
     componentDidMount(): void {
         this.props.setLastPath?.("/documents/templates");
@@ -241,7 +144,6 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
             description: "",
             category_id: "",
             context_type: "EMPLOYEE",
-            template_body: "",
             create_mode: "FROM_DOCUMENT",
             document_file_id: "",
             upload_file: null,
@@ -254,10 +156,8 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
             editingId: tpl.id,
             name: tpl.name ?? "",
             description: tpl.description ?? "",
-            category_id:
-                tpl.category?.id != null ? String(tpl.category.id) : "",
+            category_id: tpl.category?.id != null ? String(tpl.category.id) : "",
             context_type: tpl.context_type ?? "",
-            template_body: tpl.template_body ?? "",
             create_mode: "FROM_DOCUMENT",
             document_file_id: "",
             upload_file: null,
@@ -272,7 +172,6 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
             description: "",
             category_id: "",
             context_type: "",
-            template_body: "",
             create_mode: "FROM_DOCUMENT",
             document_file_id: "",
             upload_file: null,
@@ -286,7 +185,6 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
             description,
             category_id,
             context_type,
-            template_body,
             document_file_id,
             create_mode,
             upload_file,
@@ -295,14 +193,13 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
 
         const categoryIdNum = category_id ? Number(category_id) : null;
 
-        let op: Promise<unknown>;
+        let op: Promise<DocumentTemplate>;
         if (editingId != null) {
             const payload = {
                 name: name.trim(),
                 description: description.trim() || undefined,
                 context_type: context_type as DocumentTemplate["context_type"],
                 category_id: categoryIdNum,
-                template_body: template_body || "",
             };
             op = updateDocumentTemplate(editingId, payload);
         } else {
@@ -315,6 +212,8 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                         context_type as DocumentTemplate["context_type"],
                     category_id: categoryIdNum,
                     document_file_id: Number(document_file_id),
+                    // za šablone iz dokumenta generation_config zasad ostaje prazan;
+                    // može se kasnije dopuniti editovanjem
                 };
                 op = createDocumentTemplateFromDocument(payload);
             } else {
@@ -334,6 +233,23 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
         op.then(() => {
             this.closeDialog();
             this.load();
+        }).catch((error: any) => {
+            const responseData = error?.response?.data as
+                | { detail?: string; reason?: string }
+                | undefined;
+
+            let message =
+                responseData?.detail || "Greška pri čuvanju šablona dokumenta.";
+
+            if (responseData?.reason === "pdf_no_text") {
+                message =
+                    "PDF ne sadrži čitljiv tekst (verovatno je sken). Trenutno su podržani samo PDF-ovi sa tekstom.";
+            } else if (responseData?.reason === "pdf_read_error") {
+                message =
+                    "PDF fajl ne može da se obradi. Proveri da li je fajl ispravan ili probaj drugi format.";
+            }
+
+            enqueueSnackbar(message, { variant: "error" });
         });
     };
 
@@ -367,7 +283,6 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
             description,
             category_id,
             context_type,
-            template_body,
             document_file_id,
             create_mode,
             upload_file,
@@ -377,8 +292,6 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
         const filteredItems = filter_context_type
             ? items.filter((i) => i.context_type === filter_context_type)
             : items;
-
-        const availableFields: TemplateField[] = fieldsForContext(context_type);
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -475,34 +388,18 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                                 {tpl.description ?? "—"}
                                             </TableCell>
                                             <TableCell align="right">
-                                                <PermissionGate permission="documents.change_documenttemplate">
-                                                    <Button
-                                                        size="small"
-                                                        startIcon={<EditIcon />}
-                                                        onClick={() =>
-                                                            this.openEdit(tpl)
-                                                        }
-                                                        sx={{ mr: 1 }}
-                                                    >
-                                                        Izmeni
-                                                    </Button>
-                                                </PermissionGate>
-                                                <PermissionGate permission="documents.delete_documenttemplate">
-                                                    <Button
-                                                        size="small"
-                                                        color="error"
-                                                        startIcon={
-                                                            <DeleteIcon />
-                                                        }
-                                                        onClick={() =>
-                                                            this.confirmDelete(
-                                                                tpl.id,
-                                                            )
-                                                        }
-                                                    >
-                                                        Obriši
-                                                    </Button>
-                                                </PermissionGate>
+                                                <RowActions
+                                                    template={tpl}
+                                                    onEdit={() => this.openEdit(tpl)}
+                                                    onDelete={() => this.confirmDelete(tpl.id)}
+                                                    onTemplateUpdated={(updated) => {
+                                                        this.setState((prev) => ({
+                                                            items: prev.items.map((t) =>
+                                                                t.id === updated.id ? updated : t,
+                                                            ),
+                                                        }));
+                                                    }}
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -586,7 +483,7 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                 ))}
                             </Select>
                         </FormControl>
-                        {editingId == null ? (
+                        {editingId == null && (
                             <>
                                 <Box sx={{ mt: 2 }}>
                                     <Typography
@@ -690,134 +587,6 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                     </Box>
                                 )}
                             </>
-                        ) : (
-                            <>
-                                <TextField
-                                    margin="dense"
-                                    label="Telo šablona (Jinja2 / tekst)"
-                                    fullWidth
-                                    multiline
-                                    minRows={6}
-                                    value={template_body}
-                                    inputRef={this.templateBodyRef}
-                                    onChange={(e) =>
-                                        this.setState({
-                                            template_body: e.target.value,
-                                        })
-                                    }
-                                />
-                                <Box sx={{ mt: 1.5 }}>
-                                    <Typography
-                                        variant="subtitle2"
-                                        gutterBottom
-                                    >
-                                        Polja iz sistema (klikni da ubaciš u
-                                        tekst)
-                                    </Typography>
-                                    <Box
-                                        sx={{
-                                            display: "flex",
-                                            flexWrap: "wrap",
-                                            gap: 1,
-                                            mb: 1,
-                                        }}
-                                    >
-                                        {availableFields.map((f) => (
-                                            <Chip
-                                                key={f.key}
-                                                label={f.label}
-                                                size="small"
-                                                variant="outlined"
-                                                onClick={() => {
-                                                    const textarea =
-                                                        this.templateBodyRef
-                                                            .current;
-                                                    const current =
-                                                        this.state
-                                                            .template_body ??
-                                                        "";
-                                                    if (!textarea) {
-                                                        this.setState({
-                                                            template_body:
-                                                                (current
-                                                                    ? current +
-                                                                      " "
-                                                                    : "") +
-                                                                f.snippet,
-                                                        });
-                                                        return;
-                                                    }
-                                                    const start =
-                                                        textarea.selectionStart ??
-                                                        current.length;
-                                                    const end =
-                                                        textarea.selectionEnd ??
-                                                        start;
-                                                    const before =
-                                                        current.slice(0, start);
-                                                    const after =
-                                                        current.slice(end);
-                                                    const next = `${before}${f.snippet}${after}`;
-                                                    this.setState(
-                                                        { template_body: next },
-                                                        () => {
-                                                            const pos =
-                                                                start +
-                                                                f.snippet
-                                                                    .length;
-                                                            textarea.focus();
-                                                            textarea.setSelectionRange(
-                                                                pos,
-                                                                pos,
-                                                            );
-                                                        },
-                                                    );
-                                                }}
-                                            />
-                                        ))}
-                                    </Box>
-                                </Box>
-                                {template_body.trim() && (
-                                    <Box sx={{ mt: 2 }}>
-                                        <Typography
-                                            variant="subtitle2"
-                                            gutterBottom
-                                        >
-                                            Detektovani placeholder-i (Jinja2)
-                                        </Typography>
-                                        <List dense>
-                                            {Array.from(
-                                                new Set(
-                                                    Array.from(
-                                                        template_body.matchAll(
-                                                            /\{\{\s*([^}]+?)\s*\}\}/g,
-                                                        ),
-                                                    ).map((m) => m[1].trim()),
-                                                ),
-                                            ).map((ph) => (
-                                                <ListItem
-                                                    key={ph}
-                                                    sx={{ py: 0.25 }}
-                                                >
-                                                    <ListItemText
-                                                        primary={`{{ ${ph} }}`}
-                                                    />
-                                                </ListItem>
-                                            ))}
-                                        </List>
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                        >
-                                            Ovo je samo pregled placeholder-a u
-                                            tekstu. Mapiranje na polja iz
-                                            sistema rešavaš kroz sam Jinja2
-                                            izraz (npr. &#123;&#123;
-                                            employee.first_name &#125;&#125;).
-                                        </Typography>
-                                    </Box>
-                                )}
-                            </>
                         )}
                     </DialogContent>
                     <DialogActions>
@@ -851,6 +620,91 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
             </Box>
         );
     }
+}
+
+function RowActions({
+    template,
+    onEdit,
+    onDelete,
+    onTemplateUpdated,
+}: {
+    template: DocumentTemplate;
+    onEdit: () => void;
+    onDelete: () => void;
+    onTemplateUpdated: (updated: DocumentTemplate) => void;
+}) {
+    const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+    const [structureOpen, setStructureOpen] = useState(false);
+
+    const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
+        setMenuAnchor(event.currentTarget);
+    };
+
+    const handleCloseMenu = () => {
+        setMenuAnchor(null);
+    };
+
+    return (
+        <>
+            <Button
+                size="small"
+                onClick={handleOpenMenu}
+                startIcon={<MoreVertIcon />}
+            >
+                Akcije
+            </Button>
+            <Menu
+                anchorEl={menuAnchor}
+                open={Boolean(menuAnchor)}
+                onClose={handleCloseMenu}
+            >
+                <PermissionGate permission="documents.change_documenttemplate">
+                    <MenuItem
+                        onClick={() => {
+                            handleCloseMenu();
+                            onEdit();
+                        }}
+                    >
+                        <EditIcon fontSize="small" style={{ marginRight: 8 }} />
+                        Izmeni
+                    </MenuItem>
+                    {template.template_file && (
+                        <MenuItem
+                            onClick={() => {
+                                handleCloseMenu();
+                                setStructureOpen(true);
+                            }}
+                        >
+                            <BuildIcon fontSize="small" style={{ marginRight: 8 }} />
+                            Uredi polja
+                        </MenuItem>
+                    )}
+                </PermissionGate>
+                <PermissionGate permission="documents.delete_documenttemplate">
+                    <MenuItem
+                        onClick={() => {
+                            handleCloseMenu();
+                            onDelete();
+                        }}
+                    >
+                        <DeleteIcon fontSize="small" style={{ marginRight: 8 }} />
+                        Obriši
+                    </MenuItem>
+                </PermissionGate>
+            </Menu>
+            {structureOpen && (
+                <TemplateStructureEditorDialog
+                    open={structureOpen}
+                    template={template}
+                    onClose={() => setStructureOpen(false)}
+                    onSaved={(updated) => {
+                        onTemplateUpdated(updated);
+                        setStructureOpen(false);
+                    }}
+                />
+            )}
+        </>
+    );
 }
 
 const Connected = connect<

@@ -40,13 +40,11 @@ interface StateProps {
 interface DispatchProps {
     fetchDocumentCategories: () => void;
     createDocumentCategory: (p: {
-        code: string;
         name: string;
         description?: string;
     }) => void;
     updateDocumentCategory: (p: {
         id: number;
-        code: string;
         name: string;
         description?: string;
     }) => void;
@@ -59,7 +57,6 @@ type Props = StateProps & DispatchProps;
 interface State {
     dialogOpen: boolean;
     editingId: number | null;
-    code: string;
     name: string;
     description: string;
     deleteConfirmId: number | null;
@@ -69,7 +66,6 @@ class DocumentCategoriesListPage extends Component<Props, State> {
     state: State = {
         dialogOpen: false,
         editingId: null,
-        code: "",
         name: "",
         description: "",
         deleteConfirmId: null,
@@ -84,7 +80,6 @@ class DocumentCategoriesListPage extends Component<Props, State> {
         this.setState({
             dialogOpen: true,
             editingId: null,
-            code: "",
             name: "",
             description: "",
         });
@@ -94,7 +89,6 @@ class DocumentCategoriesListPage extends Component<Props, State> {
         this.setState({
             dialogOpen: true,
             editingId: Number(cat.id),
-            code: cat.code,
             name: cat.name,
             description: cat.description ?? "",
         });
@@ -104,25 +98,22 @@ class DocumentCategoriesListPage extends Component<Props, State> {
         this.setState({
             dialogOpen: false,
             editingId: null,
-            code: "",
             name: "",
             description: "",
         });
     };
 
     handleSave = (): void => {
-        const { code, name, description, editingId } = this.state;
-        if (!code.trim() || !name.trim()) return;
+        const { name, description, editingId } = this.state;
+        if (!name.trim()) return;
         if (editingId != null) {
             this.props.updateDocumentCategory({
                 id: editingId,
-                code: code.trim(),
                 name: name.trim(),
                 description: description.trim() || undefined,
             });
         } else {
             this.props.createDocumentCategory({
-                code: code.trim(),
                 name: name.trim(),
                 description: description.trim() || undefined,
             });
@@ -152,7 +143,6 @@ class DocumentCategoriesListPage extends Component<Props, State> {
         const {
             dialogOpen,
             editingId,
-            code,
             name,
             description,
             deleteConfirmId,
@@ -182,7 +172,6 @@ class DocumentCategoriesListPage extends Component<Props, State> {
                     <Table sx={{ minWidth: 400 }}>
                         <TableHead>
                             <TableRow>
-                                <TableCell>Šifra</TableCell>
                                 <TableCell>Naziv</TableCell>
                                 <TableCell>Opis</TableCell>
                                 <TableCell align="right">Akcije</TableCell>
@@ -191,7 +180,6 @@ class DocumentCategoriesListPage extends Component<Props, State> {
                         <TableBody>
                             {list.map((cat) => (
                                 <TableRow key={cat.id}>
-                                    <TableCell>{cat.code}</TableCell>
                                     <TableCell>{cat.name}</TableCell>
                                     <TableCell>
                                         {cat.description ?? "—"}
@@ -243,16 +231,6 @@ class DocumentCategoriesListPage extends Component<Props, State> {
                         <TextField
                             autoFocus
                             margin="dense"
-                            label="Šifra"
-                            fullWidth
-                            value={code}
-                            onChange={(e) =>
-                                this.setState({ code: e.target.value })
-                            }
-                            disabled={editingId != null}
-                        />
-                        <TextField
-                            margin="dense"
                             label="Naziv"
                             fullWidth
                             value={name}
@@ -277,7 +255,7 @@ class DocumentCategoriesListPage extends Component<Props, State> {
                         <Button
                             onClick={this.handleSave}
                             variant="contained"
-                            disabled={!code.trim() || !name.trim()}
+                            disabled={!name.trim()}
                         >
                             {editingId != null ? "Sačuvaj" : "Dodaj"}
                         </Button>

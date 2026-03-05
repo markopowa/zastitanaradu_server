@@ -1,10 +1,10 @@
-import re
-import docx
 from pathlib import Path
 
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from processes.tasks import logger
 
 from .models import DocumentAIFormat, DocumentCategory, DocumentFile, DocumentTemplate
 from .serializers import (
@@ -12,6 +12,16 @@ from .serializers import (
     DocumentCategorySerializer,
     DocumentFileSerializer,
     DocumentTemplateSerializer,
+)
+from .utils import (
+    PdfNoTextError,
+    PdfReadError,
+    TemplateUnsupportedError,
+    build_template_body_from_document_path,
+    build_template_body_from_uploaded_file,
+    build_template_preview_html,
+    parse_docx_structure,
+    parse_pdf_structure,
 )
 
 
@@ -37,6 +47,44 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         "category").all().order_by("id")
     serializer_class = DocumentTemplateSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+
+    @action(detail=True, methods=["get"], url_path="structure")
+    def structure(self, request, *args, **kwargs):
+        instance: DocumentTemplate = self.get_object()
+        file_field = getattr(instance, "template_file", None)
+        if not file_field:
+            return Response({"detail": "Template has no file."}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            path = Path(file_field.path)
+        except Exception:
+            return Response({"detail": "Could not resolve file path."}, status=status.HTTP_400_BAD_REQUEST)
+        suffix = path.suffix.lower()
+        if suffix not in {".docx", ".pdf"}:
+            return Response(
+                {"detail": "Structural editing is only supported for .docx and .pdf files."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            if suffix == ".docx":
+                blocks = parse_docx_structure(path)
+            else:
+                blocks = parse_pdf_structure(path)
+        except Exception as exc:
+            return Response({"detail": f"Failed to parse document: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        return Response(blocks)
+
+    @action(detail=True, methods=["get"], url_path="preview-html")
+    def preview_html(self, request, *args, **kwargs):
+        instance: DocumentTemplate = self.get_object()
+        file_field = getattr(instance, "template_file", None)
+        if not file_field:
+            return Response({"html": ""})
+        try:
+            path = Path(file_field.path)
+        except Exception:
+            return Response({"html": ""})
+        html = build_template_preview_html(path)
+        return Response({"html": html})
 
     @action(detail=False, methods=["post"], url_path="from-document")
     def from_document(self, request, *args, **kwargs):
@@ -64,47 +112,36 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             )
 
         path = Path(file_field.path)
-        suffix = path.suffix.lower()
-        body = ""
 
-        underline_pattern = re.compile(r"_{3,}")
-
-        if suffix == ".docx":
-            doc = docx.Document(path)
-
-            lines: list[str] = []
-            counter = 1
-
-            for para in doc.paragraphs:
-                text = para.text or ""
-
-                def repl(match: re.Match[str]) -> str:
-                    nonlocal counter
-                    token = f"{{{{ field_{counter} }}}}"
-                    counter += 1
-                    return token
-
-                converted = underline_pattern.sub(repl, text)
-                lines.append(converted)
-
-            body = "\n".join(lines)
-        elif suffix in {".txt", ".jinja", ".jinja2"}:
-            with open(path, "r", encoding="utf-8", errors="ignore") as f:
-                raw = f.read()
-            counter = 1
-
-            def repl(match: re.Match[str]) -> str:
-                nonlocal counter
-                token = f"{{{{ field_{counter} }}}}"
-                counter += 1
-                return token
-
-            body = underline_pattern.sub(repl, raw)
-        else:
+        try:
+            body = build_template_body_from_document_path(path)
+        except PdfReadError:
+            return Response(
+                {
+                    "detail": "PDF file could not be processed.",
+                    "reason": "pdf_read_error",
+                    # TODO: For image-based or unsupported PDFs use AWS Textract/OCR.
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except PdfNoTextError:
+            return Response(
+                {
+                    "detail": (
+                        "PDF does not contain readable text and cannot be "
+                        "used to generate a template. Image-based PDFs are "
+                        "not supported yet."
+                    ),
+                    "reason": "pdf_no_text",
+                    # TODO: For image-based PDFs add AWS Textract/OCR support.
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except TemplateUnsupportedError as exc:
             return Response(
                 {
                     "detail": "Unsupported file type for template generation.",
-                    "extension": suffix,
+                    "extension": exc.extension,
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -124,7 +161,6 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
 
         file_field = getattr(document_file, "file", None)
         if file_field:
-            # Save a copy of the original file as the template file
             instance.template_file.save(
                 Path(file_field.name).name, file_field.file, save=True)
 
@@ -147,44 +183,35 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         description = request.data.get("description") or ""
         category_id = request.data.get("category_id")
 
-        suffix = Path(uploaded_file.name).suffix.lower()
-
-        underline_pattern = re.compile(r"_{3,}")
-        body = ""
-
-        if suffix == ".docx":
-            # python-docx can work directly with the uploaded file object
-            doc = docx.Document(uploaded_file)
-            lines: list[str] = []
-            counter = 1
-
-            for para in doc.paragraphs:
-                text = para.text or ""
-
-                def repl(match: re.Match[str]) -> str:
-                    nonlocal counter
-                    token = f"{{{{ field_{counter} }}}}"
-                    counter += 1
-                    return token
-
-                converted = underline_pattern.sub(repl, text)
-                lines.append(converted)
-
-            body = "\n".join(lines)
-        elif suffix in {".txt", ".jinja", ".jinja2"}:
-            raw_bytes = uploaded_file.read()
-            raw = raw_bytes.decode("utf-8", errors="ignore")
-            counter = 1
-
-            def repl(match: re.Match[str]) -> str:
-                nonlocal counter
-                token = f"{{{{ field_{counter} }}}}"
-                counter += 1
-                return token
-
-            body = underline_pattern.sub(repl, raw)
-        else:
-            # For other file types we still accept the upload but do not attempt to build template_body
+        try:
+            body = build_template_body_from_uploaded_file(uploaded_file)
+        except PdfReadError as exc:
+            logger.error(f"PDF file could not be processed: {exc}", exc_info=True)
+            print(exc)
+            return Response(
+                {
+                    "detail": "PDF file could not be processed.",
+                    "reason": "pdf_read_error",
+                    # TODO: For image-based or unsupported PDFs use AWS Textract/OCR.
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except PdfNoTextError as exc:
+            logger.error(f"PDF file could not be processed: {exc}", exc_info=True)
+            print(exc)
+            return Response(
+                {
+                    "detail": (
+                        "PDF does not contain readable text and cannot be "
+                        "used to generate a template. Image-based PDFs are "
+                        "not supported yet."
+                    ),
+                    "reason": "pdf_no_text",
+                    # TODO: For image-based PDFs add AWS Textract/OCR support.
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        except TemplateUnsupportedError:
             body = request.data.get("template_body") or ""
 
         payload = {
@@ -198,7 +225,6 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=payload)
         serializer.is_valid(raise_exception=True)
         instance: DocumentTemplate = serializer.save()
-        # Reset file pointer before saving to FileField storage
         try:
             uploaded_file.seek(0)
         except (AttributeError, OSError):

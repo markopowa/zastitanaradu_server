@@ -1,4 +1,4 @@
-import { Component, createRef } from "react";
+import { Component, createRef, useState, type FC } from "react";
 import { connect } from "react-redux";
 import {
     Box,
@@ -20,13 +20,15 @@ import {
     Select,
     MenuItem,
     Typography,
+    InputAdornment,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import { PermissionGate } from "../components/PermissionGate";
-
+import { DateToString, StringToDate, formatDateTimeISO } from "../utils/date";
 import type { RootState, AppDispatch } from "../store";
 import {
     fetchDocuments,
@@ -36,21 +38,6 @@ import {
 } from "../store/documentsSlice";
 import type { DocumentFile, DocumentCategory } from "../types/documents";
 import { setLastPath } from "../store/locationSlice";
-
-const pad = (n: number) => String(n).padStart(2, "0");
-
-const formatDateTimeISO = (value?: string | null): string => {
-    if (!value) return "—";
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return value;
-    const y = d.getFullYear(),
-        m = d.getMonth() + 1,
-        day = d.getDate();
-    const h = d.getHours(),
-        min = d.getMinutes(),
-        s = d.getSeconds();
-    return `${y}-${pad(m)}-${pad(day)} ${pad(h)}:${pad(min)}:${pad(s)}`;
-};
 
 interface StateProps {
     documents: DocumentFile[];
@@ -97,6 +84,191 @@ interface State {
     language: string;
 }
 
+interface DateTextFieldWithPickerProps {
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+}
+
+const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
+    label,
+    value,
+    onChange,
+}) => {
+    const [open, setOpen] = useState(false);
+
+    const parseDisplayDate = (v: string): Date | null => StringToDate(v);
+
+    const [currentMonth, setCurrentMonth] = useState<Date>(() => {
+        const parsed = value ? parseDisplayDate(value) : null;
+        return parsed ?? new Date();
+    });
+
+    const selectedDate = value ? parseDisplayDate(value) : null;
+
+    const handleOpen = (): void => {
+        const parsed = value ? parseDisplayDate(value) : null;
+        setCurrentMonth(parsed ?? new Date());
+        setOpen(true);
+    };
+
+    const handleClose = (): void => setOpen(false);
+
+    const handleMonthChange = (delta: number): void => {
+        setCurrentMonth((prev) => {
+            const year = prev.getFullYear();
+            const month = prev.getMonth();
+            return new Date(year, month + delta, 1);
+        });
+    };
+
+    const handleSelectDay = (day: number): void => {
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth() + 1;
+        const d = new Date(year, month - 1, day);
+        onChange(DateToString(d));
+        setOpen(false);
+    };
+
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const startOfMonth = new Date(year, month, 1);
+    const dayOfWeek = (startOfMonth.getDay() + 6) % 7; // ponedeljak = 0
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    const weeks: (number | null)[][] = [];
+    let currentDay = 1 - dayOfWeek;
+    for (let w = 0; w < 6; w += 1) {
+        const week: (number | null)[] = [];
+        for (let d = 0; d < 7; d += 1) {
+            if (currentDay < 1 || currentDay > daysInMonth) {
+                week.push(null);
+            } else {
+                week.push(currentDay);
+            }
+            currentDay += 1;
+        }
+        weeks.push(week);
+    }
+
+    const selectedDay =
+        selectedDate?.getDate() === undefined ? null : selectedDate.getDate();
+    const selectedMonth =
+        selectedDate?.getMonth() === undefined ? null : selectedDate.getMonth();
+    const selectedYear =
+        selectedDate?.getFullYear() === undefined
+            ? null
+            : selectedDate.getFullYear();
+
+    const monthLabel = currentMonth.toLocaleDateString("sr-RS", {
+        month: "long",
+        year: "numeric",
+    });
+
+    const weekdayLabels = ["Po", "Ut", "Sr", "Če", "Pe", "Su", "Ne"];
+
+    return (
+        <>
+            <TextField
+                margin="dense"
+                label={label}
+                fullWidth
+                value={value}
+                onClick={handleOpen}
+                InputLabelProps={{ shrink: true }}
+                InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                        <InputAdornment position="end">
+                            <IconButton size="small" onClick={handleOpen}>
+                                <CalendarMonthIcon fontSize="small" />
+                            </IconButton>
+                        </InputAdornment>
+                    ),
+                }}
+            />
+            <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
+                <DialogTitle
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        pb: 1,
+                    }}
+                >
+                    <IconButton
+                        size="small"
+                        onClick={() => handleMonthChange(-1)}
+                    >
+                        {"<"}
+                    </IconButton>
+                    <Typography variant="subtitle1" component="span">
+                        {monthLabel}
+                    </Typography>
+                    <IconButton
+                        size="small"
+                        onClick={() => handleMonthChange(1)}
+                    >
+                        {">"}
+                    </IconButton>
+                </DialogTitle>
+                <DialogContent>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(7, 1fr)",
+                            mb: 1,
+                        }}
+                    >
+                        {weekdayLabels.map((d) => (
+                            <Typography
+                                key={d}
+                                variant="caption"
+                                align="center"
+                                sx={{ fontWeight: 600 }}
+                            >
+                                {d}
+                            </Typography>
+                        ))}
+                    </Box>
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: "repeat(7, 1fr)",
+                            rowGap: 0.5,
+                        }}
+                    >
+                        {weeks.flat().map((day, idx) =>
+                            day == null ? (
+                                <Box key={idx} />
+                            ) : (
+                                <Button
+                                    key={idx}
+                                    size="small"
+                                    variant={
+                                        selectedDay === day &&
+                                        selectedMonth === month &&
+                                        selectedYear === year
+                                            ? "contained"
+                                            : "text"
+                                    }
+                                    onClick={() => handleSelectDay(day)}
+                                    sx={{ minWidth: 0, p: 0.5 }}
+                                >
+                                    {day}
+                                </Button>
+                            ),
+                        )}
+                    </Box>
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose}>Zatvori</Button>
+                </DialogActions>
+            </Dialog>
+        </>
+    );
+};
+
 class DocumentsListPage extends Component<Props, State> {
     fileInputRef = createRef<HTMLInputElement>();
 
@@ -142,8 +314,12 @@ class DocumentsListPage extends Component<Props, State> {
                     : ((doc as { category_id?: number }).category_id ?? ""),
             title: doc.title,
             file: null,
-            valid_from: doc.valid_from ?? "",
-            valid_until: doc.valid_until ?? "",
+            valid_from: doc.valid_from
+                ? DateToString(new Date(doc.valid_from))
+                : "",
+            valid_until: doc.valid_until
+                ? DateToString(new Date(doc.valid_until))
+                : "",
             version: doc.version ?? "",
             language: doc.language ?? "",
         });
@@ -176,14 +352,24 @@ class DocumentsListPage extends Component<Props, State> {
         } = this.state;
         if (!title.trim()) return;
         const catId = category_id === "" ? undefined : Number(category_id);
+        const toIso = (val: string): string | undefined => {
+            const d = StringToDate(val);
+            if (!d) return undefined;
+            const y = d.getFullYear();
+            const m = (d.getMonth() + 1).toString().padStart(2, "0");
+            const day = d.getDate().toString().padStart(2, "0");
+            return `${y}-${m}-${day}`;
+        };
+        const validFromIso = toIso(valid_from);
+        const validUntilIso = toIso(valid_until);
         if (editingDoc != null) {
             this.props.updateDocument({
                 id: editingDoc.id,
                 category_id: catId,
                 title: title.trim(),
                 file: file ?? undefined,
-                valid_from: valid_from || undefined,
-                valid_until: valid_until || undefined,
+                valid_from: validFromIso,
+                valid_until: validUntilIso,
                 version: version || undefined,
                 language: language || undefined,
             });
@@ -193,8 +379,8 @@ class DocumentsListPage extends Component<Props, State> {
                 category_id: catId,
                 title: title.trim(),
                 file,
-                valid_from: valid_from || undefined,
-                valid_until: valid_until || undefined,
+                valid_from: validFromIso,
+                valid_until: validUntilIso,
                 version: version || undefined,
                 language: language || undefined,
             });
@@ -418,26 +604,18 @@ class DocumentsListPage extends Component<Props, State> {
                                 </Typography>
                             )}
                         </Box>
-                        <TextField
-                            margin="dense"
+                        <DateTextFieldWithPicker
                             label="Važi od (datum)"
-                            fullWidth
-                            type="date"
-                            InputLabelProps={{ shrink: true }}
                             value={valid_from}
-                            onChange={(e) =>
-                                this.setState({ valid_from: e.target.value })
+                            onChange={(newValue) =>
+                                this.setState({ valid_from: newValue })
                             }
                         />
-                        <TextField
-                            margin="dense"
+                        <DateTextFieldWithPicker
                             label="Važi do (datum)"
-                            fullWidth
-                            type="date"
-                            InputLabelProps={{ shrink: true }}
                             value={valid_until}
-                            onChange={(e) =>
-                                this.setState({ valid_until: e.target.value })
+                            onChange={(newValue) =>
+                                this.setState({ valid_until: newValue })
                             }
                         />
                         <TextField

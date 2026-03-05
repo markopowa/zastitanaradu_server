@@ -1,24 +1,478 @@
-from .models import ProcessBinding
+import io
+import logging
+
+import docx
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from core.email_sender import get_email_sender
+from jinja2 import Template
+
+from documents.models import DocumentCategory, DocumentFile
+
+from .models import (
+    ProcessBinding,
+    ProcessRun,
+    ProcessRunDocument,
+    ProcessTemplate,
+)
+
+logger = logging.getLogger(__name__)
+User = get_user_model()
 
 
 def binding_subject_snapshot(binding: ProcessBinding) -> dict:
     if binding.employee_id:
         e = binding.employee
-        return {
+        client = getattr(e, "client_company", None)
+        snapshot: dict = {
             "kind": "EMPLOYEE",
             "id": e.id,
             "name": f"{e.first_name} {e.last_name}".strip(),
             "email": e.email or "",
+            "employee": {
+                "id": e.id,
+                "first_name": e.first_name,
+                "last_name": e.last_name,
+                "email": e.email or "",
+                "org_unit": e.org_unit or "",
+                "position": e.position or "",
+                "father_name": getattr(e, "father_name", "") or "",
+                "jmbg": getattr(e, "jmbg", "") or "",
+                "date_of_birth": (
+                    e.date_of_birth.isoformat() if getattr(e, "date_of_birth", None) else ""
+                ),
+                "place_of_birth": getattr(e, "place_of_birth", "") or "",
+                "occupation": getattr(e, "occupation", "") or "",
+                "high_risk_position_name": getattr(
+                    e, "high_risk_position_name", ""
+                )
+                or "",
+            },
         }
+        if client is not None:
+            snapshot["client"] = {
+                "id": client.id,
+                "name": client.name,
+                "pib": client.pib,
+                "address": client.address or "",
+                "phone": client.phone or "",
+                "email": client.email or "",
+                "website": client.website or "",
+            }
+        return snapshot
+
     if binding.equipment_item_id:
         eq = binding.equipment_item
-        return {
+        client = getattr(eq, "client_company", None)
+        snapshot = {
             "kind": "EQUIPMENT",
             "id": eq.id,
             "name": eq.name,
             "inventory_number": eq.inventory_number or "",
+            "equipment": {
+                "id": eq.id,
+                "name": eq.name,
+                "category": eq.category or "",
+                "inventory_number": eq.inventory_number or "",
+                "location": eq.location or "",
+            },
         }
+        if client is not None:
+            snapshot["client"] = {
+                "id": client.id,
+                "name": client.name,
+                "pib": client.pib,
+                "address": client.address or "",
+                "phone": client.phone or "",
+                "email": client.email or "",
+                "website": client.website or "",
+            }
+        return snapshot
+
     if binding.client_company_id:
         c = binding.client_company
-        return {"kind": "CLIENT_COMPANY", "id": c.id, "name": c.name, "email": c.email or ""}
+        return {
+            "kind": "CLIENT_COMPANY",
+            "id": c.id,
+            "name": c.name,
+            "email": c.email or "",
+            "client": {
+                "id": c.id,
+                "name": c.name,
+                "pib": c.pib,
+                "registration_number": c.registration_number or "",
+                "address": c.address or "",
+                "phone": c.phone or "",
+                "email": c.email or "",
+                "website": c.website or "",
+            },
+        }
+
     return {"kind": binding.subject_kind}
+
+
+def _build_document_context(run: ProcessRun, snapshot: dict) -> dict:
+    ctx = dict(snapshot)
+    ctx["scheduled_for"] = str(run.scheduled_for) if run.scheduled_for else ""
+    ctx["performed_at"] = str(run.performed_at) if run.performed_at else ""
+    ctx["valid_until"] = str(run.valid_until) if run.valid_until else ""
+    ctx["process_type_name"] = run.process_type.name if run.process_type_id else ""
+    ctx["run_id"] = run.id
+    snapshot_values = [
+        v for k, v in snapshot.items() if k != "kind" and v is not None
+    ]
+    for i, val in enumerate(snapshot_values, start=1):
+        ctx[f"field_{i}"] = str(val)
+    return ctx
+
+
+def _render_template_body(body: str, context: dict) -> str:
+    if not body.strip():
+        return ""
+    t = Template(body)
+    return t.render(**{k: (v if v is not None else "") for k, v in context.items()})
+
+
+def _fill_docx_paragraphs(doc: docx.Document, context: dict) -> None:
+    for para in doc.paragraphs:
+        if not para.text:
+            continue
+        try:
+            rendered = Template(para.text).render(
+                **{k: (v if v is not None else "") for k, v in context.items()}
+            )
+            if rendered != para.text:
+                para.clear()
+                para.add_run(rendered)
+        except Exception:
+            pass
+
+
+def _render_cell_text(cell_text: str, context: dict) -> str:
+    try:
+        t = Template(cell_text)
+        return t.render(**{k: (v if v is not None else "") for k, v in context.items()})
+    except Exception:
+        return cell_text
+
+
+def _get_tabular_rows(run: ProcessRun, snapshot: dict, config: dict, base_context: dict) -> list[dict]:
+    candidates = []
+    result_data = getattr(run, "result_data", None)
+    if isinstance(result_data, dict):
+        for key in ("tabular_rows", "rows"):
+            value = result_data.get(key)
+            if isinstance(value, list):
+                candidates = value
+                break
+    if not candidates and isinstance(snapshot, dict):
+        for key in ("tabular_rows", "rows"):
+            value = snapshot.get(key)
+            if isinstance(value, list):
+                candidates = value
+                break
+    if candidates:
+        return candidates
+    return [{}]
+
+
+def _generate_tabular_docx(
+    run: ProcessRun,
+    doc_template,
+    snapshot: dict,
+    config: dict,
+) -> bytes:
+    context = _build_document_context(run, snapshot)
+    with doc_template.template_file.open("rb") as fh:
+        doc = docx.Document(io.BytesIO(fh.read()))
+    _fill_docx_paragraphs(doc, context)
+    table_index = int(config.get("table_index", 0))
+    header_rows = int(config.get("header_rows", 1))
+    try:
+        table = doc.tables[table_index]
+    except IndexError:
+        buf = io.BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        return buf.read()
+    if len(table.rows) <= header_rows:
+        buf = io.BytesIO()
+        doc.save(buf)
+        buf.seek(0)
+        return buf.read()
+    template_row = table.rows[header_rows]
+    template_cell_texts = [cell.text or "" for cell in template_row.cells]
+    rows = _get_tabular_rows(run, snapshot, config, context)
+    for i, row_data in enumerate(rows, start=1):
+        if i == 1:
+            row = template_row
+        else:
+            row = table.add_row()
+        row_context = dict(context)
+        if isinstance(row_data, dict):
+            row_context.update(row_data)
+        row_context["row_index"] = i
+        for col_index, cell in enumerate(row.cells):
+            if col_index < len(template_cell_texts):
+                raw_text = template_cell_texts[col_index]
+            else:
+                raw_text = ""
+            rendered = _render_cell_text(raw_text, row_context)
+            cell.text = rendered
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.read()
+
+
+def _text_to_docx_bytes(text: str) -> bytes:
+    doc = docx.Document()
+    for line in (text or "").splitlines():
+        doc.add_paragraph(line)
+    if not (text or "").strip():
+        doc.add_paragraph("")
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.read()
+
+
+def _get_system_user():
+    return User.objects.filter(is_superuser=True).first()
+
+
+def _generate_document_for_run(
+    run: ProcessRun,
+    template: ProcessTemplate,
+    snapshot: dict,
+) -> None:
+    doc_template = template.document_template
+    if not doc_template:
+        return
+
+    system_user = _get_system_user()
+    if not system_user:
+        logger.warning(
+            "Cannot generate document for run id=%s: no system user (superuser) found",
+            run.id,
+        )
+        return
+
+    category = doc_template.category
+    if not category:
+        category = DocumentCategory.objects.first()
+    if not category:
+        logger.warning(
+            "Cannot generate document for run id=%s: no document category (template has no category and none in DB)",
+            run.id,
+        )
+        return
+
+    context = _build_document_context(run, snapshot)
+    content_bytes: bytes | None = None
+    ext = ".docx"
+    title_suffix = f"Run #{run.id}"
+
+    generation_config = getattr(doc_template, "generation_config", None) or {}
+    mode = generation_config.get("mode") or "SIMPLE"
+
+    if doc_template.template_file:
+        name = getattr(doc_template.template_file, "name", "") or ""
+        if name and name.lower().endswith(".docx"):
+            if mode == "DOCX_TABLE_REPEAT_ROW":
+                try:
+                    content_bytes = _generate_tabular_docx(
+                        run,
+                        doc_template,
+                        snapshot,
+                        generation_config,
+                    )
+                except Exception as e:
+                    logger.warning(
+                        "Failed to generate tabular docx template for run id=%s: %s",
+                        run.id,
+                        e,
+                    )
+            elif mode == "STRUCTURAL":
+                try:
+                    from documents.utils import fill_docx_from_placeholders
+                    placeholders = generation_config.get("placeholders") or []
+                    with doc_template.template_file.open("rb") as fh:
+                        doc = docx.Document(io.BytesIO(fh.read()))
+                    fill_docx_from_placeholders(doc, placeholders, context)
+                    buf = io.BytesIO()
+                    doc.save(buf)
+                    buf.seek(0)
+                    content_bytes = buf.read()
+                except Exception as e:
+                    logger.warning(
+                        "Failed to generate structural docx for run id=%s: %s",
+                        run.id,
+                        e,
+                    )
+            if content_bytes is None:
+                try:
+                    with doc_template.template_file.open("rb") as fh:
+                        doc = docx.Document(io.BytesIO(fh.read()))
+                    _fill_docx_paragraphs(doc, context)
+                    buf = io.BytesIO()
+                    doc.save(buf)
+                    buf.seek(0)
+                    content_bytes = buf.read()
+                except Exception as e:
+                    logger.warning(
+                        "Failed to fill docx template for run id=%s: %s",
+                        run.id,
+                        e,
+                    )
+                    if doc_template.template_body:
+                        rendered = _render_template_body(
+                            doc_template.template_body,
+                            context,
+                        )
+                        content_bytes = _text_to_docx_bytes(rendered)
+        elif doc_template.template_body:
+            rendered = _render_template_body(
+                doc_template.template_body,
+                context,
+            )
+            content_bytes = _text_to_docx_bytes(rendered)
+    elif doc_template.template_body:
+        rendered = _render_template_body(doc_template.template_body, context)
+        content_bytes = _text_to_docx_bytes(rendered)
+
+    if not content_bytes:
+        logger.warning(
+            "No content for document generation run id=%s template id=%s (missing template_body and valid template_file)",
+            run.id,
+            template.id,
+        )
+        return
+
+    title = f"{doc_template.name} – {title_suffix}"
+    doc_file = DocumentFile(
+        category=category,
+        title=title,
+        uploaded_by=system_user,
+        valid_from=run.scheduled_for,
+        valid_until=run.valid_until,
+    )
+    doc_file.file.save(
+        f"process_run_{run.id}_{doc_template.id}{ext}",
+        ContentFile(content_bytes),
+        save=True,
+    )
+    doc_file.save()
+
+    ProcessRunDocument.objects.create(
+        process_run=run,
+        document_file=doc_file,
+        usage_kind=ProcessRunDocument.USAGE_REPORT,
+    )
+    logger.info(
+        "Generated document id=%s for run id=%s from template id=%s",
+        doc_file.id,
+        run.id,
+        template.id,
+    )
+
+
+def _resolve_email_recipient(
+    template: ProcessTemplate,
+    binding: ProcessBinding,
+) -> str | None:
+    if template.email_to_kind == ProcessTemplate.EMAIL_TO_CUSTOM:
+        return template.custom_email_recipient or None
+    if (
+        template.email_to_kind == ProcessTemplate.EMAIL_TO_CLIENT_MAIN
+        and binding.client_company_id
+    ):
+        return binding.client_company.email or None
+    if (
+        template.email_to_kind == ProcessTemplate.EMAIL_TO_EMPLOYEE
+        and binding.employee_id
+    ):
+        return binding.employee.email or None
+    return None
+
+
+def _send_email_for_template(
+    template: ProcessTemplate,
+    binding: ProcessBinding,
+    snapshot: dict,
+    run: ProcessRun | None = None,
+) -> None:
+    recipient = _resolve_email_recipient(template, binding)
+    if not recipient:
+        logger.warning(
+            "No email recipient for ProcessTemplate id=%s",
+            template.id,
+        )
+        return
+
+    subject = template.email_subject_template or "Process notification"
+    body = template.email_body_template or ""
+    if run is not None:
+        context = _build_document_context(run, snapshot)
+        subject = _render_template_body(subject, context)
+        body = _render_template_body(body, context)
+    try:
+        sent = get_email_sender().send(
+            recipients=[recipient],
+            subject=subject,
+            body=body,
+            fail_silently=True,
+        )
+        if not sent:
+            logger.warning(
+                "Email send returned False for ProcessTemplate id=%s",
+                template.id,
+            )
+    except Exception as e:
+        logger.exception(
+            "Failed to send email for ProcessTemplate id=%s: %s",
+            template.id,
+            e,
+        )
+
+
+def execute_template_actions(
+    trigger: str,
+    run: ProcessRun,
+    binding: ProcessBinding,
+    snapshot: dict,
+    template: ProcessTemplate,
+) -> None:
+    logger.info(
+        "%s trigger: run_id=%s process_type=%s template_id=%s template=%s",
+        trigger,
+        run.id,
+        run.process_type_id,
+        template.id,
+        template,
+    )
+
+    if template.generate_document and template.document_template_id:
+        try:
+            _generate_document_for_run(run, template, snapshot)
+        except Exception as e:
+            logger.exception(
+                "Failed to generate document in %s for run id=%s template id=%s: %s",
+                trigger,
+                run.id,
+                template.id,
+                e,
+            )
+
+    if template.send_email:
+        try:
+            _send_email_for_template(template, binding, snapshot, run=run)
+        except Exception as e:
+            logger.exception(
+                "Failed to send email in %s for run id=%s template id=%s: %s",
+                trigger,
+                run.id,
+                template.id,
+                e,
+            )

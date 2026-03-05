@@ -13,6 +13,7 @@ class DocumentCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentCategory
         fields = ("id", "code", "name", "description")
+        read_only_fields = ("code",)
 
 
 class DocumentAIFormatSerializer(serializers.ModelSerializer):
@@ -85,6 +86,7 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
             "template_file",
             "source_document_file_id",
             "context_type",
+            "generation_config",
         )
 
     def get_template_file(self, obj: DocumentTemplate) -> str | None:

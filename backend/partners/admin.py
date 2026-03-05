@@ -11,10 +11,24 @@ class ClientCompanyAdmin(admin.ModelAdmin):
 
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
-    list_display = ("first_name", "last_name", "org_unit",
-                    "position", "client_company")
-    search_fields = ("first_name", "last_name",
-                     "email", "org_unit", "position")
+    list_display = (
+        "first_name",
+        "last_name",
+        "jmbg",
+        "org_unit",
+        "position",
+        "client_company",
+    )
+    search_fields = (
+        "first_name",
+        "last_name",
+        "email",
+        "jmbg",
+        "org_unit",
+        "position",
+        "occupation",
+        "high_risk_position_name",
+    )
     list_filter = ("client_company",)
 
 
