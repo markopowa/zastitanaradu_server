@@ -2,6 +2,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.generic import RedirectView
+from django.views.static import serve
 from .views import serve_media_attachment
 
 admin.site.site_header = "Protivpozarna zastita i zastita na radu"
@@ -31,7 +32,11 @@ urlpatterns = [
     ),
 ]
 
-if not settings.DEBUG:
+if settings.DEBUG:
+    urlpatterns += [
+        re_path(r"^media/(?P<path>.*)$", serve, {"document_root": settings.MEDIA_ROOT}),
+    ]
+else:
     urlpatterns += [
         re_path(r"^media/(?P<path>.*)$", serve_media_attachment),
     ]

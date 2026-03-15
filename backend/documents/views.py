@@ -1,5 +1,8 @@
+import os
+import tempfile
 from pathlib import Path
 
+from django.conf import settings
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -14,14 +17,8 @@ from .serializers import (
     DocumentTemplateSerializer,
 )
 from .utils import (
-    PdfNoTextError,
-    PdfReadError,
-    TemplateUnsupportedError,
-    build_template_body_from_document_path,
-    build_template_body_from_uploaded_file,
-    build_template_preview_html,
-    parse_docx_structure,
-    parse_pdf_structure,
+    generate_page_images,
+    invalidate_page_images,
 )
 
 
@@ -48,43 +45,50 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentTemplateSerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
-    @action(detail=True, methods=["get"], url_path="structure")
-    def structure(self, request, *args, **kwargs):
+    @action(detail=True, methods=["get"], url_path="pages")
+    def pages(self, request, *args, **kwargs):
         instance: DocumentTemplate = self.get_object()
         file_field = getattr(instance, "template_file", None)
         if not file_field:
-            return Response({"detail": "Template has no file."}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            path = Path(file_field.path)
-        except Exception:
-            return Response({"detail": "Could not resolve file path."}, status=status.HTTP_400_BAD_REQUEST)
-        suffix = path.suffix.lower()
-        if suffix not in {".docx", ".pdf"}:
             return Response(
-                {"detail": "Structural editing is only supported for .docx and .pdf files."},
+                {"detail": "Template has no file."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         try:
-            if suffix == ".docx":
-                blocks = parse_docx_structure(path)
-            else:
-                blocks = parse_pdf_structure(path)
+            path = Path(fr"{file_field.path}")
+            print(f"|||{path}|||")
+            rel_paths = generate_page_images(instance.pk, path)
         except Exception as exc:
-            return Response({"detail": f"Failed to parse document: {exc}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        return Response(blocks)
+            logger.error("Page image generation failed: %s", exc, exc_info=True)
+            return Response(
+                {"detail": f"Failed to generate page images: {exc}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        urls = [request.build_absolute_uri(f"{settings.MEDIA_URL}{p}") for p in rel_paths]
+        return Response(urls)
 
-    @action(detail=True, methods=["get"], url_path="preview-html")
-    def preview_html(self, request, *args, **kwargs):
+    @action(detail=True, methods=["post"], url_path="regenerate-pages")
+    def regenerate_pages(self, request, *args, **kwargs):
         instance: DocumentTemplate = self.get_object()
+        invalidate_page_images(instance.pk)
         file_field = getattr(instance, "template_file", None)
         if not file_field:
-            return Response({"html": ""})
+            return Response(
+                {"detail": "Template has no file."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         try:
-            path = Path(file_field.path)
-        except Exception:
-            return Response({"html": ""})
-        html = build_template_preview_html(path)
-        return Response({"html": html})
+            path = Path(fr"{file_field.path}")
+            print(f"|||{path}|||")
+            rel_paths = generate_page_images(instance.pk, path)
+        except Exception as exc:
+            logger.error("Page image regeneration failed: %s", exc, exc_info=True)
+            return Response(
+                {"detail": f"Failed to regenerate page images: {exc}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        urls = [request.build_absolute_uri(f"{settings.MEDIA_URL}{p}") for p in rel_paths]
+        return Response(urls)
 
     @action(detail=False, methods=["post"], url_path="from-document")
     def from_document(self, request, *args, **kwargs):
@@ -111,47 +115,11 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        path = Path(file_field.path)
-
-        try:
-            body = build_template_body_from_document_path(path)
-        except PdfReadError:
-            return Response(
-                {
-                    "detail": "PDF file could not be processed.",
-                    "reason": "pdf_read_error",
-                    # TODO: For image-based or unsupported PDFs use AWS Textract/OCR.
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except PdfNoTextError:
-            return Response(
-                {
-                    "detail": (
-                        "PDF does not contain readable text and cannot be "
-                        "used to generate a template. Image-based PDFs are "
-                        "not supported yet."
-                    ),
-                    "reason": "pdf_no_text",
-                    # TODO: For image-based PDFs add AWS Textract/OCR support.
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except TemplateUnsupportedError as exc:
-            return Response(
-                {
-                    "detail": "Unsupported file type for template generation.",
-                    "extension": exc.extension,
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         payload = {
             "name": request.data.get("name") or document_file.title,
             "description": request.data.get("description") or "",
             "category_id": request.data.get("category_id"),
             "context_type": context_type,
-            "template_body": body or "",
         }
 
         serializer = self.get_serializer(data=payload)
@@ -183,43 +151,11 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         description = request.data.get("description") or ""
         category_id = request.data.get("category_id")
 
-        try:
-            body = build_template_body_from_uploaded_file(uploaded_file)
-        except PdfReadError as exc:
-            logger.error(f"PDF file could not be processed: {exc}", exc_info=True)
-            print(exc)
-            return Response(
-                {
-                    "detail": "PDF file could not be processed.",
-                    "reason": "pdf_read_error",
-                    # TODO: For image-based or unsupported PDFs use AWS Textract/OCR.
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except PdfNoTextError as exc:
-            logger.error(f"PDF file could not be processed: {exc}", exc_info=True)
-            print(exc)
-            return Response(
-                {
-                    "detail": (
-                        "PDF does not contain readable text and cannot be "
-                        "used to generate a template. Image-based PDFs are "
-                        "not supported yet."
-                    ),
-                    "reason": "pdf_no_text",
-                    # TODO: For image-based PDFs add AWS Textract/OCR support.
-                },
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        except TemplateUnsupportedError:
-            body = request.data.get("template_body") or ""
-
         payload = {
             "name": name,
             "description": description,
             "category_id": category_id,
             "context_type": context_type,
-            "template_body": body or "",
         }
 
         serializer = self.get_serializer(data=payload)

@@ -115,3 +115,5 @@ EMAIL_FROM_ADDRESS = os.environ.get("EMAIL_FROM_ADDRESS", "")
 AWS_REGION = os.environ.get("AWS_REGION", "") or os.environ.get(
     "AWS_DEFAULT_REGION", "eu-central-1"
 )
+
+DOCUMENT_CONVERTIBLE_SUFFIXES = frozenset({".docx", ".doc", ".odt", ".rtf", ".xlsx", ".pptx"})

@@ -226,18 +226,6 @@ def _generate_tabular_docx(
     return buf.read()
 
 
-def _text_to_docx_bytes(text: str) -> bytes:
-    doc = docx.Document()
-    for line in (text or "").splitlines():
-        doc.add_paragraph(line)
-    if not (text or "").strip():
-        doc.add_paragraph("")
-    buf = io.BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-    return buf.read()
-
-
 def _get_system_user():
     return User.objects.filter(is_superuser=True).first()
 
@@ -279,7 +267,22 @@ def _generate_document_for_run(
 
     if doc_template.template_file:
         name = getattr(doc_template.template_file, "name", "") or ""
-        if name and name.lower().endswith(".docx"):
+
+        if mode == "VISUAL":
+            try:
+                from documents.utils import fill_pdf_at_coordinates
+                from pathlib import Path
+                placeholders = generation_config.get("placeholders") or []
+                file_path = Path(doc_template.template_file.path)
+                content_bytes = fill_pdf_at_coordinates(file_path, placeholders, context)
+                ext = ".pdf"
+            except Exception as e:
+                logger.warning(
+                    "Failed to generate visual PDF for run id=%s: %s",
+                    run.id,
+                    e,
+                )
+        elif name and name.lower().endswith(".docx"):
             if mode == "DOCX_TABLE_REPEAT_ROW":
                 try:
                     content_bytes = _generate_tabular_docx(
@@ -291,23 +294,6 @@ def _generate_document_for_run(
                 except Exception as e:
                     logger.warning(
                         "Failed to generate tabular docx template for run id=%s: %s",
-                        run.id,
-                        e,
-                    )
-            elif mode == "STRUCTURAL":
-                try:
-                    from documents.utils import fill_docx_from_placeholders
-                    placeholders = generation_config.get("placeholders") or []
-                    with doc_template.template_file.open("rb") as fh:
-                        doc = docx.Document(io.BytesIO(fh.read()))
-                    fill_docx_from_placeholders(doc, placeholders, context)
-                    buf = io.BytesIO()
-                    doc.save(buf)
-                    buf.seek(0)
-                    content_bytes = buf.read()
-                except Exception as e:
-                    logger.warning(
-                        "Failed to generate structural docx for run id=%s: %s",
                         run.id,
                         e,
                     )
@@ -326,21 +312,6 @@ def _generate_document_for_run(
                         run.id,
                         e,
                     )
-                    if doc_template.template_body:
-                        rendered = _render_template_body(
-                            doc_template.template_body,
-                            context,
-                        )
-                        content_bytes = _text_to_docx_bytes(rendered)
-        elif doc_template.template_body:
-            rendered = _render_template_body(
-                doc_template.template_body,
-                context,
-            )
-            content_bytes = _text_to_docx_bytes(rendered)
-    elif doc_template.template_body:
-        rendered = _render_template_body(doc_template.template_body, context)
-        content_bytes = _text_to_docx_bytes(rendered)
 
     if not content_bytes:
         logger.warning(

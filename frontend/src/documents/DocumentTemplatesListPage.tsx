@@ -212,8 +212,6 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                         context_type as DocumentTemplate["context_type"],
                     category_id: categoryIdNum,
                     document_file_id: Number(document_file_id),
-                    // za šablone iz dokumenta generation_config zasad ostaje prazan;
-                    // može se kasnije dopuniti editovanjem
                 };
                 op = createDocumentTemplateFromDocument(payload);
             } else {

@@ -114,76 +114,34 @@ export async function deleteDocumentTemplate(id: number): Promise<void> {
     await api.delete(`/api/documents/templates/${id}/`);
 }
 
-export async function getDocumentTemplatePreviewHtml(
-    id: number,
-): Promise<string> {
-    const { data } = await api.get<{ html: string }>(
-        `/api/documents/templates/${id}/preview-html/`,
-    );
-    return data.html ?? "";
-}
-
-export interface DocxStructureCell {
-    id: string;
-    type: "table_cell";
-    table_index: number;
-    row_index: number;
-    cell_index: number;
-    text: string;
-    vmerge_continuation?: boolean;
-}
-
-export interface DocxStructureRow {
-    row_index: number;
-    cells: DocxStructureCell[];
-}
-
-export interface DocxStructureTable {
-    id: string;
-    type: "table";
-    table_index: number;
-    rows: DocxStructureRow[];
-}
-
-export interface DocxStructureParagraph {
-    id: string;
-    type: "paragraph";
-    block_index: number;
-    text: string;
-}
-
-export type DocxStructureBlock = DocxStructureParagraph | DocxStructureTable;
-
-export interface StructuralPlaceholder {
+export interface VisualPlaceholder {
     id: string;
     fieldKey: string;
-    docx_ref: {
-        type: "table_cell" | "paragraph";
-        table_index?: number;
-        row_index?: number;
-        cell_index?: number;
-        block_index?: number;
-    };
+    page: number;
+    xPct: number;
+    yPct: number;
+    widthPct: number;
+    heightPct: number;
 }
 
-export async function getDocumentTemplateStructure(
+export async function getDocumentTemplatePages(
     id: number,
-): Promise<DocxStructureBlock[]> {
-    const { data } = await api.get<DocxStructureBlock[]>(
-        `/api/documents/templates/${id}/structure/`,
+): Promise<string[]> {
+    const { data } = await api.get<string[]>(
+        `/api/documents/templates/${id}/pages/`,
     );
     return data;
 }
 
-export async function saveDocumentTemplatePlaceholders(
+export async function saveVisualPlaceholders(
     id: number,
-    placeholders: StructuralPlaceholder[],
+    placeholders: VisualPlaceholder[],
 ): Promise<DocumentTemplate> {
     const { data } = await api.patch<DocumentTemplate>(
         `/api/documents/templates/${id}/`,
         {
             generation_config: {
-                mode: "STRUCTURAL",
+                mode: "VISUAL",
                 placeholders,
             },
         },
