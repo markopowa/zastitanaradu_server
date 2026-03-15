@@ -2,9 +2,17 @@
 set -e
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 CONFIG_FILE="${1:-./deploy.conf}"
-NUCLEAR_FLAG="${3:-}"
+# $2 can be a target name or a flag (--quick / --nuclear); if it starts with
+# '--' treat it as the flag and default the target to 'all'.
+if [[ "${2:-}" == --* ]]; then
+    DEPLOY_TARGET="all"
+    DEPLOY_FLAG="${2}"
+else
+    DEPLOY_TARGET="${2:-all}"
+    DEPLOY_FLAG="${3:-}"
+fi
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Config $CONFIG_FILE not found. Usage: $0 [deploy.conf] [target] [--nuclear]"
+    echo "Config $CONFIG_FILE not found. Usage: $0 [deploy.conf] [--quick|--nuclear] or $0 [deploy.conf] [target]"
     exit 1
 fi
 source "$CONFIG_FILE"
@@ -31,11 +39,26 @@ export PZNR_DOMAIN="$DOMAIN"
 export PZNR_CORS_ORIGIN="https://${DOMAIN}"
 export PZNR_LOG_DIR="$LOG_DIR"
 
-maybeNuclearReset() {
-    if [ "$NUCLEAR_FLAG" = "--nuclear" ]; then
-        echo "NUCLEAR mode enabled: running 'docker compose down -v' in $APP_DIR"
-        cd "$APP_DIR"
-        docker compose down -v || true
+resetContainers() {
+    echo "Stopping and removing containers in $APP_DIR (volumes preserved)."
+    cd "$APP_DIR"
+    docker compose down || true
+}
+
+resetContainersAndVolumes() {
+    echo "NUCLEAR: stopping containers and removing volumes (database will be dropped)."
+    cd "$APP_DIR"
+    docker compose down -v || true
+}
+
+maybeResetBeforeRunAll() {
+    cd "$APP_DIR"
+    if [ "$DEPLOY_FLAG" = "--nuclear" ]; then
+        resetContainersAndVolumes
+    elif [ "$DEPLOY_FLAG" = "--quick" ]; then
+        echo "Quick mode: skipping container reset."
+    else
+        resetContainers
     fi
 }
 
@@ -79,6 +102,35 @@ setupDatabase() {
     docker compose exec -T postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${PZNR_DB_NAME} TO ${PZNR_DB_USER};"
 }
 
+makeMigrations() {
+    VENV_PYTHON="$BACKEND_DIR/.venv/bin/python"
+    if [ ! -x "$VENV_PYTHON" ]; then
+        echo "WARNING: venv not found at $BACKEND_DIR/.venv — skipping host makemigrations."
+        return 0
+    fi
+    echo "Generating migrations on host..."
+    cd "$BACKEND_DIR"
+    "$VENV_PYTHON" manage.py makemigrations documents partners processes 2>/dev/null || true
+    cd "$APP_DIR"
+}
+
+setupDockerQuick() {
+    source "$ENV_FILE" 2>/dev/null || true
+    export PZNR_DB_NAME="${PZNR_DB_NAME:-pznr}"
+    export PZNR_DB_USER="${PZNR_DB_USER:-pznr_user}"
+    export PZNR_DB_PASSWORD="${PZNR_DB_PASSWORD:-}"
+    mkdir -p "$LOG_DIR/backend"
+    chown 33:33 "$LOG_DIR/backend" 2>/dev/null || true
+    makeMigrations
+    cd "$APP_DIR"
+    docker compose build backend
+    docker compose up -d postgres backend
+    sleep 3
+    docker compose exec -T backend python manage.py migrate --noinput
+    docker compose restart backend
+    echo "Quick deploy done. Frontend not rebuilt."
+}
+
 setupDocker() {
     source "$ENV_FILE" 2>/dev/null || true
     export PZNR_DB_NAME="${PZNR_DB_NAME:-pznr}"
@@ -86,9 +138,11 @@ setupDocker() {
     export PZNR_DB_PASSWORD="${PZNR_DB_PASSWORD:-}"
     mkdir -p "$LOG_DIR/backend"
     chown 33:33 "$LOG_DIR/backend" 2>/dev/null || true
+    makeMigrations
     cd "$APP_DIR"
     docker compose build backend
     docker compose up -d postgres backend
+    sleep 3
     rm -rf "$FRONTEND_BUILD_DIR"
     cd "$APP_DIR/frontend"
     if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
@@ -98,8 +152,8 @@ setupDocker() {
         docker run --rm -v "$APP_DIR/frontend:/app" -w /app -e VITE_API_BASE_URL="${API_BASE_URL}" node:20-slim sh -c "rm -rf dist && npm ci && npm run build"
     fi
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
-    docker compose exec -T backend python manage.py makemigrations documents partners processes 2>/dev/null || true
-    docker compose exec -T backend python manage.py migrate --noinput 2>/dev/null || true
+    cd "$APP_DIR"
+    docker compose exec -T backend python manage.py migrate --noinput
     docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
     mkdir -p "$STATIC_DIR"
     docker compose cp backend:/app/staticfiles/. "$STATIC_DIR/"
@@ -305,10 +359,14 @@ EOF
 }
 
 runAll() {
-    maybeNuclearReset
+    maybeResetBeforeRunAll
     initialSetup
     setupDatabase
-    setupDocker
+    if [ "$DEPLOY_FLAG" = "--quick" ]; then
+        setupDockerQuick
+    else
+        setupDocker
+    fi
     setupNginx
     setupSsl
     setupFirewall
@@ -316,15 +374,16 @@ runAll() {
     setupTaskRunner
 }
 
-case "${2:-all}" in
+case "$DEPLOY_TARGET" in
     initialSetup)     initialSetup ;;
-    setupDatabase)   setupDatabase ;;
-    setupDocker)     setupDocker ;;
-    setupNginx)      setupNginx ;;
-    setupSsl)        setupSsl ;;
-    setupFirewall)   setupFirewall ;;
-    setupCron)       setupCron ;;
-    setupTaskRunner) setupTaskRunner ;;
-    all)             runAll ;;
-    *)               echo "Unknown target: $2. Use: initialSetup|setupDatabase|setupDocker|setupNginx|setupSsl|setupFirewall|setupCron|setupTaskRunner|all"; exit 1 ;;
+    setupDatabase)    setupDatabase ;;
+    setupDocker)      setupDocker ;;
+    setupDockerQuick) setupDockerQuick ;;
+    setupNginx)       setupNginx ;;
+    setupSsl)         setupSsl ;;
+    setupFirewall)    setupFirewall ;;
+    setupCron)        setupCron ;;
+    setupTaskRunner)  setupTaskRunner ;;
+    all)              runAll ;;
+    *)                echo "Unknown target: $DEPLOY_TARGET. Use: initialSetup|setupDatabase|setupDocker|setupDockerQuick|setupNginx|setupSsl|setupFirewall|setupCron|setupTaskRunner|all"; exit 1 ;;
 esac
