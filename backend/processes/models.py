@@ -277,3 +277,29 @@ class TaskAssignment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} – {self.assigned_to}"
+
+
+class ProcessNote(models.Model):
+    process_run = models.ForeignKey(
+        ProcessRun,
+        on_delete=models.CASCADE,
+        related_name="notes",
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="process_notes",
+    )
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Beleška aktivnosti"
+        verbose_name_plural = "Beleške aktivnosti"
+        ordering = ("created_at",)
+
+    def __str__(self) -> str:
+        return f"Beleška #{self.pk} – {self.process_run}"
