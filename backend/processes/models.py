@@ -283,7 +283,7 @@ class ProcessNote(models.Model):
     process_run = models.ForeignKey(
         ProcessRun,
         on_delete=models.CASCADE,
-        related_name="notes",
+        related_name="process_notes",
     )
     author = models.ForeignKey(
         settings.AUTH_USER_MODEL,
