@@ -1,5 +1,6 @@
 import { Component } from "react";
 import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -20,50 +21,30 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { PermissionGate } from "../components/PermissionGate";
 
-import type { RootState, AppDispatch } from "../store";
+import { PermissionGate } from "../components/PermissionGate";
 import {
     fetchDocumentCategories,
     createDocumentCategory,
     updateDocumentCategory,
     deleteDocumentCategory,
 } from "../store/documentsSlice";
-import type { DocumentCategory } from "../types/documents";
 import { setLastPath } from "../store/locationSlice";
 
-interface StateProps {
-    categories: DocumentCategory[];
-    error?: string;
-}
+import type { RootState, AppDispatch } from "../store";
+import type { DocumentCategory } from "../types/documents";
+import type {
+    DocumentCategoriesListPageDispatchProps,
+    DocumentCategoriesListPageProps,
+    DocumentCategoriesListPageState,
+    DocumentCategoriesListPageStateProps,
+} from "../types/documentPages";
 
-interface DispatchProps {
-    fetchDocumentCategories: () => void;
-    createDocumentCategory: (p: {
-        name: string;
-        description?: string;
-    }) => void;
-    updateDocumentCategory: (p: {
-        id: number;
-        name: string;
-        description?: string;
-    }) => void;
-    deleteDocumentCategory: (id: number) => void;
-    setLastPath: (path: string) => void;
-}
-
-type Props = StateProps & DispatchProps;
-
-interface State {
-    dialogOpen: boolean;
-    editingId: number | null;
-    name: string;
-    description: string;
-    deleteConfirmId: number | null;
-}
-
-class DocumentCategoriesListPage extends Component<Props, State> {
-    state: State = {
+class DocumentCategoriesListPage extends Component<
+    DocumentCategoriesListPageProps,
+    DocumentCategoriesListPageState
+> {
+    state: DocumentCategoriesListPageState = {
         dialogOpen: false,
         editingId: null,
         name: "",
@@ -77,30 +58,33 @@ class DocumentCategoriesListPage extends Component<Props, State> {
     }
 
     openCreate = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: null,
             name: "",
             description: "",
-        });
+        }));
     };
 
     openEdit = (cat: DocumentCategory): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: Number(cat.id),
             name: cat.name,
             description: cat.description ?? "",
-        });
+        }));
     };
 
     closeDialog = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: false,
             editingId: null,
             name: "",
             description: "",
-        });
+        }));
     };
 
     handleSave = (): void => {
@@ -122,31 +106,26 @@ class DocumentCategoriesListPage extends Component<Props, State> {
     };
 
     confirmDelete = (id: number): void => {
-        this.setState({ deleteConfirmId: id });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: id }));
     };
 
     cancelDelete = (): void => {
-        this.setState({ deleteConfirmId: null });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
     };
 
     doDelete = (): void => {
         const { deleteConfirmId } = this.state;
         if (deleteConfirmId != null) {
             this.props.deleteDocumentCategory(deleteConfirmId);
-            this.setState({ deleteConfirmId: null });
+            this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
         }
     };
 
     render() {
         const { categories, error } = this.props;
         const list = Array.isArray(categories) ? categories : [];
-        const {
-            dialogOpen,
-            editingId,
-            name,
-            description,
-            deleteConfirmId,
-        } = this.state;
+        const { dialogOpen, editingId, name, description, deleteConfirmId } =
+            this.state;
 
         return (
             <Box>
@@ -235,7 +214,10 @@ class DocumentCategoriesListPage extends Component<Props, State> {
                             fullWidth
                             value={name}
                             onChange={(e) =>
-                                this.setState({ name: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -246,7 +228,10 @@ class DocumentCategoriesListPage extends Component<Props, State> {
                             rows={2}
                             value={description}
                             onChange={(e) =>
-                                this.setState({ description: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    description: e.target.value,
+                                }))
                             }
                         />
                     </DialogContent>
@@ -283,12 +268,16 @@ class DocumentCategoriesListPage extends Component<Props, State> {
     }
 }
 
-const mapStateToProps = (state: RootState): StateProps => ({
+const mapStateToProps = (
+    state: RootState,
+): DocumentCategoriesListPageStateProps => ({
     categories: state.documents.categories,
     error: state.documents.error,
 });
 
-const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): DocumentCategoriesListPageDispatchProps => ({
     fetchDocumentCategories: () => dispatch(fetchDocumentCategories()),
     createDocumentCategory: (p) => dispatch(createDocumentCategory(p)),
     updateDocumentCategory: (p) => dispatch(updateDocumentCategory(p)),

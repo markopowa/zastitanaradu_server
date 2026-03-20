@@ -1,4 +1,9 @@
-import { Component } from "react";
+import {
+    Component,
+    type MouseEvent,
+    type ReactElement,
+    type ReactNode,
+} from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import type { AuthUser } from "../types/auth";
 import { connect } from "react-redux";
@@ -13,6 +18,7 @@ import {
     BottomNavigationAction,
     Divider,
 } from "@mui/material";
+import { alpha } from "@mui/material/styles";
 import PersonIcon from "@mui/icons-material/Person";
 import PeopleIcon from "@mui/icons-material/People";
 import BadgeIcon from "@mui/icons-material/Badge";
@@ -32,7 +38,10 @@ import { loadMe, logout } from "../store/authSlice";
 import { hasPermissionWithPrefix } from "../utils/permissions";
 import { getPageTitle } from "../locations";
 import type { ProcessType } from "../types/processes";
-import { getProcessTypes } from "../api/processes";
+import {
+    ensureClientCompanies,
+    ensureProcessTypes,
+} from "../store/processesSlice";
 
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 600;
@@ -49,9 +58,10 @@ type NavGroup =
 interface NavItem {
     path: string;
     label: string;
-    icon: React.ReactNode;
+    icon: ReactNode;
     group: NavGroup;
     permissionPrefix?: string;
+    showInBottomNav?: boolean;
 }
 
 const STATIC_NAV_ITEMS: NavItem[] = [
@@ -68,6 +78,13 @@ const STATIC_NAV_ITEMS: NavItem[] = [
         icon: <BusinessIcon />,
         group: "clients",
         permissionPrefix: "partners.view_clientcompany",
+    },
+    {
+        path: "/client-companies-employees",
+        label: "Zaposleni",
+        icon: <PeopleIcon />,
+        group: "clients",
+        permissionPrefix: "partners.view_employee",
     },
     {
         path: "/equipment",
@@ -159,7 +176,7 @@ const NAV_GROUP_LABEL: Record<NavGroup, string> = {
     users: "Korisnici / Role",
 };
 
-const NAV_GROUP_ICON: Record<NavGroup, React.ReactNode> = {
+const NAV_GROUP_ICON: Record<NavGroup, ReactNode> = {
     overview: <DashboardIcon />,
     clients: <BusinessIcon />,
     activities: <EventIcon />,
@@ -193,15 +210,19 @@ function visibleNavItems(
 
 interface StateProps {
     user?: AuthUser;
+    processTypes: ProcessType[];
 }
 
 interface DispatchProps {
     onLogout: () => void;
     onLoadMe: () => void;
+    ensureClientCompanies: () => void;
+    ensureProcessTypes: () => void;
 }
 
 interface OwnProps {
     pathname: string;
+    search: string;
     navigate: (path: string) => void;
 }
 
@@ -210,7 +231,6 @@ type Props = StateProps & DispatchProps & OwnProps;
 interface State {
     isMobile: boolean;
     anchorEl: HTMLElement | null;
-    processTypes: ProcessType[];
     mobileOpenGroup: NavGroup | null;
 }
 
@@ -220,7 +240,6 @@ class AppLayoutInner extends Component<Props, State> {
     state: State = {
         isMobile: false,
         anchorEl: null,
-        processTypes: [],
         mobileOpenGroup: null,
     };
 
@@ -247,27 +266,26 @@ class AppLayoutInner extends Component<Props, State> {
                 m.removeEventListener("change", handle);
         }
 
-        getProcessTypes()
-            .then((types) => {
-                this.setState((s) => ({ ...s, processTypes: types }));
-            })
-            .catch(() => {
-                enqueueSnackbar("Greška pri učitavanju tipova procesa", {
-                    variant: "error",
-                });
+        void Promise.all([
+            this.props.ensureClientCompanies(),
+            this.props.ensureProcessTypes(),
+        ]).catch(() => {
+            enqueueSnackbar("Greška pri učitavanju referentnih podataka.", {
+                variant: "error",
             });
+        });
     }
 
     componentWillUnmount(): void {
         this.removeResizeListener?.();
     }
 
-    handleAvatarClick = (event: React.MouseEvent<HTMLElement>): void => {
-        this.setState({ anchorEl: event.currentTarget });
+    handleAvatarClick = (event: MouseEvent<HTMLElement>): void => {
+        this.setState((prev) => ({ ...prev, anchorEl: event.currentTarget }));
     };
 
     handleMenuClose = (): void => {
-        this.setState({ anchorEl: null });
+        this.setState((prev) => ({ ...prev, anchorEl: null }));
     };
 
     handleLogout = (): void => {
@@ -284,19 +302,15 @@ class AppLayoutInner extends Component<Props, State> {
     }
 
     render() {
-        const { user, pathname } = this.props;
-        const { isMobile, anchorEl, processTypes, mobileOpenGroup } =
-            this.state;
+        const { user, pathname, search, processTypes } = this.props;
+        const { isMobile, anchorEl, mobileOpenGroup } = this.state;
         const permissions = user?.permissions ?? [];
         const items = visibleNavItems(permissions, processTypes);
         const pageTitle = getPageTitle(pathname);
         const menuOpen = Boolean(anchorEl);
-        const currentFull =
-            pathname +
-            (typeof window !== "undefined" ? window.location.search : "");
+        const currentFull = pathname + search;
         const activeItem =
-            items.find((i) => i.path === currentFull || i.path === pathname) ??
-            null;
+            items.find((i) => i.path === currentFull) ?? null;
         const visibleGroups: NavGroup[] = NAV_GROUP_ORDER.filter((groupKey) =>
             items.some((i) => i.group === groupKey),
         );
@@ -344,14 +358,52 @@ class AppLayoutInner extends Component<Props, State> {
                             {APP_TITLE}
                         </Box>
                         <Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 1.5,
-                                mt: 2,
-                                overflowY: "auto",
-                                flex: 1,
-                                minHeight: 0,
+                            sx={(theme) => {
+                                const thumb =
+                                    theme.palette.mode === "dark"
+                                        ? alpha(
+                                              theme.palette.grey[500],
+                                              0.45,
+                                          )
+                                        : alpha(
+                                              theme.palette.grey[700],
+                                              0.35,
+                                          );
+                                const thumbHover =
+                                    theme.palette.mode === "dark"
+                                        ? alpha(
+                                              theme.palette.grey[400],
+                                              0.55,
+                                          )
+                                        : alpha(
+                                              theme.palette.grey[800],
+                                              0.45,
+                                          );
+                                return {
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 1.5,
+                                    mt: 2,
+                                    overflowY: "auto",
+                                    flex: 1,
+                                    minHeight: 0,
+                                    scrollbarGutter: "stable",
+                                    scrollbarWidth: "thin",
+                                    scrollbarColor: `${thumb} transparent`,
+                                    "&::-webkit-scrollbar": {
+                                        width: 8,
+                                    },
+                                    "&::-webkit-scrollbar-track": {
+                                        background: "transparent",
+                                    },
+                                    "&::-webkit-scrollbar-thumb": {
+                                        backgroundColor: thumb,
+                                        borderRadius: 999,
+                                    },
+                                    "&::-webkit-scrollbar-thumb:hover": {
+                                        backgroundColor: thumbHover,
+                                    },
+                                };
                             }}
                         >
                             {NAV_GROUP_ORDER.map((groupKey) => {
@@ -383,21 +435,7 @@ class AppLayoutInner extends Component<Props, State> {
                                         {groupItems.map((item) => {
                                             const fullPath = item.path;
                                             const isActive =
-                                                pathname +
-                                                    (window.location.search ??
-                                                        "") ===
-                                                    fullPath ||
-                                                pathname === fullPath ||
-                                                (fullPath.startsWith(
-                                                    "/processes/runs?",
-                                                ) &&
-                                                    pathname ===
-                                                        "/processes/runs" &&
-                                                    window.location.search !==
-                                                        "" &&
-                                                    fullPath.endsWith(
-                                                        window.location.search,
-                                                    ));
+                                                currentFull === fullPath;
                                             return (
                                                 <Box
                                                     key={fullPath}
@@ -415,14 +453,14 @@ class AppLayoutInner extends Component<Props, State> {
                                                         borderRadius: 1,
                                                         cursor: "pointer",
                                                         bgcolor: isActive
-                                                            ? "primary.main"
+                                                            ? "secondary.main"
                                                             : "transparent",
                                                         color: isActive
-                                                            ? "primary.contrastText"
+                                                            ? "secondary.contrastText"
                                                             : "text.primary",
                                                         "&:hover": {
                                                             bgcolor: isActive
-                                                                ? "primary.dark"
+                                                                ? "secondary.dark"
                                                                 : "action.hover",
                                                         },
                                                     }}
@@ -478,6 +516,9 @@ class AppLayoutInner extends Component<Props, State> {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 1,
+                                borderLeft: 3,
+                                borderColor: "primary.main",
+                                pl: 1.5,
                             }}
                         >
                             {pageTitle}
@@ -593,9 +634,10 @@ class AppLayoutInner extends Component<Props, State> {
                                             <Box
                                                 key={item.path}
                                                 onClick={() => {
-                                                    this.setState({
+                                                    this.setState((prev) => ({
+                                                        ...prev,
                                                         mobileOpenGroup: null,
-                                                    });
+                                                    }));
                                                     this.props.navigate(
                                                         item.path,
                                                     );
@@ -658,9 +700,7 @@ class AppLayoutInner extends Component<Props, State> {
                                         <BottomNavigationAction
                                             key={item.group}
                                             label={item.label}
-                                            icon={
-                                                item.icon as React.ReactElement
-                                            }
+                                            icon={item.icon as ReactElement}
                                         />
                                     ))}
                                 </BottomNavigation>
@@ -675,11 +715,18 @@ class AppLayoutInner extends Component<Props, State> {
 
 const mapStateToProps = (state: RootState): StateProps => ({
     user: state.auth.user,
+    processTypes: state.processes.processTypes,
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
     onLogout: () => dispatch(logout()),
     onLoadMe: () => dispatch(loadMe()),
+    ensureClientCompanies: () => {
+        void dispatch(ensureClientCompanies());
+    },
+    ensureProcessTypes: () => {
+        void dispatch(ensureProcessTypes());
+    },
 });
 
 function AppLayoutWithRouter() {
@@ -687,7 +734,11 @@ function AppLayoutWithRouter() {
     const navigate = useNavigate();
 
     return (
-        <AppLayoutConnected pathname={location.pathname} navigate={navigate} />
+        <AppLayoutConnected
+            pathname={location.pathname}
+            search={location.search}
+            navigate={navigate}
+        />
     );
 }
 

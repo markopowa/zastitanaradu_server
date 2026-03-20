@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { connect } from "react-redux";
 import type { RootState } from "../store";
 import { hasPermission, hasAnyPermission } from "../utils/permissions";
@@ -9,7 +10,7 @@ interface StateProps {
 type Props = StateProps & {
     permission?: string;
     anyOf?: string[];
-    children: React.ReactNode;
+    children: ReactNode;
 };
 
 function PermissionGateComponent({
@@ -17,7 +18,7 @@ function PermissionGateComponent({
     permission,
     anyOf,
     children,
-}: Props): React.ReactNode {
+}: Props) {
     if (permission != null && !hasPermission(permissions, permission))
         return null;
     if (

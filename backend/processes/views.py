@@ -1,22 +1,35 @@
+import logging
 from datetime import date, timedelta
 
-from django.db.models import Q
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
+from django.db.models import Q
 
-from .models import ProcessBinding, ProcessRun, ProcessTemplate, ProcessType, TaskAssignment
+from documents.models import DocumentFile
+from .models import (
+    ProcessBinding,
+    ProcessRun,
+    ProcessRunDocument,
+    ProcessTemplate,
+    ProcessType,
+    TaskAssignment,
+)
 from .tasks import run_on_completed_trigger
 from .serializers import (
     ProcessBindingSerializer,
     ProcessRunCompleteSerializer,
+    ProcessRunDocumentCreateSerializer,
+    ProcessRunDocumentSerializer,
     ProcessRunSerializer,
     ProcessTemplateSerializer,
     ProcessTypeSerializer,
     TaskAssignmentSerializer,
 )
 from .utils import binding_subject_snapshot
+
+logger = logging.getLogger(__name__)
 
 
 class DashboardExpiringView(ListAPIView):
@@ -30,7 +43,9 @@ class DashboardExpiringView(ListAPIView):
             days = int(days_param)
         except ValueError:
             days = 30
-        to_date = today + timedelta(days=days)
+        to_date = today + timedelta(days=min(days, 365))
+        use_lead_time = self.request.query_params.get(
+            "use_lead_time", "").lower() in ("true", "1", "yes")
 
         queryset = (
             ProcessRun.objects.filter(
@@ -62,6 +77,18 @@ class DashboardExpiringView(ListAPIView):
         if process_type_id is not None and process_type_id != "":
             queryset = queryset.filter(process_type_id=process_type_id)
 
+        if use_lead_time:
+            ids = []
+            for run in queryset[:500]:
+                lead_days = (
+                    run.process_type.lead_time_days or 0) if run.process_type_id else 0
+                if run.valid_until and run.valid_until <= today + timedelta(days=lead_days):
+                    ids.append(run.id)
+            if ids:
+                return ProcessRun.objects.filter(pk__in=ids).select_related(
+                    "process_binding", "process_binding__process_type", "process_type"
+                ).order_by("valid_until", "id")
+            return ProcessRun.objects.none()
         return queryset
 
 
@@ -225,14 +252,27 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         performed_at = serializer.validated_data.get(
             "performed_at") or date.today()
         notes = serializer.validated_data.get("notes") or ""
+        result_data = serializer.validated_data.get("result_data")
 
         run.performed_at = performed_at
         run.valid_until = valid_until
         run.status = ProcessRun.STATUS_COMPLETED
         if notes:
             run.notes = notes
-        run.save(update_fields=["performed_at",
-                 "valid_until", "status", "notes"])
+        if result_data is not None:
+            run.result_data = result_data
+        update_fields = ["performed_at", "valid_until", "status", "notes"]
+        if result_data is not None:
+            update_fields.append("result_data")
+        run.save(update_fields=update_fields)
+        user = getattr(request, "user", None)
+        logger.info(
+            "ProcessRun id=%s completed by user_id=%s (%s), valid_until=%s",
+            run.id,
+            getattr(user, "id", None),
+            getattr(user, "username", ""),
+            valid_until,
+        )
 
         binding = run.process_binding
         binding.last_run_at = performed_at
@@ -246,6 +286,63 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
 
         run_serializer = ProcessRunSerializer(run)
         return Response(run_serializer.data)
+
+    @action(detail=True, methods=["get", "post"], url_path="documents")
+    def documents(self, request, pk=None):
+        run = self.get_object()
+        if request.method == "GET":
+            docs = run.documents.select_related("document_file").all()
+            serializer = ProcessRunDocumentSerializer(docs, many=True)
+            return Response(serializer.data)
+        serializer = ProcessRunDocumentCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        document_file_id = serializer.validated_data["document_file_id"]
+        usage_kind = serializer.validated_data["usage_kind"]
+        try:
+            doc_file = DocumentFile.objects.get(pk=document_file_id)
+        except DocumentFile.DoesNotExist:
+            return Response(
+                {"detail": "Document not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        prd = ProcessRunDocument.objects.create(
+            process_run=run,
+            document_file=doc_file,
+            usage_kind=usage_kind,
+        )
+        user = getattr(request, "user", None)
+        logger.info(
+            "ProcessRunDocument id=%s attached to run id=%s document_file id=%s by user_id=%s (%s)",
+            prd.id,
+            run.id,
+            document_file_id,
+            getattr(user, "id", None),
+            getattr(user, "username", ""),
+        )
+        return Response(
+            ProcessRunDocumentSerializer(prd).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path="documents/(?P<doc_pk>[^/.]+)",
+    )
+    def remove_document(self, request, pk=None, doc_pk=None):
+        run = self.get_object()
+        try:
+            prd = ProcessRunDocument.objects.get(
+                process_run=run,
+                pk=doc_pk,
+            )
+        except ProcessRunDocument.DoesNotExist:
+            return Response(
+                {"detail": "Not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        prd.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class TaskAssignmentViewSet(viewsets.ModelViewSet):

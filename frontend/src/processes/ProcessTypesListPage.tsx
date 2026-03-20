@@ -1,4 +1,6 @@
 import { Component } from "react";
+import { connect } from "react-redux";
+
 import {
     Box,
     Table,
@@ -20,46 +22,34 @@ import {
     IconButton,
     CircularProgress,
     Alert,
+    Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { enqueueSnackbar } from "notistack";
 
-import {
-    getProcessTypes,
-    createProcessType,
-    updateProcessType,
-    deleteProcessType,
-} from "../api/processes";
-import type { ProcessType } from "../types/processes";
-import { setLastPath } from "../store/locationSlice";
-import { connect } from "react-redux";
-import type { AppDispatch, RootState } from "../store";
 import { PermissionGate } from "../components/PermissionGate";
 import {
     ScrollableTablePaper,
     tableCellEllipsis,
 } from "../components/ScrollableTablePaper";
+import {
+    addProcessType,
+    ensureProcessTypes,
+    removeProcessType,
+    saveProcessType,
+} from "../store/processesSlice";
+import { setLastPath } from "../store/locationSlice";
 
-interface DispatchProps {
-    setLastPath?: (path: string) => void;
-}
-type Props = DispatchProps;
-
-interface State {
-    items: ProcessType[];
-    loading: boolean;
-    error: string | null;
-    dialogOpen: boolean;
-    editingId: number | null;
-    deleteConfirmId: number | null;
-    name: string;
-    description: string;
-    subject_kind: ProcessType["subject_kind"];
-    default_period_months: string;
-    lead_time_days: string;
-    is_active: boolean;
-}
+import type { AppDispatch, RootState } from "../store";
+import type { ProcessType } from "../types/processes";
+import type {
+    ProcessTypesListPageDispatchProps,
+    ProcessTypesListPageProps,
+    ProcessTypesListPageState,
+    ProcessTypesListPageStateProps,
+} from "../types/processPages";
 
 const SUBJECT_OPTIONS = [
     { value: "EMPLOYEE", label: "Zaposleni" },
@@ -67,11 +57,11 @@ const SUBJECT_OPTIONS = [
     { value: "CLIENT_COMPANY", label: "Firma" },
 ];
 
-class ProcessTypesListPageInner extends Component<Props, State> {
-    state: State = {
-        items: [],
-        loading: true,
-        error: null,
+class ProcessTypesListPageInner extends Component<
+    ProcessTypesListPageProps,
+    ProcessTypesListPageState
+> {
+    state: ProcessTypesListPageState = {
         dialogOpen: false,
         editingId: null,
         deleteConfirmId: null,
@@ -83,31 +73,14 @@ class ProcessTypesListPageInner extends Component<Props, State> {
         is_active: true,
     };
 
-    load = (): void => {
-        this.setState({ loading: true, error: null });
-        getProcessTypes()
-            .then((items) =>
-                this.setState({
-                    items: Array.isArray(items) ? items : [],
-                    loading: false,
-                    error: null,
-                }),
-            )
-            .catch(() =>
-                this.setState({
-                    loading: false,
-                    error: "Greška pri učitavanju.",
-                }),
-            );
-    };
-
     componentDidMount(): void {
         this.props.setLastPath?.("/processes/types");
-        this.load();
+        this.props.ensureProcessTypes?.();
     }
 
     openCreate = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: null,
             name: "",
@@ -116,11 +89,12 @@ class ProcessTypesListPageInner extends Component<Props, State> {
             default_period_months: "",
             lead_time_days: "0",
             is_active: true,
-        });
+        }));
     };
 
     openEdit = (row: ProcessType): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: row.id,
             name: row.name,
@@ -132,35 +106,52 @@ class ProcessTypesListPageInner extends Component<Props, State> {
                     : "",
             lead_time_days: String(row.lead_time_days ?? 0),
             is_active: row.is_active ?? true,
-        });
+        }));
     };
 
     closeDialog = (): void => {
-        this.setState({ dialogOpen: false, editingId: null });
+        this.setState((prev) => ({
+            ...prev,
+            dialogOpen: false,
+            editingId: null,
+        }));
     };
 
     confirmDelete = (id: number): void => {
-        this.setState({ deleteConfirmId: id, error: null });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: id }));
     };
 
     cancelDelete = (): void => {
-        this.setState({ deleteConfirmId: null });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
     };
 
     doDelete = (): void => {
         const { deleteConfirmId } = this.state;
         if (deleteConfirmId == null) return;
-        deleteProcessType(deleteConfirmId)
+        void this.props
+            .removeProcessType(deleteConfirmId)
+            .unwrap()
             .then(() => {
-                this.setState({ deleteConfirmId: null });
-                this.load();
+                this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
             })
-            .catch((err: { response?: { data?: { detail?: string } } }) => {
-                const msg =
-                    err.response?.data?.detail ??
-                    "Greška pri brisanju vrste obaveze.";
-                this.setState({ error: msg, deleteConfirmId: null });
-            });
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri brisanju vrste obaveze.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                    this.setState((prev) => ({
+                        ...prev,
+                        deleteConfirmId: null,
+                    }));
+                },
+            );
     };
 
     handleSave = (): void => {
@@ -184,24 +175,36 @@ class ProcessTypesListPageInner extends Component<Props, State> {
             lead_time_days: Number(lead_time_days) || 0,
             is_active,
         };
-        if (editingId != null) {
-            updateProcessType(editingId, payload).then(() => {
-                this.closeDialog();
-                this.load();
-            });
-        } else {
-            createProcessType(payload).then(() => {
-                this.closeDialog();
-                this.load();
-            });
-        }
+        const op =
+            editingId != null
+                ? this.props.saveProcessType({ id: editingId, payload })
+                : this.props.addProcessType(payload);
+        void op
+            .unwrap()
+            .then(() => this.closeDialog())
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju vrste obaveze.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
-    render(): React.ReactNode {
+    render() {
         const {
-            items,
-            loading,
-            error,
+            processTypes: items,
+            typesLoading: loading,
+            typesError: error,
+        } = this.props;
+        const {
             dialogOpen,
             editingId,
             deleteConfirmId,
@@ -257,7 +260,7 @@ class ProcessTypesListPageInner extends Component<Props, State> {
                                         Period (meseci)
                                     </TableCell>
                                     <TableCell sx={tableCellEllipsis}>
-                                        Rok isporuke (dana)
+                                        Rok unapred (dana)
                                     </TableCell>
                                     <TableCell sx={tableCellEllipsis}>
                                         Aktivan
@@ -339,7 +342,10 @@ class ProcessTypesListPageInner extends Component<Props, State> {
                             fullWidth
                             value={name}
                             onChange={(e) =>
-                                this.setState({ name: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -349,7 +355,10 @@ class ProcessTypesListPageInner extends Component<Props, State> {
                             multiline
                             value={description}
                             onChange={(e) =>
-                                this.setState({ description: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    description: e.target.value,
+                                }))
                             }
                         />
                         <FormControl fullWidth margin="dense">
@@ -358,10 +367,11 @@ class ProcessTypesListPageInner extends Component<Props, State> {
                                 value={subject_kind}
                                 label="Subjekt"
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         subject_kind: e.target
                                             .value as ProcessType["subject_kind"],
-                                    })
+                                    }))
                                 }
                             >
                                 {SUBJECT_OPTIONS.map((o) => (
@@ -371,39 +381,46 @@ class ProcessTypesListPageInner extends Component<Props, State> {
                                 ))}
                             </Select>
                         </FormControl>
-                        <TextField
-                            margin="dense"
-                            label="Period (meseci)"
-                            type="number"
-                            fullWidth
-                            value={default_period_months}
-                            onChange={(e) =>
-                                this.setState({
-                                    default_period_months: e.target.value,
-                                })
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Rok isporuke (dana)"
-                            type="number"
-                            fullWidth
-                            value={lead_time_days}
-                            onChange={(e) =>
-                                this.setState({
-                                    lead_time_days: e.target.value,
-                                })
-                            }
-                        />
+                        <Tooltip title="Podrazumevani period između obaveza u mesecima. Prazno = koristi vrednost iz vrste obaveze po potrebi.">
+                            <TextField
+                                margin="dense"
+                                label="Period (meseci)"
+                                type="number"
+                                fullWidth
+                                value={default_period_months}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        default_period_months: e.target.value,
+                                    }))
+                                }
+                            />
+                        </Tooltip>
+                        <Tooltip title="Koliko dana pre termina da se generiše uput i pošalje mejl.">
+                            <TextField
+                                margin="dense"
+                                label="Rok unapred (dana)"
+                                type="number"
+                                fullWidth
+                                value={lead_time_days}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        lead_time_days: e.target.value,
+                                    }))
+                                }
+                            />
+                        </Tooltip>
                         <FormControl fullWidth margin="dense">
                             <InputLabel>Aktivan</InputLabel>
                             <Select
                                 value={is_active ? "1" : "0"}
                                 label="Aktivan"
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         is_active: e.target.value === "1",
-                                    })
+                                    }))
                                 }
                             >
                                 <MenuItem value="1">Da</MenuItem>
@@ -444,15 +461,30 @@ class ProcessTypesListPageInner extends Component<Props, State> {
     }
 }
 
-const Connected = connect<
-    null,
-    DispatchProps,
-    Record<string, never>,
-    RootState
->(null, (dispatch: AppDispatch) => ({
-    setLastPath: (path: string) => dispatch(setLastPath(path)),
-}))(ProcessTypesListPageInner);
+const mapStateToProps = (state: RootState): ProcessTypesListPageStateProps => ({
+    processTypes: state.processes.processTypes,
+    typesLoading: state.processes.processTypesStatus === "loading",
+    typesError:
+        state.processes.processTypesStatus === "failed"
+            ? (state.processes.processTypesError ?? "Greška")
+            : null,
+});
 
-export default function ProcessTypesListPage(): React.ReactElement {
-    return <Connected />;
-}
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): ProcessTypesListPageDispatchProps => ({
+    setLastPath: (path: string) => dispatch(setLastPath(path)),
+    ensureProcessTypes: () => {
+        void dispatch(ensureProcessTypes());
+    },
+    addProcessType: (payload: Partial<ProcessType>) =>
+        dispatch(addProcessType(payload)),
+    saveProcessType: (args: { id: number; payload: Partial<ProcessType> }) =>
+        dispatch(saveProcessType(args)),
+    removeProcessType: (id: number) => dispatch(removeProcessType(id)),
+});
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps,
+)(ProcessTypesListPageInner);

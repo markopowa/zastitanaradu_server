@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, type ReactElement } from "react";
 import { Navigate } from "react-router-dom";
 import { connect } from "react-redux";
 import { Box, CircularProgress } from "@mui/material";
@@ -6,7 +6,7 @@ import { Box, CircularProgress } from "@mui/material";
 import type { RootState } from "../store";
 
 interface OwnProps {
-    element: React.ReactElement;
+    element: ReactElement;
 }
 
 interface StateProps {

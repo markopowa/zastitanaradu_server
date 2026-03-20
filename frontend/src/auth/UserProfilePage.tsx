@@ -1,6 +1,7 @@
 import { Component } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
 import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -12,40 +13,22 @@ import {
 import LockIcon from "@mui/icons-material/Lock";
 import PersonIcon from "@mui/icons-material/Person";
 
-import type { AppDispatch, RootState } from "../store";
-import { updateProfile } from "../store/authSlice";
-import type { AuthUser } from "../types/auth";
 import { api } from "../api/client";
+import { updateProfile } from "../store/authSlice";
 
-interface StateProps {
-    user?: AuthUser;
-}
+import type { AppDispatch, RootState } from "../store";
+import type {
+    UserProfilePageDispatchProps,
+    UserProfilePageProps,
+    UserProfilePageState,
+    UserProfilePageStateProps,
+} from "../types/authPages";
 
-interface DispatchProps {
-    dispatchUpdateProfile: (payload: {
-        username: string;
-        first_name: string;
-        last_name: string;
-    }) => Promise<unknown>;
-}
-
-type Props = StateProps & DispatchProps;
-
-interface State {
-    username: string;
-    firstName: string;
-    lastName: string;
-    profileSaving: boolean;
-    profileMessage: { type: "success" | "error"; text: string } | null;
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-    loading: boolean;
-    message: { type: "success" | "error"; text: string } | null;
-}
-
-class UserProfilePage extends Component<Props, State> {
-    state: State = {
+class UserProfilePage extends Component<
+    UserProfilePageProps,
+    UserProfilePageState
+> {
+    state: UserProfilePageState = {
         username: "",
         firstName: "",
         lastName: "",
@@ -59,9 +42,9 @@ class UserProfilePage extends Component<Props, State> {
     };
 
     static getDerivedStateFromProps(
-        nextProps: Props,
-        prevState: State,
-    ): Partial<State> | null {
+        nextProps: UserProfilePageProps,
+        prevState: UserProfilePageState,
+    ): Partial<UserProfilePageState> | null {
         const u = nextProps.user;
         if (!u) return null;
         if (
@@ -80,7 +63,12 @@ class UserProfilePage extends Component<Props, State> {
     }
 
     handleProfileChange =
-        (field: keyof Pick<State, "username" | "firstName" | "lastName">) =>
+        (
+            field: keyof Pick<
+                UserProfilePageState,
+                "username" | "firstName" | "lastName"
+            >,
+        ) =>
         (e: ChangeEvent<HTMLInputElement>) => {
             this.setState((prev) => ({
                 ...prev,
@@ -93,15 +81,20 @@ class UserProfilePage extends Component<Props, State> {
         e.preventDefault();
         const { username, firstName, lastName } = this.state;
         if (!username?.trim()) {
-            this.setState({
+            this.setState((prev) => ({
+                ...prev,
                 profileMessage: {
                     type: "error",
                     text: "Korisničko ime je obavezno.",
                 },
-            });
+            }));
             return;
         }
-        this.setState({ profileSaving: true, profileMessage: null });
+        this.setState((prev) => ({
+            ...prev,
+            profileSaving: true,
+            profileMessage: null,
+        }));
         try {
             await this.props.dispatchUpdateProfile({
                 username: username.trim(),
@@ -121,16 +114,19 @@ class UserProfilePage extends Component<Props, State> {
                     ? err
                     : (err as { message?: string })?.message) ??
                 "Greška pri čuvanju profila.";
-            this.setState({ profileMessage: { type: "error", text } });
+            this.setState((prev) => ({
+                ...prev,
+                profileMessage: { type: "error", text },
+            }));
         } finally {
-            this.setState({ profileSaving: false });
+            this.setState((prev) => ({ ...prev, profileSaving: false }));
         }
     };
 
     handleChange =
         (
             field: keyof Pick<
-                State,
+                UserProfilePageState,
                 "currentPassword" | "newPassword" | "confirmPassword"
             >,
         ) =>
@@ -146,30 +142,33 @@ class UserProfilePage extends Component<Props, State> {
         e.preventDefault();
         const { currentPassword, newPassword, confirmPassword } = this.state;
         if (!newPassword || newPassword.length < 8) {
-            this.setState({
+            this.setState((prev) => ({
+                ...prev,
                 message: {
                     type: "error",
                     text: "Nova lozinka mora imati najmanje 8 karaktera.",
                 },
-            });
+            }));
             return;
         }
         if (newPassword !== confirmPassword) {
-            this.setState({
+            this.setState((prev) => ({
+                ...prev,
                 message: {
                     type: "error",
                     text: "Nova lozinka i potvrda se ne poklapaju.",
                 },
-            });
+            }));
             return;
         }
-        this.setState({ loading: true, message: null });
+        this.setState((prev) => ({ ...prev, loading: true, message: null }));
         try {
             await api.post("/auth/change-password/", {
                 current_password: currentPassword,
                 new_password: newPassword,
             });
-            this.setState({
+            this.setState((prev) => ({
+                ...prev,
                 currentPassword: "",
                 newPassword: "",
                 confirmPassword: "",
@@ -177,14 +176,17 @@ class UserProfilePage extends Component<Props, State> {
                     type: "success",
                     text: "Lozinka je uspešno promenjena.",
                 },
-            });
+            }));
         } catch (err: unknown) {
             const detail =
                 (err as { response?: { data?: { detail?: string } } })?.response
                     ?.data?.detail ?? "Greška pri promeni lozinke.";
-            this.setState({ message: { type: "error", text: detail } });
+            this.setState((prev) => ({
+                ...prev,
+                message: { type: "error", text: detail },
+            }));
         } finally {
-            this.setState({ loading: false });
+            this.setState((prev) => ({ ...prev, loading: false }));
         }
     };
 
@@ -379,11 +381,13 @@ class UserProfilePage extends Component<Props, State> {
     }
 }
 
-const mapStateToProps = (state: RootState): StateProps => ({
+const mapStateToProps = (state: RootState): UserProfilePageStateProps => ({
     user: state.auth.user,
 });
 
-const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): UserProfilePageDispatchProps => ({
     dispatchUpdateProfile: (payload) =>
         dispatch(updateProfile(payload)).unwrap(),
 });

@@ -1,3 +1,4 @@
+import type { ReactElement, ReactNode } from "react";
 import { Paper } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material";
 
@@ -10,7 +11,7 @@ export const tableCellEllipsis: SxProps<Theme> = {
 };
 
 interface ScrollableTablePaperProps {
-    children: React.ReactNode;
+    children: ReactNode;
     maxHeight?: string;
     sx?: SxProps<Theme>;
 }
@@ -19,7 +20,7 @@ export function ScrollableTablePaper({
     children,
     maxHeight = DEFAULT_MAX_HEIGHT,
     sx,
-}: ScrollableTablePaperProps): React.ReactElement {
+}: ScrollableTablePaperProps): ReactElement {
     return (
         <Paper
             sx={{

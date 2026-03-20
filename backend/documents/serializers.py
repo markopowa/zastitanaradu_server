@@ -96,6 +96,10 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         return f.url
 
 
+class DocumentTemplatePageImageUrlListSerializer(serializers.ListSerializer):
+    child = serializers.CharField()
+
+
 class DocumentFileAIFormatSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentFileAIFormat

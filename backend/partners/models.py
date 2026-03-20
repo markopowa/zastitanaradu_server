@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.db import models
 
 
@@ -12,6 +11,7 @@ class ClientCompany(models.Model):
     website = models.URLField(blank=True)
     logo = models.FileField(upload_to="client_logos/", null=True, blank=True)
     notes = models.TextField(blank=True)
+    activity_code = models.CharField(max_length=64, blank=True)
 
     class Meta:
         verbose_name = "Klijentska firma"

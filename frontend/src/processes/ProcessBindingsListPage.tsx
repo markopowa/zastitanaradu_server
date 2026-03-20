@@ -1,4 +1,6 @@
 import { Component } from "react";
+import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -20,57 +22,37 @@ import {
     TextField,
     CircularProgress,
     Alert,
+    Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import { enqueueSnackbar } from "notistack";
 
+import type { ProcessBindingsParams } from "../api/processes";
+import { getEmployees, getEquipment } from "../api/processes";
+import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import {
-    getProcessBindings,
-    getProcessTypes,
-    getClientCompanies,
-    getEmployees,
-    getEquipment,
-    createProcessBinding,
-} from "../api/processes";
-import type {
-    ProcessBinding,
-    ProcessType,
-    ClientCompany,
-    EquipmentItem,
-} from "../types/processes";
+    addProcessBinding,
+    ensureClientCompanies,
+    ensureProcessTypes,
+    fetchBindings,
+} from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
-import { connect } from "react-redux";
+import { formatDateDisplay, StringToDate } from "../utils/date";
+
 import type { AppDispatch, RootState } from "../store";
+import type { ProcessBinding } from "../types/processes";
+import type {
+    ProcessBindingsListPageDispatchProps,
+    ProcessBindingsListPageProps,
+    ProcessBindingsListPageState,
+    ProcessBindingsListPageStateProps,
+} from "../types/processPages";
 
-interface DispatchProps {
-    setLastPath?: (path: string) => void;
-}
-type Props = DispatchProps;
-
-interface State {
-    items: ProcessBinding[];
-    types: ProcessType[];
-    clients: ClientCompany[];
-    employees: { id: number; first_name: string; last_name: string }[];
-    equipment: EquipmentItem[];
-    client_company_id: string;
-    process_type_id: string;
-    dialogOpen: boolean;
-    new_subject_kind: string;
-    new_employee: string;
-    new_equipment: string;
-    new_client_company: string;
-    new_process_type: string;
-    new_period: string;
-    new_next_run_at: string;
-    loading: boolean;
-    error: string | null;
-}
-
-class ProcessBindingsListPageInner extends Component<Props, State> {
-    state: State = {
-        items: [],
-        types: [],
-        clients: [],
+class ProcessBindingsListPageInner extends Component<
+    ProcessBindingsListPageProps,
+    ProcessBindingsListPageState
+> {
+    state: ProcessBindingsListPageState = {
         employees: [],
         equipment: [],
         client_company_id: "",
@@ -83,67 +65,47 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
         new_process_type: "",
         new_period: "",
         new_next_run_at: "",
-        loading: true,
-        error: null,
     };
 
     load = (): void => {
-        this.setState({ loading: true, error: null });
         const { client_company_id, process_type_id } = this.state;
-        const params: Parameters<typeof getProcessBindings>[0] = {};
+        const params: ProcessBindingsParams = {};
         if (client_company_id)
             params.client_company_id = Number(client_company_id);
         if (process_type_id) params.process_type_id = Number(process_type_id);
-        getProcessBindings(params)
-            .then((items) =>
-                this.setState({
-                    items: Array.isArray(items) ? items : [],
-                    loading: false,
-                    error: null,
-                }),
-            )
-            .catch(() =>
-                this.setState({
-                    loading: false,
-                    error: "Greška pri učitavanju.",
-                }),
-            );
+        this.props.loadBindings?.(params);
     };
 
     componentDidMount(): void {
         this.props.setLastPath?.("/processes/bindings");
-        Promise.all([getProcessTypes(), getClientCompanies()]).then(
-            ([types, clients]) => {
-                this.setState(
-                    {
-                        types: Array.isArray(types) ? types : [],
-                        clients: Array.isArray(clients) ? clients : [],
-                    },
-                    () => this.load(),
-                );
-            },
-        );
+        this.props.ensureClientCompanies?.();
+        this.props.ensureProcessTypes?.();
+        this.load();
     }
 
     openAdd = (): void => {
-        this.setState({
+        const types = this.props.processTypes;
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             new_subject_kind: "EMPLOYEE",
             new_employee: "",
             new_equipment: "",
             new_client_company: "",
-            new_process_type: this.state.types[0]
-                ? String(this.state.types[0].id)
-                : "",
+            new_process_type: types[0] ? String(types[0].id) : "",
             new_period: "",
             new_next_run_at: "",
-        });
-        getEmployees().then((e) => this.setState({ employees: e }));
-        getEquipment().then((eq) => this.setState({ equipment: eq }));
+        }));
+        getEmployees().then((e) =>
+            this.setState((prev) => ({ ...prev, employees: e })),
+        );
+        getEquipment().then((eq) =>
+            this.setState((prev) => ({ ...prev, equipment: eq })),
+        );
     };
 
     closeDialog = (): void => {
-        this.setState({ dialogOpen: false });
+        this.setState((prev) => ({ ...prev, dialogOpen: false }));
     };
 
     handleCreate = (): void => {
@@ -157,6 +119,13 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
             new_next_run_at,
         } = this.state;
         if (!new_process_type) return;
+        const nextRunAtDate = new_next_run_at.trim()
+            ? StringToDate(new_next_run_at)
+            : null;
+        const nextRunAtISO =
+            nextRunAtDate != null
+                ? `${nextRunAtDate.getFullYear()}-${String(nextRunAtDate.getMonth() + 1).padStart(2, "0")}-${String(nextRunAtDate.getDate()).padStart(2, "0")}`
+                : undefined;
         const payload: Partial<ProcessBinding> = {
             process_type: Number(new_process_type),
             subject_kind: new_subject_kind as
@@ -164,7 +133,7 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                 | "EQUIPMENT"
                 | "CLIENT_COMPANY",
             custom_period_months: new_period ? Number(new_period) : undefined,
-            next_run_at: new_next_run_at || undefined,
+            next_run_at: nextRunAtISO,
             is_active: true,
         };
         if (new_subject_kind === "EMPLOYEE" && new_employee)
@@ -174,17 +143,31 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
         else if (new_subject_kind === "CLIENT_COMPANY" && new_client_company)
             payload.client_company = Number(new_client_company);
         else return;
-        createProcessBinding(payload).then(() => {
-            this.closeDialog();
-            this.load();
-        });
+        void this.props
+            .addBinding(payload)
+            .unwrap()
+            .then(() => {
+                this.closeDialog();
+                this.load();
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri dodavanju rasporeda.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
-    render(): React.ReactNode {
+    render() {
         const {
-            items,
-            types,
-            clients,
             client_company_id,
             process_type_id,
             dialogOpen,
@@ -197,9 +180,14 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
             new_next_run_at,
             employees,
             equipment,
-            loading,
-            error,
         } = this.state;
+        const {
+            clientCompanies: clients,
+            processTypes: types,
+            bindingsItems: items,
+            bindingsLoading: loading,
+            bindingsError: error,
+        } = this.props;
 
         const subjectLabel = (b: ProcessBinding) => {
             if (b.employee) return `Zaposleni #${b.employee}`;
@@ -223,10 +211,11 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                             label="Klijent"
                             onChange={(e) =>
                                 this.setState(
-                                    {
+                                    (prev) => ({
+                                        ...prev,
                                         client_company_id: e.target
                                             .value as string,
-                                    },
+                                    }),
                                     () => this.load(),
                                 )
                             }
@@ -246,10 +235,11 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                             label="Vrsta obaveze"
                             onChange={(e) =>
                                 this.setState(
-                                    {
+                                    (prev) => ({
+                                        ...prev,
                                         process_type_id: e.target
                                             .value as string,
-                                    },
+                                    }),
                                     () => this.load(),
                                 )
                             }
@@ -302,7 +292,7 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                                             {subjectLabel(row)}
                                         </TableCell>
                                         <TableCell>
-                                            {row.next_run_at ?? "—"}
+                                            {formatDateDisplay(row.next_run_at)}
                                         </TableCell>
                                         <TableCell>
                                             {row.is_active ? "Da" : "Ne"}
@@ -328,9 +318,10 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                                 value={new_process_type}
                                 label="Vrsta obaveze"
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         new_process_type: e.target.value,
-                                    })
+                                    }))
                                 }
                             >
                                 {types.map((t) => (
@@ -346,9 +337,10 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                                 value={new_subject_kind}
                                 label="Subjekt"
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         new_subject_kind: e.target.value,
-                                    })
+                                    }))
                                 }
                             >
                                 <MenuItem value="EMPLOYEE">Zaposleni</MenuItem>
@@ -365,9 +357,10 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                                     value={new_employee}
                                     label="Zaposleni"
                                     onChange={(e) =>
-                                        this.setState({
+                                        this.setState((prev) => ({
+                                            ...prev,
                                             new_employee: e.target.value,
-                                        })
+                                        }))
                                     }
                                 >
                                     {employees.map((e) => (
@@ -388,9 +381,10 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                                     value={new_equipment}
                                     label="Oprema"
                                     onChange={(e) =>
-                                        this.setState({
+                                        this.setState((prev) => ({
+                                            ...prev,
                                             new_equipment: e.target.value,
-                                        })
+                                        }))
                                     }
                                 >
                                     {equipment.map((e) => (
@@ -411,9 +405,10 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                                     value={new_client_company}
                                     label="Klijent"
                                     onChange={(e) =>
-                                        this.setState({
+                                        this.setState((prev) => ({
+                                            ...prev,
                                             new_client_company: e.target.value,
-                                        })
+                                        }))
                                     }
                                 >
                                     {clients.map((c) => (
@@ -427,32 +422,35 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
                                 </Select>
                             </FormControl>
                         )}
-                        <TextField
-                            margin="dense"
-                            label="Period (meseci)"
-                            type="number"
-                            fullWidth
-                            value={new_period}
-                            onChange={(e) =>
-                                this.setState({ new_period: e.target.value })
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Sledeći termin (YYYY-MM-DD)"
-                            fullWidth
-                            value={new_next_run_at}
-                            onChange={(e) =>
-                                this.setState({
-                                    new_next_run_at: e.target.value,
-                                })
-                            }
-                            placeholder="YYYY-MM-DD"
-                            inputProps={{
-                                inputMode: "numeric",
-                                pattern: "\\d{4}-\\d{2}-\\d{2}",
-                            }}
-                        />
+                        <Tooltip title="Ostavi prazno da koristi vrednost iz vrste obaveze.">
+                            <TextField
+                                margin="dense"
+                                label="Period (meseci)"
+                                type="number"
+                                fullWidth
+                                value={new_period}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        new_period: e.target.value,
+                                    }))
+                                }
+                            />
+                        </Tooltip>
+                        <Tooltip title="Datum kada je zakazan sledeći pregled / obaveza.">
+                            <Box>
+                                <DateTextFieldWithPicker
+                                    label="Sledeći termin (dd.mm.yyyy)"
+                                    value={new_next_run_at}
+                                    onChange={(v) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            new_next_run_at: v,
+                                        }))
+                                    }
+                                />
+                            </Box>
+                        </Tooltip>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Odustani</Button>
@@ -478,15 +476,36 @@ class ProcessBindingsListPageInner extends Component<Props, State> {
     }
 }
 
-const Connected = connect<
-    null,
-    DispatchProps,
-    Record<string, never>,
-    RootState
->(null, (dispatch: AppDispatch) => ({
-    setLastPath: (path: string) => dispatch(setLastPath(path)),
-}))(ProcessBindingsListPageInner);
+const mapStateToProps = (
+    state: RootState,
+): ProcessBindingsListPageStateProps => ({
+    clientCompanies: state.processes.clientCompanies,
+    processTypes: state.processes.processTypes,
+    bindingsItems: state.processes.bindingsItems,
+    bindingsLoading: state.processes.bindingsStatus === "loading",
+    bindingsError:
+        state.processes.bindingsStatus === "failed"
+            ? (state.processes.bindingsError ?? "Greška")
+            : null,
+});
 
-export default function ProcessBindingsListPage(): React.ReactElement {
-    return <Connected />;
-}
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): ProcessBindingsListPageDispatchProps => ({
+    setLastPath: (path: string) => dispatch(setLastPath(path)),
+    ensureClientCompanies: () => {
+        void dispatch(ensureClientCompanies());
+    },
+    ensureProcessTypes: () => {
+        void dispatch(ensureProcessTypes());
+    },
+    loadBindings: (params) => {
+        void dispatch(fetchBindings(params));
+    },
+    addBinding: (payload) => dispatch(addProcessBinding(payload)),
+});
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps,
+)(ProcessBindingsListPageInner);

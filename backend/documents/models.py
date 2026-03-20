@@ -3,6 +3,7 @@ from django.db import models
 from django.utils.text import slugify
 import uuid
 
+
 class DocumentCategory(models.Model):
     code = models.CharField(max_length=64, unique=True, blank=True)
     name = models.CharField(max_length=255)

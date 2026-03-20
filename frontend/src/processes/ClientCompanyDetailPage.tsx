@@ -1,5 +1,7 @@
-import { Component } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { Component, type ReactElement } from "react";
+import { useParams } from "react-router-dom";
+import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -16,48 +18,29 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 import {
+    generateEvidencija1,
     getClientCompany,
     getEmployees,
     getEquipment,
     getProcessBindings,
     getProcessRuns,
 } from "../api/processes";
-import type {
-    ClientCompany,
-    ProcessBinding,
-    ProcessRun,
-} from "../types/processes";
-import type { EquipmentItem } from "../types/processes";
-import { useDispatch } from "react-redux";
-import type { AppDispatch } from "../store";
+import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
+
+import type {
+    ClientCompanyDetailPageProps,
+    ClientCompanyDetailPageState,
+} from "../types/processPages";
 
 const formatDate = (v?: string | null) =>
     v ? new Date(v).toLocaleDateString("sr-RS") : "—";
 
-interface Props {
-    id: string;
-    navigate: (path: string) => void;
-    setLastPath: (path: string) => void;
-}
-
-interface State {
-    item: ClientCompany | null;
-    employees: {
-        id: number;
-        first_name: string;
-        last_name: string;
-        email?: string;
-    }[];
-    equipment: EquipmentItem[];
-    bindings: ProcessBinding[];
-    runs: ProcessRun[];
-    loading: boolean;
-    error: string | null;
-}
-
-class ClientCompanyDetailPageInner extends Component<Props, State> {
-    state: State = {
+class ClientCompanyDetailPageInner extends Component<
+    ClientCompanyDetailPageProps,
+    ClientCompanyDetailPageState
+> {
+    state: ClientCompanyDetailPageState = {
         item: null,
         employees: [],
         equipment: [],
@@ -65,6 +48,28 @@ class ClientCompanyDetailPageInner extends Component<Props, State> {
         runs: [],
         loading: true,
         error: null,
+        generatingDoc: false,
+        docError: null,
+    };
+
+    handleGenerateEvidencija1 = (): void => {
+        const id = Number(this.props.id);
+        this.setState((prev) => ({
+            ...prev,
+            generatingDoc: true,
+            docError: null,
+        }));
+        generateEvidencija1(id)
+            .then(() =>
+                this.setState((prev) => ({ ...prev, generatingDoc: false })),
+            )
+            .catch(() =>
+                this.setState((prev) => ({
+                    ...prev,
+                    generatingDoc: false,
+                    docError: "Greška pri generisanju evidencije.",
+                })),
+            );
     };
 
     loadExtra = (id: number): void => {
@@ -74,64 +79,85 @@ class ClientCompanyDetailPageInner extends Component<Props, State> {
             getProcessBindings({ client_company_id: id }),
             getProcessRuns({ client_company_id: id }),
         ]).then(([employees, equipment, bindings, runs]) => {
-            this.setState({
-                employees: Array.isArray(employees) ? employees : [],
-                equipment: Array.isArray(equipment) ? equipment : [],
-                bindings: Array.isArray(bindings) ? bindings : [],
-                runs: Array.isArray(runs) ? runs : [],
-            });
+            this.setState((prev) => ({
+                ...prev,
+                employees,
+                equipment,
+                bindings,
+                runs,
+            }));
         });
     };
 
-    componentDidMount(): void {
-        const id = Number(this.props.id);
-        if (!Number.isFinite(id)) {
-            this.setState({ loading: false, error: "Neispravan ID." });
-            return;
-        }
-        this.props.setLastPath(`/client-companies/${id}`);
+    loadById = (id: number): void => {
         getClientCompany(id)
             .then((item) => {
-                this.setState({ item, loading: false, error: null });
+                this.setState((prev) => ({
+                    ...prev,
+                    item,
+                    loading: false,
+                    error: null,
+                }));
                 this.loadExtra(id);
             })
             .catch(() =>
-                this.setState({
+                this.setState((prev) => ({
+                    ...prev,
                     loading: false,
                     error: "Greška pri učitavanju.",
-                }),
+                })),
             );
-    }
+    };
 
-    componentDidUpdate(prevProps: Props): void {
-        if (prevProps.id !== this.props.id) {
-            const id = Number(this.props.id);
-            if (!Number.isFinite(id)) {
-                this.setState({
+    private applyRouteId(mode: "mount" | "update"): void {
+        const id = Number(this.props.id);
+        if (!Number.isFinite(id)) {
+            if (mode === "update") {
+                this.setState((prev) => ({
+                    ...prev,
                     loading: false,
                     error: "Neispravan ID.",
                     item: null,
-                });
-                return;
+                }));
+            } else {
+                this.setState((prev) => ({
+                    ...prev,
+                    loading: false,
+                    error: "Neispravan ID.",
+                }));
             }
-            this.setState({ loading: true });
-            getClientCompany(id)
-                .then((item) => {
-                    this.setState({ item, loading: false, error: null });
-                    this.loadExtra(id);
-                })
-                .catch(() =>
-                    this.setState({
-                        loading: false,
-                        error: "Greška pri učitavanju.",
-                    }),
-                );
+            return;
+        }
+        if (mode === "mount") {
+            this.props.setLastPath(`/client-companies/${id}`);
+        } else {
+            this.setState((prev) => ({ ...prev, loading: true }));
+        }
+        this.loadById(id);
+    }
+
+    componentDidMount(): void {
+        this.applyRouteId("mount");
+    }
+
+    componentDidUpdate(prevProps: ClientCompanyDetailPageProps): void {
+        if (prevProps.id !== this.props.id) {
+            this.applyRouteId("update");
         }
     }
 
-    render(): React.ReactNode {
-        const { item, employees, equipment, bindings, runs, loading, error } =
-            this.state;
+    render() {
+        const {
+            item,
+            employees,
+            equipment,
+            bindings,
+            runs,
+            loading,
+            error,
+            generatingDoc,
+            docError,
+        } = this.state;
         const { navigate } = this.props;
 
         if (loading) {
@@ -218,6 +244,26 @@ class ClientCompanyDetailPageInner extends Component<Props, State> {
                         )}
                     </Box>
                 </Paper>
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mt: 1,
+                    }}
+                >
+                    <Button
+                        variant="outlined"
+                        disabled={generatingDoc}
+                        onClick={this.handleGenerateEvidencija1}
+                    >
+                        {generatingDoc
+                            ? "Generišem..."
+                            : "Generiši Evidenciju 1"}
+                    </Button>
+                    {docError && <Alert severity="error">{docError}</Alert>}
+                </Box>
 
                 <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
                     Zaposleni
@@ -333,7 +379,7 @@ class ClientCompanyDetailPageInner extends Component<Props, State> {
                 </Paper>
 
                 <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-                    Istorija izvršenja (run-ovi)
+                    Istorija izvršenja
                 </Typography>
                 <Paper sx={{ overflow: "auto" }}>
                     <Table size="small">
@@ -375,18 +421,18 @@ class ClientCompanyDetailPageInner extends Component<Props, State> {
         );
     }
 }
-export default function ClientCompanyDetailPage(): React.ReactElement {
+
+const mapDispatchToProps = {
+    setLastPath,
+};
+
+const Connected = connect(
+    null,
+    mapDispatchToProps,
+)(ClientCompanyDetailPageInner);
+const ClientCompanyDetailWithNavigation = withNavigation(Connected);
+
+export default function ClientCompanyDetailPage(): ReactElement {
     const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
-    const dispatch = useDispatch<AppDispatch>();
-
-    const setLastPathProp = (path: string) => dispatch(setLastPath(path));
-
-    return (
-        <ClientCompanyDetailPageInner
-            id={id ?? ""}
-            navigate={navigate}
-            setLastPath={setLastPathProp}
-        />
-    );
+    return <ClientCompanyDetailWithNavigation id={id ?? ""} />;
 }

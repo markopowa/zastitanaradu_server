@@ -26,13 +26,12 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
+
 import { PermissionGate } from "../components/PermissionGate";
 import {
     ScrollableTablePaper,
     tableCellEllipsis,
 } from "../components/ScrollableTablePaper";
-
-import type { RootState, AppDispatch } from "../store";
 import {
     loadUsers,
     loadRoles,
@@ -40,57 +39,19 @@ import {
     updateUser,
     clearAdminError,
 } from "../store/authSlice";
-import type { AuthUser, Role } from "../types/auth";
 import { setLastPath } from "../store/locationSlice";
 
-interface StateProps {
-    users: AuthUser[];
-    roles: Role[];
-    adminError?: string;
-}
+import type { RootState, AppDispatch } from "../store";
+import type { AuthUser } from "../types/auth";
+import type {
+    UsersListPageDispatchProps,
+    UsersListPageProps,
+    UsersListPageState,
+    UsersListPageStateProps,
+} from "../types/authPages";
 
-interface DispatchProps {
-    loadUsers: () => void;
-    loadRoles: () => void;
-    createUser: (p: {
-        username: string;
-        first_name: string;
-        last_name: string;
-        email: string;
-        password: string;
-        is_active?: boolean;
-        roles?: number[];
-    }) => void;
-    updateUser: (p: {
-        id: number;
-        username: string;
-        first_name: string;
-        last_name: string;
-        email: string;
-        is_active: boolean;
-        roles: number[];
-        password?: string;
-    }) => void;
-    clearAdminError: () => void;
-    setLastPath: (path: string) => void;
-}
-
-type Props = StateProps & DispatchProps;
-
-interface State {
-    dialogOpen: boolean;
-    editingUser: AuthUser | null;
-    username: string;
-    first_name: string;
-    last_name: string;
-    email: string;
-    password: string;
-    is_active: boolean;
-    selectedRoleIds: number[];
-}
-
-class UsersListPage extends Component<Props, State> {
-    state: State = {
+class UsersListPage extends Component<UsersListPageProps, UsersListPageState> {
+    state: UsersListPageState = {
         dialogOpen: false,
         editingUser: null,
         username: "",
@@ -110,7 +71,8 @@ class UsersListPage extends Component<Props, State> {
 
     openCreate = (): void => {
         this.props.clearAdminError();
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingUser: null,
             username: "",
@@ -120,12 +82,13 @@ class UsersListPage extends Component<Props, State> {
             password: "",
             is_active: true,
             selectedRoleIds: [],
-        });
+        }));
     };
 
     openEdit = (user: AuthUser): void => {
         this.props.clearAdminError();
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingUser: user,
             username: user.username,
@@ -135,11 +98,12 @@ class UsersListPage extends Component<Props, State> {
             password: "",
             is_active: user.is_active ?? true,
             selectedRoleIds: user.roles ?? [],
-        });
+        }));
     };
 
     closeDialog = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: false,
             editingUser: null,
             username: "",
@@ -149,7 +113,7 @@ class UsersListPage extends Component<Props, State> {
             password: "",
             is_active: true,
             selectedRoleIds: [],
-        });
+        }));
     };
 
     handleSave = (): void => {
@@ -306,7 +270,10 @@ class UsersListPage extends Component<Props, State> {
                             required
                             value={username}
                             onChange={(e) =>
-                                this.setState({ username: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    username: e.target.value,
+                                }))
                             }
                             disabled={editingUser != null}
                         />
@@ -316,7 +283,10 @@ class UsersListPage extends Component<Props, State> {
                             fullWidth
                             value={first_name}
                             onChange={(e) =>
-                                this.setState({ first_name: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    first_name: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -325,7 +295,10 @@ class UsersListPage extends Component<Props, State> {
                             fullWidth
                             value={last_name}
                             onChange={(e) =>
-                                this.setState({ last_name: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    last_name: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -335,7 +308,10 @@ class UsersListPage extends Component<Props, State> {
                             type="email"
                             value={email}
                             onChange={(e) =>
-                                this.setState({ email: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    email: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -350,7 +326,10 @@ class UsersListPage extends Component<Props, State> {
                             required={editingUser == null}
                             value={password}
                             onChange={(e) =>
-                                this.setState({ password: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    password: e.target.value,
+                                }))
                             }
                         />
                         <FormControlLabel
@@ -358,9 +337,10 @@ class UsersListPage extends Component<Props, State> {
                                 <Checkbox
                                     checked={is_active}
                                     onChange={(e) =>
-                                        this.setState({
+                                        this.setState((prev) => ({
+                                            ...prev,
                                             is_active: e.target.checked,
-                                        })
+                                        }))
                                     }
                                 />
                             }
@@ -373,10 +353,11 @@ class UsersListPage extends Component<Props, State> {
                                 multiple
                                 value={selectedRoleIds}
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         selectedRoleIds: e.target
                                             .value as number[],
-                                    })
+                                    }))
                                 }
                                 input={<OutlinedInput label="Role (grupe)" />}
                                 renderValue={(ids) =>
@@ -417,13 +398,15 @@ class UsersListPage extends Component<Props, State> {
     }
 }
 
-const mapStateToProps = (state: RootState): StateProps => ({
+const mapStateToProps = (state: RootState): UsersListPageStateProps => ({
     users: state.auth.users,
     roles: state.auth.roles,
     adminError: state.auth.adminError,
 });
 
-const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): UsersListPageDispatchProps => ({
     loadUsers: () => dispatch(loadUsers()),
     loadRoles: () => dispatch(loadRoles()),
     createUser: (p) => dispatch(createUser(p)),

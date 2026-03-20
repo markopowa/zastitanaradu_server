@@ -17,11 +17,30 @@ export interface ClientCompany {
     website?: string;
     logo?: string | null;
     notes?: string;
+    activity_code?: string;
 }
 
 export interface Employee {
     id: number;
     client_company: number | null;
+    client_company_name: string | null;
+    first_name: string;
+    last_name: string;
+    father_name?: string;
+    jmbg?: string;
+    date_of_birth?: string | null;
+    place_of_birth?: string;
+    email?: string;
+    org_unit?: string;
+    position?: string;
+    occupation?: string;
+    high_risk_position_name?: string;
+}
+
+export interface EmployeeSummary {
+    id: number;
+    client_company: number | null;
+    client_company_name?: string | null;
     first_name: string;
     last_name: string;
     email?: string;
@@ -95,6 +114,16 @@ export interface ProcessTemplate {
     custom_email_recipient?: string;
     followup_process_type?: number | null;
 }
+
+export interface ProcessRunDocument {
+    id: number;
+    process_run: number;
+    document_file: number;
+    document_file_title?: string;
+    usage_kind: string;
+}
+
+export type ProcessSubjectKind = "EMPLOYEE" | "EQUIPMENT" | "CLIENT_COMPANY";
 
 export interface TaskAssignment {
     id: number;

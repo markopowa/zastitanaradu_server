@@ -2,7 +2,7 @@ from datetime import date
 
 from django.core.management.base import BaseCommand
 
-from processes.models import ProcessBinding
+from processes.models import ProcessBinding, ProcessRun
 from processes.tasks import run_process_binding
 
 
@@ -18,10 +18,14 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         today = date.today()
-        qs = ProcessBinding.objects.filter(
-            is_active=True,
-            next_run_at__lte=today,
-        ).values_list("id", flat=True)
+        qs = (
+            ProcessBinding.objects.filter(
+                is_active=True,
+                next_run_at__lte=today,
+            )
+            .exclude(runs__status=ProcessRun.STATUS_PENDING)
+            .values_list("id", flat=True)
+        )
         binding_ids = list(qs)
 
         if not binding_ids:

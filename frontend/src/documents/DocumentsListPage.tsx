@@ -1,5 +1,6 @@
-import { Component, createRef, useState, type FC } from "react";
+import { Component, createRef } from "react";
 import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -20,259 +21,39 @@ import {
     Select,
     MenuItem,
     Typography,
-    InputAdornment,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+
 import { PermissionGate } from "../components/PermissionGate";
-import { DateToString, StringToDate, formatDateTimeISO } from "../utils/date";
-import type { RootState, AppDispatch } from "../store";
+import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import {
     fetchDocuments,
     fetchDocumentCategories,
     createDocument,
     updateDocument,
 } from "../store/documentsSlice";
-import type { DocumentFile, DocumentCategory } from "../types/documents";
 import { setLastPath } from "../store/locationSlice";
+import { DateToString, StringToDate, formatDateTimeISO } from "../utils/date";
 
-interface StateProps {
-    documents: DocumentFile[];
-    categories: DocumentCategory[];
-    error?: string;
-}
+import type { RootState, AppDispatch } from "../store";
+import type { DocumentFile } from "../types/documents";
+import type {
+    DocumentsListPageDispatchProps,
+    DocumentsListPageProps,
+    DocumentsListPageState,
+    DocumentsListPageStateProps,
+} from "../types/documentPages";
 
-interface DispatchProps {
-    fetchDocuments: () => void;
-    fetchDocumentCategories: () => void;
-    createDocument: (p: {
-        category_id: number;
-        title: string;
-        file: File;
-        valid_from?: string;
-        valid_until?: string;
-        version?: string;
-        language?: string;
-    }) => void;
-    updateDocument: (p: {
-        id: number;
-        category_id?: number;
-        title?: string;
-        file?: File;
-        valid_from?: string;
-        valid_until?: string;
-        version?: string;
-        language?: string;
-    }) => void;
-    setLastPath: (path: string) => void;
-}
-
-type Props = StateProps & DispatchProps;
-
-interface State {
-    dialogOpen: boolean;
-    editingDoc: DocumentFile | null;
-    category_id: number | "";
-    title: string;
-    file: File | null;
-    valid_from: string;
-    valid_until: string;
-    version: string;
-    language: string;
-}
-
-interface DateTextFieldWithPickerProps {
-    label: string;
-    value: string;
-    onChange: (value: string) => void;
-}
-
-const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
-    label,
-    value,
-    onChange,
-}) => {
-    const [open, setOpen] = useState(false);
-
-    const parseDisplayDate = (v: string): Date | null => StringToDate(v);
-
-    const [currentMonth, setCurrentMonth] = useState<Date>(() => {
-        const parsed = value ? parseDisplayDate(value) : null;
-        return parsed ?? new Date();
-    });
-
-    const selectedDate = value ? parseDisplayDate(value) : null;
-
-    const handleOpen = (): void => {
-        const parsed = value ? parseDisplayDate(value) : null;
-        setCurrentMonth(parsed ?? new Date());
-        setOpen(true);
-    };
-
-    const handleClose = (): void => setOpen(false);
-
-    const handleMonthChange = (delta: number): void => {
-        setCurrentMonth((prev) => {
-            const year = prev.getFullYear();
-            const month = prev.getMonth();
-            return new Date(year, month + delta, 1);
-        });
-    };
-
-    const handleSelectDay = (day: number): void => {
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth() + 1;
-        const d = new Date(year, month - 1, day);
-        onChange(DateToString(d));
-        setOpen(false);
-    };
-
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth();
-    const startOfMonth = new Date(year, month, 1);
-    const dayOfWeek = (startOfMonth.getDay() + 6) % 7; // ponedeljak = 0
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    const weeks: (number | null)[][] = [];
-    let currentDay = 1 - dayOfWeek;
-    for (let w = 0; w < 6; w += 1) {
-        const week: (number | null)[] = [];
-        for (let d = 0; d < 7; d += 1) {
-            if (currentDay < 1 || currentDay > daysInMonth) {
-                week.push(null);
-            } else {
-                week.push(currentDay);
-            }
-            currentDay += 1;
-        }
-        weeks.push(week);
-    }
-
-    const selectedDay =
-        selectedDate?.getDate() === undefined ? null : selectedDate.getDate();
-    const selectedMonth =
-        selectedDate?.getMonth() === undefined ? null : selectedDate.getMonth();
-    const selectedYear =
-        selectedDate?.getFullYear() === undefined
-            ? null
-            : selectedDate.getFullYear();
-
-    const monthLabel = currentMonth.toLocaleDateString("sr-RS", {
-        month: "long",
-        year: "numeric",
-    });
-
-    const weekdayLabels = ["Po", "Ut", "Sr", "Če", "Pe", "Su", "Ne"];
-
-    return (
-        <>
-            <TextField
-                margin="dense"
-                label={label}
-                fullWidth
-                value={value}
-                onClick={handleOpen}
-                InputLabelProps={{ shrink: true }}
-                InputProps={{
-                    readOnly: true,
-                    endAdornment: (
-                        <InputAdornment position="end">
-                            <IconButton size="small" onClick={handleOpen}>
-                                <CalendarMonthIcon fontSize="small" />
-                            </IconButton>
-                        </InputAdornment>
-                    ),
-                }}
-            />
-            <Dialog open={open} onClose={handleClose} maxWidth="xs" fullWidth>
-                <DialogTitle
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        pb: 1,
-                    }}
-                >
-                    <IconButton
-                        size="small"
-                        onClick={() => handleMonthChange(-1)}
-                    >
-                        {"<"}
-                    </IconButton>
-                    <Typography variant="subtitle1" component="span">
-                        {monthLabel}
-                    </Typography>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleMonthChange(1)}
-                    >
-                        {">"}
-                    </IconButton>
-                </DialogTitle>
-                <DialogContent>
-                    <Box
-                        sx={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(7, 1fr)",
-                            mb: 1,
-                        }}
-                    >
-                        {weekdayLabels.map((d) => (
-                            <Typography
-                                key={d}
-                                variant="caption"
-                                align="center"
-                                sx={{ fontWeight: 600 }}
-                            >
-                                {d}
-                            </Typography>
-                        ))}
-                    </Box>
-                    <Box
-                        sx={{
-                            display: "grid",
-                            gridTemplateColumns: "repeat(7, 1fr)",
-                            rowGap: 0.5,
-                        }}
-                    >
-                        {weeks.flat().map((day, idx) =>
-                            day == null ? (
-                                <Box key={idx} />
-                            ) : (
-                                <Button
-                                    key={idx}
-                                    size="small"
-                                    variant={
-                                        selectedDay === day &&
-                                        selectedMonth === month &&
-                                        selectedYear === year
-                                            ? "contained"
-                                            : "text"
-                                    }
-                                    onClick={() => handleSelectDay(day)}
-                                    sx={{ minWidth: 0, p: 0.5 }}
-                                >
-                                    {day}
-                                </Button>
-                            ),
-                        )}
-                    </Box>
-                </DialogContent>
-                <DialogActions>
-                    <Button onClick={handleClose}>Zatvori</Button>
-                </DialogActions>
-            </Dialog>
-        </>
-    );
-};
-
-class DocumentsListPage extends Component<Props, State> {
+class DocumentsListPage extends Component<
+    DocumentsListPageProps,
+    DocumentsListPageState
+> {
     fileInputRef = createRef<HTMLInputElement>();
 
-    state: State = {
+    state: DocumentsListPageState = {
         dialogOpen: false,
         editingDoc: null,
         category_id: "",
@@ -291,7 +72,8 @@ class DocumentsListPage extends Component<Props, State> {
     }
 
     openCreate = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingDoc: null,
             category_id: this.props.categories[0]?.id ?? "",
@@ -301,11 +83,12 @@ class DocumentsListPage extends Component<Props, State> {
             valid_until: "",
             version: "",
             language: "",
-        });
+        }));
     };
 
     openEdit = (doc: DocumentFile): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingDoc: doc,
             category_id:
@@ -322,11 +105,12 @@ class DocumentsListPage extends Component<Props, State> {
                 : "",
             version: doc.version ?? "",
             language: doc.language ?? "",
-        });
+        }));
     };
 
     closeDialog = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: false,
             editingDoc: null,
             category_id: "",
@@ -336,7 +120,7 @@ class DocumentsListPage extends Component<Props, State> {
             valid_until: "",
             version: "",
             language: "",
-        });
+        }));
     };
 
     handleSave = (): void => {
@@ -431,6 +215,7 @@ class DocumentsListPage extends Component<Props, State> {
                                 <TableCell>Naziv</TableCell>
                                 <TableCell>Kategorija</TableCell>
                                 <TableCell>Datum učitavanja</TableCell>
+                                <TableCell>Preuzmi</TableCell>
                                 <TableCell align="right">Akcije</TableCell>
                             </TableRow>
                         </TableHead>
@@ -445,6 +230,23 @@ class DocumentsListPage extends Component<Props, State> {
                                     </TableCell>
                                     <TableCell>
                                         {formatDateTimeISO(doc.uploaded_at)}
+                                    </TableCell>
+                                    <TableCell>
+                                        {doc.file ? (
+                                            <Button
+                                                component="a"
+                                                href={doc.file}
+                                                download
+                                                target="_blank"
+                                                rel="noopener"
+                                                size="small"
+                                                startIcon={<DownloadIcon />}
+                                            >
+                                                Preuzmi
+                                            </Button>
+                                        ) : (
+                                            "—"
+                                        )}
                                     </TableCell>
                                     <TableCell align="right">
                                         <PermissionGate permission="documents.change_documentfile">
@@ -486,11 +288,12 @@ class DocumentsListPage extends Component<Props, State> {
                             <Select
                                 value={category_id}
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         category_id: e.target.value as
                                             | number
                                             | "",
-                                    })
+                                    }))
                                 }
                                 label="Kategorija"
                             >
@@ -508,7 +311,10 @@ class DocumentsListPage extends Component<Props, State> {
                             required
                             value={title}
                             onChange={(e) =>
-                                this.setState({ title: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    title: e.target.value,
+                                }))
                             }
                         />
                         <Typography
@@ -548,7 +354,11 @@ class DocumentsListPage extends Component<Props, State> {
                                 e.preventDefault();
                                 e.stopPropagation();
                                 const f = e.dataTransfer.files?.[0];
-                                if (f) this.setState({ file: f });
+                                if (f)
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        file: f,
+                                    }));
                             }}
                             sx={{
                                 border: "2px dashed",
@@ -570,7 +380,10 @@ class DocumentsListPage extends Component<Props, State> {
                                 style={{ display: "none" }}
                                 onChange={(e) => {
                                     const f = e.target.files?.[0];
-                                    this.setState({ file: f ?? null });
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        file: f ?? null,
+                                    }));
                                 }}
                             />
                             {file ? (
@@ -608,14 +421,20 @@ class DocumentsListPage extends Component<Props, State> {
                             label="Važi od (datum)"
                             value={valid_from}
                             onChange={(newValue) =>
-                                this.setState({ valid_from: newValue })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    valid_from: newValue,
+                                }))
                             }
                         />
                         <DateTextFieldWithPicker
                             label="Važi do (datum)"
                             value={valid_until}
                             onChange={(newValue) =>
-                                this.setState({ valid_until: newValue })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    valid_until: newValue,
+                                }))
                             }
                         />
                         <TextField
@@ -624,7 +443,10 @@ class DocumentsListPage extends Component<Props, State> {
                             fullWidth
                             value={version}
                             onChange={(e) =>
-                                this.setState({ version: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    version: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -633,7 +455,10 @@ class DocumentsListPage extends Component<Props, State> {
                             fullWidth
                             value={language}
                             onChange={(e) =>
-                                this.setState({ language: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    language: e.target.value,
+                                }))
                             }
                         />
                     </DialogContent>
@@ -657,13 +482,15 @@ class DocumentsListPage extends Component<Props, State> {
     }
 }
 
-const mapStateToProps = (state: RootState): StateProps => ({
+const mapStateToProps = (state: RootState): DocumentsListPageStateProps => ({
     documents: state.documents.documents,
     categories: state.documents.categories,
     error: state.documents.error,
 });
 
-const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): DocumentsListPageDispatchProps => ({
     fetchDocuments: () => dispatch(fetchDocuments()),
     fetchDocumentCategories: () => dispatch(fetchDocumentCategories()),
     createDocument: (p) => dispatch(createDocument(p)),

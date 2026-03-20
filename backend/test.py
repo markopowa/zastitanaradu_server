@@ -5,9 +5,11 @@ import pytesseract
 
 TESSERACT_CMD = r"D:\Program Files\Tesseract-OCR\tesseract.exe"
 pytesseract.pytesseract.tesseract_cmd = TESSERACT_CMD
-PDF_PATH = Path(r"../docs/user_story_lekarski/Uput_za_prethodni_lekarski_pregled.pdf")
+PDF_PATH = Path(
+    r"../docs/user_story_lekarski/Uput_za_prethodni_lekarski_pregled.pdf")
 
-POPPLER_BIN = r"C:\Users\marko\Downloads\Release-25.12.0-0\poppler-25.12.0\Library\bin"  # folder gde je pdftoppm.exe
+# folder gde je pdftoppm.exe
+POPPLER_BIN = r"C:\Users\marko\Downloads\Release-25.12.0-0\poppler-25.12.0\Library\bin"
 # ako tesseract nije na PATH-u, otkomentariši i podesi:
 # pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
@@ -17,7 +19,8 @@ def ocr_pdf(path: Path) -> str:
     texts: list[str] = []
     for i, img in enumerate(images, start=1):
         print(f"Processing page {i}/{len(images)}...")
-        text = pytesseract.image_to_string(img, lang="srp+eng")  # prilagodi jezike
+        text = pytesseract.image_to_string(
+            img, lang="srp+eng")  # prilagodi jezike
         texts.append(text)
     return "\n".join(texts).strip()
 

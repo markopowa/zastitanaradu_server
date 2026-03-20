@@ -1,9 +1,25 @@
 from django.conf import settings
-from django.db import models
+from django.db import models, transaction
 
 from documents.models import DocumentFile, DocumentTemplate
 
 from partners.models import ClientCompany, Employee, EquipmentItem
+
+
+class CodeSequence(models.Model):
+    name = models.CharField(max_length=50, unique=True)
+    value = models.PositiveIntegerField(default=0)
+
+
+def get_next_code(name, prefix):
+    with transaction.atomic():
+        seq, _ = CodeSequence.objects.select_for_update().get_or_create(
+            name=name
+        )
+        seq.value += 1
+        seq.save()
+
+        return f"{prefix}-{seq.value:04d}"
 
 
 class ProcessType(models.Model):
@@ -32,6 +48,12 @@ class ProcessType(models.Model):
         verbose_name = "Vrsta obaveze"
         verbose_name_plural = "Vrste obaveza"
         ordering = ("code",)
+
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = get_next_code("process_type", "PRT")
+
+        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return self.name

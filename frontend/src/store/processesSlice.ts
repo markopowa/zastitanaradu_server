@@ -1,0 +1,690 @@
+import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+
+import type { DocumentTemplate } from "../api/documents";
+import { getDocumentTemplates } from "../api/documents";
+import {
+    getClientCompanies,
+    createClientCompany,
+    getProcessTypes,
+    createProcessType,
+    updateProcessType,
+    deleteProcessType,
+    getProcessBindings,
+    createProcessBinding,
+    type ProcessBindingsParams,
+    getProcessRuns,
+    type ProcessRunsParams,
+    completeProcessRun,
+    type CompleteProcessRunPayload,
+    getProcessTemplates,
+    createProcessTemplate,
+    updateProcessTemplate,
+    deleteProcessTemplate,
+    getEquipment,
+    createEquipmentItem,
+    getEmployees,
+    createEmployee,
+    getDashboardExpiring,
+    type DashboardExpiringParams,
+} from "../api/processes";
+import type {
+    ClientCompany,
+    EmployeeSummary,
+    EquipmentItem,
+    ProcessBinding,
+    ProcessRun,
+    ProcessTemplate,
+    ProcessType,
+} from "../types/processes";
+
+export type LoadStatus = "idle" | "loading" | "succeeded" | "failed";
+
+export interface ProcessesState {
+    clientCompanies: ClientCompany[];
+    clientCompaniesStatus: LoadStatus;
+    clientCompaniesError?: string;
+
+    processTypes: ProcessType[];
+    processTypesStatus: LoadStatus;
+    processTypesError?: string;
+
+    bindingsItems: ProcessBinding[];
+    bindingsParamsKey: string;
+    bindingsStatus: LoadStatus;
+    bindingsError?: string;
+
+    runsItems: ProcessRun[];
+    runsParamsKey: string;
+    runsStatus: LoadStatus;
+    runsError?: string;
+
+    templatesItems: ProcessTemplate[];
+    templatesParamsKey: string;
+    templatesStatus: LoadStatus;
+    templatesError?: string;
+
+    processDocTemplates: DocumentTemplate[];
+    processDocTemplatesStatus: LoadStatus;
+
+    equipmentItems: EquipmentItem[];
+    equipmentParamsKey: string;
+    equipmentStatus: LoadStatus;
+    equipmentError?: string;
+
+    employeesItems: EmployeeSummary[];
+    employeesParamsKey: string;
+    employeesStatus: LoadStatus;
+    employeesError?: string;
+
+    dashboardExpiringItems: ProcessRun[];
+    dashboardExpiringParamsKey: string;
+    dashboardExpiringStatus: LoadStatus;
+    dashboardExpiringError?: string;
+}
+
+type ProcessesRoot = { processes: ProcessesState };
+
+function selectP(getState: () => unknown): ProcessesState {
+    return (getState() as ProcessesRoot).processes;
+}
+
+function bindingsParamsKey(p: ProcessBindingsParams): string {
+    return JSON.stringify({
+        c: p.client_company_id ?? null,
+        e: p.employee_id ?? null,
+        q: p.equipment_item_id ?? null,
+        t: p.process_type_id ?? null,
+        a: p.is_active ?? null,
+    });
+}
+
+function runsParamsKey(p: ProcessRunsParams): string {
+    return JSON.stringify({
+        c: p.client_company_id ?? null,
+        e: p.employee_id ?? null,
+        q: p.equipment_item_id ?? null,
+        t: p.process_type_id ?? null,
+        s: p.status ?? null,
+        fv: p.from_valid_until ?? null,
+        tv: p.to_valid_until ?? null,
+    });
+}
+
+function templatesParamsKey(processTypeId: number | undefined): string {
+    return String(processTypeId ?? "");
+}
+
+function equipmentParamsKey(clientCompanyId: string): string {
+    return clientCompanyId || "_all";
+}
+
+function employeesParamsKey(clientCompanyId: string): string {
+    return clientCompanyId || "_all";
+}
+
+function dashboardParamsKey(p: DashboardExpiringParams): string {
+    return JSON.stringify({
+        d: p.days ?? null,
+        u: p.use_lead_time ?? null,
+        c: p.client_company_id ?? null,
+        sk: p.subject_kind ?? null,
+        t: p.process_type_id ?? null,
+    });
+}
+
+const initialState: ProcessesState = {
+    clientCompanies: [],
+    clientCompaniesStatus: "idle",
+    processTypes: [],
+    processTypesStatus: "idle",
+    bindingsItems: [],
+    bindingsParamsKey: "",
+    bindingsStatus: "idle",
+    runsItems: [],
+    runsParamsKey: "",
+    runsStatus: "idle",
+    templatesItems: [],
+    templatesParamsKey: "",
+    templatesStatus: "idle",
+    processDocTemplates: [],
+    processDocTemplatesStatus: "idle",
+    equipmentItems: [],
+    equipmentParamsKey: "",
+    equipmentStatus: "idle",
+    employeesItems: [],
+    employeesParamsKey: "",
+    employeesStatus: "idle",
+    dashboardExpiringItems: [],
+    dashboardExpiringParamsKey: "",
+    dashboardExpiringStatus: "idle",
+};
+
+export const fetchClientCompanies = createAsyncThunk(
+    "processes/fetchClientCompanies",
+    async () => getClientCompanies(),
+);
+
+export const ensureClientCompanies = createAsyncThunk(
+    "processes/ensureClientCompanies",
+    async () => getClientCompanies(),
+    {
+        condition(_, { getState }) {
+            const p = selectP(getState);
+            return (
+                p.clientCompaniesStatus !== "succeeded" &&
+                p.clientCompaniesStatus !== "loading"
+            );
+        },
+    },
+);
+
+export const addClientCompany = createAsyncThunk(
+    "processes/addClientCompany",
+    async (payload: Partial<ClientCompany>) => createClientCompany(payload),
+);
+
+export const fetchProcessTypes = createAsyncThunk(
+    "processes/fetchProcessTypes",
+    async () => getProcessTypes(),
+);
+
+export const ensureProcessTypes = createAsyncThunk(
+    "processes/ensureProcessTypes",
+    async () => getProcessTypes(),
+    {
+        condition(_, { getState }) {
+            const p = selectP(getState);
+            return (
+                p.processTypesStatus !== "succeeded" &&
+                p.processTypesStatus !== "loading"
+            );
+        },
+    },
+);
+
+export const addProcessType = createAsyncThunk(
+    "processes/addProcessType",
+    async (payload: Partial<ProcessType>) => createProcessType(payload),
+);
+
+export const saveProcessType = createAsyncThunk(
+    "processes/saveProcessType",
+    async ({ id, payload }: { id: number; payload: Partial<ProcessType> }) =>
+        updateProcessType(id, payload),
+);
+
+export const removeProcessType = createAsyncThunk(
+    "processes/removeProcessType",
+    async (id: number) => {
+        await deleteProcessType(id);
+        return id;
+    },
+);
+
+export const fetchBindings = createAsyncThunk(
+    "processes/fetchBindings",
+    async (params: ProcessBindingsParams) => {
+        const items = await getProcessBindings(params);
+        return {
+            paramsKey: bindingsParamsKey(params),
+            items: Array.isArray(items) ? items : [],
+        };
+    },
+    {
+        condition(arg, { getState }) {
+            const p = selectP(getState);
+            const key = bindingsParamsKey(arg);
+            return !(
+                p.bindingsParamsKey === key && p.bindingsStatus === "succeeded"
+            );
+        },
+    },
+);
+
+export const addProcessBinding = createAsyncThunk(
+    "processes/addProcessBinding",
+    async (payload: Partial<ProcessBinding>) => createProcessBinding(payload),
+);
+
+export const fetchRuns = createAsyncThunk(
+    "processes/fetchRuns",
+    async (params: ProcessRunsParams) => {
+        const items = await getProcessRuns(params);
+        return {
+            paramsKey: runsParamsKey(params),
+            items: Array.isArray(items) ? items : [],
+        };
+    },
+    {
+        condition(arg, { getState }) {
+            const p = selectP(getState);
+            const key = runsParamsKey(arg);
+            return !(p.runsParamsKey === key && p.runsStatus === "succeeded");
+        },
+    },
+);
+
+export const completeRun = createAsyncThunk(
+    "processes/completeRun",
+    async ({
+        id,
+        payload,
+    }: {
+        id: number;
+        payload: CompleteProcessRunPayload;
+    }) => completeProcessRun(id, payload),
+);
+
+export const fetchProcessTemplatesList = createAsyncThunk(
+    "processes/fetchProcessTemplatesList",
+    async (processTypeId: number | undefined) => {
+        const params =
+            processTypeId != null
+                ? { process_type_id: processTypeId }
+                : undefined;
+        const items = await getProcessTemplates(params);
+        return {
+            paramsKey: templatesParamsKey(processTypeId),
+            items: Array.isArray(items) ? items : [],
+        };
+    },
+    {
+        condition(arg, { getState }) {
+            const p = selectP(getState);
+            const key = templatesParamsKey(arg);
+            return !(
+                p.templatesParamsKey === key &&
+                p.templatesStatus === "succeeded"
+            );
+        },
+    },
+);
+
+export const ensureProcessDocTemplates = createAsyncThunk(
+    "processes/ensureProcessDocTemplates",
+    async () => getDocumentTemplates(),
+    {
+        condition(_, { getState }) {
+            const p = selectP(getState);
+            return (
+                p.processDocTemplatesStatus !== "succeeded" &&
+                p.processDocTemplatesStatus !== "loading"
+            );
+        },
+    },
+);
+
+export const addProcessTemplate = createAsyncThunk(
+    "processes/addProcessTemplate",
+    async (payload: Partial<ProcessTemplate>) => createProcessTemplate(payload),
+);
+
+export const saveProcessTemplate = createAsyncThunk(
+    "processes/saveProcessTemplate",
+    async ({
+        id,
+        payload,
+    }: {
+        id: number;
+        payload: Partial<ProcessTemplate>;
+    }) => updateProcessTemplate(id, payload),
+);
+
+export const removeProcessTemplate = createAsyncThunk(
+    "processes/removeProcessTemplate",
+    async (id: number) => {
+        await deleteProcessTemplate(id);
+        return id;
+    },
+);
+
+export const fetchEquipmentList = createAsyncThunk(
+    "processes/fetchEquipmentList",
+    async (clientCompanyId: string) => {
+        const params =
+            clientCompanyId !== ""
+                ? { client_company_id: Number(clientCompanyId) }
+                : undefined;
+        const items = await getEquipment(params);
+        return {
+            paramsKey: equipmentParamsKey(clientCompanyId),
+            items: Array.isArray(items) ? items : [],
+        };
+    },
+    {
+        condition(arg, { getState }) {
+            const p = selectP(getState);
+            const key = equipmentParamsKey(arg);
+            return !(
+                p.equipmentParamsKey === key &&
+                p.equipmentStatus === "succeeded"
+            );
+        },
+    },
+);
+
+export const addEquipmentItem = createAsyncThunk(
+    "processes/addEquipmentItem",
+    async (payload: Partial<EquipmentItem>) => createEquipmentItem(payload),
+);
+
+export const fetchEmployeesList = createAsyncThunk(
+    "processes/fetchEmployeesList",
+    async (clientCompanyId: string) => {
+        const params =
+            clientCompanyId !== ""
+                ? { client_company_id: Number(clientCompanyId) }
+                : undefined;
+        const items = await getEmployees(params);
+        return {
+            paramsKey: employeesParamsKey(clientCompanyId),
+            items: Array.isArray(items) ? items : [],
+        };
+    },
+    {
+        condition(arg, { getState }) {
+            const p = selectP(getState);
+            const key = employeesParamsKey(arg);
+            return !(
+                p.employeesParamsKey === key &&
+                p.employeesStatus === "succeeded"
+            );
+        },
+    },
+);
+
+export const addEmployee = createAsyncThunk(
+    "processes/addEmployee",
+    async (payload: Parameters<typeof createEmployee>[0]) =>
+        createEmployee(payload),
+);
+
+export const fetchDashboardExpiring = createAsyncThunk(
+    "processes/fetchDashboardExpiring",
+    async (params: DashboardExpiringParams) => {
+        const items = await getDashboardExpiring(params);
+        return {
+            paramsKey: dashboardParamsKey(params),
+            items: Array.isArray(items) ? items : [],
+        };
+    },
+    {
+        condition(arg, { getState }) {
+            const p = selectP(getState);
+            const key = dashboardParamsKey(arg);
+            return !(
+                p.dashboardExpiringParamsKey === key &&
+                p.dashboardExpiringStatus === "succeeded"
+            );
+        },
+    },
+);
+
+function sortProcessTypes(types: ProcessType[]): ProcessType[] {
+    return [...types].sort((a, b) =>
+        a.code.localeCompare(b.code, "sr", { sensitivity: "base" }),
+    );
+}
+
+const processesSlice = createSlice({
+    name: "processes",
+    initialState,
+    reducers: {
+        invalidateBindings(state) {
+            state.bindingsStatus = "idle";
+        },
+        invalidateRuns(state) {
+            state.runsStatus = "idle";
+        },
+        invalidateTemplates(state) {
+            state.templatesStatus = "idle";
+        },
+        invalidateEquipment(state) {
+            state.equipmentStatus = "idle";
+        },
+        invalidateEmployees(state) {
+            state.employeesStatus = "idle";
+        },
+        invalidateDashboardExpiring(state) {
+            state.dashboardExpiringStatus = "idle";
+        },
+    },
+    extraReducers: (builder) => {
+        builder
+            .addCase(fetchClientCompanies.pending, (state) => {
+                state.clientCompaniesStatus = "loading";
+                state.clientCompaniesError = undefined;
+            })
+            .addCase(fetchClientCompanies.fulfilled, (state, action) => {
+                state.clientCompaniesStatus = "succeeded";
+                state.clientCompanies = action.payload;
+            })
+            .addCase(fetchClientCompanies.rejected, (state, action) => {
+                state.clientCompaniesStatus = "failed";
+                state.clientCompaniesError =
+                    (action.error.message as string) ?? "Greška";
+            })
+            .addCase(ensureClientCompanies.pending, (state) => {
+                state.clientCompaniesStatus = "loading";
+                state.clientCompaniesError = undefined;
+            })
+            .addCase(ensureClientCompanies.fulfilled, (state, action) => {
+                state.clientCompaniesStatus = "succeeded";
+                state.clientCompanies = action.payload;
+            })
+            .addCase(ensureClientCompanies.rejected, (state, action) => {
+                state.clientCompaniesStatus = "failed";
+                state.clientCompaniesError =
+                    (action.error.message as string) ?? "Greška";
+            })
+            .addCase(addClientCompany.fulfilled, (state, action) => {
+                state.clientCompanies.push(action.payload);
+            })
+            .addCase(fetchProcessTypes.pending, (state) => {
+                state.processTypesStatus = "loading";
+                state.processTypesError = undefined;
+            })
+            .addCase(fetchProcessTypes.fulfilled, (state, action) => {
+                state.processTypesStatus = "succeeded";
+                state.processTypes = sortProcessTypes(action.payload);
+            })
+            .addCase(fetchProcessTypes.rejected, (state, action) => {
+                state.processTypesStatus = "failed";
+                state.processTypesError =
+                    (action.error.message as string) ?? "Greška";
+            })
+            .addCase(ensureProcessTypes.pending, (state) => {
+                state.processTypesStatus = "loading";
+                state.processTypesError = undefined;
+            })
+            .addCase(ensureProcessTypes.fulfilled, (state, action) => {
+                state.processTypesStatus = "succeeded";
+                state.processTypes = sortProcessTypes(action.payload);
+            })
+            .addCase(ensureProcessTypes.rejected, (state, action) => {
+                state.processTypesStatus = "failed";
+                state.processTypesError =
+                    (action.error.message as string) ?? "Greška";
+            })
+            .addCase(addProcessType.fulfilled, (state, action) => {
+                state.processTypes = sortProcessTypes([
+                    ...state.processTypes,
+                    action.payload,
+                ]);
+            })
+            .addCase(saveProcessType.fulfilled, (state, action) => {
+                const u = action.payload;
+                state.processTypes = sortProcessTypes(
+                    state.processTypes.map((t) => (t.id === u.id ? u : t)),
+                );
+            })
+            .addCase(removeProcessType.fulfilled, (state, action) => {
+                const id = action.payload;
+                state.processTypes = state.processTypes.filter(
+                    (t) => t.id !== id,
+                );
+            })
+            .addCase(fetchBindings.pending, (state) => {
+                state.bindingsStatus = "loading";
+                state.bindingsError = undefined;
+            })
+            .addCase(fetchBindings.fulfilled, (state, action) => {
+                state.bindingsStatus = "succeeded";
+                state.bindingsParamsKey = action.payload.paramsKey;
+                state.bindingsItems = action.payload.items;
+            })
+            .addCase(fetchBindings.rejected, (state, action) => {
+                state.bindingsStatus = "failed";
+                state.bindingsError =
+                    (action.error.message as string) ?? "Greška";
+            })
+            .addCase(addProcessBinding.fulfilled, (state, action) => {
+                state.bindingsItems = [...state.bindingsItems, action.payload];
+            })
+            .addCase(fetchRuns.pending, (state) => {
+                state.runsStatus = "loading";
+                state.runsError = undefined;
+            })
+            .addCase(fetchRuns.fulfilled, (state, action) => {
+                state.runsStatus = "succeeded";
+                state.runsParamsKey = action.payload.paramsKey;
+                state.runsItems = action.payload.items;
+            })
+            .addCase(fetchRuns.rejected, (state, action) => {
+                state.runsStatus = "failed";
+                state.runsError = (action.error.message as string) ?? "Greška";
+            })
+            .addCase(completeRun.fulfilled, (state, action) => {
+                const u = action.payload;
+                state.runsItems = state.runsItems.map((r) =>
+                    r.id === u.id ? u : r,
+                );
+            })
+            .addCase(fetchProcessTemplatesList.pending, (state) => {
+                state.templatesStatus = "loading";
+                state.templatesError = undefined;
+            })
+            .addCase(fetchProcessTemplatesList.fulfilled, (state, action) => {
+                state.templatesStatus = "succeeded";
+                state.templatesParamsKey = action.payload.paramsKey;
+                state.templatesItems = action.payload.items;
+            })
+            .addCase(fetchProcessTemplatesList.rejected, (state, action) => {
+                state.templatesStatus = "failed";
+                state.templatesError =
+                    (action.error.message as string) ?? "Greška";
+            })
+            .addCase(ensureProcessDocTemplates.pending, (state) => {
+                state.processDocTemplatesStatus = "loading";
+            })
+            .addCase(ensureProcessDocTemplates.fulfilled, (state, action) => {
+                state.processDocTemplatesStatus = "succeeded";
+                state.processDocTemplates = action.payload;
+            })
+            .addCase(ensureProcessDocTemplates.rejected, (state) => {
+                state.processDocTemplatesStatus = "failed";
+            })
+            .addCase(addProcessTemplate.fulfilled, (state, action) => {
+                state.templatesItems = [
+                    ...state.templatesItems,
+                    action.payload,
+                ];
+            })
+            .addCase(saveProcessTemplate.fulfilled, (state, action) => {
+                const u = action.payload;
+                state.templatesItems = state.templatesItems.map((t) =>
+                    t.id === u.id ? u : t,
+                );
+            })
+            .addCase(removeProcessTemplate.fulfilled, (state, action) => {
+                const id = action.payload;
+                state.templatesItems = state.templatesItems.filter(
+                    (t) => t.id !== id,
+                );
+            })
+            .addCase(fetchEquipmentList.pending, (state) => {
+                state.equipmentStatus = "loading";
+                state.equipmentError = undefined;
+            })
+            .addCase(fetchEquipmentList.fulfilled, (state, action) => {
+                state.equipmentStatus = "succeeded";
+                state.equipmentParamsKey = action.payload.paramsKey;
+                state.equipmentItems = action.payload.items;
+            })
+            .addCase(fetchEquipmentList.rejected, (state, action) => {
+                state.equipmentStatus = "failed";
+                state.equipmentError =
+                    (action.error.message as string) ?? "Greška";
+            })
+            .addCase(addEquipmentItem.fulfilled, (state, action) => {
+                const key = state.equipmentParamsKey;
+                const cid = String(action.payload.client_company);
+                if (key === "_all" || key === cid) {
+                    state.equipmentItems = [
+                        ...state.equipmentItems,
+                        action.payload,
+                    ];
+                }
+            })
+            .addCase(fetchEmployeesList.pending, (state) => {
+                state.employeesStatus = "loading";
+                state.employeesError = undefined;
+            })
+            .addCase(fetchEmployeesList.fulfilled, (state, action) => {
+                state.employeesStatus = "succeeded";
+                state.employeesParamsKey = action.payload.paramsKey;
+                state.employeesItems = action.payload.items;
+            })
+            .addCase(fetchEmployeesList.rejected, (state, action) => {
+                state.employeesStatus = "failed";
+                state.employeesError =
+                    (action.error.message as string) ?? "Greška";
+            })
+            .addCase(addEmployee.fulfilled, (state, action) => {
+                const row = action.payload;
+                const summary: EmployeeSummary = {
+                    id: row.id,
+                    client_company: row.client_company,
+                    client_company_name: row.client_company_name,
+                    first_name: row.first_name,
+                    last_name: row.last_name,
+                    email: row.email,
+                    org_unit: row.org_unit,
+                    position: row.position,
+                };
+                const key = state.employeesParamsKey;
+                const cid =
+                    row.client_company != null
+                        ? String(row.client_company)
+                        : "";
+                if (key === "_all" || key === cid) {
+                    state.employeesItems = [...state.employeesItems, summary];
+                }
+            })
+            .addCase(fetchDashboardExpiring.pending, (state) => {
+                state.dashboardExpiringStatus = "loading";
+                state.dashboardExpiringError = undefined;
+            })
+            .addCase(fetchDashboardExpiring.fulfilled, (state, action) => {
+                state.dashboardExpiringStatus = "succeeded";
+                state.dashboardExpiringParamsKey = action.payload.paramsKey;
+                state.dashboardExpiringItems = action.payload.items;
+            })
+            .addCase(fetchDashboardExpiring.rejected, (state, action) => {
+                state.dashboardExpiringStatus = "failed";
+                state.dashboardExpiringError =
+                    (action.error.message as string) ?? "Greška";
+            });
+    },
+});
+
+export const {
+    invalidateBindings,
+    invalidateRuns,
+    invalidateTemplates,
+    invalidateEquipment,
+    invalidateEmployees,
+    invalidateDashboardExpiring,
+} = processesSlice.actions;
+
+export default processesSlice.reducer;

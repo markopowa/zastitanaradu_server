@@ -26,6 +26,12 @@ const ClientCompaniesListPage = lazy(
 const ClientCompanyDetailPage = lazy(
     () => import("./processes/ClientCompanyDetailPage"),
 );
+const ClientCompaniesEmployeesListPage = lazy(
+    () => import("./processes/ClientCompaniesEmployeesListPage"),
+);
+const ClientCompanyEmployeesDetailPage = lazy(
+    () => import("./processes/ClientCompanyEmployeesDetailPage"),
+);
 const EquipmentListPage = lazy(() => import("./processes/EquipmentListPage"));
 const EquipmentDetailPage = lazy(
     () => import("./processes/EquipmentDetailPage"),
@@ -78,6 +84,14 @@ class App extends Component {
                         <Route
                             path="client-companies/:id"
                             element={<ClientCompanyDetailPage />}
+                        />
+                        <Route
+                            path="client-companies-employees"
+                            element={<ClientCompaniesEmployeesListPage />}
+                        />
+                        <Route
+                            path="client-companies-employees/:id"
+                            element={<ClientCompanyEmployeesDetailPage />}
                         />
                         <Route
                             path="equipment"

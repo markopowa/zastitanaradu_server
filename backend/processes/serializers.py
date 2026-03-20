@@ -1,6 +1,13 @@
 from rest_framework import serializers
 
-from .models import ProcessBinding, ProcessRun, ProcessTemplate, ProcessType, TaskAssignment
+from .models import (
+    ProcessBinding,
+    ProcessRun,
+    ProcessRunDocument,
+    ProcessTemplate,
+    ProcessType,
+    TaskAssignment,
+)
 
 
 class ProcessTypeSerializer(serializers.ModelSerializer):
@@ -16,6 +23,7 @@ class ProcessTypeSerializer(serializers.ModelSerializer):
             "lead_time_days",
             "is_active",
         )
+        read_only_fields = ["code"]
 
 
 class ProcessTemplateSerializer(serializers.ModelSerializer):
@@ -96,6 +104,32 @@ class ProcessRunCompleteSerializer(serializers.Serializer):
     performed_at = serializers.DateField(required=False, allow_null=True)
     valid_until = serializers.DateField(required=True)
     notes = serializers.CharField(required=False, allow_blank=True, default="")
+    result_data = serializers.JSONField(required=False, allow_null=True)
+
+
+class ProcessRunDocumentSerializer(serializers.ModelSerializer):
+    document_file_title = serializers.CharField(
+        source="document_file.title", read_only=True
+    )
+
+    class Meta:
+        model = ProcessRunDocument
+        fields = (
+            "id",
+            "process_run",
+            "document_file",
+            "document_file_title",
+            "usage_kind",
+        )
+
+
+class ProcessRunDocumentCreateSerializer(serializers.Serializer):
+    document_file_id = serializers.IntegerField(required=True)
+    usage_kind = serializers.ChoiceField(
+        choices=ProcessRunDocument.USAGE_CHOICES,
+        required=False,
+        default=ProcessRunDocument.USAGE_REPORT,
+    )
 
 
 class TaskAssignmentSerializer(serializers.ModelSerializer):

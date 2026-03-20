@@ -1,4 +1,6 @@
 import { Component } from "react";
+import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -20,53 +22,64 @@ import {
     TextField,
     CircularProgress,
     Alert,
+    IconButton,
+    List,
+    ListItem,
+    ListItemText,
+    Tooltip,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DescriptionIcon from "@mui/icons-material/Description";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { enqueueSnackbar } from "notistack";
 
+import { api } from "../api/client";
+import type { ProcessRunsParams } from "../api/processes";
 import {
-    getProcessRuns,
-    getClientCompanies,
-    getProcessTypes,
-    completeProcessRun,
+    getProcessRunDocuments,
+    attachDocumentToRun,
+    removeDocumentFromRun,
 } from "../api/processes";
-import type { ProcessRun, ClientCompany } from "../types/processes";
+import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import {
+    completeRun,
+    ensureClientCompanies,
+    ensureProcessTypes,
+    fetchRuns,
+} from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
-import { connect } from "react-redux";
+import { formatDateDisplay, StringToDate } from "../utils/date";
+
 import type { AppDispatch, RootState } from "../store";
+import type { DocumentFile } from "../types/documents";
+import type { ProcessRun } from "../types/processes";
+import type {
+    ProcessRunsListPageDispatchProps,
+    ProcessRunsListPageProps,
+    ProcessRunsListPageState,
+    ProcessRunsListPageStateProps,
+} from "../types/processPages";
+import { withNavigation } from "../hocs/withNavigation";
 
-const pad = (n: number) => String(n).padStart(2, "0");
-const formatDate = (value?: string | null): string => {
-    if (!value) return "—";
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return value;
-    return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}.`;
-};
-
-interface DispatchProps {
-    setLastPath?: (path: string) => void;
-}
-type Props = DispatchProps;
-
-interface State {
-    items: ProcessRun[];
-    clients: ClientCompany[];
-    types: { id: number; name: string }[];
-    client_company_id: string;
-    process_type_id: string;
-    status: string;
-    completeDialogRunId: number | null;
-    complete_valid_until: string;
-    complete_performed_at: string;
-    complete_notes: string;
-    loading: boolean;
-    error: string | null;
+function parseRunsListSearch(search: string): Pick<
+    ProcessRunsListPageState,
+    "client_company_id" | "process_type_id" | "status"
+> {
+    const q = new URLSearchParams(
+        search.startsWith("?") ? search.slice(1) : search,
+    );
+    return {
+        client_company_id: q.get("client_company_id") ?? "",
+        process_type_id: q.get("process_type_id") ?? "",
+        status: q.get("status") ?? "",
+    };
 }
 
-class ProcessRunsListPageInner extends Component<Props, State> {
-    state: State = {
-        items: [],
-        clients: [],
-        types: [],
+class ProcessRunsListPageInner extends Component<
+    ProcessRunsListPageProps,
+    ProcessRunsListPageState
+> {
+    state: ProcessRunsListPageState = {
         client_company_id: "",
         process_type_id: "",
         status: "",
@@ -74,63 +87,65 @@ class ProcessRunsListPageInner extends Component<Props, State> {
         complete_valid_until: "",
         complete_performed_at: "",
         complete_notes: "",
-        loading: true,
-        error: null,
+        complete_broj_izvestaja: "",
+        complete_ocena_sposobnosti: "",
+        complete_preduzete_mere: "",
+        documentsDialogRunId: null,
+        runDocuments: [],
+        allDocuments: [],
+        addDocSelectedId: "",
     };
 
     load = (): void => {
-        this.setState({ loading: true, error: null });
         const { client_company_id, process_type_id, status } = this.state;
-        const params: Parameters<typeof getProcessRuns>[0] = {};
+        const params: ProcessRunsParams = {};
         if (client_company_id)
             params.client_company_id = Number(client_company_id);
         if (process_type_id) params.process_type_id = Number(process_type_id);
         if (status) params.status = status;
-        getProcessRuns(params)
-            .then((items) =>
-                this.setState({
-                    items: Array.isArray(items) ? items : [],
-                    loading: false,
-                    error: null,
-                }),
-            )
-            .catch(() =>
-                this.setState({
-                    loading: false,
-                    error: "Greška pri učitavanju.",
-                }),
-            );
+        this.props.loadRuns?.(params);
     };
 
     componentDidMount(): void {
         this.props.setLastPath?.("/processes/runs");
-        Promise.all([getClientCompanies(), getProcessTypes()]).then(
-            ([clients, types]) => {
-                this.setState(
-                    {
-                        clients: Array.isArray(clients) ? clients : [],
-                        types: (Array.isArray(types) ? types : []).map((t) => ({
-                            id: t.id,
-                            name: t.name,
-                        })),
-                    },
-                    () => this.load(),
-                );
+        const fromUrl = parseRunsListSearch(this.props.location.search);
+        this.setState(
+            (prev) => ({ ...prev, ...fromUrl }),
+            () => {
+                this.props.ensureClientCompanies?.();
+                this.props.ensureProcessTypes?.();
+                this.load();
             },
         );
     }
 
+    componentDidUpdate(prevProps: ProcessRunsListPageProps): void {
+        if (prevProps.location.search !== this.props.location.search) {
+            const fromUrl = parseRunsListSearch(this.props.location.search);
+            this.setState(
+                (prev) => ({ ...prev, ...fromUrl }),
+                () => this.load(),
+            );
+        }
+    }
+
     openComplete = (run: ProcessRun): void => {
-        this.setState({
+        const validUntil =
+            run.valid_until != null ? formatDateDisplay(run.valid_until) : "";
+        this.setState((prev) => ({
+            ...prev,
             completeDialogRunId: run.id,
-            complete_valid_until: run.valid_until ?? "",
+            complete_valid_until: validUntil,
             complete_performed_at: "",
             complete_notes: "",
-        });
+            complete_broj_izvestaja: "",
+            complete_ocena_sposobnosti: "",
+            complete_preduzete_mere: "",
+        }));
     };
 
     closeComplete = (): void => {
-        this.setState({ completeDialogRunId: null });
+        this.setState((prev) => ({ ...prev, completeDialogRunId: null }));
     };
 
     handleComplete = (): void => {
@@ -139,23 +154,127 @@ class ProcessRunsListPageInner extends Component<Props, State> {
             complete_valid_until,
             complete_performed_at,
             complete_notes,
+            complete_broj_izvestaja,
+            complete_ocena_sposobnosti,
+            complete_preduzete_mere,
         } = this.state;
         if (completeDialogRunId == null || !complete_valid_until) return;
-        completeProcessRun(completeDialogRunId, {
-            valid_until: complete_valid_until,
-            performed_at: complete_performed_at || undefined,
-            notes: complete_notes || undefined,
-        }).then(() => {
-            this.closeComplete();
-            this.load();
+        const validUntilDate = StringToDate(complete_valid_until);
+        const performedAtDate = complete_performed_at.trim()
+            ? StringToDate(complete_performed_at)
+            : undefined;
+        const validUntilISO =
+            validUntilDate != null
+                ? `${validUntilDate.getFullYear()}-${String(validUntilDate.getMonth() + 1).padStart(2, "0")}-${String(validUntilDate.getDate()).padStart(2, "0")}`
+                : "";
+        const performedAtISO =
+            performedAtDate != null
+                ? `${performedAtDate.getFullYear()}-${String(performedAtDate.getMonth() + 1).padStart(2, "0")}-${String(performedAtDate.getDate()).padStart(2, "0")}`
+                : undefined;
+        const result_data =
+            complete_broj_izvestaja.trim() ||
+            complete_ocena_sposobnosti.trim() ||
+            complete_preduzete_mere.trim()
+                ? {
+                      broj_izvestaja:
+                          complete_broj_izvestaja.trim() || undefined,
+                      ocena_sposobnosti:
+                          complete_ocena_sposobnosti.trim() || undefined,
+                      preduzete_mere:
+                          complete_preduzete_mere.trim() || undefined,
+                  }
+                : undefined;
+        void this.props
+            .completeRun({
+                id: completeDialogRunId,
+                payload: {
+                    valid_until: validUntilISO,
+                    performed_at: performedAtISO,
+                    notes: complete_notes || undefined,
+                    result_data,
+                },
+            })
+            .unwrap()
+            .then(() => {
+                this.closeComplete();
+                this.load();
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri završetku aktivnosti.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
+    };
+
+    openDocuments = (run: ProcessRun): void => {
+        this.setState((prev) => ({
+            ...prev,
+            documentsDialogRunId: run.id,
+            runDocuments: [],
+        }));
+        getProcessRunDocuments(run.id).then((runDocuments) =>
+            this.setState((prev) => ({ ...prev, runDocuments })),
+        );
+        api.get<DocumentFile[] | { results: DocumentFile[] }>(
+            "/api/documents/",
+        ).then((res) => {
+            const data = res.data;
+            const list = Array.isArray(data) ? data : (data?.results ?? []);
+            this.setState((prev) => ({ ...prev, allDocuments: list }));
         });
     };
 
-    render(): React.ReactNode {
+    closeDocuments = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            documentsDialogRunId: null,
+            addDocSelectedId: "",
+        }));
+    };
+
+    handleAddDocument = (): void => {
+        const { documentsDialogRunId, addDocSelectedId } = this.state;
+        if (documentsDialogRunId == null || !addDocSelectedId) return;
+        attachDocumentToRun(
+            documentsDialogRunId,
+            Number(addDocSelectedId),
+        ).then(() => {
+            getProcessRunDocuments(documentsDialogRunId).then((runDocuments) =>
+                this.setState((prev) => ({
+                    ...prev,
+                    runDocuments,
+                    addDocSelectedId: "",
+                })),
+            );
+        });
+    };
+
+    handleRemoveDocument = (runId: number, docId: number): void => {
+        removeDocumentFromRun(runId, docId).then(() => {
+            getProcessRunDocuments(runId).then((runDocuments) =>
+                this.setState((prev) => ({ ...prev, runDocuments })),
+            );
+        });
+    };
+
+    render() {
         const {
-            items,
-            clients,
-            types,
+            runsItems: items,
+            clientCompanies: clients,
+            processTypes: types,
+            runsLoading: loading,
+            runsError: error,
+        } = this.props;
+        const {
             client_company_id,
             process_type_id,
             status,
@@ -163,8 +282,6 @@ class ProcessRunsListPageInner extends Component<Props, State> {
             complete_valid_until,
             complete_performed_at,
             complete_notes,
-            loading,
-            error,
         } = this.state;
 
         return (
@@ -178,10 +295,11 @@ class ProcessRunsListPageInner extends Component<Props, State> {
                             label="Klijent"
                             onChange={(e) =>
                                 this.setState(
-                                    {
+                                    (prev) => ({
+                                        ...prev,
                                         client_company_id: e.target
                                             .value as string,
-                                    },
+                                    }),
                                     () => this.load(),
                                 )
                             }
@@ -201,10 +319,11 @@ class ProcessRunsListPageInner extends Component<Props, State> {
                             label="Vrsta obaveze"
                             onChange={(e) =>
                                 this.setState(
-                                    {
+                                    (prev) => ({
+                                        ...prev,
                                         process_type_id: e.target
                                             .value as string,
-                                    },
+                                    }),
                                     () => this.load(),
                                 )
                             }
@@ -224,7 +343,10 @@ class ProcessRunsListPageInner extends Component<Props, State> {
                             label="Status"
                             onChange={(e) =>
                                 this.setState(
-                                    { status: e.target.value as string },
+                                    (prev) => ({
+                                        ...prev,
+                                        status: e.target.value as string,
+                                    }),
                                     () => this.load(),
                                 )
                             }
@@ -273,13 +395,25 @@ class ProcessRunsListPageInner extends Component<Props, State> {
                                             {row.process_type_name}
                                         </TableCell>
                                         <TableCell>
-                                            {formatDate(row.scheduled_for)}
+                                            {formatDateDisplay(
+                                                row.scheduled_for,
+                                            )}
                                         </TableCell>
                                         <TableCell>
-                                            {formatDate(row.valid_until)}
+                                            {formatDateDisplay(row.valid_until)}
                                         </TableCell>
                                         <TableCell>{row.status}</TableCell>
                                         <TableCell align="right">
+                                            <Button
+                                                size="small"
+                                                startIcon={<DescriptionIcon />}
+                                                onClick={() =>
+                                                    this.openDocuments(row)
+                                                }
+                                                sx={{ mr: 0.5 }}
+                                            >
+                                                Dokumenti
+                                            </Button>
                                             {row.status === "PENDING" && (
                                                 <Button
                                                     size="small"
@@ -309,38 +443,70 @@ class ProcessRunsListPageInner extends Component<Props, State> {
                 >
                     <DialogTitle>Završi proces</DialogTitle>
                     <DialogContent>
+                        <Tooltip title="Datum do kada važi pregled / potvrda.">
+                            <Box>
+                                <DateTextFieldWithPicker
+                                    label="Važi do (dd.mm.yyyy)"
+                                    value={complete_valid_until}
+                                    onChange={(v) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            complete_valid_until: v,
+                                        }))
+                                    }
+                                />
+                            </Box>
+                        </Tooltip>
+                        <Tooltip title="Datum kada je pregled izvršen.">
+                            <Box>
+                                <DateTextFieldWithPicker
+                                    label="Izvršeno (dd.mm.yyyy)"
+                                    value={complete_performed_at}
+                                    onChange={(v) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            complete_performed_at: v,
+                                        }))
+                                    }
+                                />
+                            </Box>
+                        </Tooltip>
                         <TextField
                             margin="dense"
-                            label="Važi do (YYYY-MM-DD)"
+                            label="Broj izveštaja"
                             fullWidth
-                            value={complete_valid_until}
+                            value={this.state.complete_broj_izvestaja}
                             onChange={(e) =>
-                                this.setState({
-                                    complete_valid_until: e.target.value,
-                                })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    complete_broj_izvestaja: e.target.value,
+                                }))
                             }
-                            required
-                            placeholder="YYYY-MM-DD"
-                            inputProps={{
-                                inputMode: "numeric",
-                                pattern: "\\d{4}-\\d{2}-\\d{2}",
-                            }}
                         />
                         <TextField
                             margin="dense"
-                            label="Izvršeno (YYYY-MM-DD)"
+                            label="Ocena sposobnosti"
                             fullWidth
-                            value={complete_performed_at}
+                            value={this.state.complete_ocena_sposobnosti}
                             onChange={(e) =>
-                                this.setState({
-                                    complete_performed_at: e.target.value,
-                                })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    complete_ocena_sposobnosti: e.target.value,
+                                }))
                             }
-                            placeholder="YYYY-MM-DD"
-                            inputProps={{
-                                inputMode: "numeric",
-                                pattern: "\\d{4}-\\d{2}-\\d{2}",
-                            }}
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Preduzete mere"
+                            fullWidth
+                            multiline
+                            value={this.state.complete_preduzete_mere}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    complete_preduzete_mere: e.target.value,
+                                }))
+                            }
                         />
                         <TextField
                             margin="dense"
@@ -349,9 +515,10 @@ class ProcessRunsListPageInner extends Component<Props, State> {
                             multiline
                             value={complete_notes}
                             onChange={(e) =>
-                                this.setState({
+                                this.setState((prev) => ({
+                                    ...prev,
                                     complete_notes: e.target.value,
-                                })
+                                }))
                             }
                         />
                     </DialogContent>
@@ -366,20 +533,121 @@ class ProcessRunsListPageInner extends Component<Props, State> {
                         </Button>
                     </DialogActions>
                 </Dialog>
+
+                <Dialog
+                    open={this.state.documentsDialogRunId != null}
+                    onClose={this.closeDocuments}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Dokumenti aktivnosti</DialogTitle>
+                    <DialogContent>
+                        <List dense>
+                            {this.state.runDocuments.map((rd) => (
+                                <ListItem
+                                    key={rd.id}
+                                    secondaryAction={
+                                        <IconButton
+                                            edge="end"
+                                            size="small"
+                                            onClick={() =>
+                                                this.state
+                                                    .documentsDialogRunId !=
+                                                    null &&
+                                                this.handleRemoveDocument(
+                                                    this.state
+                                                        .documentsDialogRunId,
+                                                    rd.id,
+                                                )
+                                            }
+                                        >
+                                            <DeleteIcon />
+                                        </IconButton>
+                                    }
+                                >
+                                    <ListItemText
+                                        primary={
+                                            rd.document_file_title ??
+                                            rd.document_file
+                                        }
+                                        secondary={rd.usage_kind}
+                                    />
+                                </ListItem>
+                            ))}
+                        </List>
+                        <Box sx={{ display: "flex", gap: 1, mt: 2 }}>
+                            <FormControl size="small" sx={{ minWidth: 200 }}>
+                                <InputLabel>Dokument</InputLabel>
+                                <Select
+                                    value={this.state.addDocSelectedId}
+                                    label="Dokument"
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            addDocSelectedId: e.target.value as
+                                                | number
+                                                | "",
+                                        }))
+                                    }
+                                >
+                                    <MenuItem value="">
+                                        <em>Izaberi...</em>
+                                    </MenuItem>
+                                    {this.state.allDocuments.map((d) => (
+                                        <MenuItem key={d.id} value={d.id}>
+                                            {d.title}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                            <Button
+                                variant="outlined"
+                                onClick={this.handleAddDocument}
+                                disabled={!this.state.addDocSelectedId}
+                            >
+                                Dodaj izveštaj
+                            </Button>
+                        </Box>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeDocuments}>Zatvori</Button>
+                    </DialogActions>
+                </Dialog>
             </Box>
         );
     }
 }
 
-const Connected = connect<
-    null,
-    DispatchProps,
-    Record<string, never>,
-    RootState
->(null, (dispatch: AppDispatch) => ({
-    setLastPath: (path: string) => dispatch(setLastPath(path)),
-}))(ProcessRunsListPageInner);
+const mapStateToProps = (state: RootState): ProcessRunsListPageStateProps => ({
+    clientCompanies: state.processes.clientCompanies,
+    processTypes: state.processes.processTypes,
+    runsItems: state.processes.runsItems,
+    runsLoading: state.processes.runsStatus === "loading",
+    runsError:
+        state.processes.runsStatus === "failed"
+            ? (state.processes.runsError ?? "Greška")
+            : null,
+});
 
-export default function ProcessRunsListPage(): React.ReactElement {
-    return <Connected />;
-}
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): ProcessRunsListPageDispatchProps => ({
+    setLastPath: (path: string) => dispatch(setLastPath(path)),
+    ensureClientCompanies: () => {
+        void dispatch(ensureClientCompanies());
+    },
+    ensureProcessTypes: () => {
+        void dispatch(ensureProcessTypes());
+    },
+    loadRuns: (params) => {
+        void dispatch(fetchRuns(params));
+    },
+    completeRun: (args) => dispatch(completeRun(args)),
+});
+
+const Connected = connect(
+    mapStateToProps,
+    mapDispatchToProps,
+)(ProcessRunsListPageInner);
+
+export default withNavigation(Connected);

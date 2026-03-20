@@ -1,20 +1,23 @@
 import io
 import logging
+from pathlib import Path
 
 import docx
-from django.conf import settings
-from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
-from core.email_sender import get_email_sender
 from jinja2 import Template
 
+from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+
+from core.email_sender import get_email_sender
 from documents.models import DocumentCategory, DocumentFile
+from documents.utils import fill_pdf_at_coordinates
 
 from .models import (
     ProcessBinding,
     ProcessRun,
     ProcessRunDocument,
     ProcessTemplate,
+    get_next_code,
 )
 
 logger = logging.getLogger(__name__)
@@ -119,6 +122,37 @@ def _build_document_context(run: ProcessRun, snapshot: dict) -> dict:
     ctx["valid_until"] = str(run.valid_until) if run.valid_until else ""
     ctx["process_type_name"] = run.process_type.name if run.process_type_id else ""
     ctx["run_id"] = run.id
+    try:
+        ctx["instruction_number"] = get_next_code("instruction", "UP")
+    except Exception:
+        ctx["instruction_number"] = ""
+    last_exam_date = ""
+    try:
+        binding = run.process_binding
+        if getattr(binding, "employee_id", None):
+            prev_run = (
+                ProcessRun.objects.filter(
+                    process_binding__employee_id=binding.employee_id,
+                    process_type_id=run.process_type_id,
+                    status=ProcessRun.STATUS_COMPLETED,
+                )
+                .exclude(id=run.id)
+                .order_by("-performed_at")
+                .values_list("performed_at", flat=True)
+                .first()
+            )
+            if prev_run:
+                last_exam_date = prev_run.strftime("%d.%m.%Y")
+    except Exception:
+        pass
+    ctx["last_exam_date"] = last_exam_date
+    emp = snapshot.get("employee") if isinstance(
+        snapshot.get("employee"), dict) else {}
+    dob = emp.get("date_of_birth") or snapshot.get("date_of_birth")
+    if dob and isinstance(dob, str) and len(dob) >= 4:
+        ctx["year_of_birth"] = dob[:4]
+    else:
+        ctx["year_of_birth"] = str(dob)[:4] if dob else ""
     snapshot_values = [
         v for k, v in snapshot.items() if k != "kind" and v is not None
     ]
@@ -263,18 +297,17 @@ def _generate_document_for_run(
     title_suffix = f"Run #{run.id}"
 
     generation_config = getattr(doc_template, "generation_config", None) or {}
-    mode = generation_config.get("mode") or "SIMPLE"
+    mode = generation_config.get("mode")
 
     if doc_template.template_file:
         name = getattr(doc_template.template_file, "name", "") or ""
 
         if mode == "VISUAL":
             try:
-                from documents.utils import fill_pdf_at_coordinates
-                from pathlib import Path
                 placeholders = generation_config.get("placeholders") or []
                 file_path = Path(doc_template.template_file.path)
-                content_bytes = fill_pdf_at_coordinates(file_path, placeholders, context)
+                content_bytes = fill_pdf_at_coordinates(
+                    file_path, placeholders, context)
                 ext = ".pdf"
             except Exception as e:
                 logger.warning(
@@ -282,8 +315,8 @@ def _generate_document_for_run(
                     run.id,
                     e,
                 )
-        elif name and name.lower().endswith(".docx"):
-            if mode == "DOCX_TABLE_REPEAT_ROW":
+        elif mode == "DOCX_TABLE_REPEAT_ROW":
+            if name and name.lower().endswith(".docx"):
                 try:
                     content_bytes = _generate_tabular_docx(
                         run,
@@ -297,21 +330,19 @@ def _generate_document_for_run(
                         run.id,
                         e,
                     )
-            if content_bytes is None:
-                try:
-                    with doc_template.template_file.open("rb") as fh:
-                        doc = docx.Document(io.BytesIO(fh.read()))
-                    _fill_docx_paragraphs(doc, context)
-                    buf = io.BytesIO()
-                    doc.save(buf)
-                    buf.seek(0)
-                    content_bytes = buf.read()
-                except Exception as e:
-                    logger.warning(
-                        "Failed to fill docx template for run id=%s: %s",
-                        run.id,
-                        e,
-                    )
+            else:
+                logger.warning(
+                    "DOCX_TABLE_REPEAT_ROW requires a .docx template file for run id=%s template id=%s",
+                    run.id,
+                    template.id,
+                )
+        else:
+            logger.warning(
+                "Unsupported or missing generation mode '%s' for run id=%s template id=%s",
+                mode,
+                run.id,
+                template.id,
+            )
 
     if not content_bytes:
         logger.warning(

@@ -1,5 +1,6 @@
 import { Component } from "react";
 import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -27,9 +28,8 @@ import {
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import { PermissionGate } from "../components/PermissionGate";
 
-import type { RootState, AppDispatch } from "../store";
+import { PermissionGate } from "../components/PermissionGate";
 import {
     loadRoles,
     loadPermissions,
@@ -37,8 +37,16 @@ import {
     updateRole,
     deleteRole,
 } from "../store/authSlice";
-import type { Role, Permission } from "../types/auth";
 import { setLastPath } from "../store/locationSlice";
+
+import type { RootState, AppDispatch } from "../store";
+import type { Role, Permission } from "../types/auth";
+import type {
+    RolesListPageDispatchProps,
+    RolesListPageProps,
+    RolesListPageState,
+    RolesListPageStateProps,
+} from "../types/authPages";
 
 const PERMISSION_LABELS: Record<string, string> = {
     add_user: "Dodavanje korisnika",
@@ -123,37 +131,8 @@ const PERMISSION_LABELS: Record<string, string> = {
     view_taskassignment: "Pregled zadataka",
 };
 
-interface StateProps {
-    roles: Role[];
-    permissions: Permission[];
-    adminError?: string;
-}
-
-interface DispatchProps {
-    loadRoles: () => void;
-    loadPermissions: () => void;
-    createRole: (p: { name: string; permissions: number[] }) => void;
-    updateRole: (p: {
-        id: number;
-        name: string;
-        permissions: number[];
-    }) => void;
-    deleteRole: (id: number) => void;
-    setLastPath: (path: string) => void;
-}
-
-type Props = StateProps & DispatchProps;
-
-interface State {
-    dialogOpen: boolean;
-    editingId: number | null;
-    name: string;
-    selectedPermissionIds: number[];
-    deleteConfirmId: number | null;
-}
-
-class RolesListPage extends Component<Props, State> {
-    state: State = {
+class RolesListPage extends Component<RolesListPageProps, RolesListPageState> {
+    state: RolesListPageState = {
         dialogOpen: false,
         editingId: null,
         name: "",
@@ -168,33 +147,36 @@ class RolesListPage extends Component<Props, State> {
     }
 
     openCreate = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: null,
             name: "",
             selectedPermissionIds: [],
-        });
+        }));
     };
 
     openEdit = (role: Role): void => {
         const permIds = Array.isArray(role.permissions)
             ? (role.permissions as { id: number }[]).map((p) => p.id)
             : ((role.permissions as number[]) ?? []);
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: role.id,
             name: role.name,
             selectedPermissionIds: permIds,
-        });
+        }));
     };
 
     closeDialog = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: false,
             editingId: null,
             name: "",
             selectedPermissionIds: [],
-        });
+        }));
     };
 
     handleSave = (): void => {
@@ -216,18 +198,18 @@ class RolesListPage extends Component<Props, State> {
     };
 
     confirmDelete = (id: number): void => {
-        this.setState({ deleteConfirmId: id });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: id }));
     };
 
     cancelDelete = (): void => {
-        this.setState({ deleteConfirmId: null });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
     };
 
     doDelete = (): void => {
         const { deleteConfirmId } = this.state;
         if (deleteConfirmId != null) {
             this.props.deleteRole(deleteConfirmId);
-            this.setState({ deleteConfirmId: null });
+            this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
         }
     };
 
@@ -341,7 +323,10 @@ class RolesListPage extends Component<Props, State> {
                             fullWidth
                             value={name}
                             onChange={(e) =>
-                                this.setState({ name: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
                             }
                         />
                         <FormControl fullWidth margin="dense" sx={{ mt: 2 }}>
@@ -350,10 +335,11 @@ class RolesListPage extends Component<Props, State> {
                                 multiple
                                 value={selectedPermissionIds}
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         selectedPermissionIds: e.target
                                             .value as number[],
-                                    })
+                                    }))
                                 }
                                 input={<OutlinedInput label="Permisije" />}
                                 renderValue={(ids) =>
@@ -413,13 +399,15 @@ class RolesListPage extends Component<Props, State> {
     }
 }
 
-const mapStateToProps = (state: RootState): StateProps => ({
+const mapStateToProps = (state: RootState): RolesListPageStateProps => ({
     roles: state.auth.roles,
     permissions: state.auth.permissions,
     adminError: state.auth.adminError,
 });
 
-const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): RolesListPageDispatchProps => ({
     loadRoles: () => dispatch(loadRoles()),
     loadPermissions: () => dispatch(loadPermissions()),
     createRole: (p) => dispatch(createRole(p)),

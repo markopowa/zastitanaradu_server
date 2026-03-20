@@ -1,4 +1,6 @@
-import { Component, useState } from "react";
+import { Component, useState, type MouseEvent } from "react";
+import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -23,17 +25,17 @@ import {
     RadioGroup,
     FormControlLabel,
     Radio,
-    Menu
+    Menu,
 } from "@mui/material";
-import { enqueueSnackbar } from "notistack";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import BuildIcon from "@mui/icons-material/Build";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
-import TemplateStructureEditorDialog from "./TemplateStructureEditorDialog";
+import { enqueueSnackbar } from "notistack";
 
-import type { DocumentCategory, DocumentFile } from "../types/documents";
+import TemplateStructureEditorDialog from "./TemplateStructureEditorDialog";
+import { PermissionGate } from "../components/PermissionGate";
 import {
     getDocumentCategories,
     getDocumentTemplates,
@@ -44,40 +46,22 @@ import {
     deleteDocumentTemplate,
     type DocumentTemplate,
 } from "../api/documents";
-import { PermissionGate } from "../components/PermissionGate";
-import { connect } from "react-redux";
-import type { AppDispatch, RootState } from "../store";
 import { setLastPath } from "../store/locationSlice";
 
-interface DispatchProps {
-    setLastPath?: (path: string) => void;
-}
+import type { AppDispatch, RootState } from "../store";
+import type { DocumentFile } from "../types/documents";
+import type {
+    DocumentTemplatesListContextType,
+    DocumentTemplatesListPageDispatchProps,
+    DocumentTemplatesListPageProps,
+    DocumentTemplatesListPageState,
+    DocumentTemplatesListPageStateProps,
+} from "../types/documentPages";
 
-type Props = DispatchProps;
-
-type ContextType = DocumentTemplate["context_type"] | "";
-
-
-interface State {
-    items: DocumentTemplate[];
-    categories: DocumentCategory[];
-    documents: DocumentFile[];
-    loading: boolean;
-    error: string | null;
-    dialogOpen: boolean;
-    deleteConfirmId: number | null;
-    editingId: number | null;
-    name: string;
-    description: string;
-    category_id: string;
-    context_type: ContextType;
-    create_mode: "FROM_DOCUMENT" | "FROM_FILE";
-    document_file_id: string;
-    upload_file: File | null;
-    filter_context_type: ContextType;
-}
-
-const CONTEXT_OPTIONS: { value: ContextType; label: string }[] = [
+const CONTEXT_OPTIONS: {
+    value: DocumentTemplatesListContextType;
+    label: string;
+}[] = [
     { value: "", label: "Svi konteksti" },
     { value: "EMPLOYEE", label: "Zaposleni" },
     { value: "EQUIPMENT", label: "Oprema" },
@@ -85,8 +69,11 @@ const CONTEXT_OPTIONS: { value: ContextType; label: string }[] = [
     { value: "MIXED", label: "Mešovito" },
 ];
 
-class DocumentTemplatesListPageInner extends Component<Props, State> {
-    state: State = {
+class DocumentTemplatesListPageInner extends Component<
+    DocumentTemplatesListPageProps,
+    DocumentTemplatesListPageState
+> {
+    state: DocumentTemplatesListPageState = {
         items: [],
         categories: [],
         documents: [],
@@ -105,39 +92,40 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
         filter_context_type: "",
     };
 
-
-
     componentDidMount(): void {
         this.props.setLastPath?.("/documents/templates");
         this.load();
     }
 
     load = (): void => {
-        this.setState({ loading: true, error: null });
+        this.setState((prev) => ({ ...prev, loading: true, error: null }));
         Promise.all([
             getDocumentCategories(),
             getDocumentTemplates(),
             getDocumentFiles(),
         ])
             .then(([categories, templates, documents]) => {
-                this.setState({
+                this.setState((prev) => ({
+                    ...prev,
                     categories: Array.isArray(categories) ? categories : [],
                     items: Array.isArray(templates) ? templates : [],
                     documents: Array.isArray(documents) ? documents : [],
                     loading: false,
                     error: null,
-                });
+                }));
             })
             .catch(() =>
-                this.setState({
+                this.setState((prev) => ({
+                    ...prev,
                     loading: false,
                     error: "Greška pri učitavanju šablona dokumenata.",
-                }),
+                })),
             );
     };
 
     openCreate = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: null,
             name: "",
@@ -147,25 +135,28 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
             create_mode: "FROM_DOCUMENT",
             document_file_id: "",
             upload_file: null,
-        });
+        }));
     };
 
     openEdit = (tpl: DocumentTemplate): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: tpl.id,
             name: tpl.name ?? "",
             description: tpl.description ?? "",
-            category_id: tpl.category?.id != null ? String(tpl.category.id) : "",
+            category_id:
+                tpl.category?.id != null ? String(tpl.category.id) : "",
             context_type: tpl.context_type ?? "",
             create_mode: "FROM_DOCUMENT",
             document_file_id: "",
             upload_file: null,
-        });
+        }));
     };
 
     closeDialog = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: false,
             editingId: null,
             name: "",
@@ -175,7 +166,7 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
             create_mode: "FROM_DOCUMENT",
             document_file_id: "",
             upload_file: null,
-        });
+        }));
     };
 
     handleSave = (): void => {
@@ -231,10 +222,23 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
         op.then(() => {
             this.closeDialog();
             this.load();
-        }).catch((error: any) => {
-            const responseData = error?.response?.data as
-                | { detail?: string; reason?: string }
-                | undefined;
+        }).catch((error: unknown) => {
+            let responseData: { detail?: string; reason?: string } | undefined;
+            if (
+                typeof error === "object" &&
+                error !== null &&
+                "response" in error
+            ) {
+                const res = (error as { response?: { data?: unknown } })
+                    .response;
+                const data = res?.data;
+                if (data && typeof data === "object") {
+                    responseData = data as {
+                        detail?: string;
+                        reason?: string;
+                    };
+                }
+            }
 
             let message =
                 responseData?.detail || "Greška pri čuvanju šablona dokumenta.";
@@ -252,23 +256,23 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
     };
 
     confirmDelete = (id: number): void => {
-        this.setState({ deleteConfirmId: id });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: id }));
     };
 
     cancelDelete = (): void => {
-        this.setState({ deleteConfirmId: null });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
     };
 
     doDelete = (): void => {
         const { deleteConfirmId } = this.state;
         if (deleteConfirmId == null) return;
         deleteDocumentTemplate(deleteConfirmId).then(() => {
-            this.setState({ deleteConfirmId: null });
+            this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
             this.load();
         });
     };
 
-    render(): React.ReactNode {
+    render() {
         const {
             items,
             categories,
@@ -309,10 +313,11 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                             value={filter_context_type}
                             label="Kontekst"
                             onChange={(e) =>
-                                this.setState({
+                                this.setState((prev) => ({
+                                    ...prev,
                                     filter_context_type: e.target
-                                        .value as ContextType,
-                                })
+                                        .value as DocumentTemplatesListContextType,
+                                }))
                             }
                         >
                             {CONTEXT_OPTIONS.map((opt) => (
@@ -388,14 +393,28 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                             <TableCell align="right">
                                                 <RowActions
                                                     template={tpl}
-                                                    onEdit={() => this.openEdit(tpl)}
-                                                    onDelete={() => this.confirmDelete(tpl.id)}
-                                                    onTemplateUpdated={(updated) => {
-                                                        this.setState((prev) => ({
-                                                            items: prev.items.map((t) =>
-                                                                t.id === updated.id ? updated : t,
-                                                            ),
-                                                        }));
+                                                    onEdit={() =>
+                                                        this.openEdit(tpl)
+                                                    }
+                                                    onDelete={() =>
+                                                        this.confirmDelete(
+                                                            tpl.id,
+                                                        )
+                                                    }
+                                                    onTemplateUpdated={(
+                                                        updated,
+                                                    ) => {
+                                                        this.setState(
+                                                            (prev) => ({
+                                                                items: prev.items.map(
+                                                                    (t) =>
+                                                                        t.id ===
+                                                                        updated.id
+                                                                            ? updated
+                                                                            : t,
+                                                                ),
+                                                            }),
+                                                        );
                                                     }}
                                                 />
                                             </TableCell>
@@ -426,7 +445,10 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                             required
                             value={name}
                             onChange={(e) =>
-                                this.setState({ name: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -437,7 +459,10 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                             minRows={2}
                             value={description}
                             onChange={(e) =>
-                                this.setState({ description: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    description: e.target.value,
+                                }))
                             }
                         />
                         <FormControl fullWidth margin="dense">
@@ -446,10 +471,11 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                 value={context_type}
                                 label="Kontekst"
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         context_type: e.target
-                                            .value as ContextType,
-                                    })
+                                            .value as DocumentTemplatesListContextType,
+                                    }))
                                 }
                                 required
                             >
@@ -468,9 +494,10 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                 value={category_id}
                                 label="Kategorija"
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         category_id: e.target.value as string,
-                                    })
+                                    }))
                                 }
                             >
                                 <MenuItem value="">—</MenuItem>
@@ -494,13 +521,14 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                         row
                                         value={create_mode}
                                         onChange={(e) =>
-                                            this.setState({
+                                            this.setState((prev) => ({
+                                                ...prev,
                                                 create_mode: e.target.value as
                                                     | "FROM_DOCUMENT"
                                                     | "FROM_FILE",
                                                 document_file_id: "",
                                                 upload_file: null,
-                                            })
+                                            }))
                                         }
                                     >
                                         <FormControlLabel
@@ -523,10 +551,11 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                             value={document_file_id}
                                             label="Dokument"
                                             onChange={(e) =>
-                                                this.setState({
+                                                this.setState((prev) => ({
+                                                    ...prev,
                                                     document_file_id: e.target
                                                         .value as string,
-                                                })
+                                                }))
                                             }
                                         >
                                             <MenuItem value="">—</MenuItem>
@@ -564,9 +593,10 @@ class DocumentTemplatesListPageInner extends Component<Props, State> {
                                             onChange={(e) => {
                                                 const file =
                                                     e.target.files?.[0] ?? null;
-                                                this.setState({
+                                                this.setState((prev) => ({
+                                                    ...prev,
                                                     upload_file: file,
-                                                });
+                                                }));
                                             }}
                                         />
                                         {upload_file && (
@@ -634,7 +664,7 @@ function RowActions({
     const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [structureOpen, setStructureOpen] = useState(false);
 
-    const handleOpenMenu = (event: React.MouseEvent<HTMLElement>) => {
+    const handleOpenMenu = (event: MouseEvent<HTMLElement>) => {
         setMenuAnchor(event.currentTarget);
     };
 
@@ -673,7 +703,10 @@ function RowActions({
                                 setStructureOpen(true);
                             }}
                         >
-                            <BuildIcon fontSize="small" style={{ marginRight: 8 }} />
+                            <BuildIcon
+                                fontSize="small"
+                                style={{ marginRight: 8 }}
+                            />
                             Uredi polja
                         </MenuItem>
                     )}
@@ -685,7 +718,10 @@ function RowActions({
                             onDelete();
                         }}
                     >
-                        <DeleteIcon fontSize="small" style={{ marginRight: 8 }} />
+                        <DeleteIcon
+                            fontSize="small"
+                            style={{ marginRight: 8 }}
+                        />
                         Obriši
                     </MenuItem>
                 </PermissionGate>
@@ -705,15 +741,17 @@ function RowActions({
     );
 }
 
-const Connected = connect<
-    null,
-    DispatchProps,
-    Record<string, never>,
-    RootState
->(null, (dispatch: AppDispatch) => ({
-    setLastPath: (path: string) => dispatch(setLastPath(path)),
-}))(DocumentTemplatesListPageInner);
+const mapStateToProps = (
+    _state: RootState,
+): DocumentTemplatesListPageStateProps => ({});
 
-export default function DocumentTemplatesListPage(): React.ReactElement {
-    return <Connected />;
-}
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): DocumentTemplatesListPageDispatchProps => ({
+    setLastPath: (path: string) => dispatch(setLastPath(path)),
+});
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps,
+)(DocumentTemplatesListPageInner);

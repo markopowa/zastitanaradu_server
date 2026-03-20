@@ -125,10 +125,14 @@ def fill_pdf_at_coordinates(
     doc = fitz.open(_path_str(pdf_path))
 
     for ph in placeholders:
-        field_key = ph.get("fieldKey", "")
-        if not field_key:
-            continue
-        value = _resolve_field_value(field_key, context)
+        fixed_text = ph.get("fixedText") or ph.get("staticText")
+        if fixed_text is not None and str(fixed_text).strip():
+            value = str(fixed_text).strip()
+        else:
+            field_key = ph.get("fieldKey", "")
+            if not field_key:
+                continue
+            value = _resolve_field_value(field_key, context)
         if not value:
             continue
 

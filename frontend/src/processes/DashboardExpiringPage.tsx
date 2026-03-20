@@ -1,4 +1,6 @@
 import { Component } from "react";
+import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -14,18 +16,27 @@ import {
     MenuItem,
     CircularProgress,
     Alert,
+    FormControlLabel,
+    Switch,
+    Tooltip,
 } from "@mui/material";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 
+import type { DashboardExpiringParams } from "../api/processes";
 import {
-    getDashboardExpiring,
-    getClientCompanies,
-    getProcessTypes,
-} from "../api/processes";
-import type { ProcessRun, ClientCompany } from "../types/processes";
+    ensureClientCompanies,
+    ensureProcessTypes,
+    fetchDashboardExpiring,
+} from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
-import { connect } from "react-redux";
-import type { AppDispatch } from "../store";
+
+import type { AppDispatch, RootState } from "../store";
+import type {
+    DashboardExpiringPageDispatchProps,
+    DashboardExpiringPageProps,
+    DashboardExpiringPageState,
+    DashboardExpiringPageStateProps,
+} from "../types/processPages";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 const formatDate = (value?: string | null): string => {
@@ -35,100 +46,65 @@ const formatDate = (value?: string | null): string => {
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}.`;
 };
 
-interface StateProps {
-    setLastPath: (path: string) => void;
-}
-interface DispatchProps {
-    setLastPath: (path: string) => void;
-}
-type Props = StateProps & DispatchProps;
-
-interface State {
-    items: ProcessRun[];
-    clients: ClientCompany[];
-    processTypes: { id: number; code: string; name: string }[];
-    days: number;
-    client_company_id: string;
-    subject_kind: string;
-    process_type_id: string;
-    loading: boolean;
-    error: string | null;
-}
-
-class DashboardExpiringPage extends Component<Props, State> {
-    state: State = {
-        items: [],
-        clients: [],
-        processTypes: [],
+class DashboardExpiringPage extends Component<
+    DashboardExpiringPageProps,
+    DashboardExpiringPageState
+> {
+    state: DashboardExpiringPageState = {
         days: 30,
+        use_lead_time: false,
         client_company_id: "",
         subject_kind: "",
         process_type_id: "",
-        loading: true,
-        error: null,
     };
 
     load = (): void => {
-        this.setState({ loading: true, error: null });
-        const { days, client_company_id, subject_kind, process_type_id } =
-            this.state;
-        const params: Parameters<typeof getDashboardExpiring>[0] = { days };
+        const {
+            days,
+            use_lead_time,
+            client_company_id,
+            subject_kind,
+            process_type_id,
+        } = this.state;
+        const params: DashboardExpiringParams = { days, use_lead_time };
         if (client_company_id)
             params.client_company_id = Number(client_company_id);
-        if (subject_kind)
-            params.subject_kind = subject_kind as
-                | "EMPLOYEE"
-                | "EQUIPMENT"
-                | "CLIENT_COMPANY";
+        if (subject_kind) params.subject_kind = subject_kind;
         if (process_type_id) params.process_type_id = Number(process_type_id);
-
-        Promise.all([
-            getDashboardExpiring(params),
-            getClientCompanies(),
-            getProcessTypes(),
-        ])
-            .then(([items, clients, processTypes]) => {
-                this.setState({
-                    items: Array.isArray(items) ? items : [],
-                    clients: Array.isArray(clients) ? clients : [],
-                    processTypes: Array.isArray(processTypes)
-                        ? processTypes
-                        : [],
-                    loading: false,
-                    error: null,
-                });
-            })
-            .catch(() => {
-                this.setState({
-                    loading: false,
-                    error: "Greška pri učitavanju.",
-                });
-            });
+        this.props.loadDashboard(params);
     };
 
     componentDidMount(): void {
         this.props.setLastPath("/dashboard");
+        this.props.ensureClientCompanies();
+        this.props.ensureProcessTypes();
         this.load();
     }
 
-    handleFilterChange = (key: keyof State, value: string | number): void => {
+    handleFilterChange = (
+        key: keyof DashboardExpiringPageState,
+        value: string | number,
+    ): void => {
         this.setState(
             (prev) => ({ ...prev, [key]: value }),
             () => this.load(),
         );
     };
 
-    render(): React.ReactNode {
+    render() {
         const {
-            items,
-            clients,
+            dashboardItems: items,
+            clientCompanies: clients,
             processTypes,
+            dashboardLoading: loading,
+            dashboardError: error,
+        } = this.props;
+        const {
             days,
+            use_lead_time,
             client_company_id,
             subject_kind,
             process_type_id,
-            loading,
-            error,
         } = this.state;
 
         return (
@@ -148,6 +124,25 @@ class DashboardExpiringPage extends Component<Props, State> {
                         alignItems: "center",
                     }}
                 >
+                    <Tooltip title="Kada uključeno, prikazuju se samo obaveze čiji rok (važi do) ulazi u period „rok unapred“ definisan za vrstu obaveze.">
+                        <FormControlLabel
+                            control={
+                                <Switch
+                                    checked={use_lead_time}
+                                    onChange={(e) =>
+                                        this.setState(
+                                            (prev) => ({
+                                                ...prev,
+                                                use_lead_time: e.target.checked,
+                                            }),
+                                            () => this.load(),
+                                        )
+                                    }
+                                />
+                            }
+                            label="Rok unapred po vrsti"
+                        />
+                    </Tooltip>
                     <FormControl size="small" sx={{ minWidth: 100 }}>
                         <InputLabel>Dana</InputLabel>
                         <Select
@@ -285,8 +280,36 @@ class DashboardExpiringPage extends Component<Props, State> {
     }
 }
 
-const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
-    setLastPath: (path: string) => dispatch(setLastPath(path)),
+const mapStateToProps = (
+    state: RootState,
+): DashboardExpiringPageStateProps => ({
+    dashboardItems: state.processes.dashboardExpiringItems,
+    clientCompanies: state.processes.clientCompanies,
+    processTypes: state.processes.processTypes,
+    dashboardLoading: state.processes.dashboardExpiringStatus === "loading",
+    dashboardError:
+        state.processes.dashboardExpiringStatus === "failed"
+            ? (state.processes.dashboardExpiringError ?? "Greška")
+            : null,
 });
 
-export default connect(null, mapDispatchToProps)(DashboardExpiringPage);
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): DashboardExpiringPageDispatchProps => ({
+    setLastPath: (path: string) => dispatch(setLastPath(path)),
+    ensureClientCompanies: () => {
+        void dispatch(ensureClientCompanies());
+    },
+    ensureProcessTypes: () => {
+        void dispatch(ensureProcessTypes());
+    },
+    loadDashboard: (params: DashboardExpiringParams) => {
+        void dispatch(fetchDashboardExpiring(params));
+    },
+});
+
+const Connected = connect(
+    mapStateToProps,
+    mapDispatchToProps,
+)(DashboardExpiringPage);
+export default Connected;

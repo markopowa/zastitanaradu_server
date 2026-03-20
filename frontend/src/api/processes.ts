@@ -1,25 +1,33 @@
 import { api } from "./client";
 import type {
     ClientCompany,
+    Employee,
+    EmployeeSummary,
     EquipmentItem,
     ProcessBinding,
     ProcessRun,
+    ProcessSubjectKind,
+    ProcessRunDocument,
     ProcessTemplate,
     ProcessType,
 } from "../types/processes";
 
 export interface DashboardExpiringParams {
     days?: number;
+    use_lead_time?: boolean;
     client_company_id?: number;
-    subject_kind?: "EMPLOYEE" | "EQUIPMENT" | "CLIENT_COMPANY";
+    subject_kind?: ProcessSubjectKind;
     process_type_id?: number;
 }
+
+type ListResponse<T> = T[] | { results?: T[] };
 
 export async function getDashboardExpiring(
     params: DashboardExpiringParams = {},
 ): Promise<ProcessRun[]> {
     const search = new URLSearchParams();
     if (params.days != null) search.set("days", String(params.days));
+    if (params.use_lead_time === true) search.set("use_lead_time", "true");
     if (params.client_company_id != null)
         search.set("client_company_id", String(params.client_company_id));
     if (params.subject_kind != null)
@@ -30,11 +38,8 @@ export async function getDashboardExpiring(
     const url = qs
         ? `/api/processes/dashboard/expiring?${qs}`
         : "/api/processes/dashboard/expiring";
-    const { data } = await api.get<ProcessRun[] | { results: ProcessRun[] }>(
-        url,
-    );
-    if (Array.isArray(data)) return data;
-    return (data as { results?: ProcessRun[] })?.results ?? [];
+    const { data } = await api.get<ListResponse<ProcessRun>>(url);
+    return asList(data);
 }
 
 export async function getClientCompanies(params?: {
@@ -47,11 +52,8 @@ export async function getClientCompanies(params?: {
     const url = qs
         ? `/api/partners/client-companies/?${qs}`
         : "/api/partners/client-companies/";
-    const { data } = await api.get<
-        ClientCompany[] | { results: ClientCompany[] }
-    >(url);
-    if (Array.isArray(data)) return data;
-    return (data as { results?: ClientCompany[] })?.results ?? [];
+    const { data } = await api.get<ListResponse<ClientCompany>>(url);
+    return asList(data);
 }
 
 export async function getClientCompany(id: number): Promise<ClientCompany> {
@@ -71,22 +73,14 @@ export async function createClientCompany(
     return data;
 }
 
-function asList<T>(data: T[] | { results: T[] } | undefined): T[] {
+function asList<T>(data: ListResponse<T> | undefined): T[] {
     if (Array.isArray(data)) return data;
     return (data as { results?: T[] })?.results ?? [];
 }
 
 export async function getEmployees(params?: {
     client_company_id?: number;
-}): Promise<
-    {
-        id: number;
-        client_company: number | null;
-        first_name: string;
-        last_name: string;
-        email?: string;
-    }[]
-> {
+}): Promise<EmployeeSummary[]> {
     const search = new URLSearchParams();
     if (params?.client_company_id != null)
         search.set("client_company_id", String(params.client_company_id));
@@ -94,37 +88,23 @@ export async function getEmployees(params?: {
     const url = qs
         ? `/api/partners/employees/?${qs}`
         : "/api/partners/employees/";
-    const { data } = await api.get<unknown>(url);
-    return asList(
-        data as {
-            id: number;
-            client_company: number | null;
-            first_name: string;
-            last_name: string;
-            email?: string;
-        }[],
-    );
+    const { data } = await api.get<ListResponse<EmployeeSummary>>(url);
+    return asList(data);
 }
 
-export async function getEmployee(id: number): Promise<{
-    id: number;
-    client_company: number | null;
-    first_name: string;
-    last_name: string;
-    email?: string;
-    org_unit?: string;
-    position?: string;
-}> {
-    const { data } = await api.get(`/api/partners/employees/${id}/`);
-    return data as {
-        id: number;
-        client_company: number | null;
-        first_name: string;
-        last_name: string;
-        email?: string;
-        org_unit?: string;
-        position?: string;
-    };
+export async function getEmployee(id: number): Promise<Employee> {
+    const { data } = await api.get<Employee>(`/api/partners/employees/${id}/`);
+    return data;
+}
+
+export async function createEmployee(
+    payload: Partial<Employee>,
+): Promise<Employee> {
+    const { data } = await api.post<Employee>(
+        "/api/partners/employees/",
+        payload,
+    );
+    return data;
 }
 
 export async function getEquipment(params?: {
@@ -137,8 +117,8 @@ export async function getEquipment(params?: {
     const url = qs
         ? `/api/partners/equipment/?${qs}`
         : "/api/partners/equipment/";
-    const { data } = await api.get<unknown>(url);
-    return asList(data as EquipmentItem[]);
+    const { data } = await api.get<ListResponse<EquipmentItem>>(url);
+    return asList(data);
 }
 
 export async function getEquipmentItem(id: number): Promise<EquipmentItem> {
@@ -159,8 +139,10 @@ export async function createEquipmentItem(
 }
 
 export async function getProcessTypes(): Promise<ProcessType[]> {
-    const { data } = await api.get<unknown>("/api/processes/types/");
-    return asList(data as ProcessType[]);
+    const { data } = await api.get<ListResponse<ProcessType>>(
+        "/api/processes/types/",
+    );
+    return asList(data);
 }
 
 export async function getProcessType(id: number): Promise<ProcessType> {
@@ -203,8 +185,8 @@ export async function getProcessTemplates(params?: {
     const url = qs
         ? `/api/processes/templates/?${qs}`
         : "/api/processes/templates/";
-    const { data } = await api.get<unknown>(url);
-    return asList(data as ProcessTemplate[]);
+    const { data } = await api.get<ListResponse<ProcessTemplate>>(url);
+    return asList(data);
 }
 
 export async function getProcessTemplate(id: number): Promise<ProcessTemplate> {
@@ -265,8 +247,8 @@ export async function getProcessBindings(
     const url = qs
         ? `/api/processes/bindings/?${qs}`
         : "/api/processes/bindings/";
-    const { data } = await api.get<unknown>(url);
-    return asList(data as ProcessBinding[]);
+    const { data } = await api.get<ListResponse<ProcessBinding>>(url);
+    return asList(data);
 }
 
 export async function createProcessBinding(
@@ -323,17 +305,73 @@ export async function getProcessRuns(
         search.set("to_valid_until", params.to_valid_until);
     const qs = search.toString();
     const url = qs ? `/api/processes/runs/?${qs}` : "/api/processes/runs/";
-    const { data } = await api.get<unknown>(url);
-    return asList(data as ProcessRun[]);
+    const { data } = await api.get<ListResponse<ProcessRun>>(url);
+    return asList(data);
+}
+
+export interface CompleteProcessRunPayload {
+    valid_until: string;
+    performed_at?: string;
+    notes?: string;
+    result_data?: {
+        broj_izvestaja?: string;
+        ocena_sposobnosti?: string;
+        preduzete_mere?: string;
+    };
 }
 
 export async function completeProcessRun(
     id: number,
-    payload: { valid_until: string; performed_at?: string; notes?: string },
+    payload: CompleteProcessRunPayload,
 ): Promise<ProcessRun> {
     const { data } = await api.post<ProcessRun>(
         `/api/processes/runs/${id}/complete/`,
         payload,
     );
     return data;
+}
+
+export async function getProcessRunDocuments(
+    runId: number,
+): Promise<ProcessRunDocument[]> {
+    const { data } = await api.get<ProcessRunDocument[]>(
+        `/api/processes/runs/${runId}/documents/`,
+    );
+    return Array.isArray(data) ? data : [];
+}
+
+export async function attachDocumentToRun(
+    runId: number,
+    documentFileId: number,
+    usageKind?: string,
+): Promise<ProcessRunDocument> {
+    const { data } = await api.post<ProcessRunDocument>(
+        `/api/processes/runs/${runId}/documents/`,
+        { document_file_id: documentFileId, usage_kind: usageKind ?? "REPORT" },
+    );
+    return data;
+}
+
+export async function removeDocumentFromRun(
+    runId: number,
+    docId: number,
+): Promise<void> {
+    await api.delete(`/api/processes/runs/${runId}/documents/${docId}/`);
+}
+
+export async function generateEvidencija1(clientId: number): Promise<void> {
+    const response = await api.get(
+        `/api/partners/client-companies/${clientId}/evidencija-1/`,
+        { responseType: "blob" },
+    );
+    const url = window.URL.createObjectURL(
+        new Blob([response.data as BlobPart]),
+    );
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `evidencija_1_${clientId}.docx`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
 }

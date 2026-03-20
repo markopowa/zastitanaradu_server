@@ -23,62 +23,96 @@ import {
     DialogContent,
     DialogActions,
     TextField,
+    Tooltip,
 } from "@mui/material";
 import BuildIcon from "@mui/icons-material/Build";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
-import { enqueueSnackbar } from "notistack";
 
+import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
 import {
-    addEquipmentItem,
+    addEmployee,
     ensureClientCompanies,
-    fetchEquipmentList,
+    fetchEmployeesList,
 } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
+import { StringToDate } from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
-import type { EquipmentItem } from "../types/processes";
+import type { Employee } from "../types/processes";
 import type {
-    EquipmentListPageDispatchProps,
-    EquipmentListPageProps,
-    EquipmentListPageState,
+    ClientCompaniesEmployeesListPageDispatchProps,
+    ClientCompaniesEmployeesListPageProps,
+    ClientCompaniesEmployeesListPageState,
 } from "../types/processPages";
 
-class EquipmentListPageInner extends Component<
-    EquipmentListPageProps,
-    EquipmentListPageState
+class ClientCompaniesEmployeesListPageInner extends Component<
+    ClientCompaniesEmployeesListPageProps,
+    ClientCompaniesEmployeesListPageState
 > {
-    state: EquipmentListPageState = {
+    state: ClientCompaniesEmployeesListPageState = {
         client_company_id: "",
         dialogOpen: false,
-        name: "",
-        category: "",
-        inventory_number: "",
-        location: "",
-        notes: "",
+        first_name: "",
+        last_name: "",
+        father_name: "",
+        jmbg: "",
+        date_of_birth: "",
+        place_of_birth: "",
+        email: "",
+        org_unit: "",
+        position: "",
+        occupation: "",
+        high_risk_position_name: "",
         new_client_company_id: "",
     };
 
-    load = (): void => {
-        this.props.loadEquipment(this.state.client_company_id);
+    isFilled = (): boolean => {
+        const {
+            first_name,
+            last_name,
+            email,
+            org_unit,
+            position,
+            new_client_company_id,
+        } = this.state;
+
+        return [
+            first_name,
+            last_name,
+            email,
+            org_unit,
+            position,
+            new_client_company_id,
+        ].every((elem) => elem !== "");
+    };
+
+    getEmployeesForClient = (): void => {
+        this.props.loadEmployees(this.state.client_company_id);
     };
 
     componentDidMount(): void {
-        this.props.setLastPath("/equipment");
+        this.props.setLastPath("/client-companies-employees");
         this.props.ensureClientCompanies();
-        this.load();
+        this.getEmployeesForClient();
     }
 
     openCreate = (): void => {
         this.setState((prev) => ({
             dialogOpen: true,
-            name: "",
-            category: "",
-            inventory_number: "",
-            location: "",
-            notes: "",
+            first_name: "",
+            last_name: "",
+            father_name: "",
+            jmbg: "",
+            date_of_birth: "",
+            place_of_birth: "",
+            email: "",
+            org_unit: "",
+            position: "",
+            occupation: "",
+            high_risk_position_name: "",
             new_client_company_id: prev.client_company_id,
         }));
     };
@@ -89,61 +123,73 @@ class EquipmentListPageInner extends Component<
 
     handleSave = (): void => {
         const {
-            name,
-            category,
-            inventory_number,
-            location,
-            notes,
+            first_name,
+            last_name,
+            email,
+            org_unit,
+            position,
             new_client_company_id,
         } = this.state;
-        if (!name.trim() || !new_client_company_id) return;
-        const payload: Partial<EquipmentItem> = {
-            name: name.trim(),
-            category: category.trim() || undefined,
-            inventory_number: inventory_number.trim() || undefined,
-            location: location.trim() || undefined,
-            notes: notes.trim() || undefined,
+        if (!first_name.trim() || !new_client_company_id) return;
+        const {
+            father_name,
+            jmbg,
+            date_of_birth,
+            place_of_birth,
+            occupation,
+            high_risk_position_name,
+        } = this.state;
+        let dateOfBirthSent: string | undefined;
+        if (date_of_birth.trim()) {
+            const d = StringToDate(date_of_birth);
+            dateOfBirthSent = d
+                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+                : undefined;
+        }
+        const payload: Partial<Employee> = {
+            first_name: first_name.trim(),
+            last_name: last_name.trim(),
+            father_name: father_name.trim() || undefined,
+            jmbg: jmbg.trim() || undefined,
+            date_of_birth: dateOfBirthSent,
+            place_of_birth: place_of_birth.trim() || undefined,
+            email: email.trim(),
+            org_unit: org_unit.trim(),
+            position: position.trim(),
+            occupation: occupation.trim() || undefined,
+            high_risk_position_name:
+                high_risk_position_name.trim() || undefined,
             client_company: Number(new_client_company_id),
-            is_active: true,
         };
         void this.props
-            .addEquipment(payload)
+            .addEmployee(payload)
             .unwrap()
             .then(() => {
                 this.setState((prev) => ({ ...prev, dialogOpen: false }));
-                this.load();
-            })
-            .catch(
-                (
-                    err:
-                        | { message?: string }
-                        | { response?: { data?: { detail?: string } } },
-                ) => {
-                    const msg =
-                        (err as { response?: { data?: { detail?: string } } })
-                            .response?.data?.detail ??
-                        (err as { message?: string }).message ??
-                        "Greška pri čuvanju opreme.";
-                    enqueueSnackbar(msg, { variant: "error" });
-                },
-            );
+            });
     };
 
     render() {
         const {
             clientCompanies: clients,
-            equipmentItems: items,
-            equipmentLoading: loading,
-            equipmentError: error,
+            employeesItems: items,
+            employeesLoading: loading,
+            employeesError: error,
         } = this.props;
         const {
             client_company_id,
             dialogOpen,
-            name,
-            category,
-            inventory_number,
-            location,
-            notes,
+            first_name,
+            last_name,
+            father_name,
+            jmbg,
+            date_of_birth,
+            place_of_birth,
+            email,
+            org_unit,
+            position,
+            occupation,
+            high_risk_position_name,
             new_client_company_id,
         } = this.state;
         const { navigate } = this.props;
@@ -154,7 +200,7 @@ class EquipmentListPageInner extends Component<
                     variant="h6"
                     sx={{ display: "flex", alignItems: "center", gap: 1 }}
                 >
-                    <BuildIcon /> Oprema
+                    <BuildIcon /> Zaposleni
                 </Typography>
                 <Box
                     sx={{
@@ -176,7 +222,7 @@ class EquipmentListPageInner extends Component<
                                         client_company_id: e.target
                                             .value as string,
                                     }),
-                                    () => this.load(),
+                                    () => this.getEmployeesForClient(),
                                 )
                             }
                         >
@@ -189,13 +235,13 @@ class EquipmentListPageInner extends Component<
                         </Select>
                     </FormControl>
                     <Box sx={{ flex: 1 }} />
-                    <PermissionGate permission="partners.add_equipmentitem">
+                    <PermissionGate permission="partners.add_employee">
                         <Button
                             variant="contained"
                             startIcon={<AddIcon />}
                             onClick={this.openCreate}
                         >
-                            Dodaj opremu
+                            Dodaj zaposlenog
                         </Button>
                     </PermissionGate>
                 </Box>
@@ -215,10 +261,13 @@ class EquipmentListPageInner extends Component<
                         <Table size="small">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell>Naziv</TableCell>
-                                    <TableCell>Kategorija</TableCell>
-                                    <TableCell>Inventarski broj</TableCell>
-                                    <TableCell>Lokacija</TableCell>
+                                    <TableCell>Ime</TableCell>
+                                    <TableCell>Prezime</TableCell>
+                                    <TableCell>Email</TableCell>
+                                    <TableCell>
+                                        Organizaciona jedinica
+                                    </TableCell>
+                                    <TableCell>Pozicija</TableCell>
                                     <TableCell align="right" />
                                 </TableRow>
                             </TableHead>
@@ -226,7 +275,7 @@ class EquipmentListPageInner extends Component<
                                 {items.length === 0 ? (
                                     <TableRow>
                                         <TableCell colSpan={5} align="center">
-                                            Nema opreme.
+                                            Nema zaposlenih.
                                         </TableCell>
                                     </TableRow>
                                 ) : (
@@ -236,18 +285,23 @@ class EquipmentListPageInner extends Component<
                                             hover
                                             sx={{ cursor: "pointer" }}
                                             onClick={() =>
-                                                navigate(`/equipment/${row.id}`)
+                                                navigate(
+                                                    `/client-companies-employees/${row.id}`,
+                                                )
                                             }
                                         >
-                                            <TableCell>{row.name}</TableCell>
                                             <TableCell>
-                                                {row.category ?? "—"}
+                                                {row.first_name}
                                             </TableCell>
                                             <TableCell>
-                                                {row.inventory_number ?? "—"}
+                                                {row.last_name}
+                                            </TableCell>
+                                            <TableCell>{row.email}</TableCell>
+                                            <TableCell>
+                                                {row.org_unit ?? "—"}
                                             </TableCell>
                                             <TableCell>
-                                                {row.location ?? "—"}
+                                                {row.position ?? "—"}
                                             </TableCell>
                                             <TableCell align="right">
                                                 <IconButton size="small">
@@ -267,7 +321,7 @@ class EquipmentListPageInner extends Component<
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>Nova oprema</DialogTitle>
+                    <DialogTitle>Nov zaposleni</DialogTitle>
                     <DialogContent>
                         <FormControl fullWidth margin="dense">
                             <InputLabel>Klijent</InputLabel>
@@ -292,64 +346,142 @@ class EquipmentListPageInner extends Component<
                         </FormControl>
                         <TextField
                             margin="dense"
-                            label="Naziv"
+                            label="Ime"
                             fullWidth
                             required
-                            value={name}
+                            value={first_name}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    name: e.target.value,
+                                    first_name: e.target.value,
                                 }))
                             }
                         />
                         <TextField
                             margin="dense"
-                            label="Kategorija"
+                            label="Prezime"
+                            required
                             fullWidth
-                            value={category}
+                            value={last_name}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    category: e.target.value,
+                                    last_name: e.target.value,
                                 }))
                             }
                         />
                         <TextField
                             margin="dense"
-                            label="Inventarski broj"
+                            label="Ime oca"
                             fullWidth
-                            value={inventory_number}
+                            value={father_name}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    inventory_number: e.target.value,
+                                    father_name: e.target.value,
+                                }))
+                            }
+                        />
+                        <Tooltip title="Jedinstveni matični broj građanina (13 cifara).">
+                            <TextField
+                                margin="dense"
+                                label="JMBG"
+                                fullWidth
+                                value={jmbg}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        jmbg: e.target.value,
+                                    }))
+                                }
+                            />
+                        </Tooltip>
+                        <Tooltip title="Datum rođenja zaposlenog za lekarske obrasce.">
+                            <Box>
+                                <DateTextFieldWithPicker
+                                    label="Datum rođenja (dd.mm.yyyy)"
+                                    value={date_of_birth}
+                                    onChange={(v) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            date_of_birth: v,
+                                        }))
+                                    }
+                                />
+                            </Box>
+                        </Tooltip>
+                        <TextField
+                            margin="dense"
+                            label="Mesto rođenja"
+                            fullWidth
+                            value={place_of_birth}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    place_of_birth: e.target.value,
                                 }))
                             }
                         />
                         <TextField
                             margin="dense"
-                            label="Lokacija"
+                            label="Email"
+                            required
                             fullWidth
-                            value={location}
+                            value={email}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    location: e.target.value,
+                                    email: e.target.value,
                                 }))
                             }
                         />
                         <TextField
                             margin="dense"
-                            label="Beleške"
+                            label="Organizaciona jedinica"
+                            required
                             fullWidth
-                            multiline
-                            minRows={2}
-                            value={notes}
+                            value={org_unit}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    notes: e.target.value,
+                                    org_unit: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Pozicija"
+                            required
+                            fullWidth
+                            value={position}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    position: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Zanimanje"
+                            fullWidth
+                            value={occupation}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    occupation: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Naziv radnog mesta sa povećanim rizikom"
+                            fullWidth
+                            value={high_risk_position_name}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    high_risk_position_name: e.target.value,
                                 }))
                             }
                         />
@@ -359,7 +491,7 @@ class EquipmentListPageInner extends Component<
                         <Button
                             onClick={this.handleSave}
                             variant="contained"
-                            disabled={!name.trim() || !new_client_company_id}
+                            disabled={!this.isFilled()}
                         >
                             Sačuvaj
                         </Button>
@@ -371,31 +503,31 @@ class EquipmentListPageInner extends Component<
 }
 const mapStateToProps = (state: RootState) => ({
     clientCompanies: state.processes.clientCompanies,
-    equipmentItems: state.processes.equipmentItems,
-    equipmentLoading: state.processes.equipmentStatus === "loading",
-    equipmentError:
-        state.processes.equipmentStatus === "failed"
-            ? (state.processes.equipmentError ?? "Greška")
+    employeesItems: state.processes.employeesItems,
+    employeesLoading: state.processes.employeesStatus === "loading",
+    employeesError:
+        state.processes.employeesStatus === "failed"
+            ? (state.processes.employeesError ?? "Greška")
             : null,
 });
 
 const mapDispatchToProps = (
     dispatch: AppDispatch,
-): EquipmentListPageDispatchProps => ({
+): ClientCompaniesEmployeesListPageDispatchProps => ({
     setLastPath: (path: string) => dispatch(setLastPath(path)),
     ensureClientCompanies: () => {
         void dispatch(ensureClientCompanies());
     },
-    loadEquipment: (clientCompanyId: string) => {
-        void dispatch(fetchEquipmentList(clientCompanyId));
+    loadEmployees: (clientCompanyId: string) => {
+        void dispatch(fetchEmployeesList(clientCompanyId));
     },
-    addEquipment: (payload: Partial<EquipmentItem>) =>
-        dispatch(addEquipmentItem(payload)),
+    addEmployee: (payload: Partial<Employee>) => dispatch(addEmployee(payload)),
 });
 
 const Connected = connect(
     mapStateToProps,
     mapDispatchToProps,
-)(EquipmentListPageInner);
-const EquipmentListPageWithNavigation = withNavigation(Connected);
-export default EquipmentListPageWithNavigation;
+)(ClientCompaniesEmployeesListPageInner);
+const ClientCompaniesEmployeesListPageWithNavigation =
+    withNavigation(Connected);
+export default ClientCompaniesEmployeesListPageWithNavigation;

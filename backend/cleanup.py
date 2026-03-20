@@ -17,10 +17,12 @@ TABLES_TO_TRUNCATE = [
     "partners_clientcompany",
 ]
 
+
 def run_cleanup():
     with connection.cursor() as cursor:
         tables_sql = ", ".join(f'"{t}"' for t in TABLES_TO_TRUNCATE)
         sql = f"TRUNCATE TABLE {tables_sql} RESTART IDENTITY CASCADE;"
         cursor.execute(sql)
+
 
 run_cleanup()

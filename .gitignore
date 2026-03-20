@@ -8,3 +8,4 @@ backend/core/settings.py
 backend/.venv/
 staticfiles/
 docs/
+develop/

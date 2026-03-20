@@ -44,25 +44,11 @@ def run_process_binding(binding_id: int) -> None:
         execute_template_actions(
             "ON_SCHEDULED", run, binding, snapshot, template)
 
-    period_months = binding.custom_period_months or pt.default_period_months or 12
-    performed_at = scheduled_for
-    valid_until = performed_at + timedelta(days=period_months * 30)
-
-    run.performed_at = performed_at
-    run.valid_until = valid_until
-    run.status = ProcessRun.STATUS_COMPLETED
-    run.save(update_fields=["performed_at", "valid_until", "status"])
-
-    binding.last_run_at = performed_at
-    binding.next_run_at = valid_until
-    binding.save(update_fields=["last_run_at", "next_run_at"])
-
     logger.info(
-        "ProcessBinding id=%s run id=%s completed, valid_until=%s next_run_at=%s",
+        "ProcessBinding id=%s run id=%s created (PENDING), scheduled_for=%s",
         binding_id,
         run.id,
-        valid_until,
-        binding.next_run_at,
+        scheduled_for,
     )
 
 
@@ -111,7 +97,6 @@ def run_on_completed_trigger(run: ProcessRun) -> None:
                 ),
                 is_active=True,
             )
-
 
         base_date = run.valid_until or run.performed_at or date.today()
         followup_period_months = (

@@ -1,6 +1,6 @@
 import { Component } from "react";
-import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { connect } from "react-redux";
+
 import {
     Box,
     Paper,
@@ -19,49 +19,35 @@ import {
     DialogContent,
     DialogActions,
     TextField,
+    Tooltip,
 } from "@mui/material";
 import BusinessIcon from "@mui/icons-material/Business";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
+import { enqueueSnackbar } from "notistack";
 
-import { getClientCompanies, createClientCompany } from "../api/processes";
-import type { ClientCompany } from "../types/processes";
-import { setLastPath } from "../store/locationSlice";
-import { connect } from "react-redux";
-import type { AppDispatch, RootState } from "../store";
 import { PermissionGate } from "../components/PermissionGate";
+import { withNavigation } from "../hocs/withNavigation";
+import {
+    addClientCompany,
+    ensureClientCompanies,
+} from "../store/processesSlice";
+import { setLastPath } from "../store/locationSlice";
 
-interface StateProps {
-    setLastPath: (path: string) => void;
-}
-interface DispatchProps {
-    setLastPath: (path: string) => void;
-}
-interface OwnProps {
-    navigate: (path: string) => void;
-}
-type Props = StateProps & DispatchProps & OwnProps;
+import type { AppDispatch, RootState } from "../store";
+import type { ClientCompany } from "../types/processes";
+import type {
+    ClientCompaniesListPageDispatchProps,
+    ClientCompaniesListPageProps,
+    ClientCompaniesListPageState,
+    ClientCompaniesListPageStateProps,
+} from "../types/processPages";
 
-interface State {
-    items: ClientCompany[];
-    loading: boolean;
-    error: string | null;
-    dialogOpen: boolean;
-    name: string;
-    pib: string;
-    registration_number: string;
-    address: string;
-    phone: string;
-    email: string;
-    website: string;
-    notes: string;
-}
-
-class ClientCompaniesListPage extends Component<Props, State> {
-    state: State = {
-        items: [],
-        loading: true,
-        error: null,
+class ClientCompaniesListPage extends Component<
+    ClientCompaniesListPageProps,
+    ClientCompaniesListPageState
+> {
+    state: ClientCompaniesListPageState = {
         dialogOpen: false,
         name: "",
         pib: "",
@@ -71,33 +57,17 @@ class ClientCompaniesListPage extends Component<Props, State> {
         email: "",
         website: "",
         notes: "",
-    };
-
-    load = (): void => {
-        this.setState({ loading: true, error: null });
-        getClientCompanies()
-            .then((data) => {
-                this.setState({
-                    items: Array.isArray(data) ? data : [],
-                    loading: false,
-                    error: null,
-                });
-            })
-            .catch(() => {
-                this.setState({
-                    loading: false,
-                    error: "Greška pri učitavanju klijenata.",
-                });
-            });
+        activity_code: "",
     };
 
     componentDidMount(): void {
         this.props.setLastPath("/client-companies");
-        this.load();
+        this.props.ensureClientCompanies();
     }
 
     openCreate = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             name: "",
             pib: "",
@@ -107,11 +77,12 @@ class ClientCompaniesListPage extends Component<Props, State> {
             email: "",
             website: "",
             notes: "",
-        });
+            activity_code: "",
+        }));
     };
 
     closeDialog = (): void => {
-        this.setState({ dialogOpen: false });
+        this.setState((prev) => ({ ...prev, dialogOpen: false }));
     };
 
     handleSave = (): void => {
@@ -124,6 +95,7 @@ class ClientCompaniesListPage extends Component<Props, State> {
             email,
             website,
             notes,
+            activity_code,
         } = this.state;
         if (!name.trim() || !pib.trim()) return;
         const payload: Partial<ClientCompany> = {
@@ -135,22 +107,37 @@ class ClientCompaniesListPage extends Component<Props, State> {
             email: email.trim() || undefined,
             website: website.trim() || undefined,
             notes: notes.trim() || undefined,
+            activity_code: activity_code.trim() || undefined,
         };
-        createClientCompany(payload)
+        void this.props
+            .addClientCompany(payload)
+            .unwrap()
             .then(() => {
-                this.setState({ dialogOpen: false });
-                this.load();
+                this.setState((prev) => ({ ...prev, dialogOpen: false }));
             })
-            .catch(() => {
-                this.setState({ error: "Greška pri čuvanju klijenta." });
-            });
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju klijenta.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
-    render(): React.ReactNode {
+    render() {
         const {
-            items,
-            loading,
-            error,
+            clientCompanies: items,
+            listLoading: loading,
+            listError: error,
+        } = this.props;
+        const {
             dialogOpen,
             name,
             pib,
@@ -160,6 +147,7 @@ class ClientCompaniesListPage extends Component<Props, State> {
             email,
             website,
             notes,
+            activity_code,
         } = this.state;
         const { navigate } = this.props;
 
@@ -266,7 +254,10 @@ class ClientCompaniesListPage extends Component<Props, State> {
                             required
                             value={name}
                             onChange={(e) =>
-                                this.setState({ name: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -276,7 +267,10 @@ class ClientCompaniesListPage extends Component<Props, State> {
                             required
                             value={pib}
                             onChange={(e) =>
-                                this.setState({ pib: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    pib: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -285,9 +279,10 @@ class ClientCompaniesListPage extends Component<Props, State> {
                             fullWidth
                             value={registration_number}
                             onChange={(e) =>
-                                this.setState({
+                                this.setState((prev) => ({
+                                    ...prev,
                                     registration_number: e.target.value,
-                                })
+                                }))
                             }
                         />
                         <TextField
@@ -296,7 +291,10 @@ class ClientCompaniesListPage extends Component<Props, State> {
                             fullWidth
                             value={address}
                             onChange={(e) =>
-                                this.setState({ address: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    address: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -305,7 +303,10 @@ class ClientCompaniesListPage extends Component<Props, State> {
                             fullWidth
                             value={phone}
                             onChange={(e) =>
-                                this.setState({ phone: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    phone: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -315,7 +316,10 @@ class ClientCompaniesListPage extends Component<Props, State> {
                             type="email"
                             value={email}
                             onChange={(e) =>
-                                this.setState({ email: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    email: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -324,9 +328,26 @@ class ClientCompaniesListPage extends Component<Props, State> {
                             fullWidth
                             value={website}
                             onChange={(e) =>
-                                this.setState({ website: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    website: e.target.value,
+                                }))
                             }
                         />
+                        <Tooltip title="Šifra delatnosti">
+                            <TextField
+                                margin="dense"
+                                label="Šifra delatnosti"
+                                fullWidth
+                                value={activity_code}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        activity_code: e.target.value,
+                                    }))
+                                }
+                            />
+                        </Tooltip>
                         <TextField
                             margin="dense"
                             label="Beleške"
@@ -335,7 +356,10 @@ class ClientCompaniesListPage extends Component<Props, State> {
                             minRows={2}
                             value={notes}
                             onChange={(e) =>
-                                this.setState({ notes: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    notes: e.target.value,
+                                }))
                             }
                         />
                     </DialogContent>
@@ -355,22 +379,31 @@ class ClientCompaniesListPage extends Component<Props, State> {
     }
 }
 
-const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
-    setLastPath: (path: string) => dispatch(setLastPath(path)),
+const mapStateToProps = (
+    state: RootState,
+): ClientCompaniesListPageStateProps => ({
+    clientCompanies: state.processes.clientCompanies,
+    listLoading: state.processes.clientCompaniesStatus === "loading",
+    listError:
+        state.processes.clientCompaniesStatus === "failed"
+            ? (state.processes.clientCompaniesError ?? "Greška")
+            : null,
 });
 
-const Connected = connect<null, DispatchProps, OwnProps, RootState>(
-    null,
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): ClientCompaniesListPageDispatchProps => ({
+    setLastPath: (path: string) => dispatch(setLastPath(path)),
+    ensureClientCompanies: () => {
+        void dispatch(ensureClientCompanies());
+    },
+    addClientCompany: (payload: Partial<ClientCompany>) =>
+        dispatch(addClientCompany(payload)),
+});
+
+const Connected = connect(
+    mapStateToProps,
     mapDispatchToProps,
 )(ClientCompaniesListPage);
-
-export default function ClientCompaniesListPageWrapper(): React.ReactElement {
-    const navigate = useNavigate();
-    const dispatch = useDispatch<AppDispatch>();
-    return (
-        <Connected
-            navigate={navigate}
-            setLastPath={(path: string) => dispatch(setLastPath(path))}
-        />
-    );
-}
+const ClientCompaniesListPageWithNavigation = withNavigation(Connected);
+export default ClientCompaniesListPageWithNavigation;

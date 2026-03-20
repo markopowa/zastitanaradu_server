@@ -1,4 +1,6 @@
 import { Component } from "react";
+import { connect } from "react-redux";
+
 import {
     Box,
     Table,
@@ -21,88 +23,64 @@ import {
     TextField,
     FormControlLabel,
     Switch,
+    Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { enqueueSnackbar } from "notistack";
 
-import {
-    getProcessTemplates,
-    getProcessTypes,
-    createProcessTemplate,
-    updateProcessTemplate,
-    deleteProcessTemplate,
-} from "../api/processes";
-import type { ProcessTemplate, ProcessType } from "../types/processes";
-import { setLastPath } from "../store/locationSlice";
-import { connect } from "react-redux";
-import type { AppDispatch, RootState } from "../store";
 import { PermissionGate } from "../components/PermissionGate";
 import {
     ScrollableTablePaper,
     tableCellEllipsis,
 } from "../components/ScrollableTablePaper";
 import {
-    getDocumentTemplates as getDocumentTemplatesApi,
-    type DocumentTemplate as DocTemplate,
-} from "../api/documents";
+    addProcessTemplate,
+    ensureProcessDocTemplates,
+    ensureProcessTypes,
+    fetchProcessTemplatesList,
+    removeProcessTemplate,
+    saveProcessTemplate,
+} from "../store/processesSlice";
+import { setLastPath } from "../store/locationSlice";
 
-interface DispatchProps {
-    setLastPath?: (path: string) => void;
-}
-type Props = DispatchProps;
+import type { AppDispatch, RootState } from "../store";
+import type { ProcessTemplate } from "../types/processes";
+import type {
+    ProcessTemplatesListEmailToKindValue,
+    ProcessTemplatesListPageDispatchProps,
+    ProcessTemplatesListPageProps,
+    ProcessTemplatesListPageState,
+    ProcessTemplatesListPageStateProps,
+    ProcessTemplatesListTriggerValue,
+} from "../types/processPages";
 
-type TriggerValue = "ON_SCHEDULED" | "ON_COMPLETED" | "ON_EXPIRED" | "";
-type EmailToKindValue =
-    | "CLIENT_MAIN_EMAIL"
-    | "EMPLOYEE_EMAIL"
-    | "INTERNAL_ROLE"
-    | "CUSTOM"
-    | "";
-
-const TRIGGER_OPTIONS: { value: TriggerValue; label: string }[] = [
+const TRIGGER_OPTIONS: {
+    value: ProcessTemplatesListTriggerValue;
+    label: string;
+}[] = [
     { value: "ON_SCHEDULED", label: "Prilikom zakazivanja" },
     { value: "ON_COMPLETED", label: "Prilikom završetka" },
     { value: "ON_EXPIRED", label: "Kada istekne rok" },
 ];
 
-const EMAIL_TO_OPTIONS: { value: EmailToKindValue; label: string }[] = [
+const EMAIL_TO_OPTIONS: {
+    value: ProcessTemplatesListEmailToKindValue;
+    label: string;
+}[] = [
     { value: "CLIENT_MAIN_EMAIL", label: "Glavni email klijenta" },
     { value: "EMPLOYEE_EMAIL", label: "Email zaposlenog" },
     { value: "INTERNAL_ROLE", label: "Interna uloga (npr. HS služba)" },
     { value: "CUSTOM", label: "Prilagođena adresa" },
 ];
 
-interface State {
-    items: ProcessTemplate[];
-    types: ProcessType[];
-    docTemplates: DocTemplate[];
-    process_type_id: string;
-    loading: boolean;
-    error: string | null;
-    dialogOpen: boolean;
-    deleteConfirmId: number | null;
-    editingId: number | null;
-    form_process_type_id: string;
-    form_trigger: TriggerValue;
-    form_document_template_id: string;
-    form_generate_document: boolean;
-    form_send_email: boolean;
-    form_email_to_kind: EmailToKindValue;
-    form_email_subject_template: string;
-    form_email_body_template: string;
-    form_custom_email_recipient: string;
-    form_followup_process_type_id: string;
-}
-
-class ProcessTemplatesListPageInner extends Component<Props, State> {
-    state: State = {
-        items: [],
-        types: [],
-        docTemplates: [],
+class ProcessTemplatesListPageInner extends Component<
+    ProcessTemplatesListPageProps,
+    ProcessTemplatesListPageState
+> {
+    state: ProcessTemplatesListPageState = {
         process_type_id: "",
-        loading: true,
-        error: null,
         dialogOpen: false,
         deleteConfirmId: null,
         editingId: null,
@@ -119,87 +97,67 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
     };
 
     load = (): void => {
-        this.setState({ loading: true, error: null });
         const { process_type_id } = this.state;
-        const params = process_type_id
-            ? { process_type_id: Number(process_type_id) }
-            : undefined;
-        Promise.all([
-            getProcessTemplates(params),
-            getProcessTypes(),
-            getDocumentTemplatesApi(),
-        ])
-            .then(([items, types, docTemplates]) => {
-                this.setState({
-                    items: Array.isArray(items) ? items : [],
-                    types: Array.isArray(types) ? types : [],
-                    docTemplates: Array.isArray(docTemplates)
-                        ? docTemplates
-                        : [],
-                    loading: false,
-                    error: null,
-                });
-            })
-            .catch(() =>
-                this.setState({
-                    loading: false,
-                    error: "Greška pri učitavanju.",
-                }),
-            );
+        const id = process_type_id ? Number(process_type_id) : undefined;
+        this.props.loadTemplates(id);
     };
 
     componentDidMount(): void {
-        this.props.setLastPath?.("/processes/templates");
-        getProcessTypes().then((types) =>
-            this.setState({ types: Array.isArray(types) ? types : [] }, () =>
-                this.load(),
-            ),
-        );
+        this.props.setLastPath("/processes/templates");
+        this.props.ensureProcessTypes();
+        this.props.ensureProcessDocTemplates();
+        this.load();
     }
 
     openCreate = (): void => {
-        const { process_type_id, types } = this.state;
-        const defaultTypeId =
-            process_type_id || (types.length > 0 ? String(types[0].id) : "");
-        this.setState({
-            dialogOpen: true,
-            editingId: null,
-            form_process_type_id: defaultTypeId,
-            form_trigger: "ON_SCHEDULED",
-            form_document_template_id: "",
-            form_generate_document: false,
-            form_send_email: false,
-            form_email_to_kind: "",
-            form_email_subject_template: "",
-            form_email_body_template: "",
-            form_custom_email_recipient: "",
-            form_followup_process_type_id: "",
+        this.setState((prev) => {
+            const types = this.props.processTypes;
+            const defaultTypeId =
+                prev.process_type_id ||
+                (types.length > 0 ? String(types[0].id) : "");
+            return {
+                dialogOpen: true,
+                editingId: null,
+                form_process_type_id: defaultTypeId,
+                form_trigger: "ON_SCHEDULED",
+                form_document_template_id: "",
+                form_generate_document: false,
+                form_send_email: false,
+                form_email_to_kind: "",
+                form_email_subject_template: "",
+                form_email_body_template: "",
+                form_custom_email_recipient: "",
+                form_followup_process_type_id: "",
+            };
         });
     };
 
     openEdit = (row: ProcessTemplate): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: true,
             editingId: row.id,
             form_process_type_id: String(row.process_type),
-            form_trigger: row.trigger as TriggerValue,
+            form_trigger: row.trigger as ProcessTemplatesListTriggerValue,
             form_document_template_id: row.document_template
                 ? String(row.document_template)
                 : "",
             form_generate_document: row.generate_document,
             form_send_email: row.send_email,
-            form_email_to_kind: (row.email_to_kind ?? "") as EmailToKindValue,
+            form_email_to_kind: (row.email_to_kind ??
+                "") as ProcessTemplatesListEmailToKindValue,
             form_email_subject_template: row.email_subject_template ?? "",
             form_email_body_template: row.email_body_template ?? "",
             form_custom_email_recipient: row.custom_email_recipient ?? "",
             form_followup_process_type_id: row.followup_process_type
                 ? String(row.followup_process_type)
                 : "",
-        });
+        }));
     };
 
     closeDialog = (): void => {
-        this.setState({
+        this.setState((prev) => ({
+            ...prev,
             dialogOpen: false,
             editingId: null,
             form_process_type_id: "",
@@ -212,7 +170,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_email_body_template: "",
             form_custom_email_recipient: "",
             form_followup_process_type_id: "",
-        });
+        }));
     };
 
     handleSave = (): void => {
@@ -260,40 +218,79 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
 
         const op =
             editingId != null
-                ? updateProcessTemplate(editingId, payload)
-                : createProcessTemplate(payload);
-
-        op.then(() => {
-            this.closeDialog();
-            this.load();
-        });
+                ? this.props.saveTemplate({ id: editingId, payload })
+                : this.props.addTemplate(payload);
+        void op
+            .unwrap()
+            .then(() => {
+                this.closeDialog();
+                this.load();
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju šablona.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
     confirmDelete = (id: number): void => {
-        this.setState({ deleteConfirmId: id });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: id }));
     };
 
     cancelDelete = (): void => {
-        this.setState({ deleteConfirmId: null });
+        this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
     };
 
     doDelete = (): void => {
         const { deleteConfirmId } = this.state;
         if (deleteConfirmId == null) return;
-        deleteProcessTemplate(deleteConfirmId).then(() => {
-            this.setState({ deleteConfirmId: null });
-            this.load();
-        });
+        void this.props
+            .removeTemplate(deleteConfirmId)
+            .unwrap()
+            .then(() => {
+                this.setState((prev) => ({ ...prev, deleteConfirmId: null }));
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri brisanju šablona.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                    this.setState((prev) => ({
+                        ...prev,
+                        deleteConfirmId: null,
+                    }));
+                },
+            );
     };
 
-    render(): React.ReactNode {
+    render() {
         const {
-            items,
-            types,
+            processTypes: types,
+            templatesItems: items,
             docTemplates,
+            templatesLoading,
+            templatesError: error,
+            docTemplatesLoading,
+        } = this.props;
+        const loading = templatesLoading || docTemplatesLoading;
+        const {
             process_type_id,
-            loading,
-            error,
             dialogOpen,
             deleteConfirmId,
             editingId,
@@ -330,10 +327,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                             label="Vrsta obaveze"
                             onChange={(e) =>
                                 this.setState(
-                                    {
+                                    (prev) => ({
+                                        ...prev,
                                         process_type_id: e.target
                                             .value as string,
-                                    },
+                                    }),
                                     () => this.load(),
                                 )
                             }
@@ -413,7 +411,10 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                                 {row.process_type_name}
                                             </TableCell>
                                             <TableCell sx={tableCellEllipsis}>
-                                                {row.trigger}
+                                                {TRIGGER_OPTIONS.find(
+                                                    (o) =>
+                                                        o.value === row.trigger,
+                                                )?.label ?? row.trigger}
                                             </TableCell>
                                             <TableCell sx={tableCellEllipsis}>
                                                 {row.document_template
@@ -489,10 +490,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                 value={form_process_type_id}
                                 label="Vrsta obaveze"
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         form_process_type_id: e.target
                                             .value as string,
-                                    })
+                                    }))
                                 }
                                 required
                             >
@@ -519,26 +521,32 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                             </Typography>
                         )}
 
-                        <FormControl fullWidth margin="dense">
-                            <InputLabel>Trigger</InputLabel>
-                            <Select
-                                value={form_trigger}
-                                label="Trigger"
-                                onChange={(e) =>
-                                    this.setState({
-                                        form_trigger: e.target
-                                            .value as TriggerValue,
-                                    })
-                                }
-                                required
-                            >
-                                {TRIGGER_OPTIONS.map((opt) => (
-                                    <MenuItem key={opt.value} value={opt.value}>
-                                        {opt.label}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                        <Tooltip title="Kada da se izvrši akcija: pri zakazivanju, pri završetku obaveze ili kada istekne rok.">
+                            <FormControl fullWidth margin="dense">
+                                <InputLabel>Trigger</InputLabel>
+                                <Select
+                                    value={form_trigger}
+                                    label="Trigger"
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            form_trigger: e.target
+                                                .value as ProcessTemplatesListTriggerValue,
+                                        }))
+                                    }
+                                    required
+                                >
+                                    {TRIGGER_OPTIONS.map((opt) => (
+                                        <MenuItem
+                                            key={opt.value}
+                                            value={opt.value}
+                                        >
+                                            {opt.label}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Tooltip>
 
                         <FormControl fullWidth margin="dense">
                             <InputLabel>Šablon dokumenta</InputLabel>
@@ -546,10 +554,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                 value={form_document_template_id}
                                 label="Šablon dokumenta"
                                 onChange={(e) =>
-                                    this.setState({
+                                    this.setState((prev) => ({
+                                        ...prev,
                                         form_document_template_id: e.target
                                             .value as string,
-                                    })
+                                    }))
                                 }
                             >
                                 <MenuItem value="">—</MenuItem>
@@ -567,10 +576,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                 value={form_followup_process_type_id}
                                 label="Sledeća vrsta obaveze"
                                 onChange={(e) =>
-                                    this.setState({
-                                        form_followup_process_type_id:
-                                            e.target.value as string,
-                                    })
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        form_followup_process_type_id: e.target
+                                            .value as string,
+                                    }))
                                 }
                             >
                                 <MenuItem value="">—</MenuItem>
@@ -587,10 +597,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                 <Switch
                                     checked={form_generate_document}
                                     onChange={(e) =>
-                                        this.setState({
+                                        this.setState((prev) => ({
+                                            ...prev,
                                             form_generate_document:
                                                 e.target.checked,
-                                        })
+                                        }))
                                     }
                                 />
                             }
@@ -603,9 +614,10 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                 <Switch
                                     checked={form_send_email}
                                     onChange={(e) =>
-                                        this.setState({
+                                        this.setState((prev) => ({
+                                            ...prev,
                                             form_send_email: e.target.checked,
-                                        })
+                                        }))
                                     }
                                 />
                             }
@@ -620,10 +632,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                         value={form_email_to_kind}
                                         label="Primalac"
                                         onChange={(e) =>
-                                            this.setState({
+                                            this.setState((prev) => ({
+                                                ...prev,
                                                 form_email_to_kind: e.target
-                                                    .value as EmailToKindValue,
-                                            })
+                                                    .value as ProcessTemplatesListEmailToKindValue,
+                                            }))
                                         }
                                         required
                                     >
@@ -646,10 +659,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                         type="email"
                                         value={form_custom_email_recipient}
                                         onChange={(e) =>
-                                            this.setState({
+                                            this.setState((prev) => ({
+                                                ...prev,
                                                 form_custom_email_recipient:
                                                     e.target.value,
-                                            })
+                                            }))
                                         }
                                     />
                                 )}
@@ -660,10 +674,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                     fullWidth
                                     value={form_email_subject_template}
                                     onChange={(e) =>
-                                        this.setState({
+                                        this.setState((prev) => ({
+                                            ...prev,
                                             form_email_subject_template:
                                                 e.target.value,
-                                        })
+                                        }))
                                     }
                                 />
                                 <TextField
@@ -674,10 +689,11 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                     minRows={4}
                                     value={form_email_body_template}
                                     onChange={(e) =>
-                                        this.setState({
+                                        this.setState((prev) => ({
+                                            ...prev,
                                             form_email_body_template:
                                                 e.target.value,
-                                        })
+                                        }))
                                     }
                                 />
                             </>
@@ -716,15 +732,42 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
     }
 }
 
-const Connected = connect<
-    null,
-    DispatchProps,
-    Record<string, never>,
-    RootState
->(null, (dispatch: AppDispatch) => ({
-    setLastPath: (path: string) => dispatch(setLastPath(path)),
-}))(ProcessTemplatesListPageInner);
+const mapStateToProps = (
+    state: RootState,
+): ProcessTemplatesListPageStateProps => ({
+    processTypes: state.processes.processTypes,
+    templatesItems: state.processes.templatesItems,
+    templatesLoading: state.processes.templatesStatus === "loading",
+    templatesError:
+        state.processes.templatesStatus === "failed"
+            ? (state.processes.templatesError ?? "Greška")
+            : null,
+    docTemplates: state.processes.processDocTemplates,
+    docTemplatesLoading:
+        state.processes.processDocTemplatesStatus === "loading",
+});
 
-export default function ProcessTemplatesListPage(): React.ReactElement {
-    return <Connected />;
-}
+const mapDispatchToProps = (
+    dispatch: AppDispatch,
+): ProcessTemplatesListPageDispatchProps => ({
+    setLastPath: (path: string) => dispatch(setLastPath(path)),
+    ensureProcessTypes: () => {
+        void dispatch(ensureProcessTypes());
+    },
+    ensureProcessDocTemplates: () => {
+        void dispatch(ensureProcessDocTemplates());
+    },
+    loadTemplates: (processTypeId: number | undefined) => {
+        void dispatch(fetchProcessTemplatesList(processTypeId));
+    },
+    addTemplate: (payload: Partial<ProcessTemplate>) =>
+        dispatch(addProcessTemplate(payload)),
+    saveTemplate: (args: { id: number; payload: Partial<ProcessTemplate> }) =>
+        dispatch(saveProcessTemplate(args)),
+    removeTemplate: (id: number) => dispatch(removeProcessTemplate(id)),
+});
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps,
+)(ProcessTemplatesListPageInner);

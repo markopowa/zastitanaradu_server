@@ -122,11 +122,10 @@ export interface VisualPlaceholder {
     yPct: number;
     widthPct: number;
     heightPct: number;
+    fixedText?: string;
 }
 
-export async function getDocumentTemplatePages(
-    id: number,
-): Promise<string[]> {
+export async function getDocumentTemplatePages(id: number): Promise<string[]> {
     const { data } = await api.get<string[]>(
         `/api/documents/templates/${id}/pages/`,
     );

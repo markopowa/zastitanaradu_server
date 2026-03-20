@@ -1,32 +1,22 @@
 import { Component } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
-
-import { TextField, Button, Box, Typography, Paper } from "@mui/material";
 import { connect } from "react-redux";
 import { Navigate } from "react-router-dom";
 
+import { TextField, Button, Box, Typography, Paper } from "@mui/material";
+
 import { login } from "../store/authSlice";
+
 import type { RootState } from "../store";
+import type {
+    LoginPageDispatchProps,
+    LoginPageProps,
+    LoginPageState,
+    LoginPageStateProps,
+} from "../types/authPages";
 
-interface StateProps {
-    loading: boolean;
-    error?: string;
-    isAuthenticated: boolean;
-}
-
-interface DispatchProps {
-    onLogin: (username: string, password: string) => void;
-}
-
-type Props = StateProps & DispatchProps;
-
-interface State {
-    username: string;
-    password: string;
-}
-
-class LoginPage extends Component<Props, State> {
-    state: State = {
+class LoginPage extends Component<LoginPageProps, LoginPageState> {
+    state: LoginPageState = {
         username: "",
         password: "",
     };
@@ -75,7 +65,10 @@ class LoginPage extends Component<Props, State> {
                             label="Korisničko ime"
                             value={this.state.username}
                             onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                                this.setState({ username: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    username: e.target.value,
+                                }))
                             }
                         />
                         <TextField
@@ -85,7 +78,10 @@ class LoginPage extends Component<Props, State> {
                             label="Lozinka"
                             value={this.state.password}
                             onChange={(e: ChangeEvent<HTMLInputElement>) =>
-                                this.setState({ password: e.target.value })
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    password: e.target.value,
+                                }))
                             }
                         />
                         {error && (
@@ -114,13 +110,13 @@ class LoginPage extends Component<Props, State> {
     }
 }
 
-const mapStateToProps = (state: RootState): StateProps => ({
+const mapStateToProps = (state: RootState): LoginPageStateProps => ({
     loading: state.auth.loading,
     error: state.auth.error,
     isAuthenticated: state.auth.isAuthenticated,
 });
 
-const mapDispatchToProps: DispatchProps = {
+const mapDispatchToProps: LoginPageDispatchProps = {
     onLogin: (username: string, password: string) =>
         login({ username, password }),
 };

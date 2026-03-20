@@ -7,19 +7,20 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from processes.tasks import logger
-
 from .models import DocumentAIFormat, DocumentCategory, DocumentFile, DocumentTemplate
 from .serializers import (
     DocumentAIFormatSerializer,
     DocumentCategorySerializer,
     DocumentFileSerializer,
+    DocumentTemplatePageImageUrlListSerializer,
     DocumentTemplateSerializer,
 )
 from .utils import (
     generate_page_images,
     invalidate_page_images,
 )
+
+from processes.tasks import logger
 
 
 class DocumentCategoryViewSet(viewsets.ModelViewSet):
@@ -56,16 +57,18 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             )
         try:
             path = Path(fr"{file_field.path}")
-            print(f"|||{path}|||")
             rel_paths = generate_page_images(instance.pk, path)
         except Exception as exc:
-            logger.error("Page image generation failed: %s", exc, exc_info=True)
+            logger.error("Page image generation failed: %s",
+                         exc, exc_info=True)
             return Response(
                 {"detail": f"Failed to generate page images: {exc}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        urls = [request.build_absolute_uri(f"{settings.MEDIA_URL}{p}") for p in rel_paths]
-        return Response(urls)
+        urls = [request.build_absolute_uri(
+            f"{settings.MEDIA_URL}{p}") for p in rel_paths]
+        out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
+        return Response(out.data)
 
     @action(detail=True, methods=["post"], url_path="regenerate-pages")
     def regenerate_pages(self, request, *args, **kwargs):
@@ -79,16 +82,18 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             )
         try:
             path = Path(fr"{file_field.path}")
-            print(f"|||{path}|||")
             rel_paths = generate_page_images(instance.pk, path)
         except Exception as exc:
-            logger.error("Page image regeneration failed: %s", exc, exc_info=True)
+            logger.error("Page image regeneration failed: %s",
+                         exc, exc_info=True)
             return Response(
                 {"detail": f"Failed to regenerate page images: {exc}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        urls = [request.build_absolute_uri(f"{settings.MEDIA_URL}{p}") for p in rel_paths]
-        return Response(urls)
+        urls = [request.build_absolute_uri(
+            f"{settings.MEDIA_URL}{p}") for p in rel_paths]
+        out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
+        return Response(out.data)
 
     @action(detail=False, methods=["post"], url_path="from-document")
     def from_document(self, request, *args, **kwargs):

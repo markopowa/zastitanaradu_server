@@ -1,5 +1,8 @@
+from django.http import HttpResponse
 from rest_framework import permissions, viewsets
+from rest_framework.decorators import action
 
+from .evidencija import generate_evidencija_1
 from .models import ClientCompany, Employee, EquipmentItem
 from .serializers import ClientCompanySerializer, EmployeeSerializer, EquipmentItemSerializer
 
@@ -8,6 +11,23 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
     queryset = ClientCompany.objects.all().order_by("name")
     serializer_class = ClientCompanySerializer
     permission_classes = [permissions.DjangoModelPermissions]
+
+    @action(detail=True, methods=["get"], url_path="evidencija-1")
+    def evidencija_1(self, request, pk=None):
+        company = self.get_object()
+        content = generate_evidencija_1(company.id)
+        slug = company.name.replace(" ", "_")[:40]
+        response = HttpResponse(
+            content,
+            content_type=(
+                "application/vnd.openxmlformats-officedocument"
+                ".wordprocessingml.document"
+            ),
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="evidencija_1_{slug}.docx"'
+        )
+        return response
 
 
 class EmployeeViewSet(viewsets.ModelViewSet):

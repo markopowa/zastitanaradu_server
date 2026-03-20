@@ -65,10 +65,7 @@ export const createDocumentCategory = createAsyncThunk(
 export const updateDocumentCategory = createAsyncThunk(
     "documents/updateCategory",
     async (
-        {
-            id,
-            ...payload
-        }: { id: number; name: string; description?: string },
+        { id, ...payload }: { id: number; name: string; description?: string },
         { rejectWithValue, dispatch },
     ) => {
         try {
