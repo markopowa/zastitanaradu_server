@@ -1,40 +1,48 @@
-import type { ThemeOptions } from "@mui/material/styles";
+import { alpha, type ThemeOptions } from "@mui/material/styles";
 
-const LIGHT_PRIMARY_MAIN = "#3B82F6";
-const LIGHT_PRIMARY_LIGHT = "#93C5FD";
-const LIGHT_PRIMARY_DARK = "#1D4ED8";
+const CH_LIGHT_BCCCDC = "#BCCCDC";
+const CH_LIGHT_9AA6B2 = "#9AA6B2";
 
-const LIGHT_SECONDARY_MAIN = "#FACC15";
-const LIGHT_SECONDARY_LIGHT = "#FEF08A";
-const LIGHT_SECONDARY_DARK = "#CA8A04";
+const CH_DARK_0C2B4E = "#0C2B4E";
+const CH_DARK_1A3D64 = "#1A3D64";
+const CH_DARK_1D546C = "#1D546C";
+const CH_DARK_F4F4F4 = "#F4F4F4";
 
-const LIGHT_BG = "#F8FAFC";
-const LIGHT_BG_PAPER = "#FFFFFF";
+const LIGHT_BG = "#EAF3FC";
+const LIGHT_BG_PAPER = "#F5F9FD";
 
-const LIGHT_TEXT_PRIMARY = "#0F172A";
-const LIGHT_TEXT_SECONDARY = "#475569";
+const LIGHT_PRIMARY_MAIN = "#4A6FA5";
+const LIGHT_PRIMARY_LIGHT = CH_LIGHT_BCCCDC;
+const LIGHT_PRIMARY_DARK = "#355A7A";
 
-const LIGHT_DIVIDER = "rgba(15, 23, 42, 0.08)";
+const LIGHT_SECONDARY_MAIN = CH_LIGHT_9AA6B2;
+const LIGHT_SECONDARY_LIGHT = CH_LIGHT_BCCCDC;
+const LIGHT_SECONDARY_DARK = "#7A8794";
+
+const LIGHT_TEXT_PRIMARY = "#1E293B";
+const LIGHT_TEXT_SECONDARY = CH_LIGHT_9AA6B2;
+
+const LIGHT_DIVIDER = alpha(CH_LIGHT_BCCCDC, 0.65);
 
 const LIGHT_SUCCESS = "#22C55E";
 const LIGHT_WARNING = "#F59E0B";
 const LIGHT_ERROR = "#EF4444";
 
-const DARK_PRIMARY_MAIN = "#8B5CF6";
-const DARK_PRIMARY_LIGHT = "#C4B5FD";
-const DARK_PRIMARY_DARK = "#6D28D9";
+const DARK_BG = CH_DARK_0C2B4E;
+const DARK_BG_PAPER = CH_DARK_1A3D64;
 
-const DARK_SECONDARY_MAIN = "#0EA5E9";
-const DARK_SECONDARY_LIGHT = "#67E8F9";
-const DARK_SECONDARY_DARK = "#0369A1";
+const DARK_PRIMARY_MAIN = CH_DARK_1D546C;
+const DARK_PRIMARY_LIGHT = "#3E87A8";
+const DARK_PRIMARY_DARK = CH_DARK_0C2B4E;
 
-const DARK_BG = "#020617";
-const DARK_BG_PAPER = "#0B1120";
+const DARK_SECONDARY_MAIN = "#356B88";
+const DARK_SECONDARY_LIGHT = "#5E9AB8";
+const DARK_SECONDARY_DARK = CH_DARK_1A3D64;
 
-const DARK_TEXT_PRIMARY = "#E2E8F0";
-const DARK_TEXT_SECONDARY = "#94A3B8";
+const DARK_TEXT_PRIMARY = CH_DARK_F4F4F4;
+const DARK_TEXT_SECONDARY = alpha(CH_DARK_F4F4F4, 0.62);
 
-const DARK_DIVIDER = "rgba(148, 163, 184, 0.2)";
+const DARK_DIVIDER = alpha(CH_DARK_F4F4F4, 0.14);
 
 const DARK_SUCCESS = "#34D399";
 const DARK_WARNING = "#FBBF24";
@@ -51,41 +59,152 @@ const commonComponents: ThemeOptions["components"] = {
                 padding: "0 16px",
             },
             containedPrimary: ({ theme }) => ({
-                backgroundImage:
+                color: theme.palette.primary.contrastText,
+                backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                boxShadow:
                     theme.palette.mode === "light"
-                        ? "linear-gradient(135deg, #3B82F6, #2563EB)"
-                        : "linear-gradient(135deg, #8B5CF6, #0EA5E9)",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                        ? `0 4px 14px ${alpha(theme.palette.primary.dark, 0.28)}`
+                        : `0 4px 14px ${alpha(theme.palette.primary.dark, 0.45)}`,
+                "&:hover": {
+                    color: theme.palette.primary.contrastText,
+                },
             }),
             containedSecondary: ({ theme }) => ({
+                color: theme.palette.secondary.contrastText,
                 backgroundImage: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
-                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+                boxShadow:
+                    theme.palette.mode === "light"
+                        ? `0 3px 10px ${alpha(theme.palette.secondary.dark, 0.22)}`
+                        : `0 3px 10px ${alpha(CH_DARK_0C2B4E, 0.5)}`,
+                "&:hover": {
+                    color: theme.palette.secondary.contrastText,
+                },
             }),
+            outlinedPrimary: ({ theme }) =>
+                theme.palette.mode === "dark"
+                    ? {
+                          color: theme.palette.common.white,
+                          borderColor: alpha(theme.palette.common.white, 0.42),
+                          "&:hover": {
+                              borderColor: alpha(theme.palette.common.white, 0.65),
+                              backgroundColor: alpha(
+                                  theme.palette.common.white,
+                                  0.07,
+                              ),
+                              color: theme.palette.common.white,
+                          },
+                      }
+                    : {},
+            outlinedSecondary: ({ theme }) =>
+                theme.palette.mode === "dark"
+                    ? {
+                          color: theme.palette.common.white,
+                          borderColor: alpha(theme.palette.common.white, 0.42),
+                          "&:hover": {
+                              borderColor: alpha(theme.palette.common.white, 0.65),
+                              backgroundColor: alpha(
+                                  theme.palette.common.white,
+                                  0.07,
+                              ),
+                              color: theme.palette.common.white,
+                          },
+                      }
+                    : {},
+            textPrimary: ({ theme }) =>
+                theme.palette.mode === "dark"
+                    ? {
+                          color: theme.palette.common.white,
+                          "&:hover": {
+                              backgroundColor: alpha(
+                                  theme.palette.common.white,
+                                  0.08,
+                              ),
+                              color: theme.palette.common.white,
+                          },
+                      }
+                    : {},
+            textSecondary: ({ theme }) =>
+                theme.palette.mode === "dark"
+                    ? {
+                          color: alpha(theme.palette.common.white, 0.88),
+                          "&:hover": {
+                              backgroundColor: alpha(
+                                  theme.palette.common.white,
+                                  0.08,
+                              ),
+                              color: theme.palette.common.white,
+                          },
+                      }
+                    : {},
+        },
+    },
+    MuiToggleButton: {
+        styleOverrides: {
+            root: ({ theme }) =>
+                theme.palette.mode === "dark"
+                    ? {
+                          "&.MuiToggleButton-primary": {
+                              "&:not(.MuiToggleButton-selected)": {
+                                  color: theme.palette.text.primary,
+                              },
+                              "&.MuiToggleButton-selected": {
+                                  color: theme.palette.common.white,
+                                  backgroundColor: alpha(
+                                      theme.palette.primary.light,
+                                      0.4,
+                                  ),
+                                  "&:hover": {
+                                      backgroundColor: alpha(
+                                          theme.palette.primary.light,
+                                          0.52,
+                                      ),
+                                  },
+                              },
+                          },
+                      }
+                    : {},
         },
     },
     MuiPaper: {
         styleOverrides: {
-            root: {
+            root: ({ theme }) => ({
                 borderRadius: 12,
-                boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
-            },
+                boxShadow:
+                    theme.palette.mode === "light"
+                        ? `0 1px 2px ${alpha("#1E293B", 0.04)}, 0 1px 8px ${alpha(CH_LIGHT_BCCCDC, 0.35)}`
+                        : `0 1px 2px ${alpha(CH_DARK_0C2B4E, 0.5)}, 0 1px 8px ${alpha(CH_DARK_0C2B4E, 0.35)}`,
+            }),
         },
     },
     MuiTextField: {
         defaultProps: {
             variant: "outlined",
+            size: "small",
+        },
+    },
+    MuiFormControl: {
+        defaultProps: {
+            size: "small",
+        },
+    },
+    MuiSelect: {
+        styleOverrides: {
+            select: {
+                display: "flex",
+                alignItems: "center",
+                minHeight: 0,
+            },
         },
     },
     MuiOutlinedInput: {
         styleOverrides: {
             root: ({ theme }) => ({
                 borderRadius: 10,
-                height: 40,
                 "& .MuiOutlinedInput-notchedOutline": {
                     borderColor:
                         theme.palette.mode === "light"
-                            ? "rgba(15, 23, 42, 0.15)"
-                            : "rgba(148, 163, 184, 0.3)",
+                            ? alpha(CH_LIGHT_BCCCDC, 0.95)
+                            : alpha(CH_DARK_F4F4F4, 0.18),
                 },
                 "&:hover .MuiOutlinedInput-notchedOutline": {
                     borderColor: theme.palette.secondary.main,
@@ -104,8 +223,8 @@ const commonComponents: ThemeOptions["components"] = {
                 "&:hover": {
                     backgroundColor:
                         theme.palette.mode === "light"
-                            ? "rgba(0,0,0,0.02)"
-                            : "rgba(255,255,255,0.04)",
+                            ? alpha(CH_LIGHT_BCCCDC, 0.35)
+                            : theme.palette.action.hover,
                 },
             }),
         },
@@ -122,7 +241,10 @@ const commonComponents: ThemeOptions["components"] = {
         styleOverrides: {
             root: ({ theme }) => ({
                 "&.Mui-selected": {
-                    color: theme.palette.secondary.main,
+                    color:
+                        theme.palette.mode === "light"
+                            ? theme.palette.primary.main
+                            : theme.palette.secondary.main,
                 },
             }),
         },
@@ -142,7 +264,7 @@ export const lightThemeOptions: ThemeOptions = {
             main: LIGHT_SECONDARY_MAIN,
             light: LIGHT_SECONDARY_LIGHT,
             dark: LIGHT_SECONDARY_DARK,
-            contrastText: "#1f2937",
+            contrastText: "#F8FAFC",
         },
         success: {
             main: LIGHT_SUCCESS,
@@ -162,6 +284,10 @@ export const lightThemeOptions: ThemeOptions = {
             secondary: LIGHT_TEXT_SECONDARY,
         },
         divider: LIGHT_DIVIDER,
+        action: {
+            hover: alpha(CH_LIGHT_BCCCDC, 0.55),
+            selected: alpha(LIGHT_PRIMARY_MAIN, 0.14),
+        },
     },
     components: commonComponents,
 };
@@ -179,7 +305,7 @@ export const darkThemeOptions: ThemeOptions = {
             main: DARK_SECONDARY_MAIN,
             light: DARK_SECONDARY_LIGHT,
             dark: DARK_SECONDARY_DARK,
-            contrastText: "#020617",
+            contrastText: CH_DARK_F4F4F4,
         },
         success: {
             main: DARK_SUCCESS,
@@ -199,6 +325,10 @@ export const darkThemeOptions: ThemeOptions = {
             secondary: DARK_TEXT_SECONDARY,
         },
         divider: DARK_DIVIDER,
+        action: {
+            hover: alpha(CH_DARK_1D546C, 0.35),
+            selected: alpha(CH_DARK_1D546C, 0.22),
+        },
     },
     components: commonComponents,
 };

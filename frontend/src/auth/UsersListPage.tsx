@@ -22,6 +22,7 @@ import {
     OutlinedInput,
     MenuItem,
     ListItemText,
+    Stack,
     Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
@@ -262,122 +263,121 @@ class UsersListPage extends Component<UsersListPageProps, UsersListPageState> {
                             : "Novi korisnik"}
                     </DialogTitle>
                     <DialogContent>
-                        <TextField
-                            autoFocus
-                            margin="dense"
-                            label="Username"
-                            fullWidth
-                            required
-                            value={username}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    username: e.target.value,
-                                }))
-                            }
-                            disabled={editingUser != null}
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Ime"
-                            fullWidth
-                            value={first_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    first_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Prezime"
-                            fullWidth
-                            value={last_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    last_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Email"
-                            fullWidth
-                            type="email"
-                            value={email}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    email: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label={
-                                editingUser != null
-                                    ? "Nova lozinka (ostavite prazno da ne menjate)"
-                                    : "Lozinka"
-                            }
-                            fullWidth
-                            type="password"
-                            required={editingUser == null}
-                            value={password}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    password: e.target.value,
-                                }))
-                            }
-                        />
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={is_active}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            is_active: e.target.checked,
-                                        }))
-                                    }
-                                />
-                            }
-                            label="Aktivan"
-                            sx={{ mt: 1 }}
-                        />
-                        <FormControl fullWidth margin="dense" sx={{ mt: 2 }}>
-                            <InputLabel>Role (grupe)</InputLabel>
-                            <Select
-                                multiple
-                                value={selectedRoleIds}
+                        <Stack spacing={2} sx={{ pt: 1 }}>
+                            <TextField
+                                autoFocus
+                                label="Username"
+                                fullWidth
+                                required
+                                value={username}
                                 onChange={(e) =>
                                     this.setState((prev) => ({
                                         ...prev,
-                                        selectedRoleIds: e.target
-                                            .value as number[],
+                                        username: e.target.value,
                                     }))
                                 }
-                                input={<OutlinedInput label="Role (grupe)" />}
-                                renderValue={(ids) =>
-                                    ids
-                                        .map(
-                                            (id) =>
-                                                roleList.find(
-                                                    (r) => r.id === id,
-                                                )?.name ?? id,
-                                        )
-                                        .join(", ")
+                                disabled={editingUser != null}
+                            />
+                            <TextField
+                                label="Ime"
+                                fullWidth
+                                value={first_name}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        first_name: e.target.value,
+                                    }))
                                 }
-                            >
-                                {roleList.map((r) => (
-                                    <MenuItem key={r.id} value={r.id}>
-                                        <ListItemText primary={r.name} />
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
+                            />
+                            <TextField
+                                label="Prezime"
+                                fullWidth
+                                value={last_name}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        last_name: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                label="Email"
+                                fullWidth
+                                type="email"
+                                value={email}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        email: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                label={
+                                    editingUser != null
+                                        ? "Nova lozinka (ostavite prazno da ne menjate)"
+                                        : "Lozinka"
+                                }
+                                fullWidth
+                                type="password"
+                                required={editingUser == null}
+                                value={password}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        password: e.target.value,
+                                    }))
+                                }
+                            />
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={is_active}
+                                        onChange={(e) =>
+                                            this.setState((prev) => ({
+                                                ...prev,
+                                                is_active: e.target.checked,
+                                            }))
+                                        }
+                                    />
+                                }
+                                label="Aktivan"
+                                sx={{ alignSelf: "flex-start", ml: 0 }}
+                            />
+                            <FormControl fullWidth>
+                                <InputLabel>Role (grupe)</InputLabel>
+                                <Select
+                                    multiple
+                                    value={selectedRoleIds}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            selectedRoleIds: e.target
+                                                .value as number[],
+                                        }))
+                                    }
+                                    input={
+                                        <OutlinedInput label="Role (grupe)" />
+                                    }
+                                    renderValue={(ids) =>
+                                        ids
+                                            .map(
+                                                (id) =>
+                                                    roleList.find(
+                                                        (r) => r.id === id,
+                                                    )?.name ?? id,
+                                            )
+                                            .join(", ")
+                                    }
+                                >
+                                    {roleList.map((r) => (
+                                        <MenuItem key={r.id} value={r.id}>
+                                            <ListItemText primary={r.name} />
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
+                        </Stack>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Odustani</Button>

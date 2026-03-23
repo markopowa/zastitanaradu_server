@@ -24,6 +24,7 @@ import {
     FormControlLabel,
     Switch,
     Tooltip,
+    Stack,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -320,7 +321,7 @@ class ProcessTemplatesListPageInner extends Component<
                         alignItems: "center",
                     }}
                 >
-                    <FormControl size="small" sx={{ minWidth: 260 }}>
+                    <FormControl sx={{ minWidth: 260 }}>
                         <InputLabel>Vrsta obaveze</InputLabel>
                         <Select
                             value={process_type_id}
@@ -367,10 +368,16 @@ class ProcessTemplatesListPageInner extends Component<
                         <CircularProgress />
                     </Box>
                 ) : (
-                    <ScrollableTablePaper>
+                    <ScrollableTablePaper sx={{ pb: 2 }}>
                         <Table
                             size="small"
-                            sx={{ width: "100%", tableLayout: "fixed" }}
+                            sx={{
+                                width: "100%",
+                                tableLayout: "fixed",
+                                "& .MuiTableCell-head": {
+                                    fontWeight: 600,
+                                },
+                            }}
                         >
                             <TableHead>
                                 <TableRow>
@@ -434,35 +441,53 @@ class ProcessTemplatesListPageInner extends Component<
                                             <TableCell>
                                                 {row.send_email ? "Da" : "Ne"}
                                             </TableCell>
-                                            <TableCell align="right">
-                                                <PermissionGate permission="processes.change_processtemplate">
-                                                    <Button
-                                                        size="small"
-                                                        startIcon={<EditIcon />}
-                                                        onClick={() =>
-                                                            this.openEdit(row)
-                                                        }
-                                                        sx={{ mr: 1 }}
-                                                    >
-                                                        Izmeni
-                                                    </Button>
-                                                </PermissionGate>
-                                                <PermissionGate permission="processes.delete_processtemplate">
-                                                    <Button
-                                                        size="small"
-                                                        color="error"
-                                                        startIcon={
-                                                            <DeleteIcon />
-                                                        }
-                                                        onClick={() =>
-                                                            this.confirmDelete(
-                                                                row.id,
-                                                            )
-                                                        }
-                                                    >
-                                                        Obriši
-                                                    </Button>
-                                                </PermissionGate>
+                                            <TableCell
+                                                align="right"
+                                                sx={{
+                                                    verticalAlign: "middle",
+                                                    py: 1.25,
+                                                }}
+                                            >
+                                                <Stack
+                                                    direction="row"
+                                                    flexWrap="wrap"
+                                                    justifyContent="flex-end"
+                                                    alignItems="center"
+                                                    gap={0.5}
+                                                    sx={{ ml: "auto" }}
+                                                >
+                                                    <PermissionGate permission="processes.change_processtemplate">
+                                                        <Button
+                                                            size="small"
+                                                            startIcon={
+                                                                <EditIcon fontSize="small" />
+                                                            }
+                                                            onClick={() =>
+                                                                this.openEdit(
+                                                                    row,
+                                                                )
+                                                            }
+                                                        >
+                                                            Izmeni
+                                                        </Button>
+                                                    </PermissionGate>
+                                                    <PermissionGate permission="processes.delete_processtemplate">
+                                                        <Button
+                                                            size="small"
+                                                            color="error"
+                                                            startIcon={
+                                                                <DeleteIcon fontSize="small" />
+                                                            }
+                                                            onClick={() =>
+                                                                this.confirmDelete(
+                                                                    row.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            Obriši
+                                                        </Button>
+                                                    </PermissionGate>
+                                                </Stack>
                                             </TableCell>
                                         </TableRow>
                                     ))

@@ -10,10 +10,11 @@ import {
     Button,
     Stack,
 } from "@mui/material";
-import LockIcon from "@mui/icons-material/Lock";
 import PersonIcon from "@mui/icons-material/Person";
+import LockIcon from "@mui/icons-material/Lock";
 
-import { api } from "../api/client";
+import { ChangePasswordDialog } from "../components/ChangePasswordDialog";
+import { ProfileThemeSettings } from "../components/ProfileThemeSettings";
 import { updateProfile } from "../store/authSlice";
 
 import type { AppDispatch, RootState } from "../store";
@@ -34,11 +35,7 @@ class UserProfilePage extends Component<
         lastName: "",
         profileSaving: false,
         profileMessage: null,
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-        loading: false,
-        message: null,
+        passwordDialogOpen: false,
     };
 
     static getDerivedStateFromProps(
@@ -123,73 +120,6 @@ class UserProfilePage extends Component<
         }
     };
 
-    handleChange =
-        (
-            field: keyof Pick<
-                UserProfilePageState,
-                "currentPassword" | "newPassword" | "confirmPassword"
-            >,
-        ) =>
-        (e: ChangeEvent<HTMLInputElement>) => {
-            this.setState((prev) => ({
-                ...prev,
-                [field]: e.target.value,
-                message: null,
-            }));
-        };
-
-    handleSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const { currentPassword, newPassword, confirmPassword } = this.state;
-        if (!newPassword || newPassword.length < 8) {
-            this.setState((prev) => ({
-                ...prev,
-                message: {
-                    type: "error",
-                    text: "Nova lozinka mora imati najmanje 8 karaktera.",
-                },
-            }));
-            return;
-        }
-        if (newPassword !== confirmPassword) {
-            this.setState((prev) => ({
-                ...prev,
-                message: {
-                    type: "error",
-                    text: "Nova lozinka i potvrda se ne poklapaju.",
-                },
-            }));
-            return;
-        }
-        this.setState((prev) => ({ ...prev, loading: true, message: null }));
-        try {
-            await api.post("/auth/change-password/", {
-                current_password: currentPassword,
-                new_password: newPassword,
-            });
-            this.setState((prev) => ({
-                ...prev,
-                currentPassword: "",
-                newPassword: "",
-                confirmPassword: "",
-                message: {
-                    type: "success",
-                    text: "Lozinka je uspešno promenjena.",
-                },
-            }));
-        } catch (err: unknown) {
-            const detail =
-                (err as { response?: { data?: { detail?: string } } })?.response
-                    ?.data?.detail ?? "Greška pri promeni lozinke.";
-            this.setState((prev) => ({
-                ...prev,
-                message: { type: "error", text: detail },
-            }));
-        } finally {
-            this.setState((prev) => ({ ...prev, loading: false }));
-        }
-    };
-
     render() {
         const { user } = this.props;
         const {
@@ -198,11 +128,7 @@ class UserProfilePage extends Component<
             lastName,
             profileSaving,
             profileMessage,
-            currentPassword,
-            newPassword,
-            confirmPassword,
-            loading,
-            message,
+            passwordDialogOpen,
         } = this.state;
 
         if (!user) {
@@ -302,80 +228,47 @@ class UserProfilePage extends Component<
                     </Typography>
                 </Paper>
 
-                <Paper sx={{ p: 3, maxWidth: 600, width: "100%" }}>
+                <Paper sx={{ p: 3, maxWidth: 600, mb: 3, width: "100%" }}>
                     <Typography
                         variant="h6"
                         gutterBottom
                         sx={{ display: "flex", alignItems: "center", gap: 1 }}
                     >
-                        <LockIcon /> Promeni lozinku
+                        <LockIcon /> Lozinka
                     </Typography>
                     <Typography
                         variant="body2"
                         color="text.secondary"
                         sx={{ mb: 2 }}
                     >
-                        Unesite trenutnu lozinku i novu lozinku (min. 8
-                        karaktera).
+                        Za promenu lozinke potrebna je trenutna lozinka.
                     </Typography>
-                    <Box component="form" onSubmit={this.handleSubmit}>
-                        <Stack spacing={2} sx={{ maxWidth: 400 }}>
-                            <TextField
-                                label="Trenutna lozinka"
-                                type="password"
-                                value={currentPassword}
-                                onChange={this.handleChange("currentPassword")}
-                                required
-                                fullWidth
-                                autoComplete="current-password"
-                            />
-                            <TextField
-                                label="Nova lozinka"
-                                type="password"
-                                value={newPassword}
-                                onChange={this.handleChange("newPassword")}
-                                required
-                                fullWidth
-                                autoComplete="new-password"
-                                helperText="Minimum 8 karaktera"
-                            />
-                            <TextField
-                                label="Potvrdi novu lozinku"
-                                type="password"
-                                value={confirmPassword}
-                                onChange={this.handleChange("confirmPassword")}
-                                required
-                                fullWidth
-                                autoComplete="new-password"
-                            />
-                            {message && (
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        color:
-                                            message.type === "error"
-                                                ? "error.main"
-                                                : "success.main",
-                                    }}
-                                >
-                                    {message.text}
-                                </Typography>
-                            )}
-                            <Button
-                                type="submit"
-                                variant="contained"
-                                disabled={
-                                    loading ||
-                                    !currentPassword ||
-                                    !newPassword ||
-                                    !confirmPassword
-                                }
-                            >
-                                {loading ? "Čeka se..." : "Promeni lozinku"}
-                            </Button>
-                        </Stack>
-                    </Box>
+                    <Button
+                        variant="outlined"
+                        onClick={() =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                passwordDialogOpen: true,
+                            }))
+                        }
+                    >
+                        Promeni lozinku
+                    </Button>
                 </Paper>
+
+                <Paper sx={{ p: 3, maxWidth: 600, mb: 3, width: "100%" }}>
+                    <ProfileThemeSettings />
+                </Paper>
+
+                <ChangePasswordDialog
+                    open={passwordDialogOpen}
+                    onClose={() =>
+                        this.setState((prev) => ({
+                            ...prev,
+                            passwordDialogOpen: false,
+                        }))
+                    }
+                />
             </Box>
         );
     }

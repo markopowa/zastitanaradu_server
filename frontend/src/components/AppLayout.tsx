@@ -281,7 +281,15 @@ class AppLayoutInner extends Component<Props, State> {
     }
 
     handleAvatarClick = (event: MouseEvent<HTMLElement>): void => {
-        this.setState((prev) => ({ ...prev, anchorEl: event.currentTarget }));
+        event.stopPropagation();
+        const el = event.currentTarget;
+        if (this.state.anchorEl) {
+            this.setState((prev) => ({ ...prev, anchorEl: null }));
+            return;
+        }
+        queueMicrotask(() => {
+            this.setState((prev) => ({ ...prev, anchorEl: el }));
+        });
     };
 
     handleMenuClose = (): void => {
@@ -342,7 +350,7 @@ class AppLayoutInner extends Component<Props, State> {
                 {!isMobile && (
                     <Box
                         component="nav"
-                        sx={{
+                        sx={(theme) => ({
                             width: SIDEBAR_WIDTH,
                             borderRight: 1,
                             borderColor: "divider",
@@ -352,7 +360,10 @@ class AppLayoutInner extends Component<Props, State> {
                             gap: 2,
                             overflow: "hidden",
                             height: "100vh",
-                        }}
+                            ...(theme.palette.mode === "light" && {
+                                bgcolor: "background.paper",
+                            }),
+                        })}
                     >
                         <Box sx={{ fontWeight: 600, flexShrink: 0 }}>
                             {APP_TITLE}
@@ -444,7 +455,7 @@ class AppLayoutInner extends Component<Props, State> {
                                                             fullPath,
                                                         );
                                                     }}
-                                                    sx={{
+                                                    sx={(theme) => ({
                                                         display: "flex",
                                                         alignItems: "center",
                                                         gap: 1.5,
@@ -453,17 +464,42 @@ class AppLayoutInner extends Component<Props, State> {
                                                         borderRadius: 1,
                                                         cursor: "pointer",
                                                         bgcolor: isActive
-                                                            ? "secondary.main"
+                                                            ? theme.palette
+                                                                  .mode ===
+                                                              "light"
+                                                                ? alpha(
+                                                                      theme
+                                                                          .palette
+                                                                          .primary
+                                                                          .main,
+                                                                      0.12,
+                                                                  )
+                                                                : "secondary.main"
                                                             : "transparent",
                                                         color: isActive
-                                                            ? "secondary.contrastText"
+                                                            ? theme.palette
+                                                                  .mode ===
+                                                              "light"
+                                                                ? "primary.dark"
+                                                                : "secondary.contrastText"
                                                             : "text.primary",
                                                         "&:hover": {
                                                             bgcolor: isActive
-                                                                ? "secondary.dark"
+                                                                ? theme
+                                                                      .palette
+                                                                      .mode ===
+                                                                  "light"
+                                                                    ? alpha(
+                                                                          theme
+                                                                              .palette
+                                                                              .primary
+                                                                              .main,
+                                                                          0.18,
+                                                                      )
+                                                                    : "secondary.light"
                                                                 : "action.hover",
                                                         },
-                                                    }}
+                                                    })}
                                                 >
                                                     {item.icon}
                                                     <Typography
@@ -519,6 +555,11 @@ class AppLayoutInner extends Component<Props, State> {
                                 borderLeft: 3,
                                 borderColor: "primary.main",
                                 pl: 1.5,
+                                flex: 1,
+                                minWidth: 0,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
                             }}
                         >
                             {pageTitle}
@@ -528,6 +569,7 @@ class AppLayoutInner extends Component<Props, State> {
                                 display: "flex",
                                 alignItems: "center",
                                 gap: 1,
+                                flexShrink: 0,
                             }}
                         >
                             <IconButton
@@ -538,6 +580,7 @@ class AppLayoutInner extends Component<Props, State> {
                                 }
                                 aria-haspopup="true"
                                 aria-expanded={menuOpen ? "true" : undefined}
+                                aria-label="Meni naloga"
                             >
                                 <Avatar
                                     sx={{
@@ -556,43 +599,55 @@ class AppLayoutInner extends Component<Props, State> {
                                 </Avatar>
                             </IconButton>
                         </Box>
-                        <Menu
-                            id="user-menu"
-                            anchorEl={anchorEl}
-                            open={menuOpen}
-                            onClose={this.handleMenuClose}
-                            anchorOrigin={{
-                                vertical: "bottom",
-                                horizontal: "right",
-                            }}
-                            transformOrigin={{
-                                vertical: "top",
-                                horizontal: "right",
+                    </Box>
+                    <Menu
+                        id="user-menu"
+                        anchorEl={anchorEl}
+                        open={menuOpen}
+                        onClose={this.handleMenuClose}
+                        disableScrollLock
+                        disableAutoFocus
+                        slotProps={{
+                            paper: {
+                                sx: (theme) => ({
+                                    zIndex: theme.zIndex.modal + 100,
+                                }),
+                            },
+                            backdrop: {
+                                invisible: true,
+                            },
+                        }}
+                        anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
+                        }}
+                        transformOrigin={{
+                            vertical: "top",
+                            horizontal: "right",
+                        }}
+                    >
+                        <MenuItem
+                            disabled
+                            sx={{ opacity: 1, cursor: "default" }}
+                        >
+                            <Typography variant="body2" fontWeight={600}>
+                                {user?.username ?? ""}
+                            </Typography>
+                        </MenuItem>
+                        <MenuItem
+                            onClick={() => {
+                                this.handleMenuClose();
+                                this.props.navigate("/profile");
                             }}
                         >
-                            <MenuItem
-                                disabled
-                                sx={{ opacity: 1, cursor: "default" }}
-                            >
-                                <Typography variant="body2" fontWeight={600}>
-                                    {user?.username ?? ""}
-                                </Typography>
-                            </MenuItem>
-                            <MenuItem
-                                onClick={() => {
-                                    this.handleMenuClose();
-                                    this.props.navigate("/profile");
-                                }}
-                            >
-                                <PersonIcon sx={{ mr: 1, fontSize: 20 }} />
-                                Profil
-                            </MenuItem>
-                            <MenuItem onClick={this.handleLogout}>
-                                <LogoutIcon sx={{ mr: 1, fontSize: 20 }} />
-                                Odjava
-                            </MenuItem>
-                        </Menu>
-                    </Box>
+                            <PersonIcon sx={{ mr: 1, fontSize: 20 }} />
+                            Profil
+                        </MenuItem>
+                        <MenuItem onClick={this.handleLogout}>
+                            <LogoutIcon sx={{ mr: 1, fontSize: 20 }} />
+                            Odjava
+                        </MenuItem>
+                    </Menu>
 
                     <Box
                         sx={{

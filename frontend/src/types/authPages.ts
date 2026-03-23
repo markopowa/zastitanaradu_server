@@ -115,9 +115,5 @@ export interface UserProfilePageState {
     lastName: string;
     profileSaving: boolean;
     profileMessage: { type: "success" | "error"; text: string } | null;
-    currentPassword: string;
-    newPassword: string;
-    confirmPassword: string;
-    loading: boolean;
-    message: { type: "success" | "error"; text: string } | null;
+    passwordDialogOpen: boolean;
 }
