@@ -73,6 +73,17 @@ export async function createClientCompany(
     return data;
 }
 
+export async function updateClientCompany(
+    id: number,
+    payload: Partial<ClientCompany>,
+): Promise<ClientCompany> {
+    const { data } = await api.patch<ClientCompany>(
+        `/api/partners/client-companies/${id}/`,
+        payload,
+    );
+    return data;
+}
+
 function asList<T>(data: ListResponse<T> | undefined): T[] {
     if (Array.isArray(data)) return data;
     return (data as { results?: T[] })?.results ?? [];

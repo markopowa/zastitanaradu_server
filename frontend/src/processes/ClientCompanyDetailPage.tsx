@@ -14,8 +14,11 @@ import {
     TableCell,
     TableHead,
     TableRow,
+    TextField,
+    Tooltip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { enqueueSnackbar } from "notistack";
 
 import {
     generateEvidencija1,
@@ -24,7 +27,9 @@ import {
     getEquipment,
     getProcessBindings,
     getProcessRuns,
+    updateClientCompany,
 } from "../api/processes";
+import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
 
@@ -32,9 +37,37 @@ import type {
     ClientCompanyDetailPageProps,
     ClientCompanyDetailPageState,
 } from "../types/processPages";
+import type {
+    ClientCompany,
+    EmployeeSummary,
+    EquipmentItem,
+    ProcessBinding,
+} from "../types/processes";
 
 const formatDate = (v?: string | null) =>
     v ? new Date(v).toLocaleDateString("sr-RS") : "—";
+
+function bindingSubjectLabel(
+    b: ProcessBinding,
+    employees: EmployeeSummary[],
+    equipment: EquipmentItem[],
+    company: ClientCompany,
+): string {
+    if (b.employee != null) {
+        const e = employees.find((x) => x.id === b.employee);
+        if (e) {
+            const name = `${e.first_name} ${e.last_name}`.trim();
+            if (name) return name;
+        }
+        return `Zaposleni #${b.employee}`;
+    }
+    if (b.equipment_item != null) {
+        const eq = equipment.find((x) => x.id === b.equipment_item);
+        if (eq?.name) return eq.name;
+        return `Oprema #${b.equipment_item}`;
+    }
+    return company.name;
+}
 
 class ClientCompanyDetailPageInner extends Component<
     ClientCompanyDetailPageProps,
@@ -50,6 +83,103 @@ class ClientCompanyDetailPageInner extends Component<
         error: null,
         generatingDoc: false,
         docError: null,
+        editing: false,
+        saving: false,
+        saveError: null,
+        editName: "",
+        editPib: "",
+        editRegistration_number: "",
+        editAddress: "",
+        editPhone: "",
+        editEmail: "",
+        editWebsite: "",
+        editNotes: "",
+        editActivity_code: "",
+    };
+
+    startEdit = (): void => {
+        const { item } = this.state;
+        if (!item) return;
+        this.setState((prev) => ({
+            ...prev,
+            editing: true,
+            saveError: null,
+            editName: item.name,
+            editPib: item.pib,
+            editRegistration_number: item.registration_number ?? "",
+            editAddress: item.address ?? "",
+            editPhone: item.phone ?? "",
+            editEmail: item.email ?? "",
+            editWebsite: item.website ?? "",
+            editNotes: item.notes ?? "",
+            editActivity_code: item.activity_code ?? "",
+        }));
+    };
+
+    cancelEdit = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            editing: false,
+            saveError: null,
+        }));
+    };
+
+    saveCompany = (): void => {
+        const id = Number(this.props.id);
+        const {
+            editName,
+            editPib,
+            editRegistration_number,
+            editAddress,
+            editPhone,
+            editEmail,
+            editWebsite,
+            editNotes,
+            editActivity_code,
+        } = this.state;
+        if (!editName.trim() || !editPib.trim()) return;
+        this.setState((prev) => ({ ...prev, saving: true, saveError: null }));
+        updateClientCompany(id, {
+            name: editName.trim(),
+            pib: editPib.trim(),
+            registration_number: editRegistration_number.trim() || undefined,
+            address: editAddress.trim() || undefined,
+            phone: editPhone.trim() || undefined,
+            email: editEmail.trim() || undefined,
+            website: editWebsite.trim() || undefined,
+            notes: editNotes.trim() || undefined,
+            activity_code: editActivity_code.trim() || undefined,
+        })
+            .then((item) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    item,
+                    saving: false,
+                    editing: false,
+                    saveError: null,
+                }));
+                enqueueSnackbar("Podaci o firmi su sačuvani.", {
+                    variant: "success",
+                });
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju.";
+                    this.setState((prev) => ({
+                        ...prev,
+                        saving: false,
+                        saveError: msg,
+                    }));
+                },
+            );
     };
 
     handleGenerateEvidencija1 = (): void => {
@@ -97,6 +227,8 @@ class ClientCompanyDetailPageInner extends Component<
                     item,
                     loading: false,
                     error: null,
+                    editing: false,
+                    saveError: null,
                 }));
                 this.loadExtra(id);
             })
@@ -157,6 +289,18 @@ class ClientCompanyDetailPageInner extends Component<
             error,
             generatingDoc,
             docError,
+            editing,
+            saving,
+            saveError,
+            editName,
+            editPib,
+            editRegistration_number,
+            editAddress,
+            editPhone,
+            editEmail,
+            editWebsite,
+            editNotes,
+            editActivity_code,
         } = this.state;
         const { navigate } = this.props;
 
@@ -193,56 +337,228 @@ class ClientCompanyDetailPageInner extends Component<
                     Nazad na listu
                 </Button>
                 <Paper sx={{ p: 3 }}>
-                    <Typography variant="h6" gutterBottom>
-                        {item.name}
-                    </Typography>
                     <Box
-                        component="dl"
                         sx={{
-                            m: 0,
-                            "& dd": { ml: 2 },
-                            "& dt": { fontWeight: 600, mt: 1 },
+                            display: "flex",
+                            alignItems: "flex-start",
+                            justifyContent: "space-between",
+                            gap: 2,
+                            mb: editing ? 2 : 0,
                         }}
                     >
-                        <dt>PIB</dt>
-                        <dd>{item.pib}</dd>
-                        {item.registration_number && (
-                            <>
-                                <dt>Matični broj</dt>
-                                <dd>{item.registration_number}</dd>
-                            </>
+                        {!editing && (
+                            <Typography variant="h6">{item.name}</Typography>
                         )}
-                        {item.address && (
-                            <>
-                                <dt>Adresa</dt>
-                                <dd>{item.address}</dd>
-                            </>
-                        )}
-                        {item.email && (
-                            <>
-                                <dt>Email</dt>
-                                <dd>{item.email}</dd>
-                            </>
-                        )}
-                        {item.phone && (
-                            <>
-                                <dt>Telefon</dt>
-                                <dd>{item.phone}</dd>
-                            </>
-                        )}
-                        {item.website && (
-                            <>
-                                <dt>Web</dt>
-                                <dd>{item.website}</dd>
-                            </>
-                        )}
-                        {item.notes && (
-                            <>
-                                <dt>Beleške</dt>
-                                <dd>{item.notes}</dd>
-                            </>
+                        {!editing && (
+                            <PermissionGate permission="partners.change_clientcompany">
+                                <Button variant="outlined" onClick={this.startEdit}>
+                                    Izmeni podatke
+                                </Button>
+                            </PermissionGate>
                         )}
                     </Box>
+                    {editing ? (
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 1,
+                                maxWidth: 560,
+                            }}
+                        >
+                            {saveError && (
+                                <Alert severity="error">{saveError}</Alert>
+                            )}
+                            <TextField
+                                margin="dense"
+                                label="Naziv"
+                                fullWidth
+                                required
+                                value={editName}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editName: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="PIB"
+                                fullWidth
+                                required
+                                value={editPib}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editPib: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Matični broj"
+                                fullWidth
+                                value={editRegistration_number}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editRegistration_number: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Adresa"
+                                fullWidth
+                                value={editAddress}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editAddress: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Telefon"
+                                fullWidth
+                                value={editPhone}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editPhone: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Email"
+                                fullWidth
+                                type="email"
+                                value={editEmail}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editEmail: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Web sajt"
+                                fullWidth
+                                value={editWebsite}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editWebsite: e.target.value,
+                                    }))
+                                }
+                            />
+                            <Tooltip title="Šifra delatnosti">
+                                <TextField
+                                    margin="dense"
+                                    label="Šifra delatnosti"
+                                    fullWidth
+                                    value={editActivity_code}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editActivity_code: e.target.value,
+                                        }))
+                                    }
+                                />
+                            </Tooltip>
+                            <TextField
+                                margin="dense"
+                                label="Beleške"
+                                fullWidth
+                                multiline
+                                minRows={2}
+                                value={editNotes}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editNotes: e.target.value,
+                                    }))
+                                }
+                            />
+                            <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                                <Button
+                                    variant="contained"
+                                    disabled={
+                                        saving ||
+                                        !editName.trim() ||
+                                        !editPib.trim()
+                                    }
+                                    onClick={this.saveCompany}
+                                >
+                                    {saving ? "Čuvam..." : "Sačuvaj"}
+                                </Button>
+                                <Button
+                                    disabled={saving}
+                                    onClick={this.cancelEdit}
+                                >
+                                    Otkaži
+                                </Button>
+                            </Box>
+                        </Box>
+                    ) : (
+                        <Box
+                            component="dl"
+                            sx={{
+                                m: 0,
+                                "& dd": { ml: 2 },
+                                "& dt": { fontWeight: 600, mt: 1 },
+                            }}
+                        >
+                            <dt>PIB</dt>
+                            <dd>{item.pib}</dd>
+                            {item.registration_number && (
+                                <>
+                                    <dt>Matični broj</dt>
+                                    <dd>{item.registration_number}</dd>
+                                </>
+                            )}
+                            {item.address && (
+                                <>
+                                    <dt>Adresa</dt>
+                                    <dd>{item.address}</dd>
+                                </>
+                            )}
+                            {item.email && (
+                                <>
+                                    <dt>Email</dt>
+                                    <dd>{item.email}</dd>
+                                </>
+                            )}
+                            {item.phone && (
+                                <>
+                                    <dt>Telefon</dt>
+                                    <dd>{item.phone}</dd>
+                                </>
+                            )}
+                            {item.website && (
+                                <>
+                                    <dt>Web</dt>
+                                    <dd>{item.website}</dd>
+                                </>
+                            )}
+                            {item.activity_code && (
+                                <>
+                                    <dt>Šifra delatnosti</dt>
+                                    <dd>{item.activity_code}</dd>
+                                </>
+                            )}
+                            {item.notes && (
+                                <>
+                                    <dt>Beleške</dt>
+                                    <dd>{item.notes}</dd>
+                                </>
+                            )}
+                        </Box>
+                    )}
                 </Paper>
 
                 <Box
@@ -362,11 +678,12 @@ class ClientCompanyDetailPageInner extends Component<
                                                 {b.process_type_name}
                                             </TableCell>
                                             <TableCell>
-                                                {b.employee
-                                                    ? `Zaposleni #${b.employee}`
-                                                    : b.equipment_item
-                                                      ? `Oprema #${b.equipment_item}`
-                                                      : "Firma"}
+                                                {bindingSubjectLabel(
+                                                    b,
+                                                    employees,
+                                                    equipment,
+                                                    item,
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 {formatDate(b.next_run_at)}

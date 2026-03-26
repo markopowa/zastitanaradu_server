@@ -284,6 +284,18 @@ export interface ClientCompanyDetailPageState {
     error: string | null;
     generatingDoc: boolean;
     docError: string | null;
+    editing: boolean;
+    saving: boolean;
+    saveError: string | null;
+    editName: string;
+    editPib: string;
+    editRegistration_number: string;
+    editAddress: string;
+    editPhone: string;
+    editEmail: string;
+    editWebsite: string;
+    editNotes: string;
+    editActivity_code: string;
 }
 
 export interface ClientCompaniesEmployeesListPageStateProps {

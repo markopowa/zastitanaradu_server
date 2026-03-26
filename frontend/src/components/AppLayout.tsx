@@ -587,6 +587,7 @@ class AppLayoutInner extends Component<Props, State> {
                                         width: isMobile ? 32 : 40,
                                         height: isMobile ? 32 : 40,
                                         bgcolor: "primary.main",
+                                        color: "primary.contrastText",
                                         fontSize: isMobile
                                             ? "0.875rem"
                                             : "1rem",
