@@ -9,3 +9,4 @@ backend/.venv/
 staticfiles/
 docs/
 develop/
+__pycache__/
