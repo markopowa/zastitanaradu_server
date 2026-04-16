@@ -330,6 +330,7 @@ class ProcessTemplatesListPageInner extends Component<
             form_email_body_template,
             form_custom_email_recipient,
             form_followup_process_type_id,
+            form_notification_role_group_id,
         } = this.state;
 
         const selectedType =
