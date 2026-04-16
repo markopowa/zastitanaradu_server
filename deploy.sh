@@ -83,7 +83,7 @@ initialSetup() {
     mkdir -p "$CERTBOT_WEBROOT"
     chown -R www-data:www-data "$CERTBOT_WEBROOT"
     mkdir -p "$LOG_DIR/backend"
-    chown 33:33 "$LOG_DIR/backend"
+    chown -R 33:33 "$LOG_DIR/backend"
 }
 
 setupDatabase() {
@@ -120,7 +120,7 @@ setupDockerQuick() {
     export PZNR_DB_USER="${PZNR_DB_USER:-pznr_user}"
     export PZNR_DB_PASSWORD="${PZNR_DB_PASSWORD:-}"
     mkdir -p "$LOG_DIR/backend"
-    chown 33:33 "$LOG_DIR/backend" 2>/dev/null || true
+    chown -R 33:33 "$LOG_DIR/backend" 2>/dev/null || true
     makeMigrations
     cd "$APP_DIR"
     docker compose build backend
@@ -137,7 +137,7 @@ setupDocker() {
     export PZNR_DB_USER="${PZNR_DB_USER:-pznr_user}"
     export PZNR_DB_PASSWORD="${PZNR_DB_PASSWORD:-}"
     mkdir -p "$LOG_DIR/backend"
-    chown 33:33 "$LOG_DIR/backend" 2>/dev/null || true
+    chown -R 33:33 "$LOG_DIR/backend" 2>/dev/null || true
     makeMigrations
     cd "$APP_DIR"
     docker compose build backend
@@ -154,8 +154,6 @@ setupDocker() {
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
     cd "$APP_DIR"
     docker compose exec -T backend python manage.py migrate --noinput
-    # TODO: ukloniti kada svi ProcessRun.result_data zapisi budu migrirani na nove ključeve
-    docker compose exec -T backend python manage.py migrate_processrun_result_data_keys 2>/dev/null || true
     docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
     mkdir -p "$STATIC_DIR"
     docker compose cp backend:/app/staticfiles/. "$STATIC_DIR/"
