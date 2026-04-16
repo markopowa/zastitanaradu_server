@@ -1,73 +1,40 @@
-# React + TypeScript + Vite
+# Frontend (React + TypeScript + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+SPA za aplikaciju iz korenskog `README.md`. Poziva Django REST API; baza URL-a za build zadaje se preko `VITE_API_BASE_URL`.
 
-Currently, two official plugins are available:
+## Lokalni razvoj
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Iz ovog direktorijuma:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm ci
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Podrazumevano Vite očekuje backend na adresi iz `vite.config` / env. Za build koji gađa konkretan API:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+set VITE_API_BASE_URL=https://tvoj-domen.rs
+npm run build
 ```
+
+( Na Linux/macOS: `export VITE_API_BASE_URL=...` )
+
+## Skripte
+
+| Skripta | Značenje |
+|--------|----------|
+| `npm run dev` | razvojni server (HMR) |
+| `npm run build` | `tsc -b` + produkcijski bundle u `dist/` |
+| `npm run preview` | lokalni pregled produkcijskog bundle-a |
+| `npm run lint` | ESLint |
+
+## Struktura (kratko)
+
+- `src/App.tsx` — rute (`react-router-dom`)
+- `src/components/AppLayout.tsx` — navigacija (grupe: Pregled, Klijenti, Aktivnosti, Dokumenti, **Procesi**, Korisnici)
+- `src/processes/` — klijenti, zaposleni, oprema, procesi (tipovi, šabloni, rasporedi, aktivnosti), dashboard „Ističe uskoro“
+- `src/documents/` — dokumenti, kategorije, šabloni dokumenata
+- `src/api/` — pozivi ka backendu
+
+Na produkciji se `dist/` gradi u koraku **setupDocker** iz korenskog `deploy.sh` (v. `DEPLOY.md`).

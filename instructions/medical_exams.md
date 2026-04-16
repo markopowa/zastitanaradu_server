@@ -1,5 +1,7 @@
 ### Uputstvo - lekarski pregledi zaposlenih
 
+U bočnom meniju, stavke **Vrste obaveza**, **Šabloni procesa**, **Rasporedi** i **Aktivnosti** nalaze se u grupi označenoj kao **Procesi** (pored toga postoji i grupa **Aktivnosti** sa filterima po tipu obaveze, ako su tipovi uneti).
+
 ### 1) Priprema
 
 Od klijenta uzmi:

@@ -58,7 +58,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
         first_name: "",
         last_name: "",
         father_name: "",
-        jmbg: "",
+        national_id: "",
         date_of_birth: "",
         place_of_birth: "",
         email: "",
@@ -105,7 +105,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
             first_name: "",
             last_name: "",
             father_name: "",
-            jmbg: "",
+            national_id: "",
             date_of_birth: "",
             place_of_birth: "",
             email: "",
@@ -133,7 +133,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
         if (!first_name.trim() || !new_client_company_id) return;
         const {
             father_name,
-            jmbg,
+            national_id,
             date_of_birth,
             place_of_birth,
             occupation,
@@ -150,7 +150,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
             first_name: first_name.trim(),
             last_name: last_name.trim(),
             father_name: father_name.trim() || undefined,
-            jmbg: jmbg.trim() || undefined,
+            national_id: national_id.trim() || undefined,
             date_of_birth: dateOfBirthSent,
             place_of_birth: place_of_birth.trim() || undefined,
             email: email.trim(),
@@ -182,7 +182,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
             first_name,
             last_name,
             father_name,
-            jmbg,
+            national_id,
             date_of_birth,
             place_of_birth,
             email,
@@ -387,11 +387,11 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                 margin="dense"
                                 label="JMBG"
                                 fullWidth
-                                value={jmbg}
+                                value={national_id}
                                 onChange={(e) =>
                                     this.setState((prev) => ({
                                         ...prev,
-                                        jmbg: e.target.value,
+                                        national_id: e.target.value,
                                     }))
                                 }
                             />

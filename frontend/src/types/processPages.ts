@@ -8,6 +8,7 @@ import type {
 
 import type { AsyncThunkDispatchResult } from "../store";
 import type { WithNavigationProps } from "../hocs/withNavigation";
+import type { Role } from "./auth";
 
 import type { DocumentFile } from "./documents";
 import type {
@@ -18,6 +19,7 @@ import type {
     ProcessBinding,
     ProcessRun,
     ProcessRunDocument,
+    ProcessRunNote,
     ProcessSubjectKind,
     ProcessTemplate,
     ProcessType,
@@ -43,12 +45,14 @@ export interface ProcessTemplatesListPageStateProps {
     templatesError: string | null;
     docTemplates: DocumentTemplate[];
     docTemplatesLoading: boolean;
+    roles: Role[];
 }
 
 export interface ProcessTemplatesListPageDispatchProps {
     setLastPath: (path: string) => void;
     ensureProcessTypes: () => void;
     ensureProcessDocTemplates: () => void;
+    loadRoles: () => void;
     loadTemplates: (processTypeId: number | undefined) => void;
     addTemplate: (
         payload: Partial<ProcessTemplate>,
@@ -78,6 +82,7 @@ export interface ProcessTemplatesListPageState {
     form_email_body_template: string;
     form_custom_email_recipient: string;
     form_followup_process_type_id: string;
+    form_notification_role_group_id: string;
 }
 
 export interface ProcessTypesListPageStateProps {
@@ -110,6 +115,7 @@ export interface ProcessTypesListPageState {
     default_period_months: string;
     lead_time_days: string;
     is_active: boolean;
+    include_in_medical_exam_record: boolean;
 }
 
 export interface ProcessBindingFormEmployeeOption {
@@ -183,13 +189,16 @@ export interface ProcessRunsListPageState {
     complete_valid_until: string;
     complete_performed_at: string;
     complete_notes: string;
-    complete_broj_izvestaja: string;
-    complete_ocena_sposobnosti: string;
-    complete_preduzete_mere: string;
+    complete_report_number: string;
+    complete_fitness_assessment: string;
+    complete_measures_taken: string;
     documentsDialogRunId: number | null;
     runDocuments: ProcessRunDocument[];
     allDocuments: DocumentFile[];
     addDocSelectedId: number | "";
+    notesDialogRunId: number | null;
+    notesItems: ProcessRunNote[];
+    notesNewBody: string;
 }
 
 export interface EquipmentListPageStateProps {
@@ -257,7 +266,7 @@ export type ClientCompaniesListPageProps = ClientCompaniesListPageStateProps &
 export interface ClientCompaniesListPageState {
     dialogOpen: boolean;
     name: string;
-    pib: string;
+    tax_id: string;
     registration_number: string;
     address: string;
     phone: string;
@@ -288,7 +297,7 @@ export interface ClientCompanyDetailPageState {
     saving: boolean;
     saveError: string | null;
     editName: string;
-    editPib: string;
+    editTaxId: string;
     editRegistration_number: string;
     editAddress: string;
     editPhone: string;
@@ -323,7 +332,7 @@ export interface ClientCompaniesEmployeesListPageState {
     first_name: string;
     last_name: string;
     father_name: string;
-    jmbg: string;
+    national_id: string;
     date_of_birth: string;
     place_of_birth: string;
     email: string;

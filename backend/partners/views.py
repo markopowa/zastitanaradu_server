@@ -1,8 +1,9 @@
 from django.http import HttpResponse
+
 from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 
-from .evidencija import generate_evidencija_1
+from .medical_exam_record import generate_medical_exam_record
 from .models import ClientCompany, Employee, EquipmentItem
 from .serializers import ClientCompanySerializer, EmployeeSerializer, EquipmentItemSerializer
 
@@ -12,10 +13,10 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
     serializer_class = ClientCompanySerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
-    @action(detail=True, methods=["get"], url_path="evidencija-1")
-    def evidencija_1(self, request, pk=None):
+    @action(detail=True, methods=["get"], url_path="medical-exam-record")
+    def medical_exam_record(self, request, pk=None):
         company = self.get_object()
-        content = generate_evidencija_1(company.id)
+        content = generate_medical_exam_record(company.id)
         slug = company.name.replace(" ", "_")[:40]
         response = HttpResponse(
             content,
@@ -25,7 +26,7 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
             ),
         )
         response["Content-Disposition"] = (
-            f'attachment; filename="evidencija_1_{slug}.docx"'
+            f'attachment; filename="medical_exam_record_{slug}.docx"'
         )
         return response
 

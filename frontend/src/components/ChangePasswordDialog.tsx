@@ -38,7 +38,9 @@ export function ChangePasswordDialog({ open, onClose }: Props) {
         onClose();
     };
 
-    const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
+    const handleSubmit = async (
+        e: FormEvent<HTMLFormElement>,
+    ): Promise<void> => {
         e.preventDefault();
         const form = e.currentTarget;
         const fd = new FormData(form);
@@ -151,7 +153,11 @@ export function ChangePasswordDialog({ open, onClose }: Props) {
                     <Button onClick={handleClose} disabled={loading}>
                         Otkaži
                     </Button>
-                    <Button type="submit" variant="contained" disabled={loading}>
+                    <Button
+                        type="submit"
+                        variant="contained"
+                        disabled={loading}
+                    >
                         {loading ? "Čeka se..." : "Sačuvaj"}
                     </Button>
                 </DialogActions>

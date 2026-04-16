@@ -9,7 +9,7 @@ export interface SubjectSnapshot {
 export interface ClientCompany {
     id: number;
     name: string;
-    pib: string;
+    tax_id: string;
     registration_number?: string;
     address?: string;
     phone?: string;
@@ -27,7 +27,7 @@ export interface Employee {
     first_name: string;
     last_name: string;
     father_name?: string;
-    jmbg?: string;
+    national_id?: string;
     date_of_birth?: string | null;
     place_of_birth?: string;
     email?: string;
@@ -68,6 +68,7 @@ export interface ProcessType {
     default_period_months?: number | null;
     lead_time_days: number;
     is_active: boolean;
+    include_in_medical_exam_record?: boolean;
 }
 
 export interface ProcessRun {
@@ -83,6 +84,17 @@ export interface ProcessRun {
     status: "PENDING" | "COMPLETED" | "CANCELLED" | "FAILED";
     notes?: string;
     result_data?: Record<string, unknown>;
+    expired_reminder_sent_at?: string | null;
+}
+
+export interface ProcessRunNote {
+    id: number;
+    process_run: number;
+    author: number | null;
+    author_username?: string;
+    body: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface ProcessBinding {
@@ -112,6 +124,7 @@ export interface ProcessTemplate {
     email_subject_template?: string;
     email_body_template?: string;
     custom_email_recipient?: string;
+    notification_role_group?: number | null;
     followup_process_type?: number | null;
 }
 

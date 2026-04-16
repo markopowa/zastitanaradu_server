@@ -31,12 +31,15 @@ import {
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import DescriptionIcon from "@mui/icons-material/Description";
 import DeleteIcon from "@mui/icons-material/Delete";
+import NoteIcon from "@mui/icons-material/Note";
 import { enqueueSnackbar } from "notistack";
 
 import { api } from "../api/client";
 import type { ProcessRunsParams } from "../api/processes";
 import {
     getProcessRunDocuments,
+    getProcessRunNotes,
+    postProcessRunNote,
     attachDocumentToRun,
     removeDocumentFromRun,
 } from "../api/processes";
@@ -52,7 +55,7 @@ import { formatDateDisplay, StringToDate } from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
 import type { DocumentFile } from "../types/documents";
-import type { ProcessRun } from "../types/processes";
+import type { ProcessRun, ProcessRunNote } from "../types/processes";
 import type {
     ProcessRunsListPageDispatchProps,
     ProcessRunsListPageProps,
@@ -61,7 +64,9 @@ import type {
 } from "../types/processPages";
 import { withNavigation } from "../hocs/withNavigation";
 
-function parseRunsListSearch(search: string): Pick<
+function parseRunsListSearch(
+    search: string,
+): Pick<
     ProcessRunsListPageState,
     "client_company_id" | "process_type_id" | "status"
 > {
@@ -87,13 +92,16 @@ class ProcessRunsListPageInner extends Component<
         complete_valid_until: "",
         complete_performed_at: "",
         complete_notes: "",
-        complete_broj_izvestaja: "",
-        complete_ocena_sposobnosti: "",
-        complete_preduzete_mere: "",
+        complete_report_number: "",
+        complete_fitness_assessment: "",
+        complete_measures_taken: "",
         documentsDialogRunId: null,
         runDocuments: [],
         allDocuments: [],
         addDocSelectedId: "",
+        notesDialogRunId: null,
+        notesItems: [] as ProcessRunNote[],
+        notesNewBody: "",
     };
 
     load = (): void => {
@@ -138,9 +146,9 @@ class ProcessRunsListPageInner extends Component<
             complete_valid_until: validUntil,
             complete_performed_at: "",
             complete_notes: "",
-            complete_broj_izvestaja: "",
-            complete_ocena_sposobnosti: "",
-            complete_preduzete_mere: "",
+            complete_report_number: "",
+            complete_fitness_assessment: "",
+            complete_measures_taken: "",
         }));
     };
 
@@ -154,9 +162,9 @@ class ProcessRunsListPageInner extends Component<
             complete_valid_until,
             complete_performed_at,
             complete_notes,
-            complete_broj_izvestaja,
-            complete_ocena_sposobnosti,
-            complete_preduzete_mere,
+            complete_report_number,
+            complete_fitness_assessment,
+            complete_measures_taken,
         } = this.state;
         if (completeDialogRunId == null || !complete_valid_until) return;
         const validUntilDate = StringToDate(complete_valid_until);
@@ -172,16 +180,15 @@ class ProcessRunsListPageInner extends Component<
                 ? `${performedAtDate.getFullYear()}-${String(performedAtDate.getMonth() + 1).padStart(2, "0")}-${String(performedAtDate.getDate()).padStart(2, "0")}`
                 : undefined;
         const result_data =
-            complete_broj_izvestaja.trim() ||
-            complete_ocena_sposobnosti.trim() ||
-            complete_preduzete_mere.trim()
+            complete_report_number.trim() ||
+            complete_fitness_assessment.trim() ||
+            complete_measures_taken.trim()
                 ? {
-                      broj_izvestaja:
-                          complete_broj_izvestaja.trim() || undefined,
-                      ocena_sposobnosti:
-                          complete_ocena_sposobnosti.trim() || undefined,
-                      preduzete_mere:
-                          complete_preduzete_mere.trim() || undefined,
+                      report_number: complete_report_number.trim() || undefined,
+                      fitness_assessment:
+                          complete_fitness_assessment.trim() || undefined,
+                      measures_taken:
+                          complete_measures_taken.trim() || undefined,
                   }
                 : undefined;
         void this.props
@@ -239,6 +246,43 @@ class ProcessRunsListPageInner extends Component<
             documentsDialogRunId: null,
             addDocSelectedId: "",
         }));
+    };
+
+    openNotes = (run: ProcessRun): void => {
+        this.setState((prev) => ({
+            ...prev,
+            notesDialogRunId: run.id,
+            notesItems: [],
+            notesNewBody: "",
+        }));
+        getProcessRunNotes(run.id).then((notesItems) =>
+            this.setState((prev) => ({ ...prev, notesItems })),
+        );
+    };
+
+    closeNotes = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            notesDialogRunId: null,
+            notesItems: [],
+            notesNewBody: "",
+        }));
+    };
+
+    handlePostNote = (): void => {
+        const { notesDialogRunId, notesNewBody } = this.state;
+        if (notesDialogRunId == null || !notesNewBody.trim()) return;
+        void postProcessRunNote(notesDialogRunId, {
+            body: notesNewBody.trim(),
+        }).then(() => {
+            getProcessRunNotes(notesDialogRunId).then((notesItems) =>
+                this.setState((prev) => ({
+                    ...prev,
+                    notesItems,
+                    notesNewBody: "",
+                })),
+            );
+        });
     };
 
     handleAddDocument = (): void => {
@@ -414,6 +458,16 @@ class ProcessRunsListPageInner extends Component<
                                             >
                                                 Dokumenti
                                             </Button>
+                                            <Button
+                                                size="small"
+                                                startIcon={<NoteIcon />}
+                                                onClick={() =>
+                                                    this.openNotes(row)
+                                                }
+                                                sx={{ mr: 0.5 }}
+                                            >
+                                                Beleške
+                                            </Button>
                                             {row.status === "PENDING" && (
                                                 <Button
                                                     size="small"
@@ -475,11 +529,11 @@ class ProcessRunsListPageInner extends Component<
                             margin="dense"
                             label="Broj izveštaja"
                             fullWidth
-                            value={this.state.complete_broj_izvestaja}
+                            value={this.state.complete_report_number}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    complete_broj_izvestaja: e.target.value,
+                                    complete_report_number: e.target.value,
                                 }))
                             }
                         />
@@ -487,11 +541,11 @@ class ProcessRunsListPageInner extends Component<
                             margin="dense"
                             label="Ocena sposobnosti"
                             fullWidth
-                            value={this.state.complete_ocena_sposobnosti}
+                            value={this.state.complete_fitness_assessment}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    complete_ocena_sposobnosti: e.target.value,
+                                    complete_fitness_assessment: e.target.value,
                                 }))
                             }
                         />
@@ -500,11 +554,11 @@ class ProcessRunsListPageInner extends Component<
                             label="Preduzete mere"
                             fullWidth
                             multiline
-                            value={this.state.complete_preduzete_mere}
+                            value={this.state.complete_measures_taken}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    complete_preduzete_mere: e.target.value,
+                                    complete_measures_taken: e.target.value,
                                 }))
                             }
                         />
@@ -611,6 +665,53 @@ class ProcessRunsListPageInner extends Component<
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDocuments}>Zatvori</Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog
+                    open={this.state.notesDialogRunId != null}
+                    onClose={this.closeNotes}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Beleške aktivnosti</DialogTitle>
+                    <DialogContent>
+                        <List dense>
+                            {this.state.notesItems.map((n) => (
+                                <ListItem key={n.id} alignItems="flex-start">
+                                    <ListItemText
+                                        primary={n.body}
+                                        secondary={`${
+                                            n.author_username ?? "—"
+                                        } · ${n.created_at}`}
+                                    />
+                                </ListItem>
+                            ))}
+                        </List>
+                        <TextField
+                            margin="dense"
+                            label="Nova beleška"
+                            fullWidth
+                            multiline
+                            minRows={2}
+                            value={this.state.notesNewBody}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    notesNewBody: e.target.value,
+                                }))
+                            }
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeNotes}>Zatvori</Button>
+                        <Button
+                            variant="contained"
+                            onClick={this.handlePostNote}
+                            disabled={!this.state.notesNewBody.trim()}
+                        >
+                            Dodaj
+                        </Button>
                     </DialogActions>
                 </Dialog>
             </Box>

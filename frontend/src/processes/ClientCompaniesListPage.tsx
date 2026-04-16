@@ -50,7 +50,7 @@ class ClientCompaniesListPage extends Component<
     state: ClientCompaniesListPageState = {
         dialogOpen: false,
         name: "",
-        pib: "",
+        tax_id: "",
         registration_number: "",
         address: "",
         phone: "",
@@ -70,7 +70,7 @@ class ClientCompaniesListPage extends Component<
             ...prev,
             dialogOpen: true,
             name: "",
-            pib: "",
+            tax_id: "",
             registration_number: "",
             address: "",
             phone: "",
@@ -88,7 +88,7 @@ class ClientCompaniesListPage extends Component<
     handleSave = (): void => {
         const {
             name,
-            pib,
+            tax_id,
             registration_number,
             address,
             phone,
@@ -97,10 +97,10 @@ class ClientCompaniesListPage extends Component<
             notes,
             activity_code,
         } = this.state;
-        if (!name.trim() || !pib.trim()) return;
+        if (!name.trim() || !tax_id.trim()) return;
         const payload: Partial<ClientCompany> = {
             name: name.trim(),
-            pib: pib.trim(),
+            tax_id: tax_id.trim(),
             registration_number: registration_number.trim() || undefined,
             address: address.trim() || undefined,
             phone: phone.trim() || undefined,
@@ -140,7 +140,7 @@ class ClientCompaniesListPage extends Component<
         const {
             dialogOpen,
             name,
-            pib,
+            tax_id,
             registration_number,
             address,
             phone,
@@ -216,7 +216,7 @@ class ClientCompaniesListPage extends Component<
                                             }
                                         >
                                             <TableCell>{row.name}</TableCell>
-                                            <TableCell>{row.pib}</TableCell>
+                                            <TableCell>{row.tax_id}</TableCell>
                                             <TableCell>
                                                 {row.email ?? "—"}
                                             </TableCell>
@@ -265,11 +265,11 @@ class ClientCompaniesListPage extends Component<
                             label="PIB"
                             fullWidth
                             required
-                            value={pib}
+                            value={tax_id}
                             onChange={(e) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    pib: e.target.value,
+                                    tax_id: e.target.value,
                                 }))
                             }
                         />
@@ -368,7 +368,7 @@ class ClientCompaniesListPage extends Component<
                         <Button
                             onClick={this.handleSave}
                             variant="contained"
-                            disabled={!name.trim() || !pib.trim()}
+                            disabled={!name.trim() || !tax_id.trim()}
                         >
                             Sačuvaj
                         </Button>

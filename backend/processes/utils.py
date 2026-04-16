@@ -19,6 +19,10 @@ from .models import (
     ProcessTemplate,
     get_next_code,
 )
+from .result_data import (
+    normalize_client_snapshot_tax_id,
+    normalize_employee_snapshot_national_id,
+)
 
 logger = logging.getLogger(__name__)
 User = get_user_model()
@@ -41,7 +45,7 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "org_unit": e.org_unit or "",
                 "position": e.position or "",
                 "father_name": getattr(e, "father_name", "") or "",
-                "jmbg": getattr(e, "jmbg", "") or "",
+                "national_id": getattr(e, "national_id", "") or "",
                 "date_of_birth": (
                     e.date_of_birth.isoformat() if getattr(e, "date_of_birth", None) else ""
                 ),
@@ -57,7 +61,7 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
             snapshot["client"] = {
                 "id": client.id,
                 "name": client.name,
-                "pib": client.pib,
+                "tax_id": client.tax_id,
                 "address": client.address or "",
                 "phone": client.phone or "",
                 "email": client.email or "",
@@ -85,7 +89,7 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
             snapshot["client"] = {
                 "id": client.id,
                 "name": client.name,
-                "pib": client.pib,
+                "tax_id": client.tax_id,
                 "address": client.address or "",
                 "phone": client.phone or "",
                 "email": client.email or "",
@@ -103,7 +107,7 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
             "client": {
                 "id": c.id,
                 "name": c.name,
-                "pib": c.pib,
+                "tax_id": c.tax_id,
                 "registration_number": c.registration_number or "",
                 "address": c.address or "",
                 "phone": c.phone or "",
@@ -115,8 +119,22 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
     return {"kind": binding.subject_kind}
 
 
+def _normalize_snapshot_for_context(snapshot: dict) -> dict:
+    if not isinstance(snapshot, dict):
+        return snapshot
+    out = dict(snapshot)
+    emp = out.get("employee")
+    if isinstance(emp, dict):
+        out["employee"] = normalize_employee_snapshot_national_id(emp)
+    for key in ("client",):
+        block = out.get(key)
+        if isinstance(block, dict):
+            out[key] = normalize_client_snapshot_tax_id(block)
+    return out
+
+
 def _build_document_context(run: ProcessRun, snapshot: dict) -> dict:
-    ctx = dict(snapshot)
+    ctx = _normalize_snapshot_for_context(snapshot)
     ctx["scheduled_for"] = str(run.scheduled_for) if run.scheduled_for else ""
     ctx["performed_at"] = str(run.performed_at) if run.performed_at else ""
     ctx["valid_until"] = str(run.valid_until) if run.valid_until else ""
@@ -380,23 +398,51 @@ def _generate_document_for_run(
     )
 
 
-def _resolve_email_recipient(
+def _resolve_email_recipients(
     template: ProcessTemplate,
     binding: ProcessBinding,
-) -> str | None:
+) -> list[str]:
     if template.email_to_kind == ProcessTemplate.EMAIL_TO_CUSTOM:
-        return template.custom_email_recipient or None
+        addr = (template.custom_email_recipient or "").strip()
+        return [addr] if addr else []
     if (
         template.email_to_kind == ProcessTemplate.EMAIL_TO_CLIENT_MAIN
         and binding.client_company_id
     ):
-        return binding.client_company.email or None
+        addr = (binding.client_company.email or "").strip()
+        return [addr] if addr else []
     if (
         template.email_to_kind == ProcessTemplate.EMAIL_TO_EMPLOYEE
         and binding.employee_id
     ):
-        return binding.employee.email or None
-    return None
+        addr = (binding.employee.email or "").strip()
+        return [addr] if addr else []
+    if template.email_to_kind == ProcessTemplate.EMAIL_TO_INTERNAL_ROLE:
+        group_id = template.notification_role_group_id
+        if not group_id:
+            logger.warning(
+                "INTERNAL_ROLE email: no notification_role_group on ProcessTemplate id=%s",
+                template.id,
+            )
+            return []
+        emails = list(
+            User.objects.filter(
+                groups__id=group_id,
+                is_active=True,
+            )
+            .exclude(email="")
+            .values_list("email", flat=True)
+            .distinct()
+        )
+        cleaned = [e.strip() for e in emails if e and e.strip()]
+        if not cleaned:
+            logger.warning(
+                "INTERNAL_ROLE email: no active users with email in group id=%s (template id=%s)",
+                group_id,
+                template.id,
+            )
+        return cleaned
+    return []
 
 
 def _send_email_for_template(
@@ -405,8 +451,8 @@ def _send_email_for_template(
     snapshot: dict,
     run: ProcessRun | None = None,
 ) -> None:
-    recipient = _resolve_email_recipient(template, binding)
-    if not recipient:
+    recipients = _resolve_email_recipients(template, binding)
+    if not recipients:
         logger.warning(
             "No email recipient for ProcessTemplate id=%s",
             template.id,
@@ -421,7 +467,7 @@ def _send_email_for_template(
         body = _render_template_body(body, context)
     try:
         sent = get_email_sender().send(
-            recipients=[recipient],
+            recipients=recipients,
             subject=subject,
             body=body,
             fail_silently=True,

@@ -21,7 +21,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { enqueueSnackbar } from "notistack";
 
 import {
-    generateEvidencija1,
+    generateMedicalExamRecord,
     getClientCompany,
     getEmployees,
     getEquipment,
@@ -87,7 +87,7 @@ class ClientCompanyDetailPageInner extends Component<
         saving: false,
         saveError: null,
         editName: "",
-        editPib: "",
+        editTaxId: "",
         editRegistration_number: "",
         editAddress: "",
         editPhone: "",
@@ -105,7 +105,7 @@ class ClientCompanyDetailPageInner extends Component<
             editing: true,
             saveError: null,
             editName: item.name,
-            editPib: item.pib,
+            editTaxId: item.tax_id,
             editRegistration_number: item.registration_number ?? "",
             editAddress: item.address ?? "",
             editPhone: item.phone ?? "",
@@ -128,7 +128,7 @@ class ClientCompanyDetailPageInner extends Component<
         const id = Number(this.props.id);
         const {
             editName,
-            editPib,
+            editTaxId,
             editRegistration_number,
             editAddress,
             editPhone,
@@ -137,11 +137,11 @@ class ClientCompanyDetailPageInner extends Component<
             editNotes,
             editActivity_code,
         } = this.state;
-        if (!editName.trim() || !editPib.trim()) return;
+        if (!editName.trim() || !editTaxId.trim()) return;
         this.setState((prev) => ({ ...prev, saving: true, saveError: null }));
         updateClientCompany(id, {
             name: editName.trim(),
-            pib: editPib.trim(),
+            tax_id: editTaxId.trim(),
             registration_number: editRegistration_number.trim() || undefined,
             address: editAddress.trim() || undefined,
             phone: editPhone.trim() || undefined,
@@ -182,14 +182,14 @@ class ClientCompanyDetailPageInner extends Component<
             );
     };
 
-    handleGenerateEvidencija1 = (): void => {
+    handleGenerateMedicalExamRecord = (): void => {
         const id = Number(this.props.id);
         this.setState((prev) => ({
             ...prev,
             generatingDoc: true,
             docError: null,
         }));
-        generateEvidencija1(id)
+        generateMedicalExamRecord(id)
             .then(() =>
                 this.setState((prev) => ({ ...prev, generatingDoc: false })),
             )
@@ -293,7 +293,7 @@ class ClientCompanyDetailPageInner extends Component<
             saving,
             saveError,
             editName,
-            editPib,
+            editTaxId,
             editRegistration_number,
             editAddress,
             editPhone,
@@ -351,7 +351,10 @@ class ClientCompanyDetailPageInner extends Component<
                         )}
                         {!editing && (
                             <PermissionGate permission="partners.change_clientcompany">
-                                <Button variant="outlined" onClick={this.startEdit}>
+                                <Button
+                                    variant="outlined"
+                                    onClick={this.startEdit}
+                                >
                                     Izmeni podatke
                                 </Button>
                             </PermissionGate>
@@ -387,11 +390,11 @@ class ClientCompanyDetailPageInner extends Component<
                                 label="PIB"
                                 fullWidth
                                 required
-                                value={editPib}
+                                value={editTaxId}
                                 onChange={(e) =>
                                     this.setState((prev) => ({
                                         ...prev,
-                                        editPib: e.target.value,
+                                        editTaxId: e.target.value,
                                     }))
                                 }
                             />
@@ -490,7 +493,7 @@ class ClientCompanyDetailPageInner extends Component<
                                     disabled={
                                         saving ||
                                         !editName.trim() ||
-                                        !editPib.trim()
+                                        !editTaxId.trim()
                                     }
                                     onClick={this.saveCompany}
                                 >
@@ -514,7 +517,7 @@ class ClientCompanyDetailPageInner extends Component<
                             }}
                         >
                             <dt>PIB</dt>
-                            <dd>{item.pib}</dd>
+                            <dd>{item.tax_id}</dd>
                             {item.registration_number && (
                                 <>
                                     <dt>Matični broj</dt>
@@ -572,7 +575,7 @@ class ClientCompanyDetailPageInner extends Component<
                     <Button
                         variant="outlined"
                         disabled={generatingDoc}
-                        onClick={this.handleGenerateEvidencija1}
+                        onClick={this.handleGenerateMedicalExamRecord}
                     >
                         {generatingDoc
                             ? "Generišem..."

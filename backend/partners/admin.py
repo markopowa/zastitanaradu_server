@@ -5,8 +5,8 @@ from .models import ClientCompany, Employee, EquipmentItem
 
 @admin.register(ClientCompany)
 class ClientCompanyAdmin(admin.ModelAdmin):
-    list_display = ("name", "pib", "email", "phone")
-    search_fields = ("name", "pib", "registration_number", "email")
+    list_display = ("name", "tax_id", "email", "phone")
+    search_fields = ("name", "tax_id", "registration_number", "email")
 
 
 @admin.register(Employee)
@@ -14,7 +14,7 @@ class EmployeeAdmin(admin.ModelAdmin):
     list_display = (
         "first_name",
         "last_name",
-        "jmbg",
+        "national_id",
         "org_unit",
         "position",
         "client_company",
@@ -23,7 +23,7 @@ class EmployeeAdmin(admin.ModelAdmin):
         "first_name",
         "last_name",
         "email",
-        "jmbg",
+        "national_id",
         "org_unit",
         "position",
         "occupation",

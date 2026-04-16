@@ -102,7 +102,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <Alert severity="error">
-                        {error ?? "Oprema nije pronađena."}
+                        {error ?? "Zaposleni nisu pronađeni."}
                     </Alert>
                     <Button
                         startIcon={<ArrowBackIcon />}
@@ -142,7 +142,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                         <dt>Ime oca</dt>
                         <dd>{item.father_name ?? "—"}</dd>
                         <dt>JMBG</dt>
-                        <dd>{item.jmbg ?? "—"}</dd>
+                        <dd>{item.national_id ?? "—"}</dd>
                         <dt>Datum rođenja</dt>
                         <dd>{formatDateDisplay(item.date_of_birth)}</dd>
                         <dt>Mesto rođenja</dt>

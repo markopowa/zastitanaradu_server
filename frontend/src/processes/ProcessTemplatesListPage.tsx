@@ -44,6 +44,7 @@ import {
     removeProcessTemplate,
     saveProcessTemplate,
 } from "../store/processesSlice";
+import { loadRoles } from "../store/authSlice";
 import { setLastPath } from "../store/locationSlice";
 
 import type { AppDispatch, RootState } from "../store";
@@ -95,6 +96,7 @@ class ProcessTemplatesListPageInner extends Component<
         form_email_body_template: "",
         form_custom_email_recipient: "",
         form_followup_process_type_id: "",
+        form_notification_role_group_id: "",
     };
 
     load = (): void => {
@@ -107,6 +109,7 @@ class ProcessTemplatesListPageInner extends Component<
         this.props.setLastPath("/processes/templates");
         this.props.ensureProcessTypes();
         this.props.ensureProcessDocTemplates();
+        this.props.loadRoles();
         this.load();
     }
 
@@ -129,6 +132,7 @@ class ProcessTemplatesListPageInner extends Component<
                 form_email_body_template: "",
                 form_custom_email_recipient: "",
                 form_followup_process_type_id: "",
+                form_notification_role_group_id: "",
             };
         });
     };
@@ -153,6 +157,9 @@ class ProcessTemplatesListPageInner extends Component<
             form_followup_process_type_id: row.followup_process_type
                 ? String(row.followup_process_type)
                 : "",
+            form_notification_role_group_id: row.notification_role_group
+                ? String(row.notification_role_group)
+                : "",
         }));
     };
 
@@ -171,6 +178,7 @@ class ProcessTemplatesListPageInner extends Component<
             form_email_body_template: "",
             form_custom_email_recipient: "",
             form_followup_process_type_id: "",
+            form_notification_role_group_id: "",
         }));
     };
 
@@ -187,9 +195,20 @@ class ProcessTemplatesListPageInner extends Component<
             form_email_body_template,
             form_custom_email_recipient,
             form_followup_process_type_id,
+            form_notification_role_group_id,
         } = this.state;
 
         if (!form_process_type_id || !form_trigger) return;
+        if (
+            form_send_email &&
+            form_email_to_kind === "INTERNAL_ROLE" &&
+            !form_notification_role_group_id
+        ) {
+            enqueueSnackbar("Izaberite internu ulogu za primalac mejla.", {
+                variant: "warning",
+            });
+            return;
+        }
 
         const payload: Partial<ProcessTemplate> = {
             process_type: Number(form_process_type_id),
@@ -212,6 +231,12 @@ class ProcessTemplatesListPageInner extends Component<
                 form_send_email && form_email_to_kind === "CUSTOM"
                     ? form_custom_email_recipient || ""
                     : "",
+            notification_role_group:
+                form_send_email &&
+                form_email_to_kind === "INTERNAL_ROLE" &&
+                form_notification_role_group_id
+                    ? Number(form_notification_role_group_id)
+                    : null,
             followup_process_type: form_followup_process_type_id
                 ? Number(form_followup_process_type_id)
                 : null,
@@ -693,6 +718,38 @@ class ProcessTemplatesListPageInner extends Component<
                                     />
                                 )}
 
+                                {form_email_to_kind === "INTERNAL_ROLE" && (
+                                    <FormControl fullWidth margin="dense">
+                                        <InputLabel>Interna uloga</InputLabel>
+                                        <Select
+                                            value={
+                                                form_notification_role_group_id
+                                            }
+                                            label="Interna uloga"
+                                            onChange={(e) =>
+                                                this.setState((prev) => ({
+                                                    ...prev,
+                                                    form_notification_role_group_id:
+                                                        e.target
+                                                            .value as string,
+                                                }))
+                                            }
+                                        >
+                                            <MenuItem value="">
+                                                <em>Izaberi...</em>
+                                            </MenuItem>
+                                            {this.props.roles.map((r) => (
+                                                <MenuItem
+                                                    key={r.id}
+                                                    value={String(r.id)}
+                                                >
+                                                    {r.name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                )}
+
                                 <TextField
                                     margin="dense"
                                     label="Subject mejla (šablon)"
@@ -770,12 +827,16 @@ const mapStateToProps = (
     docTemplates: state.processes.processDocTemplates,
     docTemplatesLoading:
         state.processes.processDocTemplatesStatus === "loading",
+    roles: state.auth.roles,
 });
 
 const mapDispatchToProps = (
     dispatch: AppDispatch,
 ): ProcessTemplatesListPageDispatchProps => ({
     setLastPath: (path: string) => dispatch(setLastPath(path)),
+    loadRoles: () => {
+        void dispatch(loadRoles());
+    },
     ensureProcessTypes: () => {
         void dispatch(ensureProcessTypes());
     },

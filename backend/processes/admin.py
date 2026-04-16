@@ -1,20 +1,47 @@
 from django.contrib import admin
 
-from .models import ProcessBinding, ProcessRun, ProcessTemplate, ProcessType, TaskAssignment
+from .models import (
+    ProcessBinding,
+    ProcessNote,
+    ProcessRun,
+    ProcessTemplate,
+    ProcessType,
+    TaskAssignment,
+)
 
 
 @admin.register(ProcessType)
 class ProcessTypeAdmin(admin.ModelAdmin):
-    list_display = ("code", "name", "subject_kind",
-                    "default_period_months", "lead_time_days", "is_active")
+    list_display = (
+        "code",
+        "name",
+        "subject_kind",
+        "default_period_months",
+        "lead_time_days",
+        "is_active",
+        "include_in_medical_exam_record",
+    )
     search_fields = ("code", "name")
     list_filter = ("subject_kind", "is_active")
 
 
+@admin.register(ProcessNote)
+class ProcessNoteAdmin(admin.ModelAdmin):
+    list_display = ("process_run", "author", "created_at")
+    search_fields = ("body",)
+    raw_id_fields = ("process_run", "author")
+
+
 @admin.register(ProcessTemplate)
 class ProcessTemplateAdmin(admin.ModelAdmin):
-    list_display = ("process_type", "trigger",
-                    "generate_document", "send_email", "email_to_kind")
+    list_display = (
+        "process_type",
+        "trigger",
+        "generate_document",
+        "send_email",
+        "email_to_kind",
+        "notification_role_group",
+    )
     list_filter = ("process_type", "trigger")
     search_fields = ("process_type__name", "email_subject_template")
 
@@ -30,8 +57,15 @@ class ProcessBindingAdmin(admin.ModelAdmin):
 
 @admin.register(ProcessRun)
 class ProcessRunAdmin(admin.ModelAdmin):
-    list_display = ("process_type", "process_binding",
-                    "scheduled_for", "performed_at", "valid_until", "status")
+    list_display = (
+        "process_type",
+        "process_binding",
+        "scheduled_for",
+        "performed_at",
+        "valid_until",
+        "status",
+        "expired_reminder_sent_at",
+    )
     list_filter = ("status", "process_type")
     search_fields = ("process_binding__process_type__name",)
     raw_id_fields = ("process_binding",)

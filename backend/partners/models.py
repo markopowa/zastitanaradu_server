@@ -3,7 +3,7 @@ from django.db import models
 
 class ClientCompany(models.Model):
     name = models.CharField(max_length=255)
-    pib = models.CharField(max_length=32, unique=True)
+    tax_id = models.CharField("PIB", max_length=32, unique=True)
     registration_number = models.CharField(max_length=32, blank=True)
     address = models.CharField(max_length=255, blank=True)
     phone = models.CharField(max_length=50, blank=True)
@@ -40,7 +40,8 @@ class Employee(models.Model):
         blank=True,
         help_text="Ime oca zaposlenog (za potrebe lekarskih obrazaca).",
     )
-    jmbg = models.CharField(
+    national_id = models.CharField(
+        "JMBG",
         max_length=13,
         blank=True,
         help_text="JMBG zaposlenog.",

@@ -15,7 +15,7 @@ Struktura repozijuma:
 
 - `backend/` — Django projekat (aplikacije: `authentication`, `documents`, `partners`, `ai_processing`, `processes`)
 - `frontend/` — React SPA
-- `DEPLOY.md` — uputstvo za deploy na server (nginx, gunicorn, Docker, SSL, cron)
+- `DEPLOY.md` — uputstvo za deploy na server (nginx, gunicorn, Docker, SSL, systemd task runner, cron za certbot)
 
 ---
 
@@ -43,7 +43,7 @@ Modul **documents** služi za:
   - **Iz postojećeg dokumenta** — sistem učitava DOCX/TXT, zamenjuje nizove `___` (tri ili više donjih crta) placehold-erima tipa `{{ field_1 }}`, `{{ field_2 }}` itd. i čuva telo šablona.
   - **Iz uploud-ovanog fajla** — ista logika za DOCX/TXT.
 - Šablon ima **kontekst tipa**: zaposleni, oprema, klijentska firma ili mešovito (za popunjavanje polja pri generisanju).
-- **AI formati** — definišu kako se dokument može parsirati (npr. ekstrakcija podataka). Za svaki dokument može da postoji instanca obrade po formatu (status: na čekanju, u toku, završeno, neuspešno). Pokretanje obrade i pregled statusa ide preko **ai_processing** API-ja; sama AI obrada može biti u drugom servisu ili još uvek nije implementirana u potpunosti.
+- **AI formati** — definišu kako se dokument može parsirati (npr. ekstrakcija podataka). Za svaki dokument može da postoji instanca obrade po formatu (status: na čekanju, u toku, završeno, neuspešno). Pokretanje obrade i pregled statusa ide preko **ai_processing** API-ja. Red obrade obrađuje management komanda `python manage.py process_ai_document_queue` (ekstrakcija teksta iz PDF/TXT; za produkciju je zgodno zakazati je u cron-u ili systemd timeru pored ostalih poslova).
 
 ---
 
@@ -104,12 +104,11 @@ Primer: „Obuka – zaštita na radu“ za zaposlenog Marko Marković, sledeći
   `python manage.py run_due_processes`  
   (u `backend/processes/management/commands/run_due_processes.py`).
 - Logika:
-  1. Nađe sve **aktivne ProcessBinding** gde je `next_run_at <= danas`.
+  1. Nađe sve **aktivne ProcessBinding** gde je `next_run_at <= danas` i za koje već ne postoji **ProcessRun** u statusu „na čekanju“.
   2. Za svaki takav binding pozove `run_process_binding(binding_id)`:
-     - kreira **ProcessRun** (pending), sa snapshot-om subjekta;
-     - primeni sve **ON_SCHEDULED** šablone (email se šalje ako je podešen; dokument se generiše iz šablona — Jinja2 za telo, DOCX za fajl sa placehold-erima);
-     - označi run kao **završen**, postavi `performed_at`, `valid_until` (npr. danas + period u mesecima);
-     - ažurira binding: `last_run_at`, `next_run_at` = kraj perioda važenja.
+     - kreira **ProcessRun** u statusu **na čekanju (PENDING)**, sa snapshot-om subjekta i `scheduled_for` iz bindinga;
+     - primeni sve **ON_SCHEDULED** šablone (email ako je podešen; generisanje dokumenta ako je podešeno).
+  3. **Ne** automatski završava run niti postavlja `performed_at` / `valid_until`; to korisnik (ili drugi tok) radi ručno preko API-ja **complete**. Nakon ručnog završetka binding dobija ažuriran `last_run_at` i `next_run_at` (v. odeljak 3.6).
 - Na serveru se ovo **već zakazuje** korakom **setupTaskRunner** u `deploy.sh`: systemd timer pokreće komandu svakog dana u 06:00 (v. DEPLOY.md, odeljak o task runneru i logu `run_due_processes.log`).
 
 #### 3.5.1 Podsetnik na istekle obaveze (ON_EXPIRED)
@@ -117,13 +116,13 @@ Primer: „Obuka – zaštita na radu“ za zaposlenog Marko Marković, sledeći
 - Management komanda:  
   `python manage.py run_expired_reminders`  
   (u `backend/processes/management/commands/run_expired_reminders.py`).
-- Logika: nađe sve **završene** run-ove čiji je `valid_until < danas` i za svaki pokrene šablone sa triggerom **ON_EXPIRED** (npr. slanje emaila podsetnika da je rok istekao i da korisnik označi obavezu kao gotovu ili izvrši potrebnu radnju).
+- Logika: nađe **završene** run-ove čiji je `valid_until` pre današnjeg datuma, za koje još nije poslat podsetnik (`expired_reminder_sent_at` je prazno), i za svaki pokrene šablone sa triggerom **ON_EXPIRED** (npr. email). Posle uspešnog pokretanja šablona upisuje se `expired_reminder_sent_at` na taj dan, tako da se isti run ne obrađuje ponovo svaki dan.
 - Predmet i telo emaila mogu koristiti Jinja2 promenljive (`valid_until`, `process_type_name`, `field_1` itd.).
 - **Preporuka**: zakazati dnevno (npr. u 07:00) pored `run_due_processes` (v. DEPLOY.md).
 
 #### 3.5.2 Prilikom ručnog završetka (ON_COMPLETED)
 
-- Kada korisnik ručno označi run kao završen (endpoint `complete`), poziva se `run_on_completed_trigger(run)`: trenutno se **samo loguje** koji šabloni sa triggerom ON_COMPLETED postoje za tu vrstu obaveze (bez slanja emaila ili generisanja dokumenta).
+- Kada korisnik ručno označi run kao završen (endpoint `complete`), poziva se `run_on_completed_trigger(run)`: za sve šablone procesa sa triggerom **ON_COMPLETED** izvršava se ista putanja kao za druge triggere — **generisanje dokumenta** i/ili **slanje emaila** preko `execute_template_actions`, zatim se po potrebi kreira ili ažurira sledeći **ProcessBinding** kada šablon definiše **followup** vrstu obaveze.
 
 #### 3.6 Ručno upravljanje run-ovima
 
@@ -145,21 +144,22 @@ Primer: „Obuka – zaštita na radu“ za zaposlenog Marko Marković, sledeći
 
 1. Uneseš **klijentsku firmu** i **zaposlene** (partners).
 2. Kreiraš **vrstu obaveze** npr. „Obuka – zaštita na radu“, subjekt = zaposleni, period 12 meseci.
-3. Za tu vrstu dodaješ **šablon procesa**: trigger = pri zakazivanju, akcije = pošalji email zaposlenom (i opciono generiši dokument kad ta funkcija bude implementirana).
+3. Za tu vrstu dodaješ **šablon procesa**: trigger = pri zakazivanju, akcije = pošalji email zaposlenom i po potrebi **generiši dokument** iz šablona dokumenta (v. odeljak 3.2).
 4. Za svakog zaposlenog kreiraš **ProcessBinding** (vrsta + zaposleni), sa `next_run_at` npr. 01.03.2026.
-5. Na serveru cron svakodnevno pokreće `run_due_processes`. 1. marta za sve bindings sa `next_run_at <= 01.03.2026` sistem kreira run, šalje email, postavlja run kao završen i `valid_until` = 01.03.2026, a bindingu `next_run_at` = 01.03.2026.
+5. Na serveru zakazani posao (npr. systemd timer iz `deploy.sh`) svakodnevno pokreće `run_due_processes`. 1. marta za sve bindings sa `next_run_at <= 01.03.2026` (bez već postojećeg pending run-a) sistem kreira **pending** run i primeni ON_SCHEDULED šablone (email, generisanje dokumenta). Kada korisnik ručno završi run (`complete`), tada se postavljaju `performed_at`, `valid_until` i ažurira binding (`last_run_at`, `next_run_at`).
 6. Korisnici na **dashboardu** vide obaveze koje ističu u narednih 30 dana; mogu ručno da kreiraju run-ove, završavaju ih i **dodeljuju zadatke radnicima** (npr. „Obuka za firmu XYZ“ → zadatak za Petra Perića da održi obuku i označi je kao završenu).
 
 ---
 
 ## Deployment
 
-Produkcijski deploy: **DEPLOY.md** — `deploy.sh` (Docker, nginx, SSL, env), korak **setupTaskRunner** za dnevno pokretanje `run_due_processes` u 06:00 (log: `$LOG_DIR/run_due_processes.log`).
+Produkcijski deploy: **DEPLOY.md** — `deploy.sh` (Docker, nginx, SSL, env), korak **setupTaskRunner** za dnevno pokretanje `run_due_processes` (06:00), `run_expired_reminders` (07:00) i `process_ai_document_queue` (svakih 5 min); logovi u `$LOG_DIR/` (v. DEPLOY.md).
+
+**Brzi redeploy** (`./deploy.sh ./deploy.conf all --quick`): bez `docker compose down` pre koraka; umesto punog `setupDocker` koristi se **setupDockerQuick** (backend rebuild/migrate/restart, **bez** ponovnog build-a frontenda i collectstatic). Koristi kada menjaš samo backend ili želiš da sačuvaš trenutni `frontend/dist`.
 
 **Nuklearna opcija** (`./deploy.sh ./deploy.conf all --nuclear`): pre pokretanja koraka izvršava se `docker compose down -v` — gasi se kontejneri i **brišu Docker volumeni** (uključujući bazu). Korisno za potpuno čisto ponovno postavljanje okruženja; svi podaci u bazi i na volumenima se gube.
 
 ---
 
 ## Šta možemo dopuniti
-- **AI obrada**: Nije implementirano; potrebno je uraditi (parsiranje dokumenata / AI formati, worker ili eksterni servis, prelazak stanja u DONE ili FAILED).
-- **Trigger ON_COMPLETED**: pri ručnom „complete“ run-a poziva se `run_on_completed_trigger` — trenutno samo logovanje; ostaje da se dopuni (npr. slanje emaila, generisanje dokumenta po šablonu).
+- **AI obrada**: Osnovni worker (`process_ai_document_queue`) radi ekstrakciju teksta (PDF/TXT) i prelazak u DONE ili FAILED; dalje se može dopuniti (LLM po `prompt_template`, drugi formati fajlova, eksterni servis).

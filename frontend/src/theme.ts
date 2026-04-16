@@ -86,7 +86,10 @@ const commonComponents: ThemeOptions["components"] = {
                           color: theme.palette.common.white,
                           borderColor: alpha(theme.palette.common.white, 0.42),
                           "&:hover": {
-                              borderColor: alpha(theme.palette.common.white, 0.65),
+                              borderColor: alpha(
+                                  theme.palette.common.white,
+                                  0.65,
+                              ),
                               backgroundColor: alpha(
                                   theme.palette.common.white,
                                   0.07,
@@ -101,7 +104,10 @@ const commonComponents: ThemeOptions["components"] = {
                           color: theme.palette.common.white,
                           borderColor: alpha(theme.palette.common.white, 0.42),
                           "&:hover": {
-                              borderColor: alpha(theme.palette.common.white, 0.65),
+                              borderColor: alpha(
+                                  theme.palette.common.white,
+                                  0.65,
+                              ),
                               backgroundColor: alpha(
                                   theme.palette.common.white,
                                   0.07,

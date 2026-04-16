@@ -1,24 +1,28 @@
 import logging
 from datetime import date, timedelta
 
+from django.db.models import Q
+
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
-from django.db.models import Q
 
 from documents.models import DocumentFile
 from .models import (
     ProcessBinding,
+    ProcessNote,
     ProcessRun,
     ProcessRunDocument,
     ProcessTemplate,
     ProcessType,
     TaskAssignment,
 )
-from .tasks import run_on_completed_trigger
+from .process_run_completion import apply_process_run_completion
 from .serializers import (
     ProcessBindingSerializer,
+    ProcessNoteCreateSerializer,
+    ProcessNoteSerializer,
     ProcessRunCompleteSerializer,
     ProcessRunDocumentCreateSerializer,
     ProcessRunDocumentSerializer,
@@ -248,42 +252,9 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         serializer = ProcessRunCompleteSerializer(
             data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        valid_until = serializer.validated_data["valid_until"]
-        performed_at = serializer.validated_data.get(
-            "performed_at") or date.today()
-        notes = serializer.validated_data.get("notes") or ""
-        result_data = serializer.validated_data.get("result_data")
-
-        run.performed_at = performed_at
-        run.valid_until = valid_until
-        run.status = ProcessRun.STATUS_COMPLETED
-        if notes:
-            run.notes = notes
-        if result_data is not None:
-            run.result_data = result_data
-        update_fields = ["performed_at", "valid_until", "status", "notes"]
-        if result_data is not None:
-            update_fields.append("result_data")
-        run.save(update_fields=update_fields)
         user = getattr(request, "user", None)
-        logger.info(
-            "ProcessRun id=%s completed by user_id=%s (%s), valid_until=%s",
-            run.id,
-            getattr(user, "id", None),
-            getattr(user, "username", ""),
-            valid_until,
-        )
-
-        binding = run.process_binding
-        binding.last_run_at = performed_at
-        period_months = binding.custom_period_months or binding.process_type.default_period_months
-        if period_months:
-            next_run_at = valid_until + timedelta(days=period_months * 30)
-            binding.next_run_at = next_run_at
-        binding.save(update_fields=["last_run_at", "next_run_at"])
-
-        run_on_completed_trigger(run)
-
+        apply_process_run_completion(
+            run, serializer.validated_data, user=user)
         run_serializer = ProcessRunSerializer(run)
         return Response(run_serializer.data)
 
@@ -321,6 +292,26 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         )
         return Response(
             ProcessRunDocumentSerializer(prd).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(detail=True, methods=["get", "post"], url_path="notes")
+    def notes(self, request, pk=None):
+        run = self.get_object()
+        if request.method == "GET":
+            qs = run.process_notes.select_related("author").all()
+            return Response(ProcessNoteSerializer(qs, many=True).data)
+        ser = ProcessNoteCreateSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        user = getattr(request, "user", None)
+        author = user if getattr(user, "is_authenticated", False) else None
+        note = ProcessNote.objects.create(
+            process_run=run,
+            author=author,
+            body=ser.validated_data["body"],
+        )
+        return Response(
+            ProcessNoteSerializer(note).data,
             status=status.HTTP_201_CREATED,
         )
 

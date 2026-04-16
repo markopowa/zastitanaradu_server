@@ -9,7 +9,7 @@ class ClientCompanySerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "name",
-            "pib",
+            "tax_id",
             "registration_number",
             "address",
             "phone",
@@ -23,7 +23,7 @@ class ClientCompanySerializer(serializers.ModelSerializer):
 
 class EmployeeSerializer(serializers.ModelSerializer):
     client_company_name = serializers.CharField(
-        source='client_company.name', read_only=True)
+        source="client_company.name", read_only=True)
 
     class Meta:
         model = Employee
@@ -34,7 +34,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "father_name",
-            "jmbg",
+            "national_id",
             "date_of_birth",
             "place_of_birth",
             "email",
@@ -47,7 +47,7 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
 class EquipmentItemSerializer(serializers.ModelSerializer):
     client_company_name = serializers.CharField(
-        source='client_company.name', read_only=True)
+        source="client_company.name", read_only=True)
 
     class Meta:
         model = EquipmentItem

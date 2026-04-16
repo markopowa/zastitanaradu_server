@@ -134,6 +134,7 @@ def run_expired_reminders() -> None:
         ProcessRun.objects.filter(
             status=ProcessRun.STATUS_COMPLETED,
             valid_until__lt=today,
+            expired_reminder_sent_at__isnull=True,
         )
         .select_related("process_binding", "process_type")
     )
@@ -141,6 +142,8 @@ def run_expired_reminders() -> None:
     for run in runs:
         try:
             run_on_expired_trigger(run)
+            ProcessRun.objects.filter(pk=run.pk).update(
+                expired_reminder_sent_at=today)
             n += 1
         except Exception as e:
             logger.exception(

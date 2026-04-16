@@ -145,16 +145,31 @@ cd /var/www/zastitanaradu_server
 ./deploy.sh ./deploy.conf all
 ```
 
+**Optional third argument (flags, only with target `all`):**
+
+| Invocation | Before `all` steps | Docker / app step |
+|------------|-------------------|-------------------|
+| `./deploy.sh ./deploy.conf all` (default) | `docker compose down` (containers stopped; **volumes kept**) | **setupDocker** — full frontend build, `collectstatic`, copy static to host |
+| `./deploy.sh ./deploy.conf all --quick` | Nothing (containers left running if already up) | **setupDockerQuick** — backend image build, `migrate`, backend restart; **no** frontend rebuild, **no** `collectstatic` / static copy (script prints *Quick deploy done. Frontend not rebuilt.*) |
+| `./deploy.sh ./deploy.conf all --nuclear` | `docker compose down -v` (**all volumes removed**, DB wiped) | Same as default: **setupDocker** |
+
+You can also pass the flag as the second argument: `./deploy.sh ./deploy.conf --quick` is treated as `all --quick` (see `deploy.sh`).
+
 This command is **idempotent** – you can safely run it again if something fails mid-way or after you fix a config issue.
 
 1. **initialSetup** – install Docker if missing, configure Docker repo/key once, add your user to `www-data` and `docker`, create certbot webroot and log dir
 2. **setupDatabase** – start Postgres container, create DB and user if they don’t exist yet
-3. **setupDocker** – build backend image (with an idempotent `www-data` user creation in the Dockerfile), start postgres + backend, **clean rebuild frontend** (briše `frontend/dist` pa gradi iznova da deploy uvek servira svežu verziju), run migrations and collectstatic
+3. **setupDocker** or **setupDockerQuick** (see table above) – **setupDocker**: build backend, start postgres + backend, delete `frontend/dist`, production build of frontend (`npm ci` / `npm run build` on host or in Node container), `migrate`, `collectstatic`, copy staticfiles to host. **setupDockerQuick**: build backend, up postgres + backend, `migrate`, restart backend only.
 4. **setupNginx** – install nginx, write HTTP (80) vhost with redirect to HTTPS and ACME path
 5. **setupSsl** – obtain Let’s Encrypt cert (skipped if one already exists for DOMAIN), append HTTPS (443) vhost, reload nginx
 6. **setupFirewall** – UFW: allow 22, 80, 443; default deny
 7. **setupCron** – install root cron: Sunday midnight `certbot renew` + nginx reload
-8. **setupTaskRunner** – systemd services + timers: daily at 06:00 `run_due_processes` (due bindings), daily at 07:00 `run_expired_reminders` (ON_EXPIRED email podsetnici); logovi: `$LOG_DIR/run_due_processes.log`, `$LOG_DIR/run_expired_reminders.log` (v. [Django Tasks](https://docs.djangoproject.com/en/6.0/topics/tasks/))
+8. **setupTaskRunner** – **systemd na hostu** (ne u Docker kontejneru): oneshot servisi koji pozivaju `docker compose exec -T backend python manage.py …` iz `$APP_DIR`, plus timeri:
+   - dnevno 06:00 — `run_due_processes`
+   - dnevno 07:00 — `run_expired_reminders`
+   - svakih 5 minuta — `process_ai_document_queue` (AI red)
+   Logovi: `$LOG_DIR/run_due_processes.log`, `$LOG_DIR/run_expired_reminders.log`, `$LOG_DIR/process_ai_document_queue.log`.  
+   *Zašto ne systemd unutar image-a:* PID 1 u kontejneru treba da ostane jednostavan (gunicorn); pun systemd u kontejneru zahteva privilegije i otežava održavanje. Host timeri + `docker compose exec` su uobičajeni i dovoljni.
 
 ---
 
@@ -165,8 +180,9 @@ cd /var/www/zastitanaradu_server
 ./deploy.sh ./deploy.conf <step>
 ```
 
-Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupNginx` | `setupSsl` | `setupFirewall` | `setupCron` | `setupTaskRunner`.
+Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupDockerQuick` | `setupNginx` | `setupSsl` | `setupFirewall` | `setupCron` | `setupTaskRunner`.
 
+- **setupDockerQuick** – use alone when you changed backend code only and want a fast cycle: no `docker compose down`, no frontend build, no static refresh. After UI changes you still need **setupDocker** (or a manual `npm run build` + static deploy if you maintain that separately).
 - **You can re-run any step** after fixing config or code – the script checks existing state where needed (e.g. DB/user creation, SSL certs, cron) and uses idempotent operations (`mkdir -p`, `ufw allow`, `docker compose up -d`, Django `migrate`/`collectstatic`). If in doubt, just rerun the step.
 
 ---
@@ -178,7 +194,7 @@ Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupNginx` | `setupS
 - **Logs (on host):**
   - Nginx: `$LOG_DIR/nginx-access.log`, `$LOG_DIR/nginx-error.log`
   - Backend: `$LOG_DIR/backend/access.log`, `$LOG_DIR/backend/error.log`, `$LOG_DIR/backend/django.log`
-  - Task runner (due processes): `$LOG_DIR/run_due_processes.log`; podsetnici na istekle: `$LOG_DIR/run_expired_reminders.log`
+  - Task runner (due processes): `$LOG_DIR/run_due_processes.log`; podsetnici na istekle: `$LOG_DIR/run_expired_reminders.log`; AI red: `$LOG_DIR/process_ai_document_queue.log`
 - **Containers:** `cd $APP_DIR && docker compose ps`
 - **Backend only on localhost:** port 8000 is bound to `127.0.0.1`; only nginx is exposed on 80/443.
 
@@ -196,4 +212,4 @@ nano backend.env
 ./deploy.sh ./deploy.conf all
 ```
 
-Replace the clone URL and fill in `deploy.conf` and `backend.env` before running the last line.
+Replace the clone URL and fill in `deploy.conf` and `backend.env` before running the last line. For a faster backend-only iteration after the first full deploy, use `./deploy.sh ./deploy.conf all --quick` (see section 5).

@@ -18,6 +18,16 @@ def _fmt_date(d):
         return str(d)
 
 
+def _result_data_field(rd, new_key, old_key):
+    if not isinstance(rd, dict):
+        return ""
+    v = rd.get(new_key)
+    if v is not None and str(v).strip() != "":
+        return str(v)
+    v2 = rd.get(old_key)
+    return "" if v2 is None else str(v2)
+
+
 def _write(cell, text, bold=False, size=9, center=False):
     cell.text = ""
     p = cell.paragraphs[0]
@@ -44,13 +54,14 @@ _HEADER = [
 ]
 
 
-def generate_evidencija_1(client_id: int) -> bytes:
+def generate_medical_exam_record(client_id: int) -> bytes:
     company = ClientCompany.objects.get(pk=client_id)
 
     runs = (
         ProcessRun.objects.filter(
             status=ProcessRun.STATUS_COMPLETED,
             process_binding__employee__client_company_id=client_id,
+            process_type__include_in_medical_exam_record=True,
         )
         .select_related(
             "process_type",
@@ -95,7 +106,7 @@ def generate_evidencija_1(client_id: int) -> bytes:
     info.style = "Table Grid"
     _write(info.cell(0, 0), company.name, bold=True)
     _write(info.cell(0, 1), company.address or "")
-    _write(info.cell(0, 2), company.pib or "")
+    _write(info.cell(0, 2), company.tax_id or "")
     _write(info.cell(1, 0), "Poslovno ime poslodavca", size=8)
     _write(info.cell(1, 1), "Adresa sedišta poslodavca", size=8)
     _write(info.cell(1, 2), "PIB poslodavca", size=8)
@@ -127,33 +138,44 @@ def generate_evidencija_1(client_id: int) -> bytes:
         n = len(emp_runs)
         start = current
 
-        interval = ""
-        if emp_runs[0]:
-            b = emp_runs[0].process_binding
-            interval = str(
-                b.custom_period_months or b.process_type.default_period_months or ""
-            )
-
         for i, run in enumerate(emp_runs):
             row = tbl.rows[current]
+            interval = ""
+            if run:
+                b = run.process_binding
+                interval = str(
+                    b.custom_period_months
+                    or b.process_type.default_period_months
+                    or ""
+                )
             if i == 0:
                 _write(row.cells[0], str(ordinal), center=True)
                 _write(row.cells[1], emp.high_risk_position_name or "")
                 _write(row.cells[2],
                        f"{emp.first_name} {emp.last_name}".strip())
-                _write(row.cells[3], interval, center=True)
+            _write(row.cells[3], interval, center=True)
             if run:
                 rd = run.result_data or {}
                 _write(row.cells[4], run.process_type.name)
                 _write(row.cells[5], _fmt_date(run.performed_at))
                 _write(row.cells[6], _fmt_date(run.valid_until))
-                _write(row.cells[7], str(rd.get("broj_izvestaja", "")))
-                _write(row.cells[8], str(rd.get("ocena_sposobnosti", "")))
-                _write(row.cells[9], str(rd.get("preduzete_mere", "")))
+                _write(
+                    row.cells[7],
+                    _result_data_field(rd, "report_number", "broj_izvestaja"),
+                )
+                _write(
+                    row.cells[8],
+                    _result_data_field(
+                        rd, "fitness_assessment", "ocena_sposobnosti"),
+                )
+                _write(
+                    row.cells[9],
+                    _result_data_field(rd, "measures_taken", "preduzete_mere"),
+                )
             current += 1
 
         if n > 1:
-            for col_idx in range(4):
+            for col_idx in range(3):
                 tbl.cell(start, col_idx).merge(
                     tbl.cell(start + n - 1, col_idx))
 

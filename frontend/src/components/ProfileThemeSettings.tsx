@@ -1,4 +1,9 @@
-import { Box, ToggleButton, ToggleButtonGroup, Typography } from "@mui/material";
+import {
+    Box,
+    ToggleButton,
+    ToggleButtonGroup,
+    Typography,
+} from "@mui/material";
 import DarkModeOutlinedIcon from "@mui/icons-material/DarkModeOutlined";
 import LightModeOutlinedIcon from "@mui/icons-material/LightModeOutlined";
 
@@ -8,10 +13,7 @@ import type { PaletteMode } from "../themePreference";
 export function ProfileThemeSettings() {
     const { mode, setMode } = useThemeMode();
 
-    const handleMode = (
-        _: unknown,
-        value: PaletteMode | null,
-    ): void => {
+    const handleMode = (_: unknown, value: PaletteMode | null): void => {
         if (value != null) setMode(value);
     };
 

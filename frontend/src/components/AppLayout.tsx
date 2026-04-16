@@ -317,8 +317,7 @@ class AppLayoutInner extends Component<Props, State> {
         const pageTitle = getPageTitle(pathname);
         const menuOpen = Boolean(anchorEl);
         const currentFull = pathname + search;
-        const activeItem =
-            items.find((i) => i.path === currentFull) ?? null;
+        const activeItem = items.find((i) => i.path === currentFull) ?? null;
         const visibleGroups: NavGroup[] = NAV_GROUP_ORDER.filter((groupKey) =>
             items.some((i) => i.group === groupKey),
         );
@@ -372,24 +371,12 @@ class AppLayoutInner extends Component<Props, State> {
                             sx={(theme) => {
                                 const thumb =
                                     theme.palette.mode === "dark"
-                                        ? alpha(
-                                              theme.palette.grey[500],
-                                              0.45,
-                                          )
-                                        : alpha(
-                                              theme.palette.grey[700],
-                                              0.35,
-                                          );
+                                        ? alpha(theme.palette.grey[500], 0.45)
+                                        : alpha(theme.palette.grey[700], 0.35);
                                 const thumbHover =
                                     theme.palette.mode === "dark"
-                                        ? alpha(
-                                              theme.palette.grey[400],
-                                              0.55,
-                                          )
-                                        : alpha(
-                                              theme.palette.grey[800],
-                                              0.45,
-                                          );
+                                        ? alpha(theme.palette.grey[400], 0.55)
+                                        : alpha(theme.palette.grey[800], 0.45);
                                 return {
                                     display: "flex",
                                     flexDirection: "column",
@@ -485,8 +472,7 @@ class AppLayoutInner extends Component<Props, State> {
                                                             : "text.primary",
                                                         "&:hover": {
                                                             bgcolor: isActive
-                                                                ? theme
-                                                                      .palette
+                                                                ? theme.palette
                                                                       .mode ===
                                                                   "light"
                                                                     ? alpha(

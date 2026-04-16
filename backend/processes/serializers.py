@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from .models import (
     ProcessBinding,
+    ProcessNote,
     ProcessRun,
     ProcessRunDocument,
     ProcessTemplate,
@@ -22,6 +23,7 @@ class ProcessTypeSerializer(serializers.ModelSerializer):
             "default_period_months",
             "lead_time_days",
             "is_active",
+            "include_in_medical_exam_record",
         )
         read_only_fields = ["code"]
 
@@ -44,6 +46,7 @@ class ProcessTemplateSerializer(serializers.ModelSerializer):
             "email_subject_template",
             "email_body_template",
             "custom_email_recipient",
+            "notification_role_group",
             "followup_process_type",
         )
 
@@ -91,12 +94,14 @@ class ProcessRunSerializer(serializers.ModelSerializer):
             "status",
             "notes",
             "result_data",
+            "expired_reminder_sent_at",
         )
         read_only_fields = (
             "process_binding",
             "process_type",
             "subject_snapshot",
             "scheduled_for",
+            "expired_reminder_sent_at",
         )
 
 
@@ -130,6 +135,33 @@ class ProcessRunDocumentCreateSerializer(serializers.Serializer):
         required=False,
         default=ProcessRunDocument.USAGE_REPORT,
     )
+
+
+class ProcessNoteSerializer(serializers.ModelSerializer):
+    author_username = serializers.CharField(
+        source="author.username", read_only=True)
+
+    class Meta:
+        model = ProcessNote
+        fields = (
+            "id",
+            "process_run",
+            "author",
+            "author_username",
+            "body",
+            "created_at",
+            "updated_at",
+        )
+        read_only_fields = (
+            "process_run",
+            "author",
+            "created_at",
+            "updated_at",
+        )
+
+
+class ProcessNoteCreateSerializer(serializers.Serializer):
+    body = serializers.CharField()
 
 
 class TaskAssignmentSerializer(serializers.ModelSerializer):

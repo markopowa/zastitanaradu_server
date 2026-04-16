@@ -6,6 +6,7 @@ import type {
     EquipmentItem,
     ProcessBinding,
     ProcessRun,
+    ProcessRunNote,
     ProcessSubjectKind,
     ProcessRunDocument,
     ProcessTemplate,
@@ -325,9 +326,9 @@ export interface CompleteProcessRunPayload {
     performed_at?: string;
     notes?: string;
     result_data?: {
-        broj_izvestaja?: string;
-        ocena_sposobnosti?: string;
-        preduzete_mere?: string;
+        report_number?: string;
+        fitness_assessment?: string;
+        measures_taken?: string;
     };
 }
 
@@ -337,6 +338,26 @@ export async function completeProcessRun(
 ): Promise<ProcessRun> {
     const { data } = await api.post<ProcessRun>(
         `/api/processes/runs/${id}/complete/`,
+        payload,
+    );
+    return data;
+}
+
+export async function getProcessRunNotes(
+    runId: number,
+): Promise<ProcessRunNote[]> {
+    const { data } = await api.get<ProcessRunNote[]>(
+        `/api/processes/runs/${runId}/notes/`,
+    );
+    return Array.isArray(data) ? data : [];
+}
+
+export async function postProcessRunNote(
+    runId: number,
+    payload: { body: string },
+): Promise<ProcessRunNote> {
+    const { data } = await api.post<ProcessRunNote>(
+        `/api/processes/runs/${runId}/notes/`,
         payload,
     );
     return data;
@@ -370,9 +391,11 @@ export async function removeDocumentFromRun(
     await api.delete(`/api/processes/runs/${runId}/documents/${docId}/`);
 }
 
-export async function generateEvidencija1(clientId: number): Promise<void> {
+export async function generateMedicalExamRecord(
+    clientId: number,
+): Promise<void> {
     const response = await api.get(
-        `/api/partners/client-companies/${clientId}/evidencija-1/`,
+        `/api/partners/client-companies/${clientId}/medical-exam-record/`,
         { responseType: "blob" },
     );
     const url = window.URL.createObjectURL(
@@ -380,7 +403,7 @@ export async function generateEvidencija1(clientId: number): Promise<void> {
     );
     const link = document.createElement("a");
     link.href = url;
-    link.setAttribute("download", `evidencija_1_${clientId}.docx`);
+    link.setAttribute("download", `medical_exam_record_${clientId}.docx`);
     document.body.appendChild(link);
     link.click();
     link.remove();

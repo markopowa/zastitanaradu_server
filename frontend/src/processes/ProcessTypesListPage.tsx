@@ -16,9 +16,11 @@ import {
     DialogActions,
     TextField,
     FormControl,
+    FormControlLabel,
     InputLabel,
     Select,
     MenuItem,
+    Switch,
     IconButton,
     CircularProgress,
     Alert,
@@ -71,6 +73,7 @@ class ProcessTypesListPageInner extends Component<
         default_period_months: "",
         lead_time_days: "0",
         is_active: true,
+        include_in_medical_exam_record: true,
     };
 
     componentDidMount(): void {
@@ -89,6 +92,7 @@ class ProcessTypesListPageInner extends Component<
             default_period_months: "",
             lead_time_days: "0",
             is_active: true,
+            include_in_medical_exam_record: true,
         }));
     };
 
@@ -106,6 +110,8 @@ class ProcessTypesListPageInner extends Component<
                     : "",
             lead_time_days: String(row.lead_time_days ?? 0),
             is_active: row.is_active ?? true,
+            include_in_medical_exam_record:
+                row.include_in_medical_exam_record ?? true,
         }));
     };
 
@@ -163,6 +169,7 @@ class ProcessTypesListPageInner extends Component<
             default_period_months,
             lead_time_days,
             is_active,
+            include_in_medical_exam_record,
         } = this.state;
         if (!name.trim()) return;
         const payload = {
@@ -174,6 +181,7 @@ class ProcessTypesListPageInner extends Component<
                 : null,
             lead_time_days: Number(lead_time_days) || 0,
             is_active,
+            include_in_medical_exam_record,
         };
         const op =
             editingId != null
@@ -214,6 +222,7 @@ class ProcessTypesListPageInner extends Component<
             default_period_months,
             lead_time_days,
             is_active,
+            include_in_medical_exam_record,
         } = this.state;
 
         return (
@@ -265,6 +274,9 @@ class ProcessTypesListPageInner extends Component<
                                     <TableCell sx={tableCellEllipsis}>
                                         Aktivan
                                     </TableCell>
+                                    <TableCell sx={tableCellEllipsis}>
+                                        Obrazac 1
+                                    </TableCell>
                                     <TableCell align="right" />
                                 </TableRow>
                             </TableHead>
@@ -292,6 +304,12 @@ class ProcessTypesListPageInner extends Component<
                                         </TableCell>
                                         <TableCell>
                                             {row.is_active ? "Da" : "Ne"}
+                                        </TableCell>
+                                        <TableCell>
+                                            {row.include_in_medical_exam_record !==
+                                            false
+                                                ? "Da"
+                                                : "Ne"}
                                         </TableCell>
                                         <TableCell align="right">
                                             <IconButton
@@ -427,6 +445,23 @@ class ProcessTypesListPageInner extends Component<
                                 <MenuItem value="0">Ne</MenuItem>
                             </Select>
                         </FormControl>
+                        <Tooltip title="Uključiti samo za vrste koje su lekarski pregledi (Obrazac 1).">
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={include_in_medical_exam_record}
+                                        onChange={(e) =>
+                                            this.setState((prev) => ({
+                                                ...prev,
+                                                include_in_medical_exam_record:
+                                                    e.target.checked,
+                                            }))
+                                        }
+                                    />
+                                }
+                                label="Uključi u Obrazac 1"
+                            />
+                        </Tooltip>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Odustani</Button>

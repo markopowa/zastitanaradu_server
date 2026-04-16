@@ -38,7 +38,7 @@ const EMPLOYEE_FIELDS: TemplateField[] = [
     { key: "employee.position", label: "Pozicija" },
     { key: "employee.email", label: "Email zaposlenog" },
     { key: "employee.father_name", label: "Ime oca" },
-    { key: "employee.jmbg", label: "JMBG" },
+    { key: "employee.national_id", label: "JMBG" },
     { key: "employee.date_of_birth", label: "Datum rođenja" },
     { key: "employee.place_of_birth", label: "Mesto rođenja" },
     { key: "employee.occupation", label: "Zanimanje" },
@@ -57,7 +57,7 @@ const EQUIPMENT_FIELDS: TemplateField[] = [
 
 const CLIENT_FIELDS: TemplateField[] = [
     { key: "client.name", label: "Naziv firme" },
-    { key: "client.pib", label: "PIB" },
+    { key: "client.tax_id", label: "PIB" },
     { key: "client.address", label: "Adresa firme" },
     { key: "client.phone", label: "Telefon firme" },
     { key: "client.email", label: "Email firme" },

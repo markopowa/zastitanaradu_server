@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.auth.models import Group
 from django.db import models, transaction
 
 from documents.models import DocumentFile, DocumentTemplate
@@ -43,6 +44,10 @@ class ProcessType(models.Model):
     default_period_months = models.PositiveIntegerField(null=True, blank=True)
     lead_time_days = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
+    include_in_medical_exam_record = models.BooleanField(
+        default=True,
+        help_text="Ako je uključeno, završeni run-ovi ove vrste ulaze u generisanje Obrazca 1.",
+    )
 
     class Meta:
         verbose_name = "Vrsta obaveze"
@@ -108,6 +113,13 @@ class ProcessTemplate(models.Model):
     email_subject_template = models.CharField(max_length=255, blank=True)
     email_body_template = models.TextField(blank=True)
     custom_email_recipient = models.EmailField(blank=True)
+    notification_role_group = models.ForeignKey(
+        Group,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="process_templates",
+    )
     followup_process_type = models.ForeignKey(
         "ProcessType",
         on_delete=models.SET_NULL,
@@ -220,6 +232,7 @@ class ProcessRun(models.Model):
     )
     notes = models.TextField(blank=True)
     result_data = models.JSONField(default=dict, blank=True)
+    expired_reminder_sent_at = models.DateField(null=True, blank=True)
 
     class Meta:
         verbose_name = "Aktivnost obaveze"

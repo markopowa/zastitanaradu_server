@@ -154,6 +154,8 @@ setupDocker() {
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
     cd "$APP_DIR"
     docker compose exec -T backend python manage.py migrate --noinput
+    # TODO: ukloniti kada svi ProcessRun.result_data zapisi budu migrirani na nove ključeve
+    docker compose exec -T backend python manage.py migrate_processrun_result_data_keys 2>/dev/null || true
     docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
     mkdir -p "$STATIC_DIR"
     docker compose cp backend:/app/staticfiles/. "$STATIC_DIR/"
@@ -350,12 +352,45 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
+    SVC3="/etc/systemd/system/pznr-process-ai-document-queue.service"
+    TMR3="/etc/systemd/system/pznr-process-ai-document-queue.timer"
+    cat > "$SVC3" << EOF
+[Unit]
+Description=PZNR process AI document queue (DocumentFileAIFormat PENDING)
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=$APP_DIR
+ExecStart=/usr/bin/docker compose exec -T backend python manage.py process_ai_document_queue
+StandardOutput=append:$LOG_DIR/process_ai_document_queue.log
+StandardError=append:$LOG_DIR/process_ai_document_queue.log
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    cat > "$TMR3" << EOF
+[Unit]
+Description=Run PZNR AI document queue every 5 minutes
+Requires=pznr-process-ai-document-queue.service
+
+[Timer]
+OnCalendar=*-*-* *:0/5:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
     systemctl daemon-reload
     systemctl enable pznr-run-due-processes.timer
     systemctl start pznr-run-due-processes.timer
     systemctl enable pznr-run-expired-reminders.timer
     systemctl start pznr-run-expired-reminders.timer
-    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-expired-reminders.timer (daily 07:00). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_expired_reminders.log"
+    systemctl enable pznr-process-ai-document-queue.timer
+    systemctl start pznr-process-ai-document-queue.timer
+    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-expired-reminders.timer (daily 07:00), pznr-process-ai-document-queue.timer (every 5 min). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_expired_reminders.log, $LOG_DIR/process_ai_document_queue.log"
 }
 
 runAll() {
