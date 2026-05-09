@@ -10,3 +10,4 @@ staticfiles/
 docs/
 develop/
 __pycache__/
+backend/*.csv

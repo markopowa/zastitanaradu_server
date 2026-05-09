@@ -1,5 +1,7 @@
+import csv
 import importlib
 import logging
+from pathlib import Path
 from typing import Sequence
 
 import boto3
@@ -8,8 +10,37 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 _sender = None
+
+
+def _load_aws_credentials_from_csv() -> tuple[str, str] | tuple[None, None]:
+    """
+    Reads AWS credentials from m.vuckovic_accessKeys.csv in the backend directory.
+    Expected format (standard AWS export):
+        Access key ID,Secret access key
+        AKIA...,secret...
+    Falls back to m.vuckovic_credentials.csv if accessKeys not found.
+    """
+    for filename in ("m.vuckovic_accessKeys.csv", "m.vuckovic_credentials.csv"):
+        csv_path = _BACKEND_DIR / filename
+        if not csv_path.exists():
+            continue
+        try:
+            with open(csv_path, newline="", encoding="utf-8") as f:
+                reader = csv.DictReader(f)
+                row = next(reader, None)
+                if row is None:
+                    continue
+                key_id = row.get("Access key ID") or row.get("access_key_id") or ""
+                secret = row.get("Secret access key") or row.get("secret_access_key") or ""
+                if key_id and secret:
+                    logger.debug("AWS credentials loaded from %s", filename)
+                    return key_id.strip(), secret.strip()
+        except Exception as e:
+            logger.warning("Failed to read AWS credentials from %s: %s", filename, e)
+    return None, None
 
 
 def get_email_sender():
@@ -40,6 +71,13 @@ class SESEmailSender:
             else getattr(settings, "EMAIL_FROM_ADDRESS", "")
             or ""
         )
+        csv_key_id, csv_secret = _load_aws_credentials_from_csv()
+        self._aws_access_key_id = (
+            getattr(settings, "AWS_ACCESS_KEY_ID", None) or csv_key_id or None
+        )
+        self._aws_secret_access_key = (
+            getattr(settings, "AWS_SECRET_ACCESS_KEY", None) or csv_secret or None
+        )
 
     def send(
         self,
@@ -55,7 +93,12 @@ class SESEmailSender:
         if not source or not recipients:
             return False
         try:
-            client = boto3.client("ses", region_name=self._region)
+            client = boto3.client(
+                "ses",
+                region_name=self._region,
+                aws_access_key_id=self._aws_access_key_id,
+                aws_secret_access_key=self._aws_secret_access_key,
+            )
             message = {
                 "Subject": {"Data": subject, "Charset": "UTF-8"},
                 "Body": {"Text": {"Data": body, "Charset": "UTF-8"}},
