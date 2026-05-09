@@ -16,13 +16,6 @@ _sender = None
 
 
 def _load_aws_credentials_from_csv() -> tuple[str, str] | tuple[None, None]:
-    """
-    Reads AWS credentials from m.vuckovic_accessKeys.csv in the backend directory.
-    Expected format (standard AWS export):
-        Access key ID,Secret access key
-        AKIA...,secret...
-    Falls back to m.vuckovic_credentials.csv if accessKeys not found.
-    """
     for filename in ("m.vuckovic_accessKeys.csv", "m.vuckovic_credentials.csv"):
         csv_path = _BACKEND_DIR / filename
         if not csv_path.exists():
