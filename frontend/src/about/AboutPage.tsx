@@ -1,5 +1,19 @@
 import { Box, Typography, Divider, Link, Grid, Paper } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
+import GavelIcon from "@mui/icons-material/Gavel";
+import BusinessIcon from "@mui/icons-material/Business";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+import MedicalServicesIcon from "@mui/icons-material/MedicalServices";
+import SchoolIcon from "@mui/icons-material/School";
+import BadgeIcon from "@mui/icons-material/Badge";
+import VerifiedUserIcon from "@mui/icons-material/VerifiedUser";
+import BuildIcon from "@mui/icons-material/Build";
+import ScienceIcon from "@mui/icons-material/Science";
+import AirIcon from "@mui/icons-material/Air";
+import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
+import DescriptionIcon from "@mui/icons-material/Description";
+import GroupsIcon from "@mui/icons-material/Groups";
+import SecurityIcon from "@mui/icons-material/Security";
 
 const PRIMARY = "#4A6FA5";
 const PRIMARY_DARK = "#2e4a75";
@@ -72,36 +86,38 @@ export default function AboutPage() {
                     <Divider sx={{ mb: 5, borderColor: PRIMARY, opacity: 0.25 }} />
                     <Grid container spacing={2}>
                         {[
-                            "Prava, obaveze i odgovornosti u oblasti bezbednosti i zdravlja na radu",
-                            "Organizovanje poslova za bezbednost i zdravlje na radu",
-                            "Procena rizika",
-                            "Lekarski pregledi zaposlenih",
-                            "Obuka zaposlenih za bezbedan i zdrav rad",
-                            "Dozvole za rad",
-                            "Lična zaštitna oprema",
-                            "Pregledi i provera opreme za rad",
-                            "Opasne hemijske materije i druge",
-                            "Ispitivanje uslova radne sredine",
-                            "Organizovanje prve pomoći",
-                            "Evidencija, saradnja i izveštavanje",
-                            "Predstavnici zaposlenih za bezbednost i zdravlje na radu i odbor za BZR",
-                            "Osiguranje od povrede na radu i profesionalnih bolesti",
+                            { icon: <GavelIcon sx={{ color: PRIMARY }} />, label: "Prava, obaveze i odgovornosti u oblasti bezbednosti i zdravlja na radu" },
+                            { icon: <BusinessIcon sx={{ color: PRIMARY }} />, label: "Organizovanje poslova za bezbednost i zdravlje na radu" },
+                            { icon: <AssessmentIcon sx={{ color: PRIMARY }} />, label: "Procena rizika" },
+                            { icon: <MedicalServicesIcon sx={{ color: PRIMARY }} />, label: "Lekarski pregledi zaposlenih" },
+                            { icon: <SchoolIcon sx={{ color: PRIMARY }} />, label: "Obuka zaposlenih za bezbedan i zdrav rad" },
+                            { icon: <BadgeIcon sx={{ color: PRIMARY }} />, label: "Dozvole za rad" },
+                            { icon: <VerifiedUserIcon sx={{ color: PRIMARY }} />, label: "Lična zaštitna oprema" },
+                            { icon: <BuildIcon sx={{ color: PRIMARY }} />, label: "Pregledi i provera opreme za rad" },
+                            { icon: <ScienceIcon sx={{ color: PRIMARY }} />, label: "Opasne hemijske materije i druge" },
+                            { icon: <AirIcon sx={{ color: PRIMARY }} />, label: "Ispitivanje uslova radne sredine" },
+                            { icon: <HealthAndSafetyIcon sx={{ color: PRIMARY }} />, label: "Organizovanje prve pomoći" },
+                            { icon: <DescriptionIcon sx={{ color: PRIMARY }} />, label: "Evidencija, saradnja i izveštavanje" },
+                            { icon: <GroupsIcon sx={{ color: PRIMARY }} />, label: "Predstavnici zaposlenih za bezbednost i zdravlje na radu i odbor za BZR" },
+                            { icon: <SecurityIcon sx={{ color: PRIMARY }} />, label: "Osiguranje od povrede na radu i profesionalnih bolesti" },
                         ].map((oblast) => (
-                            <Grid item xs={12} sm={6} md={4} key={oblast}>
+                            <Grid item xs={12} sm={6} md={4} key={oblast.label}>
                                 <Paper
                                     elevation={0}
                                     sx={{
-                                        p: 2,
+                                        p: 2.5,
                                         borderRadius: 2,
                                         bgcolor: "#F5F9FD",
                                         border: `1px solid rgba(74,111,165,0.15)`,
                                         height: "100%",
                                         display: "flex",
-                                        alignItems: "center",
+                                        alignItems: "flex-start",
+                                        gap: 1.5,
                                     }}
                                 >
+                                    <Box sx={{ mt: 0.3, flexShrink: 0 }}>{oblast.icon}</Box>
                                     <Typography variant="body2" color={PRIMARY_DARK} fontWeight={500}>
-                                        {oblast}
+                                        {oblast.label}
                                     </Typography>
                                 </Paper>
                             </Grid>
