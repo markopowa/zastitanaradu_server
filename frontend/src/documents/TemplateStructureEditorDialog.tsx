@@ -63,6 +63,7 @@ const CLIENT_FIELDS: TemplateField[] = [
     { key: "client.email", label: "Email firme" },
     { key: "client.website", label: "Web sajt firme" },
     { key: "client.registration_number", label: "Matični broj" },
+    { key: "client.activity_code", label: "Šifra delatnosti" },
 ];
 
 const FIXED_TEXT_KEY = "__fixed_text__";

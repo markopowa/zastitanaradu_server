@@ -579,7 +579,7 @@ class ClientCompanyDetailPageInner extends Component<
                     >
                         {generatingDoc
                             ? "Generišem..."
-                            : "Generiši Evidenciju 1"}
+                            : "Generiši Obrazac 1"}
                     </Button>
                     {docError && <Alert severity="error">{docError}</Alert>}
                 </Box>

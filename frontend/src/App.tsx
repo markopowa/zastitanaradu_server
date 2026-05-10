@@ -7,6 +7,7 @@ import { AppLayout } from "./components/AppLayout";
 import RedirectComponent from "./components/RedirectComponent";
 
 const LoginPage = lazy(() => import("./auth/LoginPage"));
+const AboutPage = lazy(() => import("./about/AboutPage"));
 const UserProfilePage = lazy(() => import("./auth/UserProfilePage"));
 const UsersListPage = lazy(() => import("./auth/UsersListPage"));
 const RolesListPage = lazy(() => import("./auth/RolesListPage"));
@@ -68,6 +69,7 @@ class App extends Component {
             <Suspense fallback={routeFallback}>
                 <Routes>
                     <Route path="/login" element={<LoginPage />} />
+                    <Route path="/about" element={<AboutPage />} />
                     <Route
                         path="/"
                         element={<ProtectedRoute element={<AppLayout />} />}

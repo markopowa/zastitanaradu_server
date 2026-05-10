@@ -3,7 +3,8 @@ import type { ChangeEvent, SubmitEvent } from "react";
 import { connect } from "react-redux";
 import { Navigate } from "react-router-dom";
 
-import { TextField, Button, Box, Typography, Paper } from "@mui/material";
+import { TextField, Button, Box, Typography, Paper, Link } from "@mui/material";
+import { Link as RouterLink } from "react-router-dom";
 
 import { login } from "../store/authSlice";
 
@@ -104,6 +105,11 @@ class LoginPage extends Component<LoginPageProps, LoginPageState> {
                             {loading ? "Prijava..." : "Prijava"}
                         </Button>
                     </Box>
+                    <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
+                        <Link component={RouterLink} to="/about">
+                            O aplikaciji
+                        </Link>
+                    </Typography>
                 </Paper>
             </Box>
         );

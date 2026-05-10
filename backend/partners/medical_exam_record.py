@@ -38,6 +38,28 @@ def _write(cell, text, bold=False, size=9, center=False):
     r.font.size = Pt(size)
 
 
+def _short_label(process_type_name: str) -> str:
+    """First word of the process type name — e.g. 'Prethodni lekarski pregled' -> 'Prethodni'."""
+    return process_type_name.split()[0] if process_type_name else ""
+
+
+def _employee_rows(emp_runs: list) -> list:
+    """
+    Returns list of (process_type, run) tuples for one employee.
+    Grouped by process type (sorted by name), runs within each type sorted by performed_at.
+    """
+    by_type: dict = defaultdict(list)
+    for run in emp_runs:
+        by_type[run.process_type].append(run)
+
+    sorted_types = sorted(by_type.keys(), key=lambda pt: pt.name)
+    rows = []
+    for pt in sorted_types:
+        for run in sorted(by_type[pt], key=lambda r: r.performed_at or ""):
+            rows.append((pt, run))
+    return rows if rows else [(None, None)]
+
+
 _COL_WIDTHS = [1.2, 3.8, 3.2, 1.4, 1.8, 3.0, 3.0, 2.8, 2.5, 2.5]
 
 _HEADER = [
@@ -71,6 +93,7 @@ def generate_medical_exam_record(client_id: int) -> bytes:
         .order_by(
             "process_binding__employee__last_name",
             "process_binding__employee__first_name",
+            "process_type__name",
             "performed_at",
         )
     )
@@ -79,6 +102,11 @@ def generate_medical_exam_record(client_id: int) -> bytes:
     for run in runs:
         emp = run.process_binding.employee
         by_employee[emp].append(run)
+
+    employee_data = [
+        (emp, _employee_rows(emp_runs))
+        for emp, emp_runs in by_employee.items()
+    ]
 
     doc = docx.Document()
     section = doc.sections[0]
@@ -113,9 +141,7 @@ def generate_medical_exam_record(client_id: int) -> bytes:
 
     doc.add_paragraph()
 
-    employee_list = list(by_employee.items())
-    total_rows = 1 + sum(max(len(emp_runs), 1)
-                         for _, emp_runs in employee_list)
+    total_rows = 1 + sum(len(rows) for _, rows in employee_data)
 
     tbl = doc.add_table(rows=total_rows, cols=10)
     tbl.style = "Table Grid"
@@ -132,14 +158,18 @@ def generate_medical_exam_record(client_id: int) -> bytes:
     tbl.cell(0, 4).merge(tbl.cell(0, 5))
 
     current = 1
-    for ordinal, (emp, emp_runs) in enumerate(employee_list, start=1):
-        if not emp_runs:
-            emp_runs = [None]
-        n = len(emp_runs)
+    for ordinal, (emp, type_rows) in enumerate(employee_data, start=1):
+        n = len(type_rows)
         start = current
 
-        for i, run in enumerate(emp_runs):
+        for i, (pt, run) in enumerate(type_rows):
             row = tbl.rows[current]
+
+            if i == 0:
+                _write(row.cells[0], str(ordinal), center=True)
+                _write(row.cells[1], emp.high_risk_position_name or "")
+                _write(row.cells[2], f"{emp.first_name} {emp.last_name}".strip())
+
             interval = ""
             if run:
                 b = run.process_binding
@@ -148,36 +178,24 @@ def generate_medical_exam_record(client_id: int) -> bytes:
                     or b.process_type.default_period_months
                     or ""
                 )
-            if i == 0:
-                _write(row.cells[0], str(ordinal), center=True)
-                _write(row.cells[1], emp.high_risk_position_name or "")
-                _write(row.cells[2],
-                       f"{emp.first_name} {emp.last_name}".strip())
             _write(row.cells[3], interval, center=True)
+
+            if pt:
+                _write(row.cells[4], _short_label(pt.name))
+
             if run:
                 rd = run.result_data or {}
-                _write(row.cells[4], run.process_type.name)
                 _write(row.cells[5], _fmt_date(run.performed_at))
                 _write(row.cells[6], _fmt_date(run.valid_until))
-                _write(
-                    row.cells[7],
-                    _result_data_field(rd, "report_number", "broj_izvestaja"),
-                )
-                _write(
-                    row.cells[8],
-                    _result_data_field(
-                        rd, "fitness_assessment", "ocena_sposobnosti"),
-                )
-                _write(
-                    row.cells[9],
-                    _result_data_field(rd, "measures_taken", "preduzete_mere"),
-                )
+                _write(row.cells[7], _result_data_field(rd, "report_number", "broj_izvestaja"))
+                _write(row.cells[8], _result_data_field(rd, "fitness_assessment", "ocena_sposobnosti"))
+                _write(row.cells[9], _result_data_field(rd, "measures_taken", "preduzete_mere"))
+
             current += 1
 
         if n > 1:
             for col_idx in range(3):
-                tbl.cell(start, col_idx).merge(
-                    tbl.cell(start + n - 1, col_idx))
+                tbl.cell(start, col_idx).merge(tbl.cell(start + n - 1, col_idx))
 
     doc.add_paragraph()
 
