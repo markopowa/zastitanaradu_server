@@ -1,42 +1,13 @@
 import { Box, Typography, Divider, Link, Grid, Paper } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
-import SecurityIcon from "@mui/icons-material/Security";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import NotificationsActiveIcon from "@mui/icons-material/NotificationsActive";
-import DescriptionIcon from "@mui/icons-material/Description";
 
 const PRIMARY = "#4A6FA5";
 const PRIMARY_DARK = "#2e4a75";
 const BG = "#EAF3FC";
 
-const FEATURES = [
-    {
-        icon: <SecurityIcon fontSize="large" sx={{ color: PRIMARY }} />,
-        title: "Zaštita na radu",
-        desc: "Praćenje svih obaveza iz oblasti bezbednosti i zdravlja na radu za svakog zaposlenog.",
-    },
-    {
-        icon: <AssignmentIcon fontSize="large" sx={{ color: PRIMARY }} />,
-        title: "Lekarski pregledi",
-        desc: "Automatsko zakazivanje i generisanje uputa za prethodne i periodične preglede.",
-    },
-    {
-        icon: <NotificationsActiveIcon fontSize="large" sx={{ color: PRIMARY }} />,
-        title: "Automatski podsetnici",
-        desc: "Sistem šalje obaveštenja pre isteka rokova kako nijedna obaveza ne bi bila propuštena.",
-    },
-    {
-        icon: <DescriptionIcon fontSize="large" sx={{ color: PRIMARY }} />,
-        title: "Dokumentacija",
-        desc: "Generisanje i čuvanje sve potrebne dokumentacije na jednom mestu.",
-    },
-];
-
 export default function AboutPage() {
     return (
         <Box sx={{ minHeight: "100vh", bgcolor: BG }}>
-
-            {/* Header */}
             <Box
                 sx={{
                     background: `linear-gradient(135deg, ${PRIMARY_DARK}, ${PRIMARY})`,
@@ -72,7 +43,6 @@ export default function AboutPage() {
                 </Link>
             </Box>
 
-            {/* Hero */}
             <Box
                 sx={{
                     background: `linear-gradient(160deg, ${PRIMARY} 0%, ${PRIMARY_DARK} 100%)`,
@@ -94,50 +64,13 @@ export default function AboutPage() {
                 </Typography>
             </Box>
 
-            {/* Features */}
-            <Box sx={{ maxWidth: 960, mx: "auto", py: 8, px: { xs: 3, md: 4 } }}>
-                <Typography variant="h5" fontWeight={600} gutterBottom textAlign="center" color={PRIMARY_DARK}>
-                    Šta sistem omogućava
-                </Typography>
-                <Divider sx={{ mb: 5, borderColor: PRIMARY, opacity: 0.25 }} />
-                <Grid container spacing={4}>
-                    {FEATURES.map((f) => (
-                        <Grid item xs={12} sm={6} key={f.title}>
-                            <Paper
-                                elevation={0}
-                                sx={{
-                                    p: 3,
-                                    borderRadius: 3,
-                                    bgcolor: "#F5F9FD",
-                                    border: `1px solid rgba(74,111,165,0.15)`,
-                                    display: "flex",
-                                    gap: 2,
-                                    height: "100%",
-                                }}
-                            >
-                                <Box sx={{ mt: 0.5, flexShrink: 0 }}>{f.icon}</Box>
-                                <Box>
-                                    <Typography variant="subtitle1" fontWeight={600} color={PRIMARY_DARK}>
-                                        {f.title}
-                                    </Typography>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                                        {f.desc}
-                                    </Typography>
-                                </Box>
-                            </Paper>
-                        </Grid>
-                    ))}
-                </Grid>
-            </Box>
-
-            {/* Oblasti */}
-            <Box sx={{ bgcolor: "#EAF3FC", borderTop: `1px solid rgba(74,111,165,0.15)` }}>
+            <Box sx={{ borderTop: `1px solid rgba(74,111,165,0.15)` }}>
                 <Box sx={{ maxWidth: 960, mx: "auto", py: 7, px: { xs: 3, md: 4 } }}>
                     <Typography variant="h5" fontWeight={600} textAlign="center" color={PRIMARY_DARK} gutterBottom>
                         Oblasti koje pokrivamo
                     </Typography>
                     <Divider sx={{ mb: 5, borderColor: PRIMARY, opacity: 0.25 }} />
-                    <Grid container spacing={1.5}>
+                    <Grid container spacing={2}>
                         {[
                             "Prava, obaveze i odgovornosti u oblasti bezbednosti i zdravlja na radu",
                             "Organizovanje poslova za bezbednost i zdravlje na radu",
@@ -154,35 +87,29 @@ export default function AboutPage() {
                             "Predstavnici zaposlenih za bezbednost i zdravlje na radu i odbor za BZR",
                             "Osiguranje od povrede na radu i profesionalnih bolesti",
                         ].map((oblast) => (
-                            <Grid item xs={12} sm={6} key={oblast}>
-                                <Box
+                            <Grid item xs={12} sm={6} md={4} key={oblast}>
+                                <Paper
+                                    elevation={0}
                                     sx={{
+                                        p: 2,
+                                        borderRadius: 2,
+                                        bgcolor: "#F5F9FD",
+                                        border: `1px solid rgba(74,111,165,0.15)`,
+                                        height: "100%",
                                         display: "flex",
-                                        alignItems: "flex-start",
-                                        gap: 1,
+                                        alignItems: "center",
                                     }}
                                 >
-                                    <Box
-                                        sx={{
-                                            width: 6,
-                                            height: 6,
-                                            borderRadius: "50%",
-                                            bgcolor: PRIMARY,
-                                            mt: "7px",
-                                            flexShrink: 0,
-                                        }}
-                                    />
-                                    <Typography variant="body2" color="text.secondary">
+                                    <Typography variant="body2" color={PRIMARY_DARK} fontWeight={500}>
                                         {oblast}
                                     </Typography>
-                                </Box>
+                                </Paper>
                             </Grid>
                         ))}
                     </Grid>
                 </Box>
             </Box>
 
-            {/* Company info */}
             <Box sx={{ bgcolor: "#F5F9FD", borderTop: `1px solid rgba(74,111,165,0.15)` }}>
                 <Box sx={{ maxWidth: 960, mx: "auto", py: 6, px: { xs: 3, md: 4 } }}>
                     <Typography variant="h6" fontWeight={600} color={PRIMARY_DARK} gutterBottom>
@@ -217,7 +144,6 @@ export default function AboutPage() {
                 </Box>
             </Box>
 
-            {/* Footer */}
             <Box
                 sx={{
                     background: `linear-gradient(135deg, ${PRIMARY_DARK}, ${PRIMARY})`,
