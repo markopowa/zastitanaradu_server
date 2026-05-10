@@ -130,6 +130,58 @@ export default function AboutPage() {
                 </Grid>
             </Box>
 
+            {/* Oblasti */}
+            <Box sx={{ bgcolor: "#EAF3FC", borderTop: `1px solid rgba(74,111,165,0.15)` }}>
+                <Box sx={{ maxWidth: 960, mx: "auto", py: 7, px: { xs: 3, md: 4 } }}>
+                    <Typography variant="h5" fontWeight={600} textAlign="center" color={PRIMARY_DARK} gutterBottom>
+                        Oblasti koje pokrivamo
+                    </Typography>
+                    <Divider sx={{ mb: 5, borderColor: PRIMARY, opacity: 0.25 }} />
+                    <Grid container spacing={1.5}>
+                        {[
+                            "Prava, obaveze i odgovornosti u oblasti bezbednosti i zdravlja na radu",
+                            "Organizovanje poslova za bezbednost i zdravlje na radu",
+                            "Procena rizika",
+                            "Lekarski pregledi zaposlenih",
+                            "Obuka zaposlenih za bezbedan i zdrav rad",
+                            "Dozvole za rad",
+                            "Lična zaštitna oprema",
+                            "Pregledi i provera opreme za rad",
+                            "Opasne hemijske materije i druge",
+                            "Ispitivanje uslova radne sredine",
+                            "Organizovanje prve pomoći",
+                            "Evidencija, saradnja i izveštavanje",
+                            "Predstavnici zaposlenih za bezbednost i zdravlje na radu i odbor za BZR",
+                            "Osiguranje od povrede na radu i profesionalnih bolesti",
+                        ].map((oblast) => (
+                            <Grid item xs={12} sm={6} key={oblast}>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        alignItems: "flex-start",
+                                        gap: 1,
+                                    }}
+                                >
+                                    <Box
+                                        sx={{
+                                            width: 6,
+                                            height: 6,
+                                            borderRadius: "50%",
+                                            bgcolor: PRIMARY,
+                                            mt: "7px",
+                                            flexShrink: 0,
+                                        }}
+                                    />
+                                    <Typography variant="body2" color="text.secondary">
+                                        {oblast}
+                                    </Typography>
+                                </Box>
+                            </Grid>
+                        ))}
+                    </Grid>
+                </Box>
+            </Box>
+
             {/* Company info */}
             <Box sx={{ bgcolor: "#F5F9FD", borderTop: `1px solid rgba(74,111,165,0.15)` }}>
                 <Box sx={{ maxWidth: 960, mx: "auto", py: 6, px: { xs: 3, md: 4 } }}>
