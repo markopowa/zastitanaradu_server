@@ -64,6 +64,14 @@ const CLIENT_FIELDS: TemplateField[] = [
     { key: "client.website", label: "Web sajt firme" },
     { key: "client.registration_number", label: "Matični broj" },
     { key: "client.activity_code", label: "Šifra delatnosti" },
+    {
+        key: "client.risk_assessment_act_number",
+        label: "Broj Akta o proceni rizika",
+    },
+    {
+        key: "client.risk_assessment_act_date",
+        label: "Datum Akta o proceni rizika",
+    },
 ];
 
 const FIXED_TEXT_KEY = "__fixed_text__";
@@ -126,6 +134,7 @@ interface State {
     menuAnchor: MenuAnchor | null;
     editingPhId: string | null;
     dragState: DragSnapshot | null;
+    fieldSearch: string;
 }
 
 export default class TemplateStructureEditorDialog extends Component<
@@ -136,6 +145,8 @@ export default class TemplateStructureEditorDialog extends Component<
 
     private activeDrag: DragSnapshot | null = null;
 
+    private suppressNextPageClick = false;
+
     state: State = {
         pageUrls: [],
         loading: false,
@@ -145,6 +156,7 @@ export default class TemplateStructureEditorDialog extends Component<
         menuAnchor: null,
         editingPhId: null,
         dragState: null,
+        fieldSearch: "",
     };
 
     componentDidMount(): void {
@@ -230,6 +242,7 @@ export default class TemplateStructureEditorDialog extends Component<
         window.removeEventListener("mousemove", this.dragMoveHandler);
         window.removeEventListener("mouseup", this.dragUpHandler);
         this.activeDrag = null;
+        this.suppressNextPageClick = true;
         this.setState((prev) => ({ ...prev, dragState: null }));
     };
 
@@ -238,6 +251,10 @@ export default class TemplateStructureEditorDialog extends Component<
         pageIndex: number,
     ): void => {
         if (this.state.dragState) return;
+        if (this.suppressNextPageClick) {
+            this.suppressNextPageClick = false;
+            return;
+        }
         const container = this.pageRefs[pageIndex];
         if (!container) return;
         const rect = container.getBoundingClientRect();
@@ -247,6 +264,7 @@ export default class TemplateStructureEditorDialog extends Component<
         this.setState((prev) => ({
             ...prev,
             editingPhId: null,
+            fieldSearch: "",
             menuAnchor: { el: e.currentTarget, page: pageIndex, xPct, yPct },
         }));
     };
@@ -257,6 +275,7 @@ export default class TemplateStructureEditorDialog extends Component<
         this.setState((prev) => ({
             ...prev,
             editingPhId: phId,
+            fieldSearch: "",
             menuAnchor: {
                 el: e.currentTarget as Element,
                 page: -1,
@@ -406,12 +425,19 @@ export default class TemplateStructureEditorDialog extends Component<
             menuAnchor,
             editingPhId,
             dragState,
+            fieldSearch,
         } = this.state;
 
         const availableFields = fieldsForContext(template.context_type);
         const editingPh = editingPhId
             ? placeholders.find((p) => p.id === editingPhId)
             : undefined;
+        const searchNorm = fieldSearch.trim().toLowerCase();
+        const filteredFields = searchNorm
+            ? availableFields.filter((f) =>
+                  f.label.toLowerCase().includes(searchNorm),
+              )
+            : availableFields;
 
         return (
             <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
@@ -816,10 +842,36 @@ export default class TemplateStructureEditorDialog extends Component<
                             ...prev,
                             menuAnchor: null,
                             editingPhId: null,
+                            fieldSearch: "",
                         }))
                     }
-                    slotProps={{ paper: { sx: { maxHeight: 400 } } }}
+                    slotProps={{ paper: { sx: { maxHeight: 400, width: 280 } } }}
                 >
+                    <Box
+                        sx={{
+                            px: 1,
+                            py: 0.5,
+                            position: "sticky",
+                            top: 0,
+                            bgcolor: "background.paper",
+                            zIndex: 1,
+                        }}
+                        onKeyDown={(e) => e.stopPropagation()}
+                    >
+                        <TextField
+                            size="small"
+                            fullWidth
+                            autoFocus
+                            placeholder="Pretraži polja…"
+                            value={fieldSearch}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    fieldSearch: e.target.value,
+                                }))
+                            }
+                        />
+                    </Box>
                     {editingPh && [
                         <MenuItem
                             key="remove"
@@ -832,7 +884,15 @@ export default class TemplateStructureEditorDialog extends Component<
                         </MenuItem>,
                         <Divider key="divider" />,
                     ]}
-                    {availableFields.map((f) => (
+                    {filteredFields.length === 0 && (
+                        <MenuItem
+                            disabled
+                            sx={{ fontSize: 13, fontStyle: "italic" }}
+                        >
+                            Nema rezultata
+                        </MenuItem>
+                    )}
+                    {filteredFields.map((f) => (
                         <MenuItem
                             key={f.key}
                             onClick={() => this.handleFieldSelect(f.key)}

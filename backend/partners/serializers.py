@@ -18,6 +18,8 @@ class ClientCompanySerializer(serializers.ModelSerializer):
             "logo",
             "notes",
             "activity_code",
+            "risk_assessment_act_number",
+            "risk_assessment_act_date",
         )
 
 

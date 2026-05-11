@@ -12,6 +12,18 @@ class ClientCompany(models.Model):
     logo = models.FileField(upload_to="client_logos/", null=True, blank=True)
     notes = models.TextField(blank=True)
     activity_code = models.CharField(max_length=64, blank=True)
+    risk_assessment_act_number = models.CharField(
+        "Broj Akta o proceni rizika",
+        max_length=128,
+        blank=True,
+        help_text="Broj pod kojim je donet Akt o proceni rizika.",
+    )
+    risk_assessment_act_date = models.DateField(
+        "Datum Akta o proceni rizika",
+        null=True,
+        blank=True,
+        help_text="Datum donošenja Akta o proceni rizika.",
+    )
 
     class Meta:
         verbose_name = "Klijentska firma"

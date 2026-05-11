@@ -19,7 +19,7 @@ Ovaj sistem radi sledeće: ti uneseš firmu i zaposlene jednom, podesiš na koli
 ## DEO 1 — Šta da uzmeš od poslodavca pre nego što ikako počneš
 
 **Od firme:**
-- Akt o proceni rizika (Word ili PDF)
+- Akt o proceni rizika (Word ili PDF) — i zapamti **broj** i **datum donošenja** (treba ti za uput)
 - Uput za prethodni lekarski pregled (Word obrazac)
 - Uput za periodični lekarski pregled (Word obrazac)
 - Uput za pregled vida (Word obrazac)
@@ -86,25 +86,68 @@ Ako su ovo prvi uputi koje praviš u sistemu, treba da napraviš 4 šablona (po 
    - Način generisanja: obavezno izaberi neku opciju
 4. Sačuvaj
 
-**Sad podesi mapiranje polja** — ovde govoriš sistemu "kad u Word dokumentu vidiš polje 'Ime', stavi tu pravo ime zaposlenog". Klikni svako polje u šablonu i poveži sa odgovarajućim podatkom:
+**Sad podesi mapiranje polja** — ovde govoriš sistemu "kad u Word dokumentu vidiš polje 'Ime', stavi tu pravo ime zaposlenog". Klikni svako polje u šablonu i izaberi iz liste šta tu treba da bude.
 
-| Polje u dokumentu | Šta sistem stavlja |
-|-------------------|---------------------|
-| Ime | `employee.first_name` |
-| Prezime | `employee.last_name` |
-| Ime oca | `employee.father_name` |
-| JMBG | `employee.national_id` |
-| Datum rođenja | `employee.date_of_birth` |
-| Godina rođenja | `year_of_birth` |
-| Mesto rođenja | `employee.place_of_birth` |
-| Zanimanje | `employee.occupation` |
-| Radno mesto | `employee.position` |
-| Naziv radnog mesta sa povećanim rizikom | `employee.high_risk_position_name` |
-| Naziv firme | `client.name` |
-| Broj uputa | `instruction_number` *(sistem sam povećava brojač)* |
-| Datum prethodnog pregleda | `last_exam_date` *(sistem sam povlači iz prošlog pregleda)* |
+### Šta znače opcije iz liste
 
-> Za stalni tekst (npr. naziv zdravstvene ustanove gde uvek šalješ) — koristi **"Unos teksta"** i upiši fiksnu vrednost. Tako će uvek biti isti tekst tu.
+Kad klikneš polje, sistem ti otvori listu sa svim podacima koje može da ubaci. Evo šta gde stoji:
+
+#### 👤 Podaci o ZAPOSLENOM (uzimaju se iz kartona zaposlenog)
+| Šta piše u listi | Šta će biti uneto u dokument |
+|------------------|-------------------------------|
+| **Ime zaposlenog** | Ime (npr. "Marko") |
+| **Prezime zaposlenog** | Prezime (npr. "Petrović") |
+| **Ime oca** | Ime oca (npr. "Stevan") |
+| **JMBG** | 13 cifara JMBG-a |
+| **Datum rođenja** | dan.mesec.godina rođenja |
+| **Mesto rođenja** | Mesto (npr. "Niš") |
+| **Zanimanje** | Zanimanje iz kartona (npr. "Električar") |
+| **Pozicija** | Radno mesto na kome radi |
+| **Organizaciona jedinica** | Sektor / odeljenje u firmi |
+| **Email zaposlenog** | Mejl zaposlenog (ako je unet) |
+| **Radno mesto sa povećanim rizikom** | Naziv rizičnog radnog mesta (ako postoji) |
+
+#### 🏢 Podaci o FIRMI (uzimaju se sa kartice firme)
+| Šta piše u listi | Šta će biti uneto u dokument |
+|------------------|-------------------------------|
+| **Naziv firme** | Pun naziv firme |
+| **PIB** | PIB firme |
+| **Matični broj** | Matični broj firme |
+| **Šifra delatnosti** | Šifra delatnosti |
+| **Adresa firme** | Ulica i broj |
+| **Telefon firme** | Telefon firme |
+| **Email firme** | Email firme |
+| **Web sajt firme** | Web sajt firme |
+| **Broj Akta o proceni rizika** | Broj pod kojim je donet Akt (npr. "AR-2025-014") |
+| **Datum Akta o proceni rizika** | Datum donošenja Akta |
+
+#### 🔧 Podaci o OPREMI (samo ako šablon važi za opremu)
+| Šta piše u listi | Šta će biti uneto u dokument |
+|------------------|-------------------------------|
+| **Naziv opreme/mašine** | Naziv (npr. "Bager CAT 320") |
+| **Kategorija opreme** | Kategorija |
+| **Inventarski broj** | Inventarski broj |
+| **Lokacija opreme** | Gde se nalazi oprema |
+
+#### 📅 PROCES — sistem ih sam izračunava
+*Ova polja popunjavaš na ovaj način — sistem ih sam ubacuje u trenutku kad pravi dokument:*
+
+| Šta piše u listi | Šta će biti uneto u dokument |
+|------------------|-------------------------------|
+| **Datum zakazivanja** | Datum kad je pregled zakazan (iz aktivnosti) |
+| **Datum izvođenja** | Datum kad je pregled obavljen (popunjeno tek nakon "Završi") |
+| **Važi do** | Datum do kog važi (popunjeno tek nakon "Završi") |
+| **Vrsta procesa** | Naziv vrste obaveze (npr. "Periodični lekarski pregled") |
+| **Broj uputa** | Automatski generisan redni broj (UP-0001, UP-0002...) |
+| **Datum prethodnog pregleda** | Datum poslednjeg završenog pregleda iste vrste (prazno ako je prvi) |
+| **Godina rođenja** | Samo godina rođenja zaposlenog (npr. "1990") |
+
+#### ✏️ Unos teksta — za stalni tekst
+**"Unos teksta"** = za polja koja su uvek ista, bez obzira na zaposlenog ili firmu.
+
+Primer: U svakom uputu piše "Dom zdravlja Niš". Umesto da ručno menjaš to svaki put, izaberi "Unos teksta" za to polje i jednom upišeš "Dom zdravlja Niš". Sistem će uvek tu staviti taj tekst.
+
+> 💡 **Praktičan savet:** Ako ne znaš da li polje treba da bude promenjivo ili stalno — pravilo palca je: *ako se odgovor menja od pregleda do pregleda → biraj polje iz liste; ako je uvek isto → "Unos teksta"*.
 
 Sačuvaj mapiranje. Gotovo.
 

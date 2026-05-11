@@ -18,6 +18,8 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - Telefon: `+381 11 123 4567`
 - Email: `markovuckovic1992@gmail.com` *(verifikovana SES adresa)*
 - Website: `https://test-firma-07.rs`
+- Broj Akta o proceni rizika: `AR-2025-014`
+- Datum Akta o proceni rizika: `15.01.2025.`
 - Napomene: `Test unos — slobodno obrisati`
 
 **Zaposleni:** *(obavezna su Ime, Prezime, Email, Organizaciona jedinica, Pozicija)*
@@ -77,6 +79,8 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Telefon: `+381 11 123 4567`
 - [ ] Email: `markovuckovic1992@gmail.com`
 - [ ] Website: `https://test-firma-07.rs`
+- [ ] Broj Akta o proceni rizika: `AR-2025-014`
+- [ ] Datum Akta o proceni rizika: `15.01.2025.`
 - [ ] Napomene: `Test unos — slobodno obrisati`
 - [ ] (Opciono) Otpremi logo
 - [ ] Sačuvaj

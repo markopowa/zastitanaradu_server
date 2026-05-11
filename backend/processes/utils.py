@@ -68,6 +68,15 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "phone": client.phone or "",
                 "email": client.email or "",
                 "website": client.website or "",
+                "risk_assessment_act_number": getattr(
+                    client, "risk_assessment_act_number", ""
+                )
+                or "",
+                "risk_assessment_act_date": (
+                    client.risk_assessment_act_date.isoformat()
+                    if getattr(client, "risk_assessment_act_date", None)
+                    else ""
+                ),
             }
         return snapshot
 
@@ -98,6 +107,15 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "phone": client.phone or "",
                 "email": client.email or "",
                 "website": client.website or "",
+                "risk_assessment_act_number": getattr(
+                    client, "risk_assessment_act_number", ""
+                )
+                or "",
+                "risk_assessment_act_date": (
+                    client.risk_assessment_act_date.isoformat()
+                    if getattr(client, "risk_assessment_act_date", None)
+                    else ""
+                ),
             }
         return snapshot
 
@@ -113,10 +131,20 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "name": c.name,
                 "tax_id": c.tax_id,
                 "registration_number": c.registration_number or "",
+                "activity_code": getattr(c, "activity_code", "") or "",
                 "address": c.address or "",
                 "phone": c.phone or "",
                 "email": c.email or "",
                 "website": c.website or "",
+                "risk_assessment_act_number": getattr(
+                    c, "risk_assessment_act_number", ""
+                )
+                or "",
+                "risk_assessment_act_date": (
+                    c.risk_assessment_act_date.isoformat()
+                    if getattr(c, "risk_assessment_act_date", None)
+                    else ""
+                ),
             },
         }
 

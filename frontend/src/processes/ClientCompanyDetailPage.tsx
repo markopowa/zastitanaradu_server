@@ -110,6 +110,8 @@ class ClientCompanyDetailPageInner extends Component<
         editWebsite: "",
         editNotes: "",
         editActivity_code: "",
+        editRisk_assessment_act_number: "",
+        editRisk_assessment_act_date: "",
         empDialogOpen: false,
         emp_first_name: "",
         emp_last_name: "",
@@ -333,6 +335,15 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite: item.website ?? "",
             editNotes: item.notes ?? "",
             editActivity_code: item.activity_code ?? "",
+            editRisk_assessment_act_number: item.risk_assessment_act_number ?? "",
+            editRisk_assessment_act_date: item.risk_assessment_act_date
+                ? (() => {
+                      const d = new Date(item.risk_assessment_act_date);
+                      const dd = String(d.getDate()).padStart(2, "0");
+                      const mm = String(d.getMonth() + 1).padStart(2, "0");
+                      return `${dd}.${mm}.${d.getFullYear()}`;
+                  })()
+                : "",
         }));
     };
 
@@ -356,8 +367,19 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
+            editRisk_assessment_act_number,
+            editRisk_assessment_act_date,
         } = this.state;
         if (!editName.trim() || !editTaxId.trim()) return;
+        let actDateSent: string | null | undefined;
+        if (editRisk_assessment_act_date.trim()) {
+            const d = StringToDate(editRisk_assessment_act_date);
+            actDateSent = d
+                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+                : undefined;
+        } else {
+            actDateSent = null;
+        }
         this.setState((prev) => ({ ...prev, saving: true, saveError: null }));
         updateClientCompany(id, {
             name: editName.trim(),
@@ -369,6 +391,9 @@ class ClientCompanyDetailPageInner extends Component<
             website: editWebsite.trim() || undefined,
             notes: editNotes.trim() || undefined,
             activity_code: editActivity_code.trim() || undefined,
+            risk_assessment_act_number:
+                editRisk_assessment_act_number.trim() || undefined,
+            risk_assessment_act_date: actDateSent,
         })
             .then((item) => {
                 this.setState((prev) => ({
@@ -521,6 +546,8 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
+            editRisk_assessment_act_number,
+            editRisk_assessment_act_date,
             empDialogOpen,
             emp_first_name,
             emp_last_name,
@@ -717,6 +744,29 @@ class ClientCompanyDetailPageInner extends Component<
                             </Tooltip>
                             <TextField
                                 margin="dense"
+                                label="Broj Akta o proceni rizika"
+                                fullWidth
+                                value={editRisk_assessment_act_number}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editRisk_assessment_act_number:
+                                            e.target.value,
+                                    }))
+                                }
+                            />
+                            <DateTextFieldWithPicker
+                                label="Datum Akta o proceni rizika (dd.mm.yyyy)"
+                                value={editRisk_assessment_act_date}
+                                onChange={(v) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editRisk_assessment_act_date: v,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
                                 label="Beleške"
                                 fullWidth
                                 multiline
@@ -794,6 +844,22 @@ class ClientCompanyDetailPageInner extends Component<
                                 <>
                                     <dt>Šifra delatnosti</dt>
                                     <dd>{item.activity_code}</dd>
+                                </>
+                            )}
+                            {item.risk_assessment_act_number && (
+                                <>
+                                    <dt>Broj Akta o proceni rizika</dt>
+                                    <dd>{item.risk_assessment_act_number}</dd>
+                                </>
+                            )}
+                            {item.risk_assessment_act_date && (
+                                <>
+                                    <dt>Datum Akta o proceni rizika</dt>
+                                    <dd>
+                                        {formatDate(
+                                            item.risk_assessment_act_date,
+                                        )}
+                                    </dd>
                                 </>
                             )}
                             {item.notes && (
