@@ -1,9 +1,13 @@
+import os
+
 from rest_framework import serializers
 
 from .models import ClientCompany, Employee, EquipmentItem
 
 
 class ClientCompanySerializer(serializers.ModelSerializer):
+    risk_assessment_act_name = serializers.SerializerMethodField()
+
     class Meta:
         model = ClientCompany
         fields = (
@@ -18,9 +22,18 @@ class ClientCompanySerializer(serializers.ModelSerializer):
             "logo",
             "notes",
             "activity_code",
-            "risk_assessment_act_number",
-            "risk_assessment_act_date",
+            "risk_assessment_act_file",
+            "risk_assessment_act_name",
         )
+        read_only_fields = ("risk_assessment_act_file",)
+
+    def get_risk_assessment_act_name(self, obj):
+        f = obj.risk_assessment_act_file
+        if not f:
+            return ""
+        base = os.path.basename(f.name)
+        name, _ = os.path.splitext(base)
+        return name
 
 
 class EmployeeSerializer(serializers.ModelSerializer):

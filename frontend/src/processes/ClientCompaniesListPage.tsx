@@ -26,8 +26,6 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
 import { enqueueSnackbar } from "notistack";
 
-import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
-import { StringToDate } from "../utils/date";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
 import {
@@ -60,8 +58,6 @@ class ClientCompaniesListPage extends Component<
         website: "",
         notes: "",
         activity_code: "",
-        risk_assessment_act_number: "",
-        risk_assessment_act_date: "",
     };
 
     componentDidMount(): void {
@@ -82,8 +78,6 @@ class ClientCompaniesListPage extends Component<
             website: "",
             notes: "",
             activity_code: "",
-            risk_assessment_act_number: "",
-            risk_assessment_act_date: "",
         }));
     };
 
@@ -102,17 +96,8 @@ class ClientCompaniesListPage extends Component<
             website,
             notes,
             activity_code,
-            risk_assessment_act_number,
-            risk_assessment_act_date,
         } = this.state;
         if (!name.trim() || !tax_id.trim()) return;
-        let actDateSent: string | undefined;
-        if (risk_assessment_act_date.trim()) {
-            const d = StringToDate(risk_assessment_act_date);
-            actDateSent = d
-                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-                : undefined;
-        }
         const payload: Partial<ClientCompany> = {
             name: name.trim(),
             tax_id: tax_id.trim(),
@@ -123,9 +108,6 @@ class ClientCompaniesListPage extends Component<
             website: website.trim() || undefined,
             notes: notes.trim() || undefined,
             activity_code: activity_code.trim() || undefined,
-            risk_assessment_act_number:
-                risk_assessment_act_number.trim() || undefined,
-            risk_assessment_act_date: actDateSent,
         };
         void this.props
             .addClientCompany(payload)
@@ -166,8 +148,6 @@ class ClientCompaniesListPage extends Component<
             website,
             notes,
             activity_code,
-            risk_assessment_act_number,
-            risk_assessment_act_date,
         } = this.state;
         const { navigate } = this.props;
 
@@ -368,28 +348,6 @@ class ClientCompaniesListPage extends Component<
                                 }
                             />
                         </Tooltip>
-                        <TextField
-                            margin="dense"
-                            label="Broj Akta o proceni rizika"
-                            fullWidth
-                            value={risk_assessment_act_number}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    risk_assessment_act_number: e.target.value,
-                                }))
-                            }
-                        />
-                        <DateTextFieldWithPicker
-                            label="Datum Akta o proceni rizika (dd.mm.yyyy)"
-                            value={risk_assessment_act_date}
-                            onChange={(v) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    risk_assessment_act_date: v,
-                                }))
-                            }
-                        />
                         <TextField
                             margin="dense"
                             label="Beleške"

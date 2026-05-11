@@ -18,8 +18,8 @@ export interface ClientCompany {
     logo?: string | null;
     notes?: string;
     activity_code?: string;
-    risk_assessment_act_number?: string;
-    risk_assessment_act_date?: string | null;
+    risk_assessment_act_file?: string | null;
+    risk_assessment_act_name?: string;
 }
 
 export interface Employee {

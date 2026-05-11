@@ -33,6 +33,7 @@ import {
     jmbgToDateString,
 } from "../utils/jmbg";
 import {
+    clearClientCompanyRiskAssessmentAct,
     createEmployee,
     createEquipmentItem,
     generateMedicalExamRecord,
@@ -42,6 +43,7 @@ import {
     getProcessBindings,
     getProcessRuns,
     updateClientCompany,
+    uploadClientCompanyRiskAssessmentAct,
 } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
@@ -110,8 +112,8 @@ class ClientCompanyDetailPageInner extends Component<
         editWebsite: "",
         editNotes: "",
         editActivity_code: "",
-        editRisk_assessment_act_number: "",
-        editRisk_assessment_act_date: "",
+        riskActUploading: false,
+        riskActPreviewOpen: false,
         empDialogOpen: false,
         emp_first_name: "",
         emp_last_name: "",
@@ -335,15 +337,6 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite: item.website ?? "",
             editNotes: item.notes ?? "",
             editActivity_code: item.activity_code ?? "",
-            editRisk_assessment_act_number: item.risk_assessment_act_number ?? "",
-            editRisk_assessment_act_date: item.risk_assessment_act_date
-                ? (() => {
-                      const d = new Date(item.risk_assessment_act_date);
-                      const dd = String(d.getDate()).padStart(2, "0");
-                      const mm = String(d.getMonth() + 1).padStart(2, "0");
-                      return `${dd}.${mm}.${d.getFullYear()}`;
-                  })()
-                : "",
         }));
     };
 
@@ -367,19 +360,8 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
-            editRisk_assessment_act_number,
-            editRisk_assessment_act_date,
         } = this.state;
         if (!editName.trim() || !editTaxId.trim()) return;
-        let actDateSent: string | null | undefined;
-        if (editRisk_assessment_act_date.trim()) {
-            const d = StringToDate(editRisk_assessment_act_date);
-            actDateSent = d
-                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-                : undefined;
-        } else {
-            actDateSent = null;
-        }
         this.setState((prev) => ({ ...prev, saving: true, saveError: null }));
         updateClientCompany(id, {
             name: editName.trim(),
@@ -391,9 +373,6 @@ class ClientCompanyDetailPageInner extends Component<
             website: editWebsite.trim() || undefined,
             notes: editNotes.trim() || undefined,
             activity_code: editActivity_code.trim() || undefined,
-            risk_assessment_act_number:
-                editRisk_assessment_act_number.trim() || undefined,
-            risk_assessment_act_date: actDateSent,
         })
             .then((item) => {
                 this.setState((prev) => ({
@@ -425,6 +404,66 @@ class ClientCompanyDetailPageInner extends Component<
                     }));
                 },
             );
+    };
+
+    handleRiskActUpload = (file: File | null): void => {
+        if (!file) return;
+        const id = Number(this.props.id);
+        this.setState((prev) => ({ ...prev, riskActUploading: true }));
+        uploadClientCompanyRiskAssessmentAct(id, file)
+            .then((item) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    item,
+                    riskActUploading: false,
+                }));
+                enqueueSnackbar("Akt o proceni rizika je sačuvan.", {
+                    variant: "success",
+                });
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, riskActUploading: false }));
+                enqueueSnackbar("Greška pri otpremanju fajla.", {
+                    variant: "error",
+                });
+            });
+    };
+
+    handleRiskActClear = (): void => {
+        const id = Number(this.props.id);
+        if (
+            !window.confirm(
+                "Da li si siguran da želiš da obrišeš Akt o proceni rizika?",
+            )
+        ) {
+            return;
+        }
+        this.setState((prev) => ({ ...prev, riskActUploading: true }));
+        clearClientCompanyRiskAssessmentAct(id)
+            .then((item) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    item,
+                    riskActUploading: false,
+                }));
+                enqueueSnackbar("Akt o proceni rizika je obrisan.", {
+                    variant: "success",
+                });
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, riskActUploading: false }));
+                enqueueSnackbar("Greška pri brisanju fajla.", {
+                    variant: "error",
+                });
+            });
+    };
+
+    openRiskActPreview = (): void => {
+        this.setState((prev) => ({ ...prev, riskActPreviewOpen: true }));
+    };
+
+    closeRiskActPreview = (): void => {
+        this.setState((prev) => ({ ...prev, riskActPreviewOpen: false }));
     };
 
     handleGenerateMedicalExamRecord = (): void => {
@@ -546,8 +585,8 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
-            editRisk_assessment_act_number,
-            editRisk_assessment_act_date,
+            riskActUploading,
+            riskActPreviewOpen,
             empDialogOpen,
             emp_first_name,
             emp_last_name,
@@ -744,29 +783,6 @@ class ClientCompanyDetailPageInner extends Component<
                             </Tooltip>
                             <TextField
                                 margin="dense"
-                                label="Broj Akta o proceni rizika"
-                                fullWidth
-                                value={editRisk_assessment_act_number}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editRisk_assessment_act_number:
-                                            e.target.value,
-                                    }))
-                                }
-                            />
-                            <DateTextFieldWithPicker
-                                label="Datum Akta o proceni rizika (dd.mm.yyyy)"
-                                value={editRisk_assessment_act_date}
-                                onChange={(v) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editRisk_assessment_act_date: v,
-                                    }))
-                                }
-                            />
-                            <TextField
-                                margin="dense"
                                 label="Beleške"
                                 fullWidth
                                 multiline
@@ -846,22 +862,6 @@ class ClientCompanyDetailPageInner extends Component<
                                     <dd>{item.activity_code}</dd>
                                 </>
                             )}
-                            {item.risk_assessment_act_number && (
-                                <>
-                                    <dt>Broj Akta o proceni rizika</dt>
-                                    <dd>{item.risk_assessment_act_number}</dd>
-                                </>
-                            )}
-                            {item.risk_assessment_act_date && (
-                                <>
-                                    <dt>Datum Akta o proceni rizika</dt>
-                                    <dd>
-                                        {formatDate(
-                                            item.risk_assessment_act_date,
-                                        )}
-                                    </dd>
-                                </>
-                            )}
                             {item.notes && (
                                 <>
                                     <dt>Beleške</dt>
@@ -889,6 +889,104 @@ class ClientCompanyDetailPageInner extends Component<
                     </Button>
                     {docError && <Alert severity="error">{docError}</Alert>}
                 </Box>
+
+                <Paper sx={{ p: 2 }}>
+                    <Typography
+                        variant="subtitle1"
+                        fontWeight={600}
+                        gutterBottom
+                    >
+                        Akt o proceni rizika
+                    </Typography>
+                    {item.risk_assessment_act_file ? (
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <Typography variant="body2">
+                                {item.risk_assessment_act_name ||
+                                    "Akt o proceni rizika"}
+                            </Typography>
+                            <Box sx={{ flex: 1 }} />
+                            <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={this.openRiskActPreview}
+                            >
+                                Pregled
+                            </Button>
+                            <PermissionGate permission="partners.change_clientcompany">
+                                <Button
+                                    size="small"
+                                    component="label"
+                                    variant="outlined"
+                                    disabled={riskActUploading}
+                                >
+                                    Promeni fajl
+                                    <input
+                                        type="file"
+                                        hidden
+                                        accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
+                                        onChange={(e) =>
+                                            this.handleRiskActUpload(
+                                                e.target.files?.[0] ?? null,
+                                            )
+                                        }
+                                    />
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    color="error"
+                                    disabled={riskActUploading}
+                                    onClick={this.handleRiskActClear}
+                                >
+                                    Obriši
+                                </Button>
+                            </PermissionGate>
+                        </Box>
+                    ) : (
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                flexWrap: "wrap",
+                            }}
+                        >
+                            <Typography variant="body2" color="text.secondary">
+                                Nije priložen.
+                            </Typography>
+                            <Box sx={{ flex: 1 }} />
+                            <PermissionGate permission="partners.change_clientcompany">
+                                <Button
+                                    size="small"
+                                    component="label"
+                                    variant="contained"
+                                    disabled={riskActUploading}
+                                >
+                                    {riskActUploading
+                                        ? "Otpremam..."
+                                        : "Priloži fajl"}
+                                    <input
+                                        type="file"
+                                        hidden
+                                        accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
+                                        onChange={(e) =>
+                                            this.handleRiskActUpload(
+                                                e.target.files?.[0] ?? null,
+                                            )
+                                        }
+                                    />
+                                </Button>
+                            </PermissionGate>
+                        </Box>
+                    )}
+                </Paper>
 
                 <Box
                     sx={{
@@ -1375,9 +1473,93 @@ class ClientCompanyDetailPageInner extends Component<
                         </Button>
                     </DialogActions>
                 </Dialog>
+
+                {item.risk_assessment_act_file && (
+                    <Dialog
+                        open={riskActPreviewOpen}
+                        onClose={this.closeRiskActPreview}
+                        maxWidth="lg"
+                        fullWidth
+                    >
+                        <DialogTitle>
+                            {item.risk_assessment_act_name ||
+                                "Akt o proceni rizika"}
+                        </DialogTitle>
+                        <DialogContent>
+                            {renderRiskActPreview(
+                                item.risk_assessment_act_file,
+                            )}
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                href={item.risk_assessment_act_file}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                Otvori u novom prozoru
+                            </Button>
+                            <Button onClick={this.closeRiskActPreview}>
+                                Zatvori
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                )}
             </Box>
         );
     }
+}
+
+function renderRiskActPreview(url: string): ReactElement {
+    const lower = url.toLowerCase().split("?")[0];
+    const ext = lower.substring(lower.lastIndexOf(".") + 1);
+    if (["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext)) {
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    maxHeight: "70vh",
+                }}
+            >
+                <img
+                    src={url}
+                    alt="Akt o proceni rizika"
+                    style={{ maxWidth: "100%", maxHeight: "70vh" }}
+                />
+            </Box>
+        );
+    }
+    if (ext === "pdf") {
+        return (
+            <Box sx={{ height: "70vh" }}>
+                <iframe
+                    src={url}
+                    title="Akt o proceni rizika"
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        border: "none",
+                    }}
+                />
+            </Box>
+        );
+    }
+    return (
+        <Box sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+                Pregled ovog tipa fajla (.{ext || "?"}) nije podržan u
+                pretraživaču. Klikni dole da skineš ili otvoriš fajl.
+            </Typography>
+            <Button
+                variant="contained"
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+            >
+                Otvori / preuzmi fajl
+            </Button>
+        </Box>
+    );
 }
 
 const mapDispatchToProps = {

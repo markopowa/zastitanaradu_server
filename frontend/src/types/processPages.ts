@@ -274,8 +274,6 @@ export interface ClientCompaniesListPageState {
     website: string;
     notes: string;
     activity_code: string;
-    risk_assessment_act_number: string;
-    risk_assessment_act_date: string;
 }
 
 export interface ClientCompanyDetailPageDispatchProps {
@@ -307,8 +305,8 @@ export interface ClientCompanyDetailPageState {
     editWebsite: string;
     editNotes: string;
     editActivity_code: string;
-    editRisk_assessment_act_number: string;
-    editRisk_assessment_act_date: string;
+    riskActUploading: boolean;
+    riskActPreviewOpen: boolean;
     empDialogOpen: boolean;
     emp_first_name: string;
     emp_last_name: string;

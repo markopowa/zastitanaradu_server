@@ -19,7 +19,7 @@ Ovaj sistem radi sledeće: ti uneseš firmu i zaposlene jednom, podesiš na koli
 ## DEO 1 — Šta da uzmeš od poslodavca pre nego što ikako počneš
 
 **Od firme:**
-- Akt o proceni rizika (Word ili PDF) — i zapamti **broj** i **datum donošenja** (treba ti za uput)
+- Akt o proceni rizika (Word, PDF ili slika) — otpremićeš ga kao fajl na karticu firme; iz naziva fajla sistem automatski pravi naziv koji ide u uput
 - Uput za prethodni lekarski pregled (Word obrazac)
 - Uput za periodični lekarski pregled (Word obrazac)
 - Uput za pregled vida (Word obrazac)
@@ -61,13 +61,17 @@ Za svakog zaposlenog otvori stranicu firme → **Dodaj zaposlenog** i popuni:
 - Radno mesto
 - Naziv radnog mesta sa povećanim rizikom (ako postoji)
 
-### Korak 3: Dodaj Akt o proceni rizika
+### Korak 3: Otpremi Akt o proceni rizika
 
-1. **Dokumenti → Kategorije dokumenata** → dodaj kategoriju `Procena rizika` (ako ne postoji)
-2. **Dokumenti → Dokumenti → Dodaj dokument**
-   - Kategorija: `Procena rizika`
-   - Naziv: `Akt o proceni rizika – [naziv firme]`
-   - Otpremi fajl (.docx ili .pdf)
+1. Otvori karticu firme (**Klijenti → klikni firmu**)
+2. U sekciji **"Akt o proceni rizika"** klikni **"Priloži fajl"**
+3. Izaberi fajl (`.pdf`, `.docx`, ili slika — JPG/PNG)
+4. Nakon otpremanja, fajl je dostupan u sistemu:
+   - Klikni **"Pregled"** da vidiš sadržaj u popupu (PDF i slike direktno; za DOCX dobiješ link za preuzimanje)
+   - Klikni **"Promeni fajl"** ako hoćeš da zameniš novim
+   - Klikni **"Obriši"** ako hoćeš da ukloniš
+
+> Naziv fajla je ono što sistem koristi kao "Naziv Akta o proceni rizika" prilikom popunjavanja uputa. Zato dobro nazovi fajl (npr. `Akt o proceni rizika - Test firma 07 - 2025-01-15.pdf`) — taj naziv (bez ekstenzije) će biti u uputu.
 
 ---
 
@@ -118,8 +122,7 @@ Kad klikneš polje, sistem ti otvori listu sa svim podacima koje može da ubaci.
 | **Telefon firme** | Telefon firme |
 | **Email firme** | Email firme |
 | **Web sajt firme** | Web sajt firme |
-| **Broj Akta o proceni rizika** | Broj pod kojim je donet Akt (npr. "AR-2025-014") |
-| **Datum Akta o proceni rizika** | Datum donošenja Akta |
+| **Naziv Akta o proceni rizika** | Naziv fajla Akta (bez ekstenzije) — automatski iz otpremljenog fajla |
 
 #### 🔧 Podaci o OPREMI (samo ako šablon važi za opremu)
 | Šta piše u listi | Šta će biti uneto u dokument |

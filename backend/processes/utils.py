@@ -28,6 +28,17 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
+def _risk_assessment_act_name(client) -> str:
+    f = getattr(client, "risk_assessment_act_file", None)
+    if not f:
+        return ""
+    import os as _os
+
+    base = _os.path.basename(getattr(f, "name", "") or "")
+    name, _ = _os.path.splitext(base)
+    return name
+
+
 def binding_subject_snapshot(binding: ProcessBinding) -> dict:
     if binding.employee_id:
         e = binding.employee
@@ -68,14 +79,8 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "phone": client.phone or "",
                 "email": client.email or "",
                 "website": client.website or "",
-                "risk_assessment_act_number": getattr(
-                    client, "risk_assessment_act_number", ""
-                )
-                or "",
-                "risk_assessment_act_date": (
-                    client.risk_assessment_act_date.isoformat()
-                    if getattr(client, "risk_assessment_act_date", None)
-                    else ""
+                "risk_assessment_act_name": (
+                    _risk_assessment_act_name(client)
                 ),
             }
         return snapshot
@@ -107,14 +112,8 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "phone": client.phone or "",
                 "email": client.email or "",
                 "website": client.website or "",
-                "risk_assessment_act_number": getattr(
-                    client, "risk_assessment_act_number", ""
-                )
-                or "",
-                "risk_assessment_act_date": (
-                    client.risk_assessment_act_date.isoformat()
-                    if getattr(client, "risk_assessment_act_date", None)
-                    else ""
+                "risk_assessment_act_name": (
+                    _risk_assessment_act_name(client)
                 ),
             }
         return snapshot
@@ -136,14 +135,8 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "phone": c.phone or "",
                 "email": c.email or "",
                 "website": c.website or "",
-                "risk_assessment_act_number": getattr(
-                    c, "risk_assessment_act_number", ""
-                )
-                or "",
-                "risk_assessment_act_date": (
-                    c.risk_assessment_act_date.isoformat()
-                    if getattr(c, "risk_assessment_act_date", None)
-                    else ""
+                "risk_assessment_act_name": (
+                    _risk_assessment_act_name(c)
                 ),
             },
         }

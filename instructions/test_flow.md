@@ -18,8 +18,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - Telefon: `+381 11 123 4567`
 - Email: `markovuckovic1992@gmail.com` *(verifikovana SES adresa)*
 - Website: `https://test-firma-07.rs`
-- Broj Akta o proceni rizika: `AR-2025-014`
-- Datum Akta o proceni rizika: `15.01.2025.`
+- Akt o proceni rizika (fajl): otpremi posle čuvanja firme, sa stranice firme — koristi `files_for_test\Uput_za_periodični_lekarski_pregled.pdf` ili neki PDF/slika kao test
 - Napomene: `Test unos — slobodno obrisati`
 
 **Zaposleni:** *(obavezna su Ime, Prezime, Email, Organizaciona jedinica, Pozicija)*
@@ -79,13 +78,19 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Telefon: `+381 11 123 4567`
 - [ ] Email: `markovuckovic1992@gmail.com`
 - [ ] Website: `https://test-firma-07.rs`
-- [ ] Broj Akta o proceni rizika: `AR-2025-014`
-- [ ] Datum Akta o proceni rizika: `15.01.2025.`
 - [ ] Napomene: `Test unos — slobodno obrisati`
 - [ ] (Opciono) Otpremi logo
 - [ ] Sačuvaj
 
 **Provera:** Firma se otvori — vidiš stranicu sa njenim imenom.
+
+### 2a. Priloži Akt o proceni rizika
+
+- [ ] Na stranici firme nađi sekciju **"Akt o proceni rizika"**
+- [ ] Klikni **"Priloži fajl"** i izaberi `files_for_test\Uput_za_periodični_lekarski_pregled.pdf` (ili bilo koji test PDF/sliku)
+- [ ] Klikni **"Pregled"** — otvori se popup sa preview-om (PDF u iframe-u, slika prikazana direktno)
+
+**Provera:** Vidiš naziv fajla u sekciji i dugmiće **Pregled / Promeni fajl / Obriši**.
 
 ---
 

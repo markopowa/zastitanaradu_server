@@ -85,6 +85,29 @@ export async function updateClientCompany(
     return data;
 }
 
+export async function uploadClientCompanyRiskAssessmentAct(
+    id: number,
+    file: File,
+): Promise<ClientCompany> {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await api.post<ClientCompany>(
+        `/api/partners/client-companies/${id}/risk-assessment-act/`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
+export async function clearClientCompanyRiskAssessmentAct(
+    id: number,
+): Promise<ClientCompany> {
+    const { data } = await api.delete<ClientCompany>(
+        `/api/partners/client-companies/${id}/risk-assessment-act/`,
+    );
+    return data;
+}
+
 function asList<T>(data: ListResponse<T> | undefined): T[] {
     if (Array.isArray(data)) return data;
     return (data as { results?: T[] })?.results ?? [];

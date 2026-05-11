@@ -1,7 +1,9 @@
 from django.http import HttpResponse
 
-from rest_framework import permissions, viewsets
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.parsers import FormParser, MultiPartParser
+from rest_framework.response import Response
 
 from .medical_exam_record import generate_medical_exam_record
 from .models import ClientCompany, Employee, EquipmentItem
@@ -29,6 +31,32 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
             f'attachment; filename="medical_exam_record_{slug}.docx"'
         )
         return response
+
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path="risk-assessment-act",
+        parser_classes=[MultiPartParser, FormParser],
+    )
+    def risk_assessment_act(self, request, pk=None):
+        company = self.get_object()
+        if request.method == "DELETE":
+            if company.risk_assessment_act_file:
+                company.risk_assessment_act_file.delete(save=False)
+                company.risk_assessment_act_file = None
+                company.save(update_fields=["risk_assessment_act_file"])
+            return Response(self.get_serializer(company).data)
+        file_obj = request.FILES.get("file")
+        if file_obj is None:
+            return Response(
+                {"detail": "Nije priložen fajl (polje 'file')."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if company.risk_assessment_act_file:
+            company.risk_assessment_act_file.delete(save=False)
+        company.risk_assessment_act_file = file_obj
+        company.save(update_fields=["risk_assessment_act_file"])
+        return Response(self.get_serializer(company).data)
 
 
 class EmployeeViewSet(viewsets.ModelViewSet):

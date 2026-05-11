@@ -65,12 +65,8 @@ const CLIENT_FIELDS: TemplateField[] = [
     { key: "client.registration_number", label: "Matični broj" },
     { key: "client.activity_code", label: "Šifra delatnosti" },
     {
-        key: "client.risk_assessment_act_number",
-        label: "Broj Akta o proceni rizika",
-    },
-    {
-        key: "client.risk_assessment_act_date",
-        label: "Datum Akta o proceni rizika",
+        key: "client.risk_assessment_act_name",
+        label: "Naziv Akta o proceni rizika",
     },
 ];
 
@@ -845,7 +841,9 @@ export default class TemplateStructureEditorDialog extends Component<
                             fieldSearch: "",
                         }))
                     }
-                    slotProps={{ paper: { sx: { maxHeight: 400, width: 280 } } }}
+                    slotProps={{
+                        paper: { sx: { maxHeight: 400, width: 280 } },
+                    }}
                 >
                     <Box
                         sx={{
