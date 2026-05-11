@@ -68,6 +68,10 @@ const CLIENT_FIELDS: TemplateField[] = [
         key: "client.risk_assessment_act_name",
         label: "Naziv Akta o proceni rizika",
     },
+    {
+        key: "client.risk_assessment_act_date",
+        label: "Datum donošenja Akta o proceni rizika",
+    },
 ];
 
 const FIXED_TEXT_KEY = "__fixed_text__";
@@ -142,6 +146,8 @@ export default class TemplateStructureEditorDialog extends Component<
     private activeDrag: DragSnapshot | null = null;
 
     private suppressNextPageClick = false;
+
+    private dragMoved = false;
 
     state: State = {
         pageUrls: [],
@@ -223,6 +229,9 @@ export default class TemplateStructureEditorDialog extends Component<
         const me = e as MouseEvent;
         const dx = me.clientX - d.startMouseX;
         const dy = me.clientY - d.startMouseY;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+            this.dragMoved = true;
+        }
         const dxPct = (dx / d.containerWidth) * 100;
         const dyPct = (dy / d.containerHeight) * 100;
         const newX = Math.max(0, Math.min(100 - MARKER_W, d.startXPct + dxPct));
@@ -238,7 +247,14 @@ export default class TemplateStructureEditorDialog extends Component<
         window.removeEventListener("mousemove", this.dragMoveHandler);
         window.removeEventListener("mouseup", this.dragUpHandler);
         this.activeDrag = null;
-        this.suppressNextPageClick = true;
+        const moved = this.dragMoved;
+        this.dragMoved = false;
+        if (moved) {
+            this.suppressNextPageClick = true;
+            window.setTimeout(() => {
+                this.suppressNextPageClick = false;
+            }, 0);
+        }
         this.setState((prev) => ({ ...prev, dragState: null }));
     };
 
@@ -268,6 +284,10 @@ export default class TemplateStructureEditorDialog extends Component<
     private handleMarkerClick = (e: ReactMouseEvent, phId: string): void => {
         e.stopPropagation();
         if (this.state.dragState) return;
+        if (this.suppressNextPageClick) {
+            this.suppressNextPageClick = false;
+            return;
+        }
         this.setState((prev) => ({
             ...prev,
             editingPhId: phId,
@@ -337,6 +357,7 @@ export default class TemplateStructureEditorDialog extends Component<
     ): void => {
         e.stopPropagation();
         e.preventDefault();
+        this.dragMoved = false;
         const container = this.pageRefs[ph.page];
         if (!container) return;
         const rect = container.getBoundingClientRect();

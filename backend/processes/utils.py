@@ -82,6 +82,11 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "risk_assessment_act_name": (
                     _risk_assessment_act_name(client)
                 ),
+                "risk_assessment_act_date": (
+                    client.risk_assessment_act_date.isoformat()
+                    if getattr(client, "risk_assessment_act_date", None)
+                    else ""
+                ),
             }
         return snapshot
 
@@ -115,6 +120,11 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "risk_assessment_act_name": (
                     _risk_assessment_act_name(client)
                 ),
+                "risk_assessment_act_date": (
+                    client.risk_assessment_act_date.isoformat()
+                    if getattr(client, "risk_assessment_act_date", None)
+                    else ""
+                ),
             }
         return snapshot
 
@@ -137,6 +147,11 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "website": c.website or "",
                 "risk_assessment_act_name": (
                     _risk_assessment_act_name(c)
+                ),
+                "risk_assessment_act_date": (
+                    c.risk_assessment_act_date.isoformat()
+                    if getattr(c, "risk_assessment_act_date", None)
+                    else ""
                 ),
             },
         }

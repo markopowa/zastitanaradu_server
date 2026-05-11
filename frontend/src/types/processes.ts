@@ -20,6 +20,7 @@ export interface ClientCompany {
     activity_code?: string;
     risk_assessment_act_file?: string | null;
     risk_assessment_act_name?: string;
+    risk_assessment_act_date?: string | null;
 }
 
 export interface Employee {

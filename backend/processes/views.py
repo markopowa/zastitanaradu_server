@@ -7,8 +7,11 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from documents.models import DocumentFile
+from partners.models import Employee
+
 from .models import (
     ProcessBinding,
     ProcessNote,
@@ -19,7 +22,9 @@ from .models import (
     TaskAssignment,
 )
 from .process_run_completion import apply_process_run_completion
+from .send_now import send_now_for_binding
 from .serializers import (
+    EmployeeSendNowSerializer,
     ProcessBindingSerializer,
     ProcessNoteCreateSerializer,
     ProcessNoteSerializer,
@@ -29,6 +34,7 @@ from .serializers import (
     ProcessRunSerializer,
     ProcessTemplateSerializer,
     ProcessTypeSerializer,
+    SendNowResponseSerializer,
     TaskAssignmentSerializer,
 )
 from .utils import binding_subject_snapshot
@@ -189,11 +195,30 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(is_active=False)
         return queryset
 
+    @action(detail=True, methods=["post"], url_path="send-now")
+    def send_now(self, request, pk=None):
+        binding = self.get_object()
+        user = request.user if getattr(
+            request.user, "is_authenticated", False) else None
+        run, created = send_now_for_binding(binding, user=user)
+        run.refresh_from_db()
+        doc_url = ""
+        first_doc = run.documents.select_related("document_file").first()
+        if first_doc and first_doc.document_file.file:
+            doc_url = first_doc.document_file.file.url
+        data = SendNowResponseSerializer({
+            "process_run": run,
+            "document_url": doc_url,
+            "email_sent": not bool(run.email_error),
+        }).data
+        return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
 
 class ProcessRunViewSet(viewsets.ModelViewSet):
     queryset = (
         ProcessRun.objects.select_related(
-            "process_binding", "process_binding__process_type", "process_type"
+            "process_binding", "process_binding__process_type",
+            "process_type", "sent_by",
         )
         .all()
         .order_by("-scheduled_for", "-id")
@@ -244,9 +269,9 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="complete")
     def complete(self, request, pk=None):
         run = self.get_object()
-        if run.status != ProcessRun.STATUS_PENDING:
+        if run.status not in (ProcessRun.STATUS_PENDING, ProcessRun.STATUS_SENT):
             return Response(
-                {"detail": "Only pending runs can be completed."},
+                {"detail": "Only pending or sent runs can be completed."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         serializer = ProcessRunCompleteSerializer(
@@ -334,6 +359,65 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
             )
         prd.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class EmployeeSendNowView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk=None):
+        if not request.user.has_perm("processes.add_processrun"):
+            return Response(
+                {"detail": "Nemate dozvolu za slanje pregleda."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        ser = EmployeeSendNowSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        process_type_id = ser.validated_data["process_type_id"]
+
+        try:
+            employee = Employee.objects.select_related(
+                "client_company").get(pk=pk)
+        except Employee.DoesNotExist:
+            return Response(
+                {"detail": "Employee not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        try:
+            pt = ProcessType.objects.get(pk=process_type_id, is_active=True)
+        except ProcessType.DoesNotExist:
+            return Response(
+                {"detail": "Process type not found or inactive."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        binding = ProcessBinding.objects.filter(
+            process_type=pt,
+            employee=employee,
+        ).first()
+        if not binding:
+            binding = ProcessBinding.objects.create(
+                process_type=pt,
+                subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
+                employee=employee,
+                is_active=False,
+            )
+
+        user = request.user if getattr(
+            request.user, "is_authenticated", False) else None
+        run, created = send_now_for_binding(binding, user=user)
+        run.refresh_from_db()
+        doc_url = ""
+        first_doc = run.documents.select_related("document_file").first()
+        if first_doc and first_doc.document_file.file:
+            doc_url = first_doc.document_file.file.url
+        data = SendNowResponseSerializer({
+            "process_run": run,
+            "document_url": doc_url,
+            "email_sent": not bool(run.email_error),
+        }).data
+        return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
 class TaskAssignmentViewSet(viewsets.ModelViewSet):

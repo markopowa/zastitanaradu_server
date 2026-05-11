@@ -78,6 +78,8 @@ class ProcessRunSerializer(serializers.ModelSerializer):
         source="process_type.name", read_only=True)
     process_binding_id = serializers.IntegerField(
         source="process_binding.id", read_only=True)
+    sent_by_username = serializers.CharField(
+        source="sent_by.username", read_only=True, default="")
 
     class Meta:
         model = ProcessRun
@@ -95,6 +97,10 @@ class ProcessRunSerializer(serializers.ModelSerializer):
             "notes",
             "result_data",
             "expired_reminder_sent_at",
+            "sent_at",
+            "sent_by",
+            "sent_by_username",
+            "email_error",
         )
         read_only_fields = (
             "process_binding",
@@ -102,6 +108,9 @@ class ProcessRunSerializer(serializers.ModelSerializer):
             "subject_snapshot",
             "scheduled_for",
             "expired_reminder_sent_at",
+            "sent_at",
+            "sent_by",
+            "email_error",
         )
 
 
@@ -162,6 +171,16 @@ class ProcessNoteSerializer(serializers.ModelSerializer):
 
 class ProcessNoteCreateSerializer(serializers.Serializer):
     body = serializers.CharField()
+
+
+class EmployeeSendNowSerializer(serializers.Serializer):
+    process_type_id = serializers.IntegerField(required=True)
+
+
+class SendNowResponseSerializer(serializers.Serializer):
+    process_run = ProcessRunSerializer()
+    document_url = serializers.CharField(allow_blank=True, default="")
+    email_sent = serializers.BooleanField()
 
 
 class TaskAssignmentSerializer(serializers.ModelSerializer):

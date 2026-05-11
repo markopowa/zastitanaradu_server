@@ -25,10 +25,17 @@ import {
     Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import SendIcon from "@mui/icons-material/Send";
 import { enqueueSnackbar } from "notistack";
 
 import type { ProcessBindingsParams } from "../api/processes";
-import { getEmployees, getEquipment } from "../api/processes";
+import {
+    getEmployees,
+    getEquipment,
+    sendNowForBinding,
+} from "../api/processes";
+import { PermissionGate } from "../components/PermissionGate";
+import { withNavigation } from "../hocs/withNavigation";
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import {
     addProcessBinding,
@@ -65,6 +72,44 @@ class ProcessBindingsListPageInner extends Component<
         new_process_type: "",
         new_period: "",
         new_next_run_at: "",
+        sendingBindingId: null,
+    };
+
+    handleSendNow = (bindingId: number): void => {
+        this.setState((prev) => ({ ...prev, sendingBindingId: bindingId }));
+        sendNowForBinding(bindingId)
+            .then((res) => {
+                this.setState((prev) => ({ ...prev, sendingBindingId: null }));
+                if (res.email_sent) {
+                    enqueueSnackbar("Uput je poslat na mejl.", {
+                        variant: "success",
+                    });
+                } else {
+                    enqueueSnackbar(
+                        "Uput je generisan, ali mejl nije poslat. Možeš ga skinuti iz aktivnosti.",
+                        { variant: "warning" },
+                    );
+                }
+                this.props.navigate("/processes/runs");
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState((prev) => ({
+                        ...prev,
+                        sendingBindingId: null,
+                    }));
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri slanju pregleda.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
     load = (): void => {
@@ -180,6 +225,7 @@ class ProcessBindingsListPageInner extends Component<
             new_next_run_at,
             employees,
             equipment,
+            sendingBindingId,
         } = this.state;
         const {
             clientCompanies: clients,
@@ -280,6 +326,7 @@ class ProcessBindingsListPageInner extends Component<
                                     <TableCell>Subjekt</TableCell>
                                     <TableCell>Sledeći termin</TableCell>
                                     <TableCell>Aktivan</TableCell>
+                                    <TableCell align="right" />
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -296,6 +343,28 @@ class ProcessBindingsListPageInner extends Component<
                                         </TableCell>
                                         <TableCell>
                                             {row.is_active ? "Da" : "Ne"}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <PermissionGate permission="processes.add_processrun">
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    startIcon={<SendIcon />}
+                                                    disabled={
+                                                        sendingBindingId ===
+                                                        row.id
+                                                    }
+                                                    onClick={() =>
+                                                        this.handleSendNow(
+                                                            row.id,
+                                                        )
+                                                    }
+                                                >
+                                                    {sendingBindingId === row.id
+                                                        ? "Šaljem..."
+                                                        : "Pošalji sad"}
+                                                </Button>
+                                            </PermissionGate>
                                         </TableCell>
                                     </TableRow>
                                 ))}
@@ -505,7 +574,9 @@ const mapDispatchToProps = (
     addBinding: (payload) => dispatch(addProcessBinding(payload)),
 });
 
-export default connect(
+const Connected = connect(
     mapStateToProps,
     mapDispatchToProps,
 )(ProcessBindingsListPageInner);
+
+export default withNavigation(Connected);

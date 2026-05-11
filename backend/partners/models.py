@@ -19,6 +19,12 @@ class ClientCompany(models.Model):
         blank=True,
         help_text="Fajl Akta o proceni rizika (PDF, DOCX, slika).",
     )
+    risk_assessment_act_date = models.DateField(
+        "Datum donošenja Akta o proceni rizika",
+        null=True,
+        blank=True,
+        help_text="Datum donošenja Akta o proceni rizika.",
+    )
 
     class Meta:
         verbose_name = "Klijentska firma"

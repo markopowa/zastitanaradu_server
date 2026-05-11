@@ -200,12 +200,14 @@ class ProcessBinding(models.Model):
 
 class ProcessRun(models.Model):
     STATUS_PENDING = "PENDING"
+    STATUS_SENT = "SENT"
     STATUS_COMPLETED = "COMPLETED"
     STATUS_CANCELLED = "CANCELLED"
     STATUS_FAILED = "FAILED"
 
     STATUS_CHOICES = (
         (STATUS_PENDING, "Na čekanju"),
+        (STATUS_SENT, "Poslat"),
         (STATUS_COMPLETED, "Završeno"),
         (STATUS_CANCELLED, "Otkazano"),
         (STATUS_FAILED, "Neuspešno"),
@@ -233,6 +235,15 @@ class ProcessRun(models.Model):
     notes = models.TextField(blank=True)
     result_data = models.JSONField(default=dict, blank=True)
     expired_reminder_sent_at = models.DateField(null=True, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    sent_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sent_process_runs",
+    )
+    email_error = models.TextField(blank=True)
 
     class Meta:
         verbose_name = "Aktivnost obaveze"

@@ -85,6 +85,33 @@ export async function updateClientCompany(
     return data;
 }
 
+export interface SendNowResponse {
+    process_run: ProcessRun;
+    document_url: string;
+    email_sent: boolean;
+}
+
+export async function sendNowForBinding(
+    bindingId: number,
+): Promise<SendNowResponse> {
+    const { data } = await api.post<SendNowResponse>(
+        `/api/processes/process-bindings/${bindingId}/send-now/`,
+        {},
+    );
+    return data;
+}
+
+export async function sendNowForEmployee(
+    employeeId: number,
+    processTypeId: number,
+): Promise<SendNowResponse> {
+    const { data } = await api.post<SendNowResponse>(
+        `/api/processes/employees/${employeeId}/send-now/`,
+        { process_type_id: processTypeId },
+    );
+    return data;
+}
+
 export async function uploadClientCompanyRiskAssessmentAct(
     id: number,
     file: File,

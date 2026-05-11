@@ -112,6 +112,7 @@ class ClientCompanyDetailPageInner extends Component<
         editWebsite: "",
         editNotes: "",
         editActivity_code: "",
+        editRisk_assessment_act_date: "",
         riskActUploading: false,
         riskActPreviewOpen: false,
         empDialogOpen: false,
@@ -337,6 +338,14 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite: item.website ?? "",
             editNotes: item.notes ?? "",
             editActivity_code: item.activity_code ?? "",
+            editRisk_assessment_act_date: item.risk_assessment_act_date
+                ? (() => {
+                      const d = new Date(item.risk_assessment_act_date);
+                      const dd = String(d.getDate()).padStart(2, "0");
+                      const mm = String(d.getMonth() + 1).padStart(2, "0");
+                      return `${dd}.${mm}.${d.getFullYear()}`;
+                  })()
+                : "",
         }));
     };
 
@@ -360,8 +369,18 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
+            editRisk_assessment_act_date,
         } = this.state;
         if (!editName.trim() || !editTaxId.trim()) return;
+        let actDateSent: string | null | undefined;
+        if (editRisk_assessment_act_date.trim()) {
+            const d = StringToDate(editRisk_assessment_act_date);
+            actDateSent = d
+                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+                : undefined;
+        } else {
+            actDateSent = null;
+        }
         this.setState((prev) => ({ ...prev, saving: true, saveError: null }));
         updateClientCompany(id, {
             name: editName.trim(),
@@ -373,6 +392,7 @@ class ClientCompanyDetailPageInner extends Component<
             website: editWebsite.trim() || undefined,
             notes: editNotes.trim() || undefined,
             activity_code: editActivity_code.trim() || undefined,
+            risk_assessment_act_date: actDateSent,
         })
             .then((item) => {
                 this.setState((prev) => ({
@@ -585,6 +605,7 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
+            editRisk_assessment_act_date,
             riskActUploading,
             riskActPreviewOpen,
             empDialogOpen,
@@ -781,6 +802,16 @@ class ClientCompanyDetailPageInner extends Component<
                                     }
                                 />
                             </Tooltip>
+                            <DateTextFieldWithPicker
+                                label="Datum donošenja Akta o proceni rizika (dd.mm.yyyy)"
+                                value={editRisk_assessment_act_date}
+                                onChange={(v) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editRisk_assessment_act_date: v,
+                                    }))
+                                }
+                            />
                             <TextField
                                 margin="dense"
                                 label="Beleške"
@@ -907,10 +938,23 @@ class ClientCompanyDetailPageInner extends Component<
                                 flexWrap: "wrap",
                             }}
                         >
-                            <Typography variant="body2">
-                                {item.risk_assessment_act_name ||
-                                    "Akt o proceni rizika"}
-                            </Typography>
+                            <Box>
+                                <Typography variant="body2">
+                                    {item.risk_assessment_act_name ||
+                                        "Akt o proceni rizika"}
+                                </Typography>
+                                {item.risk_assessment_act_date && (
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                    >
+                                        Datum donošenja:{" "}
+                                        {formatDate(
+                                            item.risk_assessment_act_date,
+                                        )}
+                                    </Typography>
+                                )}
+                            </Box>
                             <Box sx={{ flex: 1 }} />
                             <Button
                                 size="small"

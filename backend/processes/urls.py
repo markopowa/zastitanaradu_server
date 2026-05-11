@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     DashboardExpiringView,
+    EmployeeSendNowView,
     ProcessBindingViewSet,
     ProcessRunViewSet,
     ProcessTemplateViewSet,
@@ -24,5 +25,7 @@ router.register("task-assignments", TaskAssignmentViewSet,
 urlpatterns = [
     path("dashboard/expiring", DashboardExpiringView.as_view(),
          name="dashboard-expiring"),
+    path("employees/<int:pk>/send-now/", EmployeeSendNowView.as_view(),
+         name="employee-send-now"),
     path("", include(router.urls)),
 ]

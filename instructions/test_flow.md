@@ -19,6 +19,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - Email: `markovuckovic1992@gmail.com` *(verifikovana SES adresa)*
 - Website: `https://test-firma-07.rs`
 - Akt o proceni rizika (fajl): otpremi posle čuvanja firme, sa stranice firme — koristi `files_for_test\Uput_za_periodični_lekarski_pregled.pdf` ili neki PDF/slika kao test
+- Datum donošenja Akta o proceni rizika: `15.01.2025.`
 - Napomene: `Test unos — slobodno obrisati`
 
 **Zaposleni:** *(obavezna su Ime, Prezime, Email, Organizaciona jedinica, Pozicija)*
@@ -89,8 +90,11 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Na stranici firme nađi sekciju **"Akt o proceni rizika"**
 - [ ] Klikni **"Priloži fajl"** i izaberi `files_for_test\Uput_za_periodični_lekarski_pregled.pdf` (ili bilo koji test PDF/sliku)
 - [ ] Klikni **"Pregled"** — otvori se popup sa preview-om (PDF u iframe-u, slika prikazana direktno)
+- [ ] Klikni **"Izmeni podatke"** na kartici firme
+- [ ] U formi za izmenu pronađi **"Datum donošenja Akta o proceni rizika"** i unesi `15.01.2025.`
+- [ ] Sačuvaj
 
-**Provera:** Vidiš naziv fajla u sekciji i dugmiće **Pregled / Promeni fajl / Obriši**.
+**Provera:** Vidiš naziv fajla u sekciji, ispod njega "Datum donošenja: 15.01.2025." i dugmiće **Pregled / Promeni fajl / Obriši**.
 
 ---
 
@@ -208,6 +212,48 @@ Ako hoćeš da testiraš da li se posle završenog pregleda automatski zakazuje 
 
 ---
 
+## 7b. (Brza varijanta) "Pošalji na pregled" bez čekanja schedulera
+
+> 🎯 **Ovo testira dugme za jednokratno slanje** — preskače `run_due_processes`, sve se desi instant.
+> Imaš **dva načina** da pošalješ Marka na pregled — testiraj OBA:
+
+### Način A — sa liste zaposlenih
+
+- [ ] **Klijenti → Zaposleni**
+- [ ] Pronađi Marka u listi (filter po firmi `Test firma 07` ako treba)
+- [ ] U koloni desno klikni dugme **"Pošalji na pregled"**
+- [ ] Otvori se dijalog "Pošalji na pregled — Marko Petrović"
+- [ ] Vrsta pregleda: `Periodični lekarski pregled`
+- [ ] Klikni **"Pošalji"**
+
+**Provera:**
+- [ ] Snackbar **"Uput je poslat na mejl"** (zelen) ili "Uput je generisan, ali mejl nije poslat" (žut)
+- [ ] Stranica se prebaci na **Procesi → Aktivnosti**
+- [ ] Nova aktivnost za Marka u statusu **"Poslat"** (ne "Na čekanju") — sa današnjim datumom
+- [ ] Otvori aktivnost → tab **Dokumenti** → uput je prikačen
+- [ ] (Ako je mejl prošao) proveri inbox `markovuckovic1992@gmail.com` — mejl je stigao **sa uputom kao prilogom**
+
+### Način B — sa rasporeda
+
+- [ ] **Procesi → Rasporedi**
+- [ ] U redu Markovog rasporeda klikni **"Pošalji sad"**
+
+**Provera:** isto kao Način A — nova aktivnost u statusu "Poslat", dokument prikačen, mejl sa prilogom.
+
+### Edge case — dvostruki klik
+
+- [ ] Klikni **"Pošalji na pregled"** ponovo na istom Marku, ista vrsta pregleda, isti dan
+- [ ] Sistem **NE** pravi duplikat — vraća postojeću aktivnost (provera: u tabu Dokumenti i dalje samo jedan uput)
+
+### Šta proveri u aktivnosti
+
+- [ ] Status: **Poslat**
+- [ ] `Poslao: <tvoje korisničko ime>` i timestamp slanja vidljivi
+- [ ] `email_error` polje prazno (ako je mejl prošao)
+- [ ] Tab Dokumenti → jedan dokument `Uput - periodični lekarski pregled – Run #X`
+
+---
+
 ## 8. Pokreni komandu koja zakazuje aktivnosti
 
 U terminalu, u root projekta:
@@ -225,17 +271,29 @@ python manage.py run_due_processes
 
 ---
 
-## 9. Proveri generisani dokument
+## 9. Proveri generisani dokument (Uput koji ide na štampu)
 
-- [ ] Otvori aktivnost → tab **Dokumenti**
-- [ ] Postoji dokument tipa `Uput - periodični lekarski pregled – Run #1`
-- [ ] Skini ga (download)
-- [ ] Otvori DOCX i proveri:
-  - [ ] Piše `Marko Petrović`
-  - [ ] Piše JMBG `0102990710123`
-  - [ ] Piše `Test firma 07 d.o.o.`
-  - [ ] Broj uputa popunjen (npr. `UP-0001`)
-  - [ ] Datum prethodnog pregleda **prazan** (jer je ovo prvi pregled — to je očekivano)
+> 🎯 **Ovo simulira realnu situaciju:** korisnik ulazi u aktivnost, skida popunjen uput i daje ga zaposlenom da odnese u ustanovu.
+
+- [ ] **Procesi → Aktivnosti** — pronađi aktivnost za Marka u statusu "Na čekanju"
+- [ ] Klikni red da otvoriš aktivnost
+- [ ] Klikni tab **"Dokumenti"**
+- [ ] Postoji dokument naziva `Uput - periodični lekarski pregled – Run #1`
+- [ ] Klikni dugme za preuzimanje → fajl se skida na računar
+- [ ] **Otvori fajl** (Word ili PDF, zavisi šta si otpremio kao šablon)
+- [ ] Proveri da su polja popunjena (sve što si mapirao u Koraku 4):
+  - [ ] Ime i prezime: `Marko Petrović`
+  - [ ] JMBG: `0102990710123`
+  - [ ] Datum rođenja: `01.02.1990.`
+  - [ ] Radno mesto: `Električar na visini`
+  - [ ] Naziv firme: `Test firma 07 d.o.o.`
+  - [ ] Naziv Akta o proceni rizika: naziv fajla koji si otpremio (bez `.pdf`)
+  - [ ] Datum donošenja Akta: `15.01.2025.`
+  - [ ] Broj uputa: `UP-0001` (ili sledeći u nizu)
+  - [ ] Datum prethodnog pregleda: **prazan** (jer je prvi pregled — očekivano)
+- [ ] **Test štampe:** Ctrl+P (ili File → Print) — pregled za štampu treba da izgleda kao popunjen uput, ne kao šablon sa praznim poljima
+
+**Šta ovaj korak dokazuje:** flow generisanja uputa za potpis i štampu radi end-to-end. Ovo je dokument koji bi korisnik dao zaposlenom u realnoj upotrebi.
 
 ---
 

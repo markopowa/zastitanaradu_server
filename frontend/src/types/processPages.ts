@@ -141,7 +141,8 @@ export interface ProcessBindingsListPageDispatchProps {
 }
 
 export type ProcessBindingsListPageProps = ProcessBindingsListPageStateProps &
-    ProcessBindingsListPageDispatchProps;
+    ProcessBindingsListPageDispatchProps &
+    WithNavigationProps;
 
 export interface ProcessBindingsListPageState {
     employees: ProcessBindingFormEmployeeOption[];
@@ -156,6 +157,7 @@ export interface ProcessBindingsListPageState {
     new_process_type: string;
     new_period: string;
     new_next_run_at: string;
+    sendingBindingId: number | null;
 }
 
 export interface ProcessRunsListPageStateProps {
@@ -305,6 +307,7 @@ export interface ClientCompanyDetailPageState {
     editWebsite: string;
     editNotes: string;
     editActivity_code: string;
+    editRisk_assessment_act_date: string;
     riskActUploading: boolean;
     riskActPreviewOpen: boolean;
     empDialogOpen: boolean;
@@ -333,6 +336,7 @@ export interface ClientCompanyDetailPageState {
 
 export interface ClientCompaniesEmployeesListPageStateProps {
     clientCompanies: ClientCompany[];
+    processTypes: ProcessType[];
     employeesItems: EmployeeSummary[];
     employeesLoading: boolean;
     employeesError: string | null;
@@ -341,6 +345,7 @@ export interface ClientCompaniesEmployeesListPageStateProps {
 export interface ClientCompaniesEmployeesListPageDispatchProps {
     setLastPath: (path: string) => void;
     ensureClientCompanies: () => void;
+    ensureProcessTypes: () => void;
     loadEmployees: (clientCompanyId: string) => void;
     addEmployee: (payload: Partial<Employee>) => AsyncThunkDispatchResult;
 }
@@ -365,6 +370,11 @@ export interface ClientCompaniesEmployeesListPageState {
     occupation: string;
     high_risk_position_name: string;
     new_client_company_id: string;
+    sendDialogOpen: boolean;
+    sendEmployeeId: number | null;
+    sendEmployeeName: string;
+    sendProcessTypeId: string;
+    sending: boolean;
 }
 
 export interface ClientCompanyEmployeesDetailPageDispatchProps {

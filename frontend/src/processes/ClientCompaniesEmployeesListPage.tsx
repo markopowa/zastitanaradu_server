@@ -28,6 +28,8 @@ import {
 import BuildIcon from "@mui/icons-material/Build";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
+import SendIcon from "@mui/icons-material/Send";
+import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import {
@@ -40,8 +42,10 @@ import { withNavigation } from "../hocs/withNavigation";
 import {
     addEmployee,
     ensureClientCompanies,
+    ensureProcessTypes,
     fetchEmployeesList,
 } from "../store/processesSlice";
+import { sendNowForEmployee } from "../api/processes";
 import { setLastPath } from "../store/locationSlice";
 import { StringToDate } from "../utils/date";
 
@@ -72,6 +76,71 @@ class ClientCompaniesEmployeesListPageInner extends Component<
         occupation: "",
         high_risk_position_name: "",
         new_client_company_id: "",
+        sendDialogOpen: false,
+        sendEmployeeId: null,
+        sendEmployeeName: "",
+        sendProcessTypeId: "",
+        sending: false,
+    };
+
+    openSendDialog = (employeeId: number, name: string): void => {
+        const types = this.props.processTypes ?? [];
+        this.setState((prev) => ({
+            ...prev,
+            sendDialogOpen: true,
+            sendEmployeeId: employeeId,
+            sendEmployeeName: name,
+            sendProcessTypeId: types[0] ? String(types[0].id) : "",
+        }));
+    };
+
+    closeSendDialog = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            sendDialogOpen: false,
+            sendEmployeeId: null,
+            sendProcessTypeId: "",
+        }));
+    };
+
+    handleSend = (): void => {
+        const { sendEmployeeId, sendProcessTypeId } = this.state;
+        if (sendEmployeeId == null || !sendProcessTypeId) return;
+        this.setState((prev) => ({ ...prev, sending: true }));
+        sendNowForEmployee(sendEmployeeId, Number(sendProcessTypeId))
+            .then((res) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    sending: false,
+                    sendDialogOpen: false,
+                }));
+                if (res.email_sent) {
+                    enqueueSnackbar("Uput je poslat na mejl.", {
+                        variant: "success",
+                    });
+                } else {
+                    enqueueSnackbar(
+                        "Uput je generisan, ali mejl nije poslat. Možeš ga skinuti iz aktivnosti.",
+                        { variant: "warning" },
+                    );
+                }
+                this.props.navigate("/processes/runs");
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState((prev) => ({ ...prev, sending: false }));
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri slanju pregleda.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
     isFilled = (): boolean => {
@@ -101,6 +170,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
     componentDidMount(): void {
         this.props.setLastPath("/client-companies-employees");
         this.props.ensureClientCompanies();
+        this.props.ensureProcessTypes();
         this.getEmployeesForClient();
     }
 
@@ -177,6 +247,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
     render() {
         const {
             clientCompanies: clients,
+            processTypes: types,
             employeesItems: items,
             employeesLoading: loading,
             employeesError: error,
@@ -196,6 +267,10 @@ class ClientCompaniesEmployeesListPageInner extends Component<
             occupation,
             high_risk_position_name,
             new_client_company_id,
+            sendDialogOpen,
+            sendEmployeeName,
+            sendProcessTypeId,
+            sending,
         } = this.state;
         const { navigate } = this.props;
 
@@ -308,7 +383,29 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                             <TableCell>
                                                 {row.position ?? "—"}
                                             </TableCell>
-                                            <TableCell align="right">
+                                            <TableCell
+                                                align="right"
+                                                onClick={(e) =>
+                                                    e.stopPropagation()
+                                                }
+                                            >
+                                                <PermissionGate permission="processes.add_processrun">
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        startIcon={<SendIcon />}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            this.openSendDialog(
+                                                                row.id,
+                                                                `${row.first_name} ${row.last_name}`.trim(),
+                                                            );
+                                                        }}
+                                                        sx={{ mr: 1 }}
+                                                    >
+                                                        Pošalji na pregled
+                                                    </Button>
+                                                </PermissionGate>
                                                 <IconButton size="small">
                                                     <ChevronRightIcon />
                                                 </IconButton>
@@ -525,12 +622,61 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                         </Button>
                     </DialogActions>
                 </Dialog>
+
+                <Dialog
+                    open={sendDialogOpen}
+                    onClose={this.closeSendDialog}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>
+                        Pošalji na pregled — {sendEmployeeName}
+                    </DialogTitle>
+                    <DialogContent>
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel>Vrsta pregleda</InputLabel>
+                            <Select
+                                value={sendProcessTypeId}
+                                label="Vrsta pregleda"
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        sendProcessTypeId: e.target
+                                            .value as string,
+                                    }))
+                                }
+                            >
+                                {types.map((t) => (
+                                    <MenuItem key={t.id} value={String(t.id)}>
+                                        {t.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={this.closeSendDialog}
+                            disabled={sending}
+                        >
+                            Odustani
+                        </Button>
+                        <Button
+                            onClick={this.handleSend}
+                            variant="contained"
+                            disabled={sending || !sendProcessTypeId}
+                        >
+                            {sending ? "Šaljem..." : "Pošalji"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </Box>
         );
     }
 }
 const mapStateToProps = (state: RootState) => ({
     clientCompanies: state.processes.clientCompanies,
+    processTypes: state.processes.processTypes,
     employeesItems: state.processes.employeesItems,
     employeesLoading: state.processes.employeesStatus === "loading",
     employeesError:
@@ -545,6 +691,9 @@ const mapDispatchToProps = (
     setLastPath: (path: string) => dispatch(setLastPath(path)),
     ensureClientCompanies: () => {
         void dispatch(ensureClientCompanies());
+    },
+    ensureProcessTypes: () => {
+        void dispatch(ensureProcessTypes());
     },
     loadEmployees: (clientCompanyId: string) => {
         void dispatch(fetchEmployeesList(clientCompanyId));

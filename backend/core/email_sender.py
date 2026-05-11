@@ -1,11 +1,15 @@
 import csv
 import importlib
 import logging
+from email.mime.application import MIMEApplication
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from pathlib import Path
 from typing import Sequence
 
 import boto3
 from botocore.exceptions import ClientError
+
 from django.conf import settings
 
 logger = logging.getLogger(__name__)
@@ -84,6 +88,7 @@ class SESEmailSender:
         body: str,
         html_body: str | None = None,
         from_email: str | None = None,
+        attachments: Sequence[tuple[str, bytes]] | None = None,
         fail_silently: bool = True,
     ) -> bool:
         source = (from_email or self._from_email or "").strip()
@@ -96,6 +101,11 @@ class SESEmailSender:
                 aws_access_key_id=self._aws_access_key_id,
                 aws_secret_access_key=self._aws_secret_access_key,
             )
+            if attachments:
+                return self._send_raw(
+                    client, source, list(recipients), subject,
+                    body, html_body, attachments,
+                )
             message = {
                 "Subject": {"Data": subject, "Charset": "UTF-8"},
                 "Body": {"Text": {"Data": body, "Charset": "UTF-8"}},
@@ -122,3 +132,37 @@ class SESEmailSender:
                 raise
             logger.exception("SES send_email error: %s", e)
             return False
+
+    def _send_raw(
+        self,
+        client,
+        source: str,
+        recipients: list[str],
+        subject: str,
+        body: str,
+        html_body: str | None,
+        attachments: Sequence[tuple[str, bytes]],
+    ) -> bool:
+        msg = MIMEMultipart("mixed")
+        msg["Subject"] = subject
+        msg["From"] = source
+        msg["To"] = ", ".join(recipients)
+
+        body_part = MIMEMultipart("alternative")
+        body_part.attach(MIMEText(body, "plain", "utf-8"))
+        if html_body:
+            body_part.attach(MIMEText(html_body, "html", "utf-8"))
+        msg.attach(body_part)
+
+        for filename, data in attachments:
+            att = MIMEApplication(data)
+            att.add_header("Content-Disposition",
+                           "attachment", filename=filename)
+            msg.attach(att)
+
+        client.send_raw_email(
+            Source=source,
+            Destinations=recipients,
+            RawMessage={"Data": msg.as_string()},
+        )
+        return True

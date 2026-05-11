@@ -66,12 +66,15 @@ Za svakog zaposlenog otvori stranicu firme → **Dodaj zaposlenog** i popuni:
 1. Otvori karticu firme (**Klijenti → klikni firmu**)
 2. U sekciji **"Akt o proceni rizika"** klikni **"Priloži fajl"**
 3. Izaberi fajl (`.pdf`, `.docx`, ili slika — JPG/PNG)
-4. Nakon otpremanja, fajl je dostupan u sistemu:
-   - Klikni **"Pregled"** da vidiš sadržaj u popupu (PDF i slike direktno; za DOCX dobiješ link za preuzimanje)
-   - Klikni **"Promeni fajl"** ako hoćeš da zameniš novim
-   - Klikni **"Obriši"** ako hoćeš da ukloniš
+4. Klikni **"Izmeni podatke"** na kartici firme i unesi **"Datum donošenja Akta o proceni rizika"**
+5. Sačuvaj
 
-> Naziv fajla je ono što sistem koristi kao "Naziv Akta o proceni rizika" prilikom popunjavanja uputa. Zato dobro nazovi fajl (npr. `Akt o proceni rizika - Test firma 07 - 2025-01-15.pdf`) — taj naziv (bez ekstenzije) će biti u uputu.
+Nakon otpremanja:
+- Klikni **"Pregled"** da vidiš sadržaj u popupu (PDF i slike direktno; za DOCX dobiješ link za preuzimanje)
+- Klikni **"Promeni fajl"** ako hoćeš da zameniš novim
+- Klikni **"Obriši"** ako hoćeš da ukloniš
+
+> Naziv fajla je ono što sistem koristi kao "Naziv Akta o proceni rizika" prilikom popunjavanja uputa. Zato dobro nazovi fajl (npr. `Akt o proceni rizika - Test firma 07.pdf`) — taj naziv (bez ekstenzije) će biti u uputu.
 
 ---
 
@@ -123,6 +126,7 @@ Kad klikneš polje, sistem ti otvori listu sa svim podacima koje može da ubaci.
 | **Email firme** | Email firme |
 | **Web sajt firme** | Web sajt firme |
 | **Naziv Akta o proceni rizika** | Naziv fajla Akta (bez ekstenzije) — automatski iz otpremljenog fajla |
+| **Datum donošenja Akta o proceni rizika** | Datum kad je Akt donet (uneseš ručno na kartici firme) |
 
 #### 🔧 Podaci o OPREMI (samo ako šablon važi za opremu)
 | Šta piše u listi | Šta će biti uneto u dokument |
@@ -217,20 +221,73 @@ Po potrebi dodaj i: **Pregled vida → Ciljani oftalmološki pregled**.
 
 ## DEO 8 — Šta radiš svaki dan (rutina)
 
-1. **Procesi → Aktivnosti** — ovde gledaš šta je "Na čekanju" i šta uskoro ističe
-2. Kad sistem zakaže termin, aktivnost **sama** osvane sa statusom "Na čekanju", uput je već napravljen i mejl je već poslat poslodavcu
-3. Kad stigne **izveštaj iz pregleda** (PDF od poslodavca):
-   - Otvori aktivnost
-   - (Opciono) otpremi PDF kao prilog aktivnosti
-   - Klikni **"Završi"**
-   - Unesi:
-     - Datum izvršenog pregleda
-     - Datum sledećeg pregleda
-     - Broj izveštaja
-     - Ocena sposobnosti
-     - Preduzete mere
-   - Potvrdi
-4. Sistem **sam** zakaže sledeći pregled (ako si namestio chaining ili ako postoji raspored)
+### 8.1 Pregled aktivnosti
+
+**Procesi → Aktivnosti** — ovde vidiš sve preglede:
+- **"Na čekanju"** = pregled je zakazan ali još nije obavljen
+- **"Završeno"** = pregled je obavljen i podaci iz izveštaja su uneti
+
+Kad dođe datum iz rasporeda, aktivnost **sama** osvane u listi sa statusom "Na čekanju". Sistem je u istom trenutku:
+- Generisao **Uput** (popunjen Word/PDF dokument) — možeš ga skinuti
+- Poslao mejl poslodavcu (ako si u šablonu procesa stavio **Pošalji mejl: DA**)
+
+### 8.2 Kako da skineš i odštampaš Uput
+
+> 🎯 **Ovo je najčešći zadatak:** "Treba mi popunjen uput za Marka — kako da ga izgenerišem?"
+
+> 🆕 **Skraćenica — "Pošalji na pregled" (preporučeno za ad-hoc):**
+>
+> Umesto da čekaš da datum iz rasporeda dođe, klikni jedno dugme:
+>
+> - **(A) Sa liste zaposlenih:** Klijenti → Zaposleni → red sa zaposlenim → **"Pošalji na pregled"** → biraš vrstu pregleda → "Pošalji"
+> - **(B) Sa rasporeda:** Procesi → Rasporedi → red rasporeda → **"Pošalji sad"** (vrsta je već određena)
+>
+> U tom trenutku sistem:
+> 1. Napravi aktivnost u statusu **"Poslat"** (vidi se ko je poslao i kad)
+> 2. Generiše uput i čuva ga u sistemu (tab Dokumenti u aktivnosti)
+> 3. Šalje mejl primaocu iz šablona procesa, sa **uputom kao prilogom**
+> 4. Te-be vraća na listu aktivnosti
+>
+> Ako mejl ne prođe, dobiješ žuti snackbar i možeš ručno da skineš uput i pošalješ ga (dokument je sačuvan u sistemu nezavisno od mejla).
+>
+> Detaljni dizajn: `instructions/posalji_na_pregled.md`
+
+1. **Procesi → Aktivnosti**
+2. Pronađi aktivnost za zaposlenog (filter po statusu **"Na čekanju"** ili po zaposlenom)
+3. **Otvori aktivnost** (klikni na red)
+4. Idi na tab **"Dokumenti"**
+5. Vidiš listu generisanih dokumenata — npr. `Uput - periodični lekarski pregled – Run #1`
+6. Klikni dugme za preuzimanje (download ikonica) → fajl se skida na računar
+7. **Otvori i odštampaj** → daješ zaposlenom da nosi u ustanovu
+
+> 📋 **Šta će biti popunjeno u uputu:**
+> - Sva polja zaposlenog (ime, prezime, JMBG, datum rođenja, radno mesto...) — iz kartice zaposlenog
+> - Naziv firme, PIB, šifra delatnosti, Akt o proceni rizika (naziv i datum) — iz kartice firme
+> - Broj uputa (npr. UP-0001) — sistem automatski generiše redom
+> - Datum prethodnog pregleda — sistem povlači iz poslednjeg završenog pregleda iste vrste (prazno ako je prvi)
+> - Sve što si postavio kao "Unos teksta" (npr. naziv zdravstvene ustanove)
+>
+> Sve to si već mapirao u **DEO 3** — sad sistem samo popunjava prema tome.
+
+### 8.3 Šta ako nema dokumenta u tabu "Dokumenti"?
+
+- Da li je u šablonu procesa **"Generiši dokument: DA"**?
+- Da li je u šablonu procesa izabran **šablon dokumenta** (Uput)?
+- Da li si ulogovan kao **superuser** (ili korisnik sa pravom za generisanje)?
+- Vidi `backend/logs/django.log` za detalje greške
+
+### 8.4 Kad stigne izveštaj iz pregleda (PDF od poslodavca)
+
+1. Otvori aktivnost u listi
+2. (Opciono) Otpremi PDF kao prilog aktivnosti
+3. Klikni **"Završi"** i unesi:
+   - Datum izvršenog pregleda
+   - Datum sledećeg pregleda
+   - Broj izveštaja
+   - Ocena sposobnosti
+   - Preduzete mere
+4. Potvrdi → aktivnost prelazi u **"Završeno"**
+5. Sistem **sam** zakaže sledeći pregled (ako postoji raspored ili chaining)
 
 ---
 

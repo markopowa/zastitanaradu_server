@@ -24,6 +24,7 @@ class ClientCompanySerializer(serializers.ModelSerializer):
             "activity_code",
             "risk_assessment_act_file",
             "risk_assessment_act_name",
+            "risk_assessment_act_date",
         )
         read_only_fields = ("risk_assessment_act_file",)
 
