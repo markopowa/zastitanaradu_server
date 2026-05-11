@@ -11,3 +11,5 @@ docs/
 develop/
 __pycache__/
 backend/*.csv
+instructions/
+files_for_test/
