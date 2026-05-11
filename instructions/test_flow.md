@@ -20,15 +20,17 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - Website: `https://test-firma-07.rs`
 - Napomene: `Test unos — slobodno obrisati`
 
-**Zaposleni:**
+**Zaposleni:** *(obavezna su Ime, Prezime, Email, Organizaciona jedinica, Pozicija)*
 - Ime: `Marko`
 - Prezime: `Petrović`
 - Ime oca: `Stevan`
-- JMBG: `0102990710123`
-- Datum rođenja: `01.02.1990.`
+- JMBG: `0102990710123` *(unesi prvo JMBG — datum rođenja se sam popuni)*
+- Datum rođenja: `01.02.1990.` *(auto iz JMBG)*
 - Mesto rođenja: `Niš`
+- Email: `markovuckovic1992@gmail.com`
+- Organizaciona jedinica: `Tehnička služba`
+- Pozicija: `Električar`
 - Zanimanje: `Električar`
-- Radno mesto: `Električar na visini`
 - Naziv radnog mesta sa povećanim rizikom: `Električar na visini`
 
 **Kategorije / nazivi:**
@@ -49,7 +51,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 
 - [ ] Backend radi (sajt se otvara, ne baca 500)
 - [ ] Možeš da se uloguješ kao **superuser** (bez toga generisanje dokumenata neće raditi)
-- [ ] Imaš pri ruci jedan **DOCX uput** (bilo koji Word fajl sa praznim poljima — koristiće se kao šablon)
+- [ ] Test fajl uputa postoji: `files_for_test\Uput_za_periodični_lekarski_pregled.pdf`
 - [ ] Test mejl adresa `markovuckovic1992@gmail.com` je verifikovana u AWS SES (već jeste)
 
 ---
@@ -86,14 +88,16 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 ## 3. Unesi zaposlenog
 
 - [ ] Na stranici firme klikni **Dodaj zaposlenog**
-- [ ] Ime: `Marko`
-- [ ] Prezime: `Petrović`
+- [ ] Ime: `Marko` *(obavezno)*
+- [ ] Prezime: `Petrović` *(obavezno)*
 - [ ] Ime oca: `Stevan`
-- [ ] JMBG: `0102990710123`
-- [ ] Datum rođenja: `01.02.1990.`
+- [ ] JMBG: `0102990710123` *(unesi PRVO ovo — datum rođenja će se sam popuniti iz JMBG)*
+- [ ] Datum rođenja: proveri da je `01.02.1990.` (auto popunjeno)
 - [ ] Mesto rođenja: `Niš`
+- [ ] Email: `markovuckovic1992@gmail.com` *(obavezno)*
+- [ ] Organizaciona jedinica: `Tehnička služba` *(obavezno)*
+- [ ] Pozicija: `Električar` *(obavezno)*
 - [ ] Zanimanje: `Električar`
-- [ ] Radno mesto: `Električar na visini`
 - [ ] Naziv radnog mesta sa povećanim rizikom: `Električar na visini`
 - [ ] Sačuvaj
 
@@ -104,12 +108,14 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 ## 4. Napravi šablon dokumenta (Uput)
 
 - [ ] **Dokumenti → Šabloni dokumenata → Dodaj šablon**
-- [ ] Klikni **"Kreiraj iz fajla"** i otpremi tvoj DOCX uput
 - [ ] Naziv: `Uput - periodični lekarski pregled`
 - [ ] Kontekst: `Zaposleni`
 - [ ] Kategorija: `Lekarski pregledi`
-- [ ] Način generisanja: izaberi šta odgovara (ako nisi siguran, izaberi prvi)
+- [ ] Način kreiranja šablona: **"Kreiraj iz fajla (upload)"**
+- [ ] Otpremi fajl: `files_for_test\Uput_za_periodični_lekarski_pregled.pdf`
 - [ ] Sačuvaj
+
+> Sistem podržava i `.pdf` i `.docx` (kao i .doc/.odt/.rtf/.xlsx/.pptx — automatski se konvertuju u PDF). PDF mora imati pravi tekst (ne sken).
 
 Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje):
 

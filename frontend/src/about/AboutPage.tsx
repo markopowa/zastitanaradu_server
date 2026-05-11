@@ -35,7 +35,11 @@ export default function AboutPage() {
             >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
                     <img src="/favicon.svg" style={{ width: 38 }} alt="logo" />
-                    <Typography variant="h6" fontWeight={700} letterSpacing={0.5}>
+                    <Typography
+                        variant="h6"
+                        fontWeight={700}
+                        letterSpacing={0.5}
+                    >
                         MAK Total Safety
                     </Typography>
                 </Box>
@@ -71,35 +75,112 @@ export default function AboutPage() {
                 </Typography>
                 <Typography
                     variant="h6"
-                    sx={{ opacity: 0.88, maxWidth: 620, mx: "auto", fontWeight: 400, mt: 1 }}
+                    sx={{
+                        opacity: 0.88,
+                        maxWidth: 620,
+                        mx: "auto",
+                        fontWeight: 400,
+                        mt: 1,
+                    }}
                 >
-                    Digitalizujte evidenciju lekarskih pregleda, obuka i periodičnih
-                    provera za vaše zaposlene i opremu.
+                    Digitalizujte evidenciju lekarskih pregleda, obuka i
+                    periodičnih provera za vaše zaposlene i opremu.
                 </Typography>
             </Box>
 
             <Box sx={{ borderTop: `1px solid rgba(74,111,165,0.15)` }}>
-                <Box sx={{ maxWidth: 960, mx: "auto", py: 7, px: { xs: 3, md: 4 } }}>
-                    <Typography variant="h5" fontWeight={600} textAlign="center" color={PRIMARY_DARK} gutterBottom>
+                <Box
+                    sx={{
+                        maxWidth: 960,
+                        mx: "auto",
+                        py: 7,
+                        px: { xs: 3, md: 4 },
+                    }}
+                >
+                    <Typography
+                        variant="h5"
+                        fontWeight={600}
+                        textAlign="center"
+                        color={PRIMARY_DARK}
+                        gutterBottom
+                    >
                         Oblasti koje pokrivamo
                     </Typography>
-                    <Divider sx={{ mb: 5, borderColor: PRIMARY, opacity: 0.25 }} />
+                    <Divider
+                        sx={{ mb: 5, borderColor: PRIMARY, opacity: 0.25 }}
+                    />
                     <Grid container spacing={2}>
                         {[
-                            { icon: <GavelIcon sx={{ color: PRIMARY }} />, label: "Prava, obaveze i odgovornosti u oblasti bezbednosti i zdravlja na radu" },
-                            { icon: <BusinessIcon sx={{ color: PRIMARY }} />, label: "Organizovanje poslova za bezbednost i zdravlje na radu" },
-                            { icon: <AssessmentIcon sx={{ color: PRIMARY }} />, label: "Procena rizika" },
-                            { icon: <MedicalServicesIcon sx={{ color: PRIMARY }} />, label: "Lekarski pregledi zaposlenih" },
-                            { icon: <SchoolIcon sx={{ color: PRIMARY }} />, label: "Obuka zaposlenih za bezbedan i zdrav rad" },
-                            { icon: <BadgeIcon sx={{ color: PRIMARY }} />, label: "Dozvole za rad" },
-                            { icon: <VerifiedUserIcon sx={{ color: PRIMARY }} />, label: "Lična zaštitna oprema" },
-                            { icon: <BuildIcon sx={{ color: PRIMARY }} />, label: "Pregledi i provera opreme za rad" },
-                            { icon: <ScienceIcon sx={{ color: PRIMARY }} />, label: "Opasne hemijske materije i druge" },
-                            { icon: <AirIcon sx={{ color: PRIMARY }} />, label: "Ispitivanje uslova radne sredine" },
-                            { icon: <HealthAndSafetyIcon sx={{ color: PRIMARY }} />, label: "Organizovanje prve pomoći" },
-                            { icon: <DescriptionIcon sx={{ color: PRIMARY }} />, label: "Evidencija, saradnja i izveštavanje" },
-                            { icon: <GroupsIcon sx={{ color: PRIMARY }} />, label: "Predstavnici zaposlenih za bezbednost i zdravlje na radu i odbor za BZR" },
-                            { icon: <SecurityIcon sx={{ color: PRIMARY }} />, label: "Osiguranje od povrede na radu i profesionalnih bolesti" },
+                            {
+                                icon: <GavelIcon sx={{ color: PRIMARY }} />,
+                                label: "Prava, obaveze i odgovornosti u oblasti bezbednosti i zdravlja na radu",
+                            },
+                            {
+                                icon: <BusinessIcon sx={{ color: PRIMARY }} />,
+                                label: "Organizovanje poslova za bezbednost i zdravlje na radu",
+                            },
+                            {
+                                icon: (
+                                    <AssessmentIcon sx={{ color: PRIMARY }} />
+                                ),
+                                label: "Procena rizika",
+                            },
+                            {
+                                icon: (
+                                    <MedicalServicesIcon
+                                        sx={{ color: PRIMARY }}
+                                    />
+                                ),
+                                label: "Lekarski pregledi zaposlenih",
+                            },
+                            {
+                                icon: <SchoolIcon sx={{ color: PRIMARY }} />,
+                                label: "Obuka zaposlenih za bezbedan i zdrav rad",
+                            },
+                            {
+                                icon: <BadgeIcon sx={{ color: PRIMARY }} />,
+                                label: "Dozvole za rad",
+                            },
+                            {
+                                icon: (
+                                    <VerifiedUserIcon sx={{ color: PRIMARY }} />
+                                ),
+                                label: "Lična zaštitna oprema",
+                            },
+                            {
+                                icon: <BuildIcon sx={{ color: PRIMARY }} />,
+                                label: "Pregledi i provera opreme za rad",
+                            },
+                            {
+                                icon: <ScienceIcon sx={{ color: PRIMARY }} />,
+                                label: "Opasne hemijske materije i druge",
+                            },
+                            {
+                                icon: <AirIcon sx={{ color: PRIMARY }} />,
+                                label: "Ispitivanje uslova radne sredine",
+                            },
+                            {
+                                icon: (
+                                    <HealthAndSafetyIcon
+                                        sx={{ color: PRIMARY }}
+                                    />
+                                ),
+                                label: "Organizovanje prve pomoći",
+                            },
+                            {
+                                icon: (
+                                    <DescriptionIcon sx={{ color: PRIMARY }} />
+                                ),
+                                label: "Evidencija, saradnja i izveštavanje",
+                            },
+                            {
+                                icon: <GroupsIcon sx={{ color: PRIMARY }} />,
+                                label: "Predstavnici zaposlenih za bezbednost i zdravlje na radu i odbor za BZR",
+                            },
+                            {
+                                icon: <SecurityIcon sx={{ color: PRIMARY }} />,
+                                label: "Osiguranje od povrede na radu i profesionalnih bolesti",
+                            },
                         ].map((oblast) => (
                             <Grid item xs={12} sm={6} md={4} key={oblast.label}>
                                 <Paper
@@ -115,8 +196,14 @@ export default function AboutPage() {
                                         gap: 1.5,
                                     }}
                                 >
-                                    <Box sx={{ mt: 0.3, flexShrink: 0 }}>{oblast.icon}</Box>
-                                    <Typography variant="body2" color={PRIMARY_DARK} fontWeight={500}>
+                                    <Box sx={{ mt: 0.3, flexShrink: 0 }}>
+                                        {oblast.icon}
+                                    </Box>
+                                    <Typography
+                                        variant="body2"
+                                        color={PRIMARY_DARK}
+                                        fontWeight={500}
+                                    >
                                         {oblast.label}
                                     </Typography>
                                 </Paper>
@@ -126,28 +213,65 @@ export default function AboutPage() {
                 </Box>
             </Box>
 
-            <Box sx={{ bgcolor: "#F5F9FD", borderTop: `1px solid rgba(74,111,165,0.15)` }}>
-                <Box sx={{ maxWidth: 960, mx: "auto", py: 6, px: { xs: 3, md: 4 } }}>
-                    <Typography variant="h6" fontWeight={600} color={PRIMARY_DARK} gutterBottom>
+            <Box
+                sx={{
+                    bgcolor: "#F5F9FD",
+                    borderTop: `1px solid rgba(74,111,165,0.15)`,
+                }}
+            >
+                <Box
+                    sx={{
+                        maxWidth: 960,
+                        mx: "auto",
+                        py: 6,
+                        px: { xs: 3, md: 4 },
+                    }}
+                >
+                    <Typography
+                        variant="h6"
+                        fontWeight={600}
+                        color={PRIMARY_DARK}
+                        gutterBottom
+                    >
                         O kompaniji
                     </Typography>
-                    <Divider sx={{ mb: 3, borderColor: PRIMARY, opacity: 0.2 }} />
+                    <Divider
+                        sx={{ mb: 3, borderColor: PRIMARY, opacity: 0.2 }}
+                    />
                     <Grid container spacing={3}>
                         {[
                             { label: "Naziv", value: "[Naziv firme]" },
                             { label: "PIB", value: "[PIB]" },
                             { label: "Matični broj", value: "[Matični broj]" },
                             { label: "Adresa", value: "[Adresa sedišta]" },
-                            { label: "Email", value: "info@mak-total-safety.pznr.in.rs", isEmail: true },
-                            { label: "Web", value: "mak-total-safety.pznr.in.rs" },
+                            {
+                                label: "Email",
+                                value: "info@mak-total-safety.pznr.in.rs",
+                                isEmail: true,
+                            },
+                            {
+                                label: "Web",
+                                value: "mak-total-safety.pznr.in.rs",
+                            },
                         ].map((item) => (
                             <Grid item xs={12} sm={6} md={4} key={item.label}>
-                                <Typography variant="caption" color="text.secondary" display="block">
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    display="block"
+                                >
                                     {item.label}
                                 </Typography>
-                                <Typography variant="body2" fontWeight={500} color={PRIMARY_DARK}>
+                                <Typography
+                                    variant="body2"
+                                    fontWeight={500}
+                                    color={PRIMARY_DARK}
+                                >
                                     {item.isEmail ? (
-                                        <a href={`mailto:${item.value}`} style={{ color: PRIMARY }}>
+                                        <a
+                                            href={`mailto:${item.value}`}
+                                            style={{ color: PRIMARY }}
+                                        >
                                             {item.value}
                                         </a>
                                     ) : (
@@ -170,7 +294,8 @@ export default function AboutPage() {
                 }}
             >
                 <Typography variant="body2">
-                    © {new Date().getFullYear()} MAK Total Safety. Sva prava zadržana.
+                    © {new Date().getFullYear()} MAK Total Safety. Sva prava
+                    zadržana.
                 </Typography>
             </Box>
         </Box>

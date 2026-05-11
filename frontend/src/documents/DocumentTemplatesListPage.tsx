@@ -32,6 +32,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import BuildIcon from "@mui/icons-material/Build";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { enqueueSnackbar } from "notistack";
 
 import TemplateStructureEditorDialog from "./TemplateStructureEditorDialog";
@@ -588,30 +589,53 @@ class DocumentTemplatesListPageInner extends Component<
                                         >
                                             Fajl šablona
                                         </Typography>
-                                        <input
-                                            type="file"
-                                            onChange={(e) => {
-                                                const file =
-                                                    e.target.files?.[0] ?? null;
-                                                this.setState((prev) => ({
-                                                    ...prev,
-                                                    upload_file: file,
-                                                }));
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1.5,
+                                                flexWrap: "wrap",
                                             }}
-                                        />
-                                        {upload_file && (
-                                            <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                                sx={{
-                                                    display: "block",
-                                                    mt: 0.5,
-                                                }}
+                                        >
+                                            <Button
+                                                component="label"
+                                                variant="outlined"
+                                                startIcon={<CloudUploadIcon />}
                                             >
-                                                Izabrani fajl:{" "}
-                                                {upload_file.name}
+                                                {upload_file
+                                                    ? "Promeni fajl"
+                                                    : "Izaberi fajl"}
+                                                <input
+                                                    type="file"
+                                                    hidden
+                                                    onChange={(e) => {
+                                                        const file =
+                                                            e.target
+                                                                .files?.[0] ??
+                                                            null;
+                                                        this.setState(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                upload_file:
+                                                                    file,
+                                                            }),
+                                                        );
+                                                    }}
+                                                />
+                                            </Button>
+                                            <Typography
+                                                variant="body2"
+                                                color={
+                                                    upload_file
+                                                        ? "text.primary"
+                                                        : "text.secondary"
+                                                }
+                                            >
+                                                {upload_file
+                                                    ? upload_file.name
+                                                    : "Nijedan fajl nije izabran"}
                                             </Typography>
-                                        )}
+                                        </Box>
                                     </Box>
                                 )}
                             </>

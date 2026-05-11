@@ -28,6 +28,11 @@ import { enqueueSnackbar } from "notistack";
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import { StringToDate } from "../utils/date";
 import {
+    isJmbgComplete,
+    jmbgMatchesDate,
+    jmbgToDateString,
+} from "../utils/jmbg";
+import {
     createEmployee,
     createEquipmentItem,
     generateMedicalExamRecord,
@@ -814,9 +819,7 @@ class ClientCompanyDetailPageInner extends Component<
                         disabled={generatingDoc}
                         onClick={this.handleGenerateMedicalExamRecord}
                     >
-                        {generatingDoc
-                            ? "Generišem..."
-                            : "Generiši Obrazac 1"}
+                        {generatingDoc ? "Generišem..." : "Generiši Obrazac 1"}
                     </Button>
                     {docError && <Alert severity="error">{docError}</Alert>}
                 </Box>
@@ -1070,12 +1073,23 @@ class ClientCompanyDetailPageInner extends Component<
                                 label="JMBG"
                                 fullWidth
                                 value={emp_national_id}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        emp_national_id: e.target.value,
-                                    }))
-                                }
+                                onChange={(e) => {
+                                    const next = e.target.value;
+                                    this.setState((prev) => {
+                                        const derived = isJmbgComplete(next)
+                                            ? jmbgToDateString(next)
+                                            : null;
+                                        return {
+                                            ...prev,
+                                            emp_national_id: next,
+                                            emp_date_of_birth:
+                                                derived &&
+                                                !prev.emp_date_of_birth.trim()
+                                                    ? derived
+                                                    : prev.emp_date_of_birth,
+                                        };
+                                    });
+                                }}
                             />
                         </Tooltip>
                         <Box>
@@ -1092,6 +1106,15 @@ class ClientCompanyDetailPageInner extends Component<
                                 minYearsAgo={18}
                                 minYearsAgoMessage="Zaposleni mora imati najmanje 18 godina. Da li si siguran da želiš da nastaviš sa izabranim datumom?"
                             />
+                            {!jmbgMatchesDate(
+                                emp_national_id,
+                                emp_date_of_birth,
+                            ) && (
+                                <Alert severity="warning" sx={{ mt: 1 }}>
+                                    JMBG i datum rođenja se ne slažu (JMBG kaže{" "}
+                                    {jmbgToDateString(emp_national_id)}).
+                                </Alert>
+                            )}
                         </Box>
                         <TextField
                             margin="dense"

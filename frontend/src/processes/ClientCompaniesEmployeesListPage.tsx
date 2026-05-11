@@ -30,6 +30,11 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import {
+    isJmbgComplete,
+    jmbgMatchesDate,
+    jmbgToDateString,
+} from "../utils/jmbg";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
 import {
@@ -388,12 +393,23 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                 label="JMBG"
                                 fullWidth
                                 value={national_id}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        national_id: e.target.value,
-                                    }))
-                                }
+                                onChange={(e) => {
+                                    const next = e.target.value;
+                                    this.setState((prev) => {
+                                        const derived = isJmbgComplete(next)
+                                            ? jmbgToDateString(next)
+                                            : null;
+                                        return {
+                                            ...prev,
+                                            national_id: next,
+                                            date_of_birth:
+                                                derived &&
+                                                !prev.date_of_birth.trim()
+                                                    ? derived
+                                                    : prev.date_of_birth,
+                                        };
+                                    });
+                                }}
                             />
                         </Tooltip>
                         <Tooltip title="Datum rođenja zaposlenog za lekarske obrasce.">
@@ -411,6 +427,15 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                     minYearsAgo={18}
                                     minYearsAgoMessage="Zaposleni mora imati najmanje 18 godina. Da li si siguran da želiš da nastaviš sa izabranim datumom?"
                                 />
+                                {!jmbgMatchesDate(
+                                    national_id,
+                                    date_of_birth,
+                                ) && (
+                                    <Alert severity="warning" sx={{ mt: 1 }}>
+                                        JMBG i datum rođenja se ne slažu (JMBG
+                                        kaže {jmbgToDateString(national_id)}).
+                                    </Alert>
+                                )}
                             </Box>
                         </Tooltip>
                         <TextField

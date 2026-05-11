@@ -168,7 +168,8 @@ def generate_medical_exam_record(client_id: int) -> bytes:
             if i == 0:
                 _write(row.cells[0], str(ordinal), center=True)
                 _write(row.cells[1], emp.high_risk_position_name or "")
-                _write(row.cells[2], f"{emp.first_name} {emp.last_name}".strip())
+                _write(row.cells[2],
+                       f"{emp.first_name} {emp.last_name}".strip())
 
             interval = ""
             if run:
@@ -187,15 +188,19 @@ def generate_medical_exam_record(client_id: int) -> bytes:
                 rd = run.result_data or {}
                 _write(row.cells[5], _fmt_date(run.performed_at))
                 _write(row.cells[6], _fmt_date(run.valid_until))
-                _write(row.cells[7], _result_data_field(rd, "report_number", "broj_izvestaja"))
-                _write(row.cells[8], _result_data_field(rd, "fitness_assessment", "ocena_sposobnosti"))
-                _write(row.cells[9], _result_data_field(rd, "measures_taken", "preduzete_mere"))
+                _write(row.cells[7], _result_data_field(
+                    rd, "report_number", "broj_izvestaja"))
+                _write(row.cells[8], _result_data_field(
+                    rd, "fitness_assessment", "ocena_sposobnosti"))
+                _write(row.cells[9], _result_data_field(
+                    rd, "measures_taken", "preduzete_mere"))
 
             current += 1
 
         if n > 1:
             for col_idx in range(3):
-                tbl.cell(start, col_idx).merge(tbl.cell(start + n - 1, col_idx))
+                tbl.cell(start, col_idx).merge(
+                    tbl.cell(start + n - 1, col_idx))
 
     doc.add_paragraph()
 

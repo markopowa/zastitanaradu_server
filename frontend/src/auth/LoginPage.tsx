@@ -105,7 +105,10 @@ class LoginPage extends Component<LoginPageProps, LoginPageState> {
                             {loading ? "Prijava..." : "Prijava"}
                         </Button>
                     </Box>
-                    <Typography variant="body2" sx={{ mt: 2, textAlign: "center" }}>
+                    <Typography
+                        variant="body2"
+                        sx={{ mt: 2, textAlign: "center" }}
+                    >
                         <Link component={RouterLink} to="/about">
                             O aplikaciji
                         </Link>

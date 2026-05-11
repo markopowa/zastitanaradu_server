@@ -7,7 +7,8 @@ class Command(BaseCommand):
     help = "Sends a test email via the configured email sender (SES)."
 
     def add_arguments(self, parser):
-        parser.add_argument("recipient", help="Email address to send the test email to.")
+        parser.add_argument(
+            "recipient", help="Email address to send the test email to.")
 
     def handle(self, *args, **options):
         recipient = options["recipient"]
@@ -22,4 +23,5 @@ class Command(BaseCommand):
         if success:
             self.stdout.write(self.style.SUCCESS("Mejl uspesno poslat."))
         else:
-            self.stdout.write(self.style.ERROR("Slanje nije uspelo. Proveri logove."))
+            self.stdout.write(self.style.ERROR(
+                "Slanje nije uspelo. Proveri logove."))

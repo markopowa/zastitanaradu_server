@@ -26,13 +26,16 @@ def _load_aws_credentials_from_csv() -> tuple[str, str] | tuple[None, None]:
                 row = next(reader, None)
                 if row is None:
                     continue
-                key_id = row.get("Access key ID") or row.get("access_key_id") or ""
-                secret = row.get("Secret access key") or row.get("secret_access_key") or ""
+                key_id = row.get("Access key ID") or row.get(
+                    "access_key_id") or ""
+                secret = row.get("Secret access key") or row.get(
+                    "secret_access_key") or ""
                 if key_id and secret:
                     logger.debug("AWS credentials loaded from %s", filename)
                     return key_id.strip(), secret.strip()
         except Exception as e:
-            logger.warning("Failed to read AWS credentials from %s: %s", filename, e)
+            logger.warning(
+                "Failed to read AWS credentials from %s: %s", filename, e)
     return None, None
 
 
@@ -69,7 +72,8 @@ class SESEmailSender:
             getattr(settings, "AWS_ACCESS_KEY_ID", None) or csv_key_id or None
         )
         self._aws_secret_access_key = (
-            getattr(settings, "AWS_SECRET_ACCESS_KEY", None) or csv_secret or None
+            getattr(settings, "AWS_SECRET_ACCESS_KEY",
+                    None) or csv_secret or None
         )
 
     def send(
