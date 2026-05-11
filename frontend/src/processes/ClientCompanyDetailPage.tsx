@@ -16,11 +16,20 @@ import {
     TableRow,
     TextField,
     Tooltip,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import AddIcon from "@mui/icons-material/Add";
 import { enqueueSnackbar } from "notistack";
 
+import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import { StringToDate } from "../utils/date";
 import {
+    createEmployee,
+    createEquipmentItem,
     generateMedicalExamRecord,
     getClientCompany,
     getEmployees,
@@ -39,6 +48,7 @@ import type {
 } from "../types/processPages";
 import type {
     ClientCompany,
+    Employee,
     EmployeeSummary,
     EquipmentItem,
     ProcessBinding,
@@ -95,6 +105,211 @@ class ClientCompanyDetailPageInner extends Component<
         editWebsite: "",
         editNotes: "",
         editActivity_code: "",
+        empDialogOpen: false,
+        emp_first_name: "",
+        emp_last_name: "",
+        emp_father_name: "",
+        emp_national_id: "",
+        emp_date_of_birth: "",
+        emp_place_of_birth: "",
+        emp_email: "",
+        emp_org_unit: "",
+        emp_position: "",
+        emp_occupation: "",
+        emp_high_risk_position_name: "",
+        savingEmployee: false,
+        employeeError: null,
+        eqDialogOpen: false,
+        eq_name: "",
+        eq_category: "",
+        eq_inventory_number: "",
+        eq_location: "",
+        eq_notes: "",
+        savingEquipment: false,
+        equipmentError: null,
+    };
+
+    openEmpDialog = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            empDialogOpen: true,
+            employeeError: null,
+            emp_first_name: "",
+            emp_last_name: "",
+            emp_father_name: "",
+            emp_national_id: "",
+            emp_date_of_birth: "",
+            emp_place_of_birth: "",
+            emp_email: "",
+            emp_org_unit: "",
+            emp_position: "",
+            emp_occupation: "",
+            emp_high_risk_position_name: "",
+        }));
+    };
+
+    closeEmpDialog = (): void => {
+        this.setState((prev) => ({ ...prev, empDialogOpen: false }));
+    };
+
+    saveEmployee = (): void => {
+        const id = Number(this.props.id);
+        const {
+            emp_first_name,
+            emp_last_name,
+            emp_father_name,
+            emp_national_id,
+            emp_date_of_birth,
+            emp_place_of_birth,
+            emp_email,
+            emp_org_unit,
+            emp_position,
+            emp_occupation,
+            emp_high_risk_position_name,
+        } = this.state;
+        if (
+            !emp_first_name.trim() ||
+            !emp_last_name.trim() ||
+            !emp_email.trim() ||
+            !emp_org_unit.trim() ||
+            !emp_position.trim()
+        )
+            return;
+        let dateOfBirthSent: string | undefined;
+        if (emp_date_of_birth.trim()) {
+            const d = StringToDate(emp_date_of_birth);
+            dateOfBirthSent = d
+                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+                : undefined;
+        }
+        const payload: Partial<Employee> = {
+            first_name: emp_first_name.trim(),
+            last_name: emp_last_name.trim(),
+            father_name: emp_father_name.trim() || undefined,
+            national_id: emp_national_id.trim() || undefined,
+            date_of_birth: dateOfBirthSent,
+            place_of_birth: emp_place_of_birth.trim() || undefined,
+            email: emp_email.trim(),
+            org_unit: emp_org_unit.trim(),
+            position: emp_position.trim(),
+            occupation: emp_occupation.trim() || undefined,
+            high_risk_position_name:
+                emp_high_risk_position_name.trim() || undefined,
+            client_company: id,
+        };
+        this.setState((prev) => ({
+            ...prev,
+            savingEmployee: true,
+            employeeError: null,
+        }));
+        createEmployee(payload)
+            .then((created) => {
+                const summary: EmployeeSummary = {
+                    id: created.id,
+                    client_company: created.client_company ?? id,
+                    first_name: created.first_name,
+                    last_name: created.last_name,
+                    email: created.email,
+                    org_unit: created.org_unit,
+                    position: created.position,
+                };
+                this.setState((prev) => ({
+                    ...prev,
+                    employees: [...prev.employees, summary],
+                    savingEmployee: false,
+                    empDialogOpen: false,
+                }));
+                enqueueSnackbar("Zaposleni dodat.", { variant: "success" });
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju zaposlenog.";
+                    this.setState((prev) => ({
+                        ...prev,
+                        savingEmployee: false,
+                        employeeError: msg,
+                    }));
+                },
+            );
+    };
+
+    openEqDialog = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            eqDialogOpen: true,
+            equipmentError: null,
+            eq_name: "",
+            eq_category: "",
+            eq_inventory_number: "",
+            eq_location: "",
+            eq_notes: "",
+        }));
+    };
+
+    closeEqDialog = (): void => {
+        this.setState((prev) => ({ ...prev, eqDialogOpen: false }));
+    };
+
+    saveEquipment = (): void => {
+        const id = Number(this.props.id);
+        const {
+            eq_name,
+            eq_category,
+            eq_inventory_number,
+            eq_location,
+            eq_notes,
+        } = this.state;
+        if (!eq_name.trim()) return;
+        const payload: Partial<EquipmentItem> = {
+            name: eq_name.trim(),
+            category: eq_category.trim() || undefined,
+            inventory_number: eq_inventory_number.trim() || undefined,
+            location: eq_location.trim() || undefined,
+            notes: eq_notes.trim() || undefined,
+            client_company: id,
+            is_active: true,
+        };
+        this.setState((prev) => ({
+            ...prev,
+            savingEquipment: true,
+            equipmentError: null,
+        }));
+        createEquipmentItem(payload)
+            .then((created) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    equipment: [...prev.equipment, created],
+                    savingEquipment: false,
+                    eqDialogOpen: false,
+                }));
+                enqueueSnackbar("Oprema dodata.", { variant: "success" });
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju opreme.";
+                    this.setState((prev) => ({
+                        ...prev,
+                        savingEquipment: false,
+                        equipmentError: msg,
+                    }));
+                },
+            );
     };
 
     startEdit = (): void => {
@@ -301,6 +516,28 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
+            empDialogOpen,
+            emp_first_name,
+            emp_last_name,
+            emp_father_name,
+            emp_national_id,
+            emp_date_of_birth,
+            emp_place_of_birth,
+            emp_email,
+            emp_org_unit,
+            emp_position,
+            emp_occupation,
+            emp_high_risk_position_name,
+            savingEmployee,
+            employeeError,
+            eqDialogOpen,
+            eq_name,
+            eq_category,
+            eq_inventory_number,
+            eq_location,
+            eq_notes,
+            savingEquipment,
+            equipmentError,
         } = this.state;
         const { navigate } = this.props;
 
@@ -584,9 +821,28 @@ class ClientCompanyDetailPageInner extends Component<
                     {docError && <Alert severity="error">{docError}</Alert>}
                 </Box>
 
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-                    Zaposleni
-                </Typography>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mt: 2,
+                    }}
+                >
+                    <Typography variant="subtitle1" fontWeight={600}>
+                        Zaposleni
+                    </Typography>
+                    <PermissionGate permission="partners.add_employee">
+                        <Button
+                            size="small"
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={this.openEmpDialog}
+                        >
+                            Dodaj zaposlenog
+                        </Button>
+                    </PermissionGate>
+                </Box>
                 <Paper sx={{ overflow: "auto" }}>
                     <Table size="small">
                         <TableHead>
@@ -616,9 +872,28 @@ class ClientCompanyDetailPageInner extends Component<
                     </Table>
                 </Paper>
 
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-                    Oprema
-                </Typography>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mt: 2,
+                    }}
+                >
+                    <Typography variant="subtitle1" fontWeight={600}>
+                        Oprema
+                    </Typography>
+                    <PermissionGate permission="partners.add_equipmentitem">
+                        <Button
+                            size="small"
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={this.openEqDialog}
+                        >
+                            Dodaj opremu
+                        </Button>
+                    </PermissionGate>
+                </Box>
                 <Paper sx={{ overflow: "auto" }}>
                     <Table size="small">
                         <TableHead>
@@ -737,6 +1012,280 @@ class ClientCompanyDetailPageInner extends Component<
                         </TableBody>
                     </Table>
                 </Paper>
+
+                <Dialog
+                    open={empDialogOpen}
+                    onClose={this.closeEmpDialog}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Nov zaposleni</DialogTitle>
+                    <DialogContent>
+                        {employeeError && (
+                            <Alert severity="error" sx={{ mb: 1 }}>
+                                {employeeError}
+                            </Alert>
+                        )}
+                        <TextField
+                            margin="dense"
+                            label="Ime"
+                            fullWidth
+                            required
+                            value={emp_first_name}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_first_name: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Prezime"
+                            fullWidth
+                            required
+                            value={emp_last_name}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_last_name: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Ime oca"
+                            fullWidth
+                            value={emp_father_name}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_father_name: e.target.value,
+                                }))
+                            }
+                        />
+                        <Tooltip title="Jedinstveni matični broj građanina (13 cifara).">
+                            <TextField
+                                margin="dense"
+                                label="JMBG"
+                                fullWidth
+                                value={emp_national_id}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        emp_national_id: e.target.value,
+                                    }))
+                                }
+                            />
+                        </Tooltip>
+                        <Box>
+                            <DateTextFieldWithPicker
+                                label="Datum rođenja (dd.mm.yyyy)"
+                                value={emp_date_of_birth}
+                                onChange={(v) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        emp_date_of_birth: v,
+                                    }))
+                                }
+                                defaultYearsAgo={18}
+                                minYearsAgo={18}
+                                minYearsAgoMessage="Zaposleni mora imati najmanje 18 godina. Da li si siguran da želiš da nastaviš sa izabranim datumom?"
+                            />
+                        </Box>
+                        <TextField
+                            margin="dense"
+                            label="Mesto rođenja"
+                            fullWidth
+                            value={emp_place_of_birth}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_place_of_birth: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Email"
+                            fullWidth
+                            required
+                            value={emp_email}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_email: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Organizaciona jedinica"
+                            fullWidth
+                            required
+                            value={emp_org_unit}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_org_unit: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Pozicija"
+                            fullWidth
+                            required
+                            value={emp_position}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_position: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Zanimanje"
+                            fullWidth
+                            value={emp_occupation}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_occupation: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Naziv radnog mesta sa povećanim rizikom"
+                            fullWidth
+                            value={emp_high_risk_position_name}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    emp_high_risk_position_name: e.target.value,
+                                }))
+                            }
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={this.closeEmpDialog}
+                            disabled={savingEmployee}
+                        >
+                            Odustani
+                        </Button>
+                        <Button
+                            onClick={this.saveEmployee}
+                            variant="contained"
+                            disabled={
+                                savingEmployee ||
+                                !emp_first_name.trim() ||
+                                !emp_last_name.trim() ||
+                                !emp_email.trim() ||
+                                !emp_org_unit.trim() ||
+                                !emp_position.trim()
+                            }
+                        >
+                            {savingEmployee ? "Čuvam..." : "Sačuvaj"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog
+                    open={eqDialogOpen}
+                    onClose={this.closeEqDialog}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Nova oprema</DialogTitle>
+                    <DialogContent>
+                        {equipmentError && (
+                            <Alert severity="error" sx={{ mb: 1 }}>
+                                {equipmentError}
+                            </Alert>
+                        )}
+                        <TextField
+                            margin="dense"
+                            label="Naziv"
+                            fullWidth
+                            required
+                            value={eq_name}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    eq_name: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Kategorija"
+                            fullWidth
+                            value={eq_category}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    eq_category: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Inventarski broj"
+                            fullWidth
+                            value={eq_inventory_number}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    eq_inventory_number: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Lokacija"
+                            fullWidth
+                            value={eq_location}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    eq_location: e.target.value,
+                                }))
+                            }
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Beleške"
+                            fullWidth
+                            multiline
+                            minRows={2}
+                            value={eq_notes}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    eq_notes: e.target.value,
+                                }))
+                            }
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={this.closeEqDialog}
+                            disabled={savingEquipment}
+                        >
+                            Odustani
+                        </Button>
+                        <Button
+                            onClick={this.saveEquipment}
+                            variant="contained"
+                            disabled={savingEquipment || !eq_name.trim()}
+                        >
+                            {savingEquipment ? "Čuvam..." : "Sačuvaj"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
             </Box>
         );
     }

@@ -305,6 +305,28 @@ export interface ClientCompanyDetailPageState {
     editWebsite: string;
     editNotes: string;
     editActivity_code: string;
+    empDialogOpen: boolean;
+    emp_first_name: string;
+    emp_last_name: string;
+    emp_father_name: string;
+    emp_national_id: string;
+    emp_date_of_birth: string;
+    emp_place_of_birth: string;
+    emp_email: string;
+    emp_org_unit: string;
+    emp_position: string;
+    emp_occupation: string;
+    emp_high_risk_position_name: string;
+    savingEmployee: boolean;
+    employeeError: string | null;
+    eqDialogOpen: boolean;
+    eq_name: string;
+    eq_category: string;
+    eq_inventory_number: string;
+    eq_location: string;
+    eq_notes: string;
+    savingEquipment: boolean;
+    equipmentError: string | null;
 }
 
 export interface ClientCompaniesEmployeesListPageStateProps {

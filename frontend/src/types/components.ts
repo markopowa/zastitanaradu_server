@@ -4,6 +4,9 @@ export interface DateTextFieldWithPickerProps {
     label: string;
     value: string;
     onChange: (value: string) => void;
+    defaultYearsAgo?: number;
+    minYearsAgo?: number;
+    minYearsAgoMessage?: string;
 }
 
 export interface AuthInitializerOwnProps {

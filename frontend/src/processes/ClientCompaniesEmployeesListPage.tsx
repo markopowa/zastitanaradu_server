@@ -407,6 +407,9 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                             date_of_birth: v,
                                         }))
                                     }
+                                    defaultYearsAgo={18}
+                                    minYearsAgo={18}
+                                    minYearsAgoMessage="Zaposleni mora imati najmanje 18 godina. Da li si siguran da želiš da nastaviš sa izabranim datumom?"
                                 />
                             </Box>
                         </Tooltip>

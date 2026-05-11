@@ -1,192 +1,295 @@
-# Test flow — pregled radnika
+# Test flow — korak po korak
 
-Prolazak kroz ceo flow od setup-a do generisanja Obrasca 1.
-Svaki korak ima šta da proveriš da je prošlo kako treba.
+Otvori sajt, prijavi se kao superuser, i kuca tačno ovo što piše ispod.
+Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogledaj da li je deo "Provera" prošao.
 
----
-
-## 0. Preduslovi
-
-- [ ] Backend pokrenut, baza dostupna
-- [ ] Postoji superuser nalog (potreban za generisanje dokumenata)
-- [ ] Postoji kategorija dokumenata — npr. "Lekarski pregledi"
-  - Dokumenti → Kategorije dokumenata → Dodaj
-- [ ] (Za test mejlova) Email adresa verifikovana u SES sandbox-u
-  - AWS SES → Verified identities → Create identity → Email address
-  - Potvrdi link koji stigne na tu adresu
+> **Test podaci ispod su nasumični** — možeš ih bukvalno copy-paste. Ako pokrećeš test više puta, promeni broj na kraju imena firme (Test firma 01 → Test firma 02) da ne dobiješ duplikat.
 
 ---
 
-## 1. Unos firme i zaposlenog
+## Test podaci (kopiraj odavde dok testiraš)
 
-- [ ] Klijenti → Dodaj firmu
-  - Naziv: npr. "Test firma d.o.o."
-  - Popuni ostala polja po želji
-- [ ] Za tu firmu dodaj zaposlenog
-  - Ime, prezime
-  - JMBG (13 cifara)
-  - Datum i mesto rođenja
-  - Radno mesto
-  - Naziv radnog mesta sa povećanim rizikom (ako je primenjivo)
-- [ ] Proveri da li se zaposleni vidi na stranici firme
+**Firma:** *(obavezna su samo Naziv i PIB — ostalo popuni radi realnog testa)*
+- Naziv: `Test firma 07 d.o.o.`
+- PIB: `123456789`
+- Matični broj: `12345678`
+- Šifra delatnosti: `4321` *(izvođenje elektroinstalacionih radova)*
+- Adresa: `Bulevar testiranja 14, Beograd`
+- Telefon: `+381 11 123 4567`
+- Email: `markovuckovic1992@gmail.com` *(verifikovana SES adresa)*
+- Website: `https://test-firma-07.rs`
+- Napomene: `Test unos — slobodno obrisati`
+
+**Zaposleni:**
+- Ime: `Marko`
+- Prezime: `Petrović`
+- Ime oca: `Stevan`
+- JMBG: `0102990710123`
+- Datum rođenja: `01.02.1990.`
+- Mesto rođenja: `Niš`
+- Zanimanje: `Električar`
+- Radno mesto: `Električar na visini`
+- Naziv radnog mesta sa povećanim rizikom: `Električar na visini`
+
+**Kategorije / nazivi:**
+- Kategorija dokumenata: `Lekarski pregledi`
+- Vrsta obaveze: `Periodični lekarski pregled`
+- Šablon dokumenta: `Uput - periodični lekarski pregled`
+
+**Za "Završi pregled":**
+- Datum pregleda: **današnji datum**
+- Važi do: **današnji datum + 12 meseci**
+- Broj izveštaja: `IZV-2026-001`
+- Ocena sposobnosti: `Sposoban`
+- Preduzete mere: `/`
 
 ---
 
-## 2. Kreiranje šablona dokumenta
+## 0. Pre nego što počneš — provera
 
-- [ ] Dokumenti → Šabloni dokumenata → Dodaj šablon
-- [ ] Izaberi "Kreiraj iz fajla" i otpremi DOCX uput
-- [ ] Popuni:
-  - Naziv: npr. "Uput - periodični lekarski pregled"
-  - Kontekst: Zaposleni
-  - Kategorija: Lekarski pregledi
-  - Način generisanja: izaberi odgovarajući
-- [ ] Sačuvaj, pa otvori mapiranje polja
-- [ ] Postavi bar ova polja:
-  - [ ] Ime → `employee.first_name`
-  - [ ] Prezime → `employee.last_name`
-  - [ ] JMBG → `employee.national_id`
-  - [ ] Datum rođenja → `employee.date_of_birth`
-  - [ ] Radno mesto → `employee.position`
-  - [ ] Naziv firme → `client.name`
-  - [ ] Broj uputa → `instruction_number`
-  - [ ] Datum prethodnog pregleda → `last_exam_date`
+- [ ] Backend radi (sajt se otvara, ne baca 500)
+- [ ] Možeš da se uloguješ kao **superuser** (bez toga generisanje dokumenata neće raditi)
+- [ ] Imaš pri ruci jedan **DOCX uput** (bilo koji Word fajl sa praznim poljima — koristiće se kao šablon)
+- [ ] Test mejl adresa `markovuckovic1992@gmail.com` je verifikovana u AWS SES (već jeste)
+
+---
+
+## 1. Napravi kategoriju dokumenata
+
+- [ ] U meniju: **Dokumenti → Kategorije dokumenata → Dodaj**
+- [ ] Naziv: `Lekarski pregledi`
+- [ ] Sačuvaj
+
+**Provera:** Kategorija se vidi u listi.
+
+---
+
+## 2. Unesi firmu
+
+- [ ] **Klijenti → Dodaj firmu**
+- [ ] Naziv: `Test firma 07 d.o.o.` *(obavezno)*
+- [ ] PIB: `123456789` *(obavezno)*
+- [ ] Matični broj: `12345678`
+- [ ] Šifra delatnosti: `4321`
+- [ ] Adresa: `Bulevar testiranja 14, Beograd`
+- [ ] Telefon: `+381 11 123 4567`
+- [ ] Email: `markovuckovic1992@gmail.com`
+- [ ] Website: `https://test-firma-07.rs`
+- [ ] Napomene: `Test unos — slobodno obrisati`
+- [ ] (Opciono) Otpremi logo
+- [ ] Sačuvaj
+
+**Provera:** Firma se otvori — vidiš stranicu sa njenim imenom.
+
+---
+
+## 3. Unesi zaposlenog
+
+- [ ] Na stranici firme klikni **Dodaj zaposlenog**
+- [ ] Ime: `Marko`
+- [ ] Prezime: `Petrović`
+- [ ] Ime oca: `Stevan`
+- [ ] JMBG: `0102990710123`
+- [ ] Datum rođenja: `01.02.1990.`
+- [ ] Mesto rođenja: `Niš`
+- [ ] Zanimanje: `Električar`
+- [ ] Radno mesto: `Električar na visini`
+- [ ] Naziv radnog mesta sa povećanim rizikom: `Električar na visini`
+- [ ] Sačuvaj
+
+**Provera:** Vrati se na stranicu firme — vidiš Marka Petrovića u listi zaposlenih.
+
+---
+
+## 4. Napravi šablon dokumenta (Uput)
+
+- [ ] **Dokumenti → Šabloni dokumenata → Dodaj šablon**
+- [ ] Klikni **"Kreiraj iz fajla"** i otpremi tvoj DOCX uput
+- [ ] Naziv: `Uput - periodični lekarski pregled`
+- [ ] Kontekst: `Zaposleni`
+- [ ] Kategorija: `Lekarski pregledi`
+- [ ] Način generisanja: izaberi šta odgovara (ako nisi siguran, izaberi prvi)
+- [ ] Sačuvaj
+
+Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje):
+
+- [ ] Ime → `employee.first_name`
+- [ ] Prezime → `employee.last_name`
+- [ ] JMBG → `employee.national_id`
+- [ ] Datum rođenja → `employee.date_of_birth`
+- [ ] Radno mesto → `employee.position`
+- [ ] Naziv firme → `client.name`
+- [ ] Broj uputa → `instruction_number`
+- [ ] Datum prethodnog pregleda → `last_exam_date`
 - [ ] Sačuvaj mapiranje
 
----
-
-## 3. Kreiranje vrste obaveze
-
-- [ ] Procesi → Vrste obaveza → Dodaj
-  - Naziv: "Periodični lekarski pregled"
-  - Subjekt: Zaposleni
-  - Period (meseci): 12
-  - Rok unapred (dana): 30
-  - Uključi u evidenciju lekarskih pregleda: DA
-  - Aktivan: DA
-- [ ] Sačuvaj i proveri da je dobila automatski kod
+**Provera:** Šablon se vidi u listi šablona.
 
 ---
 
-## 4. Kreiranje šablona procesa
+## 5. Napravi vrstu obaveze
 
-### 4a. Na zakazani datum (generiši dokument + pošalji mejl)
-
-- [ ] Procesi → Šabloni procesa → Dodaj
-  - Vrsta obaveze: Periodični lekarski pregled
-  - Okidač: Na zakazani datum
-  - Generiši dokument: DA
-  - Šablon dokumenta: Uput - periodični lekarski pregled
-  - Kategorija dokumenta: Lekarski pregledi
-  - Pošalji mejl: DA
-  - Primalac: Custom email (unesi svoju verifikovanu test adresu)
-  - Naslov: `Uput za pregled - {{ process_type_name }}`
-  - Telo: `Poštovani, u prilogu je uput za {{ process_type_name }}. Datum: {{ scheduled_for }}.`
+- [ ] **Procesi → Vrste obaveza → Dodaj**
+- [ ] Naziv: `Periodični lekarski pregled`
+- [ ] Subjekt: `Zaposleni`
+- [ ] Period (meseci): `12`
+- [ ] Rok unapred (dana): `30`
+- [ ] Uključi u evidenciju lekarskih pregleda: **DA** ✅
+- [ ] Aktivan: **DA** ✅
 - [ ] Sačuvaj
 
-### 4b. Pri završetku (chaining na sledeću obavezu) — opciono
+**Provera:** Vrsta obaveze ima automatski generisan **kod** (videćeš ga u listi).
 
-- [ ] Procesi → Šabloni procesa → Dodaj
-  - Vrsta obaveze: Periodični lekarski pregled
-  - Okidač: Pri završetku
-  - Sledeća vrsta obaveze: Periodični lekarski pregled (ili druga vrsta)
+---
+
+## 6. Napravi šablon procesa (ono što okida slanje)
+
+- [ ] **Procesi → Šabloni procesa → Dodaj**
+- [ ] Vrsta obaveze: `Periodični lekarski pregled`
+- [ ] Okidač: **Na zakazani datum**
+- [ ] Generiši dokument: **DA** ✅
+- [ ] Šablon dokumenta: `Uput - periodični lekarski pregled`
+- [ ] Kategorija dokumenta: `Lekarski pregledi`
+- [ ] Pošalji mejl: **DA** ✅ *(ako preskačeš mejl, stavi NE)*
+- [ ] Primalac: **Custom email** → `markovuckovic1992@gmail.com`
+- [ ] Naslov: `Uput za pregled - {{ process_type_name }}`
+- [ ] Telo:
+
+```
+Poštovani,
+
+U prilogu je uput za {{ process_type_name }}.
+Datum: {{ scheduled_for }}.
+```
+
+- [ ] Sačuvaj
+
+**Provera:** Šablon procesa se vidi u listi.
+
+---
+
+### 6b. (Opciono) Chaining — automatski otvori sledeću obavezu
+
+Ako hoćeš da testiraš da li se posle završenog pregleda automatski zakazuje sledeći:
+
+- [ ] **Procesi → Šabloni procesa → Dodaj**
+- [ ] Vrsta obaveze: `Periodični lekarski pregled`
+- [ ] Okidač: **Pri završetku**
+- [ ] Sledeća vrsta obaveze: `Periodični lekarski pregled` *(za test, gađaj samog sebe)*
 - [ ] Sačuvaj
 
 ---
 
-## 5. Kreiranje rasporeda
+## 7. Napravi raspored za Marka
 
-- [ ] Procesi → Rasporedi → Dodaj
-  - Vrsta obaveze: Periodični lekarski pregled
-  - Zaposleni: test zaposleni
-  - Sledeći termin: **danas ili datum u prošlosti** (da bi run_due_processes odmah okidao)
-  - Aktivan: DA
+- [ ] **Procesi → Rasporedi → Dodaj**
+- [ ] Vrsta obaveze: `Periodični lekarski pregled`
+- [ ] Zaposleni: `Marko Petrović`
+- [ ] Sledeći termin: **današnji datum** *(da bi sistem odmah reagovao)*
+- [ ] Aktivan: **DA** ✅
 - [ ] Sačuvaj
+
+**Provera:** Raspored se vidi u listi sa Markom i današnjim datumom.
 
 ---
 
-## 6. Pokretanje run_due_processes
+## 8. Pokreni komandu koja zakazuje aktivnosti
+
+U terminalu, u root projekta:
 
 ```bash
 python manage.py run_due_processes
 ```
 
-- [ ] Komanda se izvršila bez grešaka
-- [ ] Procesi → Aktivnosti → postoji nova aktivnost u statusu "Na čekanju" za test zaposlenog
-- [ ] Aktivnost ima ispravan `scheduled_for` datum
-- [ ] Snapshot zaposlenog u aktivnosti sadrži ime, JMBG, radno mesto
+- [ ] Komanda se izvršila bez crvenog teksta (greške)
+
+**Provera:**
+- [ ] **Procesi → Aktivnosti** — postoji nova aktivnost u statusu **"Na čekanju"** za Marka
+- [ ] Datum aktivnosti je današnji
+- [ ] Otvori aktivnost — u snapshot-u vidiš `Marko Petrović`, JMBG `0102990710123`, radno mesto `Električar na visini`
 
 ---
 
-## 7. Provera generisanog dokumenta
+## 9. Proveri generisani dokument
 
-- [ ] Otvori aktivnost → tab Dokumenti
-- [ ] Postoji generisani dokument (naziv tipa "Uput - periodični... – Run #X")
-- [ ] Preuzmi dokument i proveri da su polja popunjena:
-  - [ ] Ime i prezime zaposlenog
-  - [ ] JMBG
-  - [ ] Naziv firme
-  - [ ] Broj uputa (UP-0001 ili sledeći u nizu)
-  - [ ] Datum prethodnog pregleda (prazan ako je prvi pregled)
+- [ ] Otvori aktivnost → tab **Dokumenti**
+- [ ] Postoji dokument tipa `Uput - periodični lekarski pregled – Run #1`
+- [ ] Skini ga (download)
+- [ ] Otvori DOCX i proveri:
+  - [ ] Piše `Marko Petrović`
+  - [ ] Piše JMBG `0102990710123`
+  - [ ] Piše `Test firma 07 d.o.o.`
+  - [ ] Broj uputa popunjen (npr. `UP-0001`)
+  - [ ] Datum prethodnog pregleda **prazan** (jer je ovo prvi pregled — to je očekivano)
 
 ---
 
-## 8. Provera mejla
+## 10. Proveri mejl
 
-- [ ] Proveri inbox verifikovane test adrese
-- [ ] Mejl stigao sa `noreply@mak-total-safety.pznr.in.rs`
-- [ ] Naslov i telo su ispravno popunjeni (Jinja2 varijable zamenjene)
+- [ ] Otvori inbox `markovuckovic1992@gmail.com`
+- [ ] Stigao je mejl sa `noreply@mak-total-safety.pznr.in.rs`
+- [ ] Naslov: `Uput za pregled - Periodični lekarski pregled` (NIJE `{{ process_type_name }}` — varijabla je zamenjena)
+- [ ] Telo mejla je popunjeno, datum je današnji
 
-Ako mejl nije stigao:
+**Ako mejl nije stigao:**
+
 ```bash
-python manage.py send_test_email tvoja@adresa.com
+python manage.py send_test_email markovuckovic1992@gmail.com
 ```
-- [ ] Test mejl stigao → konfiguracija SES radi
-- [ ] Ako test radi a flow ne → proveri logove (`backend/logs/django.log`)
+
+- [ ] Test mejl je stigao → SES radi, znači problem je u flow-u → vidi `backend/logs/django.log`
+- [ ] Test mejl nije stigao → problem je u SES konfiguraciji ili verifikaciji adrese
 
 ---
 
-## 9. Završetak aktivnosti
+## 11. Završi pregled
 
-- [ ] Procesi → Aktivnosti → otvori aktivnost → klikni "Završi"
-- [ ] Unesi:
-  - Datum izvršenog pregleda: danas
-  - Važi do: danas + 12 meseci
-  - Broj izveštaja: npr. "IZV-001"
-  - Ocena sposobnosti: npr. "Sposoban"
-  - Preduzete mere: npr. "/"
+- [ ] **Procesi → Aktivnosti** → otvori Markovu aktivnost → klikni **"Završi"**
+- [ ] Datum izvršenog pregleda: **današnji datum**
+- [ ] Važi do: **današnji datum + 12 meseci** (npr. ako je danas 11.05.2026, stavi 11.05.2027)
+- [ ] Broj izveštaja: `IZV-2026-001`
+- [ ] Ocena sposobnosti: `Sposoban`
+- [ ] Preduzete mere: `/`
 - [ ] Potvrdi
-- [ ] Aktivnost prešla u status "Završeno"
-- [ ] Raspored dobio ažuriran `last_run_at` i novi `next_run_at` (za 12 meseci)
+
+**Provera:**
+- [ ] Aktivnost je sad u statusu **"Završeno"**
+- [ ] Raspored za Marka ima ažuriran **next_run_at** — datum za 12 meseci od danas
 
 ---
 
-## 10. Provera chaininga (ako je podešen)
+## 12. (Ako si radio chaining) Proveri da je sledeća obaveza otvorena
 
-- [ ] Procesi → Rasporedi → postoji ažuriran ili novi raspored za isti zaposleni za sledeću vrstu obaveze
-- [ ] `next_run_at` je ispravno izračunat
-
----
-
-## 11. Generisanje Obrasca 1
-
-- [ ] Klijenti → otvori Test firma d.o.o.
-- [ ] Klikni dugme "Generiši Obrazac 1"
-- [ ] DOCX fajl se skida automatski
-- [ ] Otvori fajl i proveri:
-  - [ ] Zaposleni se pojavljuje u tabeli
-  - [ ] Datum pregleda ispravan
-  - [ ] Datum sledećeg pregleda ispravan
-  - [ ] Broj izveštaja, ocena sposobnosti, preduzete mere popunjeni
+- [ ] **Procesi → Rasporedi** — postoji raspored za Marka za sledeći pregled sa datumom za 12 meseci
 
 ---
 
-## Česta mesta gde može da pukne
+## 13. Generiši Obrazac 1 (evidencija)
 
-| Problem | Gde gledati |
-|---------|-------------|
-| Dokument nije generisan | Postoji li superuser? Postoji li kategorija dokumenta? Proveri `django.log` |
-| Mejl nije poslat | Proveri `django.log` za SES greške. Pokreni `send_test_email` |
-| run_due_processes ne kreira run | Da li je `next_run_at <= danas`? Da li raspored aktivan? Da li već postoji pending run? |
-| Chaining ne radi | Da li šablon procesa ima okidač "Pri završetku" i "Sledeća vrsta obaveze"? |
-| Obrazac 1 prazan | Da li vrsta obaveze ima "Uključi u evidenciju" = DA? Da li su pregledi završeni (ne pending)? |
+- [ ] **Klijenti** → otvori `Test firma 07 d.o.o.`
+- [ ] Klikni **"Generiši Obrazac 1"**
+- [ ] DOCX fajl se automatski skida
+
+Otvori fajl i proveri:
+- [ ] Marko Petrović je u tabeli
+- [ ] Datum pregleda = današnji
+- [ ] Datum sledećeg pregleda = za 12 meseci
+- [ ] Broj izveštaja: `IZV-2026-001`
+- [ ] Ocena sposobnosti: `Sposoban`
+- [ ] Preduzete mere: `/`
+
+---
+
+## 🎉 Ako je sve gore prošlo — flow radi.
+
+---
+
+## Ako nešto pukne — gde da gledaš
+
+| Šta je puklo | Šta provero |
+|--------------|-------------|
+| Nije se generisao dokument | Ulogovan si kao superuser? Postoji li kategorija `Lekarski pregledi`? Vidi `backend/logs/django.log` |
+| Mejl nije stigao | Pokreni `python manage.py send_test_email tvoj@mejl.com`. Ako test mejl ne stiže — SES nije podešen. Ako stiže — vidi `django.log` |
+| `run_due_processes` ne pravi aktivnost | Da li je `Sledeći termin` u rasporedu **danas ili u prošlosti**? Da li je raspored aktivan? Da li već postoji "Na čekanju" za Marka? |
+| Chaining ne radi | Ima li šablon procesa sa okidačem **"Pri završetku"** i popunjenom **Sledeća vrsta obaveze**? |
+| Obrazac 1 je prazan | Vrsta obaveze ima **"Uključi u evidenciju" = DA**? Pregled je u statusu **Završeno** (ne "Na čekanju")? |

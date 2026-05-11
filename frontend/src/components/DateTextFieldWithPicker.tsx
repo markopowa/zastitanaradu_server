@@ -9,6 +9,8 @@ import {
     TextField,
     IconButton,
     InputAdornment,
+    Select,
+    MenuItem,
     Typography,
 } from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
@@ -20,21 +22,33 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
     label,
     value,
     onChange,
+    defaultYearsAgo,
+    minYearsAgo,
+    minYearsAgoMessage,
 }) => {
     const [open, setOpen] = useState(false);
 
     const parseDisplayDate = (v: string): Date | null => StringToDate(v);
 
+    const defaultMonth = (): Date => {
+        const d = new Date();
+        if (defaultYearsAgo != null) {
+            d.setFullYear(d.getFullYear() - defaultYearsAgo);
+        }
+        d.setDate(1);
+        return d;
+    };
+
     const [currentMonth, setCurrentMonth] = useState<Date>(() => {
         const parsed = value ? parseDisplayDate(value) : null;
-        return parsed ?? new Date();
+        return parsed ?? defaultMonth();
     });
 
     const selectedDate = value ? parseDisplayDate(value) : null;
 
     const handleOpen = (): void => {
         const parsed = value ? parseDisplayDate(value) : null;
-        setCurrentMonth(parsed ?? new Date());
+        setCurrentMonth(parsed ?? defaultMonth());
         setOpen(true);
     };
 
@@ -48,10 +62,38 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
         });
     };
 
+    const handleYearChange = (delta: number): void => {
+        setCurrentMonth((prev) => {
+            const year = prev.getFullYear();
+            const month = prev.getMonth();
+            return new Date(year + delta, month, 1);
+        });
+    };
+
+    const handleYearSelect = (newYear: number): void => {
+        setCurrentMonth((prev) => new Date(newYear, prev.getMonth(), 1));
+    };
+
+    const handleMonthSelect = (newMonth: number): void => {
+        setCurrentMonth((prev) => new Date(prev.getFullYear(), newMonth, 1));
+    };
+
     const handleSelectDay = (day: number): void => {
         const year = currentMonth.getFullYear();
         const month = currentMonth.getMonth() + 1;
         const d = new Date(year, month - 1, day);
+        if (minYearsAgo != null) {
+            const threshold = new Date();
+            threshold.setFullYear(threshold.getFullYear() - minYearsAgo);
+            if (d > threshold) {
+                const msg =
+                    minYearsAgoMessage ??
+                    `Izabrani datum znači manje od ${minYearsAgo} godina. Da li si siguran?`;
+                if (!window.confirm(msg)) {
+                    return;
+                }
+            }
+        }
         onChange(DateToString(d));
         setOpen(false);
     };
@@ -86,10 +128,28 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
             ? null
             : selectedDate.getFullYear();
 
-    const monthLabel = currentMonth.toLocaleDateString("sr-RS", {
-        month: "long",
-        year: "numeric",
-    });
+    const monthNames = [
+        "Januar",
+        "Februar",
+        "Mart",
+        "April",
+        "Maj",
+        "Jun",
+        "Jul",
+        "Avgust",
+        "Septembar",
+        "Oktobar",
+        "Novembar",
+        "Decembar",
+    ];
+
+    const currentYear = currentMonth.getFullYear();
+    const yearOptions: number[] = [];
+    const thisYear = new Date().getFullYear();
+    for (let y = thisYear; y >= thisYear - 100; y -= 1) {
+        yearOptions.push(y);
+    }
+    if (!yearOptions.includes(currentYear)) yearOptions.unshift(currentYear);
 
     const weekdayLabels = ["Po", "Ut", "Sr", "Če", "Pe", "Su", "Ne"];
 
@@ -121,24 +181,75 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "space-between",
+                        gap: 1,
                         pb: 1,
                     }}
                 >
-                    <IconButton
-                        size="small"
-                        onClick={() => handleMonthChange(-1)}
-                    >
-                        {"<"}
-                    </IconButton>
-                    <Typography variant="subtitle1" component="span">
-                        {monthLabel}
-                    </Typography>
-                    <IconButton
-                        size="small"
-                        onClick={() => handleMonthChange(1)}
-                    >
-                        {">"}
-                    </IconButton>
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
+                        <IconButton
+                            size="small"
+                            onClick={() => handleYearChange(-1)}
+                            title="Prethodna godina"
+                        >
+                            {"«"}
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            onClick={() => handleMonthChange(-1)}
+                            title="Prethodni mesec"
+                        >
+                            {"‹"}
+                        </IconButton>
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 1, flex: 1, mx: 1 }}>
+                        <Select
+                            size="small"
+                            value={month}
+                            onChange={(e) =>
+                                handleMonthSelect(Number(e.target.value))
+                            }
+                            sx={{ flex: 1 }}
+                        >
+                            {monthNames.map((m, idx) => (
+                                <MenuItem key={m} value={idx}>
+                                    {m}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                        <Select
+                            size="small"
+                            value={currentYear}
+                            onChange={(e) =>
+                                handleYearSelect(Number(e.target.value))
+                            }
+                            MenuProps={{
+                                PaperProps: { sx: { maxHeight: 320 } },
+                            }}
+                            sx={{ width: 100 }}
+                        >
+                            {yearOptions.map((y) => (
+                                <MenuItem key={y} value={y}>
+                                    {y}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 0.5 }}>
+                        <IconButton
+                            size="small"
+                            onClick={() => handleMonthChange(1)}
+                            title="Sledeći mesec"
+                        >
+                            {"›"}
+                        </IconButton>
+                        <IconButton
+                            size="small"
+                            onClick={() => handleYearChange(1)}
+                            title="Sledeća godina"
+                        >
+                            {"»"}
+                        </IconButton>
+                    </Box>
                 </DialogTitle>
                 <DialogContent>
                     <Box
