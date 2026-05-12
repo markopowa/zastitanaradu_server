@@ -106,8 +106,12 @@ export interface ProcessBinding {
     process_type_name: string;
     subject_kind: "EMPLOYEE" | "EQUIPMENT" | "CLIENT_COMPANY";
     employee: number | null;
+    employee_first_name?: string;
+    employee_last_name?: string;
     equipment_item: number | null;
+    equipment_item_name?: string;
     client_company: number | null;
+    client_company_name?: string;
     custom_period_months?: number | null;
     lead_time_days?: number | null;
     next_run_at?: string | null;

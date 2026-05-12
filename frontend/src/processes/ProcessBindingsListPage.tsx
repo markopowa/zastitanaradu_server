@@ -237,16 +237,11 @@ class ProcessBindingsListPageInner extends Component<
 
         const subjectLabel = (b: ProcessBinding) => {
             if (b.employee) {
-                const emp = employees.find((e) => e.id === b.employee);
-                if (emp) return `${emp.first_name} ${emp.last_name}`.trim();
-                return `Zaposleni #${b.employee}`;
+                const name = `${b.employee_first_name ?? ""} ${b.employee_last_name ?? ""}`.trim();
+                return name || "—";
             }
-            if (b.equipment_item) return `Oprema #${b.equipment_item}`;
-            if (b.client_company)
-                return (
-                    clients.find((c) => c.id === b.client_company)?.name ??
-                    `Firma #${b.client_company}`
-                );
+            if (b.equipment_item) return b.equipment_item_name || "—";
+            if (b.client_company) return b.client_company_name || "—";
             return "—";
         };
 

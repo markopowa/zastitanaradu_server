@@ -429,7 +429,7 @@ class ProcessTemplatesListPageInner extends Component<
                                         Vrsta obaveze
                                     </TableCell>
                                     <TableCell sx={tableCellEllipsis}>
-                                        Trigger
+                                        Okidač
                                     </TableCell>
                                     <TableCell sx={tableCellEllipsis}>
                                         Šablon dokumenta
@@ -581,10 +581,10 @@ class ProcessTemplatesListPageInner extends Component<
 
                         <Tooltip title="Kada da se izvrši akcija: pri zakazivanju, pri završetku obaveze ili kada istekne rok.">
                             <FormControl fullWidth margin="dense">
-                                <InputLabel>Trigger</InputLabel>
+                                <InputLabel>Okidač</InputLabel>
                                 <Select
                                     value={form_trigger}
-                                    label="Trigger"
+                                    label="Okidač"
                                     onChange={(e) =>
                                         this.setState((prev) => ({
                                             ...prev,
@@ -759,7 +759,7 @@ class ProcessTemplatesListPageInner extends Component<
                                 )}
 
                                 <TemplateTextField
-                                    margin="dense"
+                                    margin="normal"
                                     label="Naslov mejla"
                                     fullWidth
                                     value={form_email_subject_template}
@@ -772,7 +772,7 @@ class ProcessTemplatesListPageInner extends Component<
                                     variables={TEMPLATE_VARIABLES}
                                 />
                                 <TemplateTextField
-                                    margin="dense"
+                                    margin="normal"
                                     label="Telo mejla"
                                     fullWidth
                                     multiline

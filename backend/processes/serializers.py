@@ -54,6 +54,14 @@ class ProcessTemplateSerializer(serializers.ModelSerializer):
 class ProcessBindingSerializer(serializers.ModelSerializer):
     process_type_name = serializers.CharField(
         source="process_type.name", read_only=True)
+    employee_first_name = serializers.CharField(
+        source="employee.first_name", read_only=True, default="")
+    employee_last_name = serializers.CharField(
+        source="employee.last_name", read_only=True, default="")
+    equipment_item_name = serializers.CharField(
+        source="equipment_item.name", read_only=True, default="")
+    client_company_name = serializers.CharField(
+        source="client_company.name", read_only=True, default="")
 
     class Meta:
         model = ProcessBinding
@@ -63,8 +71,12 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
             "process_type_name",
             "subject_kind",
             "employee",
+            "employee_first_name",
+            "employee_last_name",
             "equipment_item",
+            "equipment_item_name",
             "client_company",
+            "client_company_name",
             "custom_period_months",
             "lead_time_days",
             "next_run_at",
