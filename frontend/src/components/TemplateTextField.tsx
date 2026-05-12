@@ -180,15 +180,15 @@ export default function TemplateTextField({
         handleInput();
     };
 
-    const marginTop =
-        margin === "dense" ? "8px" : margin === "normal" ? "16px" : "0px";
+    const mt = margin === "dense" ? 1 : margin === "normal" ? 2 : 0;
+    const mb = margin === "dense" ? 0.5 : margin === "normal" ? 1 : 0;
 
     const minHeight = multiline ? `${minRows * 1.5}em` : "2em";
 
     return (
         <Box
             sx={[
-                { mt: marginTop, width: fullWidth ? "100%" : undefined },
+                { mt, mb, width: fullWidth ? "100%" : undefined },
                 ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
             ]}
         >
@@ -221,6 +221,15 @@ export default function TemplateTextField({
                 ))}
             </Box>
 
+            {label && (
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ display: "block", mb: 0.5 }}
+                >
+                    {label}
+                </Typography>
+            )}
             <Box
                 sx={{
                     border: `1px solid ${theme.palette.divider}`,
@@ -229,7 +238,6 @@ export default function TemplateTextField({
                     minHeight,
                     width: fullWidth ? "100%" : undefined,
                     boxSizing: "border-box",
-                    position: "relative",
                     "&:focus-within": {
                         borderColor: theme.palette.primary.main,
                         borderWidth: 2,
@@ -240,25 +248,6 @@ export default function TemplateTextField({
                     },
                 }}
             >
-                {label && (
-                    <Typography
-                        component="label"
-                        variant="caption"
-                        sx={{
-                            position: "absolute",
-                            top: -9,
-                            left: 10,
-                            px: 0.5,
-                            backgroundColor: "background.paper",
-                            color: "text.secondary",
-                            fontSize: "0.75rem",
-                            lineHeight: 1,
-                            pointerEvents: "none",
-                        }}
-                    >
-                        {label}
-                    </Typography>
-                )}
                 <Box
                     ref={editorRef}
                     contentEditable
