@@ -2,8 +2,10 @@ import os
 
 from django.conf import settings
 from django.http import FileResponse, Http404
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 
 
+@xframe_options_sameorigin
 def serve_media_attachment(request, path: str):
     root = os.path.abspath(os.path.normpath(settings.MEDIA_ROOT))
     full_path = os.path.abspath(os.path.normpath(os.path.join(root, path)))
