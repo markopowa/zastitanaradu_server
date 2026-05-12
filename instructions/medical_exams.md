@@ -166,12 +166,13 @@ Sačuvaj mapiranje. Gotovo.
 
 | Naziv | Subjekt | Period | Rok unapred | Uključi u evidenciju | Aktivan |
 |-------|---------|--------|-------------|----------------------|---------|
-| Prethodni lekarski pregled | Zaposleni | 12 mes. | 30 dana | DA | DA |
+| Prethodni lekarski pregled | Zaposleni | *(prazno — jednokratno)* | 30 dana | DA | DA |
 | Periodični lekarski pregled | Zaposleni | 12 mes. | 30 dana | DA | DA |
 | Pregled vida | Zaposleni | 36 mes. | 30 dana | DA | DA |
 | Ciljani oftalmološki pregled | Zaposleni | po dogovoru | 30 dana | DA | DA |
 
-> "Rok unapred 30 dana" znači: sistem će 30 dana pre roka pripremiti aktivnost da znaš da treba uskoro.
+> "Rok unapred 30 dana" znači: sistem šalje uput **30 dana PRE** datuma pregleda — ne posle, nego unapred kao podsetnik.
+> Prethodni pregled nema period jer se radi samo jednom — sistem ga ne ponavlja automatski. Posle završetka, chaining (DEO 6) kreira Periodični.
 
 ---
 
@@ -198,7 +199,7 @@ Klasičan primer: **Prethodni → Periodični**
 
 1. **Procesi → Šabloni procesa → Dodaj**
 2. Vrsta obaveze: `Prethodni lekarski pregled`
-3. Okidač: **Pri završetku**
+3. Okidač: **Kada se završi pregled**
 4. Sledeća vrsta obaveze: `Periodični lekarski pregled`
 5. Sačuvaj
 
@@ -278,8 +279,15 @@ Kad dođe datum iz rasporeda, aktivnost **sama** osvane u listi sa statusom "Na 
 
 ### 8.4 Kad stigne izveštaj iz pregleda (PDF od poslodavca)
 
+Svaka aktivnost ima tab **"Dokumenti"** sa dva tipa dokumenata:
+
+- **Uput** — generiše se automatski kad sistem okine aktivnost. To je popunjen uput koji si odštampao i dao zaposlenom da odnese u ustanovu.
+- **Izveštaj** — dodaješ ga ručno kad stigne papir od ustanove. Klikni **"Dokumenti"** → izaberi fajl iz sistema → **"Dodaj izveštaj"**. Čuva se kao arhiva uz tu aktivnost.
+
+Da označiš da je pregled završen:
+
 1. Otvori aktivnost u listi
-2. (Opciono) Otpremi PDF kao prilog aktivnosti
+2. (Opciono) U tabu **"Dokumenti"** priloži PDF izveštaja koji je stigao od ustanove
 3. Klikni **"Završi"** i unesi:
    - Datum izvršenog pregleda
    - Datum sledećeg pregleda
