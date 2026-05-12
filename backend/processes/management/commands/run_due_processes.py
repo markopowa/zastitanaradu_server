@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.core.management.base import BaseCommand
 
@@ -7,7 +7,7 @@ from processes.tasks import run_process_binding
 
 
 class Command(BaseCommand):
-    help = "Find ProcessBindings with next_run_at <= today and run each via run_process_binding."
+    help = "Find ProcessBindings whose fire date (next_run_at - lead_time_days) <= today and run each."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -18,15 +18,25 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         today = date.today()
-        qs = (
+        candidates = (
             ProcessBinding.objects.filter(
                 is_active=True,
-                next_run_at__lte=today,
+                next_run_at__isnull=False,
             )
             .exclude(runs__status=ProcessRun.STATUS_PENDING)
-            .values_list("id", flat=True)
+            .select_related("process_type")
         )
-        binding_ids = list(qs)
+
+        binding_ids = []
+        for b in candidates:
+            lead = (
+                b.lead_time_days
+                if b.lead_time_days is not None
+                else b.process_type.lead_time_days
+            )
+            fire_date = b.next_run_at - timedelta(days=lead or 0)
+            if fire_date <= today:
+                binding_ids.append(b.id)
 
         if not binding_ids:
             self.stdout.write(self.style.SUCCESS("No due process bindings."))

@@ -62,9 +62,9 @@ const TRIGGER_OPTIONS: {
     value: ProcessTemplatesListTriggerValue;
     label: string;
 }[] = [
-    { value: "ON_SCHEDULED", label: "Prilikom zakazivanja" },
-    { value: "ON_COMPLETED", label: "Prilikom završetka" },
-    { value: "ON_EXPIRED", label: "Kada istekne rok" },
+    { value: "ON_SCHEDULED", label: "Na zakazani datum" },
+    { value: "ON_COMPLETED", label: "Kada se završi pregled" },
+    { value: "ON_EXPIRED", label: "Kada istekne rok važenja" },
 ];
 
 const EMAIL_TO_OPTIONS: {

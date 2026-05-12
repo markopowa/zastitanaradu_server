@@ -88,13 +88,14 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 ### 2a. Priloži Akt o proceni rizika
 
 - [ ] Na stranici firme nađi sekciju **"Akt o proceni rizika"**
+- [ ] U polju **"Datum donošenja (dd.mm.yyyy)"** unesi `15.01.2025.` i klikni **"Sačuvaj datum"**
 - [ ] Klikni **"Priloži fajl"** i izaberi `files_for_test\Uput_za_periodični_lekarski_pregled.pdf` (ili bilo koji test PDF/sliku)
-- [ ] Klikni **"Pregled"** — otvori se popup sa preview-om (PDF u iframe-u, slika prikazana direktno)
-- [ ] Klikni **"Izmeni podatke"** na kartici firme
-- [ ] U formi za izmenu pronađi **"Datum donošenja Akta o proceni rizika"** i unesi `15.01.2025.`
-- [ ] Sačuvaj
+- [ ] Klikni **"Pregled"** — otvori se popup sa PDF pregledom direktno u browseru (ne download)
 
-**Provera:** Vidiš naziv fajla u sekciji, ispod njega "Datum donošenja: 15.01.2025." i dugmiće **Pregled / Promeni fajl / Obriši**.
+**Provera:**
+- [ ] Datum donošenja se čuva bez ulaska u edit formu
+- [ ] Popup prikazuje sadržaj fajla (PDF se prikazuje, slika se prikazuje, .docx prikazuje poruku sa dugmetom za preuzimanje)
+- [ ] Vidljivi dugmići: **Pregled / Promeni fajl / Obriši**
 
 ---
 
@@ -153,6 +154,9 @@ Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje)
 - [ ] Subjekt: `Zaposleni`
 - [ ] Period (meseci): `12`
 - [ ] Rok unapred (dana): `30`
+
+  > ⚠️ **Važno:** "Rok unapred = 30" znači da će sistem poslati uput **30 dana PRE** datuma pregleda, ne posle. Npr. ako je pregled zakazan za 1. jun, uput se šalje 1. maja.
+
 - [ ] Uključi u evidenciju lekarskih pregleda: **DA** ✅
 - [ ] Aktivan: **DA** ✅
 - [ ] Sačuvaj
@@ -204,11 +208,16 @@ Ako hoćeš da testiraš da li se posle završenog pregleda automatski zakazuje 
 - [ ] **Procesi → Rasporedi → Dodaj**
 - [ ] Vrsta obaveze: `Periodični lekarski pregled`
 - [ ] Zaposleni: `Marko Petrović`
-- [ ] Sledeći termin: **današnji datum** *(da bi sistem odmah reagovao)*
+- [ ] Sledeći termin: **današnji datum + 30 dana**
+
+  > Pošto je "Rok unapred = 30 dana", sistem okida **30 dana pre** termina. Da bi `run_due_processes` odmah reagovao, postavi `Sledeći termin = danas + 30 dana` — sistem će izračunati `fire_date = danas` i odmah okidati.
+  >
+  > Alternativno, postavi `Sledeći termin = danas` za trenutno okidanje bez lead time efekta.
+
 - [ ] Aktivan: **DA** ✅
 - [ ] Sačuvaj
 
-**Provera:** Raspored se vidi u listi sa Markom i današnjim datumom.
+**Provera:** Raspored se vidi u listi sa Markom i postavljenim datumom.
 
 ---
 
@@ -264,10 +273,18 @@ python manage.py run_due_processes
 
 - [ ] Komanda se izvršila bez crvenog teksta (greške)
 
+**Kako komanda računa kada da okine:**
+```
+fire_date = next_run_at - lead_time_days
+Okida ako: fire_date <= danas
+```
+Primer: `next_run_at = danas + 30`, `lead_time_days = 30` → `fire_date = danas` → **okida**.
+
 **Provera:**
 - [ ] **Procesi → Aktivnosti** — postoji nova aktivnost u statusu **"Na čekanju"** za Marka
-- [ ] Datum aktivnosti je današnji
+- [ ] `scheduled_for` u aktivnosti = postavljeni termin (danas + 30), ne danas
 - [ ] Otvori aktivnost — u snapshot-u vidiš `Marko Petrović`, JMBG `0102990710123`, radno mesto `Električar na visini`
+- [ ] Ako pokreneš komandu ponovo isti dan — **nova aktivnost se NE pravi** (postoji već PENDING za Marka)
 
 ---
 
@@ -327,7 +344,15 @@ python manage.py send_test_email markovuckovic1992@gmail.com
 
 **Provera:**
 - [ ] Aktivnost je sad u statusu **"Završeno"**
-- [ ] Raspored za Marka ima ažuriran **next_run_at** — datum za 12 meseci od danas
+- [ ] Raspored za Marka ima ažuriran **next_run_at**:
+  ```
+  next_run_at = valid_until + 12 * 30 dana
+  ```
+  Npr. `valid_until = 11.05.2027` → `next_run_at = 10.09.2028`
+- [ ] Sledeći uput će se poslati **30 dana pre** `next_run_at`, tj. `11.08.2028`
+  ```
+  fire_date = next_run_at - 30 = 10.08.2028
+  ```
 
 ---
 

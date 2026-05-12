@@ -70,9 +70,9 @@ class ProcessTemplate(models.Model):
     TRIGGER_ON_EXPIRED = "ON_EXPIRED"
 
     TRIGGER_CHOICES = (
-        (TRIGGER_ON_SCHEDULED, "Prilikom zakazivanja"),
-        (TRIGGER_ON_COMPLETED, "Prilikom završetka"),
-        (TRIGGER_ON_EXPIRED, "Prilikom isteka"),
+        (TRIGGER_ON_SCHEDULED, "Na zakazani datum"),
+        (TRIGGER_ON_COMPLETED, "Kada se završi pregled"),
+        (TRIGGER_ON_EXPIRED, "Kada istekne rok važenja"),
     )
 
     EMAIL_TO_CLIENT_MAIN = "CLIENT_MAIN_EMAIL"
