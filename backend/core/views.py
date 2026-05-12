@@ -12,8 +12,9 @@ def serve_media_attachment(request, path: str):
     if not os.path.isfile(full_path):
         raise Http404("Not found")
     filename = os.path.basename(full_path)
+    inline = request.GET.get("inline") == "1"
     return FileResponse(
         open(full_path, "rb"),
-        as_attachment=True,
+        as_attachment=not inline,
         filename=filename,
     )

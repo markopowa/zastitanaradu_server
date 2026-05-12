@@ -307,7 +307,8 @@ export interface ClientCompanyDetailPageState {
     editWebsite: string;
     editNotes: string;
     editActivity_code: string;
-    editRisk_assessment_act_date: string;
+    riskActDateValue: string;
+    savingRiskActDate: boolean;
     riskActUploading: boolean;
     riskActPreviewOpen: boolean;
     empDialogOpen: boolean;
