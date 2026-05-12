@@ -39,6 +39,13 @@ import type {
 } from "../types/processPages";
 
 const pad = (n: number) => String(n).padStart(2, "0");
+const STATUS_LABELS: Record<string, string> = {
+    PENDING: "Na čekanju",
+    COMPLETED: "Završeno",
+    CANCELLED: "Otkazano",
+    FAILED: "Neuspešno",
+};
+
 const formatDate = (value?: string | null): string => {
     if (!value) return "—";
     const d = new Date(value);
@@ -267,7 +274,7 @@ class DashboardExpiringPage extends Component<
                                             <TableCell>
                                                 {formatDate(run.valid_until)}
                                             </TableCell>
-                                            <TableCell>{run.status}</TableCell>
+                                            <TableCell>{STATUS_LABELS[run.status] ?? run.status}</TableCell>
                                         </TableRow>
                                     ))
                                 )}

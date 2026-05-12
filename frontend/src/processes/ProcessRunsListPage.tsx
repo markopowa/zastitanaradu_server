@@ -64,6 +64,27 @@ import type {
 } from "../types/processPages";
 import { withNavigation } from "../hocs/withNavigation";
 
+const STATUS_LABELS: Record<string, string> = {
+    PENDING: "Na čekanju",
+    COMPLETED: "Završeno",
+    CANCELLED: "Otkazano",
+    FAILED: "Neuspešno",
+};
+
+const USAGE_KIND_LABELS: Record<string, string> = {
+    REPORT: "Izveštaj",
+    INSTRUCTION: "Uput",
+    OTHER: "Ostalo",
+};
+
+function statusLabel(s: string): string {
+    return STATUS_LABELS[s] ?? s;
+}
+
+function usageKindLabel(s: string): string {
+    return USAGE_KIND_LABELS[s] ?? s;
+}
+
 function parseRunsListSearch(
     search: string,
 ): Pick<
@@ -446,7 +467,7 @@ class ProcessRunsListPageInner extends Component<
                                         <TableCell>
                                             {formatDateDisplay(row.valid_until)}
                                         </TableCell>
-                                        <TableCell>{row.status}</TableCell>
+                                        <TableCell>{statusLabel(row.status)}</TableCell>
                                         <TableCell align="right">
                                             <Button
                                                 size="small"
@@ -624,7 +645,7 @@ class ProcessRunsListPageInner extends Component<
                                             rd.document_file_title ??
                                             rd.document_file
                                         }
-                                        secondary={rd.usage_kind}
+                                        secondary={usageKindLabel(rd.usage_kind)}
                                     />
                                 </ListItem>
                             ))}

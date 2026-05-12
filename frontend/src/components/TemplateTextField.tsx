@@ -225,9 +225,7 @@ export default function TemplateTextField({
                 sx={{
                     border: `1px solid ${theme.palette.divider}`,
                     borderRadius: 1,
-                    pt: label ? "18px" : "8.5px",
-                    pb: "8.5px",
-                    px: "14px",
+                    p: "8.5px 14px",
                     minHeight,
                     width: fullWidth ? "100%" : undefined,
                     boxSizing: "border-box",
@@ -235,9 +233,7 @@ export default function TemplateTextField({
                     "&:focus-within": {
                         borderColor: theme.palette.primary.main,
                         borderWidth: 2,
-                        pt: label ? "17px" : "7.5px",
-                        pb: "7.5px",
-                        px: "13px",
+                        p: "7.5px 13px",
                     },
                     "&:hover:not(:focus-within)": {
                         borderColor: theme.palette.text.primary,

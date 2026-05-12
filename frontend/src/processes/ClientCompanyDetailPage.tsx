@@ -65,6 +65,13 @@ import type {
 const formatDate = (v?: string | null) =>
     v ? new Date(v).toLocaleDateString("sr-RS") : "—";
 
+const STATUS_LABELS: Record<string, string> = {
+    PENDING: "Na čekanju",
+    COMPLETED: "Završeno",
+    CANCELLED: "Otkazano",
+    FAILED: "Neuspešno",
+};
+
 function bindingSubjectLabel(
     b: ProcessBinding,
     employees: EmployeeSummary[],
@@ -1262,7 +1269,7 @@ class ClientCompanyDetailPageInner extends Component<
                                         <TableCell>
                                             {formatDate(r.valid_until)}
                                         </TableCell>
-                                        <TableCell>{r.status}</TableCell>
+                                        <TableCell>{STATUS_LABELS[r.status] ?? r.status}</TableCell>
                                     </TableRow>
                                 ))
                             )}
