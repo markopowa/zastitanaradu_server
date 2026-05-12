@@ -95,7 +95,7 @@ export async function sendNowForBinding(
     bindingId: number,
 ): Promise<SendNowResponse> {
     const { data } = await api.post<SendNowResponse>(
-        `/api/processes/process-bindings/${bindingId}/send-now/`,
+        `/api/processes/bindings/${bindingId}/send-now/`,
         {},
     );
     return data;
