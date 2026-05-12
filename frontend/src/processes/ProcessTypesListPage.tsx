@@ -21,7 +21,6 @@ import {
     Select,
     MenuItem,
     Switch,
-    IconButton,
     CircularProgress,
     Alert,
     Tooltip,
@@ -31,7 +30,6 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { enqueueSnackbar } from "notistack";
 
-import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
 import {
     ScrollableTablePaper,
