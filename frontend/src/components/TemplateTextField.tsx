@@ -221,33 +221,47 @@ export default function TemplateTextField({
                 ))}
             </Box>
 
-            {label && (
-                <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", mb: 0.5 }}
-                >
-                    {label}
-                </Typography>
-            )}
             <Box
                 sx={{
                     border: `1px solid ${theme.palette.divider}`,
                     borderRadius: 1,
-                    p: "8.5px 14px",
+                    pt: label ? "18px" : "8.5px",
+                    pb: "8.5px",
+                    px: "14px",
                     minHeight,
                     width: fullWidth ? "100%" : undefined,
                     boxSizing: "border-box",
+                    position: "relative",
                     "&:focus-within": {
                         borderColor: theme.palette.primary.main,
                         borderWidth: 2,
-                        p: "7.5px 13px",
+                        pt: label ? "17px" : "7.5px",
+                        pb: "7.5px",
+                        px: "13px",
                     },
                     "&:hover:not(:focus-within)": {
                         borderColor: theme.palette.text.primary,
                     },
                 }}
             >
+                {label && (
+                    <Box
+                        component="span"
+                        sx={{
+                            position: "absolute",
+                            top: -10,
+                            left: 10,
+                            px: 0.5,
+                            bgcolor: "background.paper",
+                            color: "text.secondary",
+                            fontSize: "0.75rem",
+                            lineHeight: 1,
+                            pointerEvents: "none",
+                        }}
+                    >
+                        {label}
+                    </Box>
+                )}
                 <Box
                     ref={editorRef}
                     contentEditable
