@@ -1,4 +1,4 @@
-import { Component, type ReactElement } from "react";
+import React, { Component, type ReactElement } from "react";
 import { useParams } from "react-router-dom";
 import { connect } from "react-redux";
 
@@ -32,6 +32,7 @@ import {
     jmbgMatchesDate,
     jmbgToDateString,
 } from "../utils/jmbg";
+import { api } from "../api/client";
 import {
     clearClientCompanyRiskAssessmentAct,
     createEmployee,
@@ -1568,9 +1569,9 @@ class ClientCompanyDetailPageInner extends Component<
                                 "Akt o proceni rizika"}
                         </DialogTitle>
                         <DialogContent>
-                            {renderRiskActPreview(
-                                item.risk_assessment_act_file,
-                            )}
+                            <RiskActPreviewContent
+                                url={item.risk_assessment_act_file}
+                            />
                         </DialogContent>
                         <DialogActions>
                             <Button
@@ -1591,54 +1592,73 @@ class ClientCompanyDetailPageInner extends Component<
     }
 }
 
-function renderRiskActPreview(url: string): ReactElement {
+function RiskActPreviewContent({ url }: { url: string }): ReactElement {
     const lower = url.toLowerCase().split("?")[0];
     const ext = lower.substring(lower.lastIndexOf(".") + 1);
-    if (["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext)) {
+    const isImage = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext);
+    const isPdf = ext === "pdf";
+
+    const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
+    const [fetchError, setFetchError] = React.useState(false);
+
+    React.useEffect(() => {
+        if (!isImage && !isPdf) return;
+        let revoked = false;
+        api.get<Blob>(url, { responseType: "blob" })
+            .then((res) => {
+                if (revoked) return;
+                const objectUrl = URL.createObjectURL(res.data);
+                setBlobUrl(objectUrl);
+            })
+            .catch(() => setFetchError(true));
+        return () => {
+            revoked = true;
+            setBlobUrl((prev) => {
+                if (prev) URL.revokeObjectURL(prev);
+                return null;
+            });
+        };
+    }, [url, isImage, isPdf]);
+
+    if (fetchError) {
         return (
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    maxHeight: "70vh",
-                }}
-            >
-                <img
-                    src={url}
-                    alt="Akt o proceni rizika"
-                    style={{ maxWidth: "100%", maxHeight: "70vh" }}
-                />
+            <Box sx={{ textAlign: "center", py: 4 }}>
+                <Typography variant="body2" color="error" sx={{ mb: 2 }}>
+                    Greška pri učitavanju fajla.
+                </Typography>
             </Box>
         );
     }
-    if (ext === "pdf") {
-        const inlineUrl = url.includes("?") ? `${url}&inline=1` : `${url}?inline=1`;
+
+    if (isImage) {
+        if (!blobUrl) return <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>;
+        return (
+            <Box sx={{ display: "flex", justifyContent: "center", maxHeight: "70vh" }}>
+                <img src={blobUrl} alt="Akt o proceni rizika" style={{ maxWidth: "100%", maxHeight: "70vh" }} />
+            </Box>
+        );
+    }
+
+    if (isPdf) {
+        if (!blobUrl) return <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>;
         return (
             <Box sx={{ height: "70vh" }}>
                 <iframe
-                    src={inlineUrl}
+                    src={blobUrl}
                     title="Akt o proceni rizika"
-                    style={{
-                        width: "100%",
-                        height: "100%",
-                        border: "none",
-                    }}
+                    style={{ width: "100%", height: "100%", border: "none" }}
                 />
             </Box>
         );
     }
+
     return (
         <Box sx={{ textAlign: "center", py: 4 }}>
             <Typography variant="body2" sx={{ mb: 2 }}>
                 Pregled ovog tipa fajla (.{ext || "?"}) nije podržan u
                 pretraživaču. Klikni dole da skineš ili otvoriš fajl.
             </Typography>
-            <Button
-                variant="contained"
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-            >
+            <Button variant="contained" href={url} target="_blank" rel="noreferrer">
                 Otvori / preuzmi fajl
             </Button>
         </Box>
