@@ -32,6 +32,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { enqueueSnackbar } from "notistack";
 
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import {
     ScrollableTablePaper,
     tableCellEllipsis,
@@ -312,28 +313,33 @@ class ProcessTypesListPageInner extends Component<
                                                 : "Ne"}
                                         </TableCell>
                                         <TableCell align="right">
-                                            <IconButton
-                                                size="small"
-                                                aria-label="izmeni"
-                                                onClick={() =>
-                                                    this.openEdit(row)
-                                                }
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                            <PermissionGate permission="processes.delete_processtype">
-                                                <IconButton
-                                                    size="small"
-                                                    aria-label="obriši"
-                                                    onClick={() =>
-                                                        this.confirmDelete(
-                                                            row.id,
-                                                        )
-                                                    }
-                                                >
-                                                    <DeleteIcon />
-                                                </IconButton>
-                                            </PermissionGate>
+                                            <RowActionsMenu
+                                                actions={[
+                                                    {
+                                                        label: "Izmeni",
+                                                        icon: (
+                                                            <EditIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "processes.change_processtype",
+                                                        onClick: () =>
+                                                            this.openEdit(row),
+                                                    },
+                                                    {
+                                                        label: "Obriši",
+                                                        icon: (
+                                                            <DeleteIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "processes.delete_processtype",
+                                                        color: "error",
+                                                        onClick: () =>
+                                                            this.confirmDelete(
+                                                                row.id,
+                                                            ),
+                                                    },
+                                                ]}
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))}

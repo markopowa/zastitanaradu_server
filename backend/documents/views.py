@@ -21,6 +21,7 @@ from .utils import (
 
 logger = logging.getLogger(__name__)
 
+
 class DocumentCategoryViewSet(viewsets.ModelViewSet):
     queryset = DocumentCategory.objects.all().order_by("id")
     serializer_class = DocumentCategorySerializer

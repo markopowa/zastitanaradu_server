@@ -41,7 +41,8 @@ def run_process_binding(binding_id: int) -> None:
     ).select_related("document_template")
 
     for template in templates:
-        execute_template_actions("ON_SCHEDULED", run, binding, snapshot, template)
+        execute_template_actions(
+            "ON_SCHEDULED", run, binding, snapshot, template)
 
     logger.info(
         "ProcessBinding id=%s run id=%s created (PENDING), scheduled_for=%s",
@@ -62,7 +63,8 @@ def run_on_completed_trigger(run: ProcessRun) -> None:
         .select_related("document_template")
     )
     for template in templates:
-        execute_template_actions("ON_COMPLETED", run, binding, snapshot, template)
+        execute_template_actions(
+            "ON_COMPLETED", run, binding, snapshot, template)
 
         followup_type: ProcessType | None = template.followup_process_type
         if not followup_type:
@@ -101,7 +103,8 @@ def run_on_completed_trigger(run: ProcessRun) -> None:
             or followup_type.default_period_months
             or 12
         )
-        followup_binding.next_run_at = base_date + timedelta(days=followup_period_months * 30)
+        followup_binding.next_run_at = base_date + \
+            timedelta(days=followup_period_months * 30)
 
         if followup_binding.lead_time_days is None:
             followup_binding.lead_time_days = followup_type.lead_time_days
@@ -120,7 +123,8 @@ def run_on_expired_trigger(run: ProcessRun) -> None:
         .select_related("document_template")
     )
     for template in templates:
-        execute_template_actions("ON_EXPIRED", run, binding, snapshot, template)
+        execute_template_actions(
+            "ON_EXPIRED", run, binding, snapshot, template)
 
 
 def run_expired_reminders() -> None:
@@ -137,7 +141,8 @@ def run_expired_reminders() -> None:
     for run in runs:
         try:
             run_on_expired_trigger(run)
-            ProcessRun.objects.filter(pk=run.pk).update(expired_reminder_sent_at=today)
+            ProcessRun.objects.filter(pk=run.pk).update(
+                expired_reminder_sent_at=today)
             n += 1
         except Exception as e:
             logger.exception(

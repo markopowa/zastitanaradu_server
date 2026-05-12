@@ -487,9 +487,10 @@ class ClientCompanyDetailPageInner extends Component<
                 this.setState((prev) => ({
                     ...prev,
                     item,
-                    riskActDateValue: ClientCompanyDetailPageInner.dateToDisplay(
-                        item.risk_assessment_act_date,
-                    ),
+                    riskActDateValue:
+                        ClientCompanyDetailPageInner.dateToDisplay(
+                            item.risk_assessment_act_date,
+                        ),
                     savingRiskActDate: false,
                 }));
                 enqueueSnackbar("Datum donošenja akta je sačuvan.", {
@@ -497,7 +498,10 @@ class ClientCompanyDetailPageInner extends Component<
                 });
             })
             .catch(() => {
-                this.setState((prev) => ({ ...prev, savingRiskActDate: false }));
+                this.setState((prev) => ({
+                    ...prev,
+                    savingRiskActDate: false,
+                }));
                 enqueueSnackbar("Greška pri čuvanju datuma.", {
                     variant: "error",
                 });
@@ -555,9 +559,10 @@ class ClientCompanyDetailPageInner extends Component<
                 this.setState((prev) => ({
                     ...prev,
                     item,
-                    riskActDateValue: ClientCompanyDetailPageInner.dateToDisplay(
-                        item.risk_assessment_act_date,
-                    ),
+                    riskActDateValue:
+                        ClientCompanyDetailPageInner.dateToDisplay(
+                            item.risk_assessment_act_date,
+                        ),
                     loading: false,
                     error: null,
                     editing: false,
@@ -977,7 +982,9 @@ class ClientCompanyDetailPageInner extends Component<
                                 onClick={this.saveRiskActDate}
                                 sx={{ mt: 1 }}
                             >
-                                {savingRiskActDate ? "Čuvam..." : "Sačuvaj datum"}
+                                {savingRiskActDate
+                                    ? "Čuvam..."
+                                    : "Sačuvaj datum"}
                             </Button>
                         </Box>
                     </PermissionGate>
@@ -1595,7 +1602,15 @@ class ClientCompanyDetailPageInner extends Component<
 function RiskActPreviewContent({ url }: { url: string }): ReactElement {
     const lower = url.toLowerCase().split("?")[0];
     const ext = lower.substring(lower.lastIndexOf(".") + 1);
-    const isImage = ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext);
+    const isImage = [
+        "png",
+        "jpg",
+        "jpeg",
+        "gif",
+        "webp",
+        "bmp",
+        "svg",
+    ].includes(ext);
     const isPdf = ext === "pdf";
 
     const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
@@ -1631,16 +1646,36 @@ function RiskActPreviewContent({ url }: { url: string }): ReactElement {
     }
 
     if (isImage) {
-        if (!blobUrl) return <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>;
+        if (!blobUrl)
+            return (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                    <CircularProgress />
+                </Box>
+            );
         return (
-            <Box sx={{ display: "flex", justifyContent: "center", maxHeight: "70vh" }}>
-                <img src={blobUrl} alt="Akt o proceni rizika" style={{ maxWidth: "100%", maxHeight: "70vh" }} />
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    maxHeight: "70vh",
+                }}
+            >
+                <img
+                    src={blobUrl}
+                    alt="Akt o proceni rizika"
+                    style={{ maxWidth: "100%", maxHeight: "70vh" }}
+                />
             </Box>
         );
     }
 
     if (isPdf) {
-        if (!blobUrl) return <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}><CircularProgress /></Box>;
+        if (!blobUrl)
+            return (
+                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                    <CircularProgress />
+                </Box>
+            );
         return (
             <Box sx={{ height: "70vh" }}>
                 <iframe
@@ -1658,7 +1693,12 @@ function RiskActPreviewContent({ url }: { url: string }): ReactElement {
                 Pregled ovog tipa fajla (.{ext || "?"}) nije podržan u
                 pretraživaču. Klikni dole da skineš ili otvoriš fajl.
             </Typography>
-            <Button variant="contained" href={url} target="_blank" rel="noreferrer">
+            <Button
+                variant="contained"
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+            >
                 Otvori / preuzmi fajl
             </Button>
         </Box>

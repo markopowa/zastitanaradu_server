@@ -51,6 +51,7 @@ def make_run(binding, status=ProcessRun.STATUS_PENDING, valid_until=None, schedu
         valid_until=valid_until,
     )
 
+
 class RunDueProcessesCommandTest(TestCase):
     def _run_command(self):
         fired = []
@@ -87,13 +88,16 @@ class RunDueProcessesCommandTest(TestCase):
 
     def test_uses_process_type_lead_time_as_fallback(self):
         pt = make_process_type(lead_time_days=30)
-        b = make_binding(pt, next_run_at=TODAY + timedelta(days=30), lead_time_days=None)
+        b = make_binding(pt, next_run_at=TODAY +
+                         timedelta(days=30), lead_time_days=None)
         self.assertIn(b.id, self._run_command())
 
     def test_binding_lead_time_overrides_process_type(self):
         pt = make_process_type(lead_time_days=30)
-        b_early = make_binding(pt, next_run_at=TODAY + timedelta(days=8), lead_time_days=7)
-        b_fire = make_binding(pt, next_run_at=TODAY + timedelta(days=7), lead_time_days=7)
+        b_early = make_binding(pt, next_run_at=TODAY +
+                               timedelta(days=8), lead_time_days=7)
+        b_fire = make_binding(pt, next_run_at=TODAY +
+                              timedelta(days=7), lead_time_days=7)
         fired = self._run_command()
         self.assertIn(b_fire.id, fired)
         self.assertNotIn(b_early.id, fired)
@@ -169,7 +173,8 @@ class ApplyProcessRunCompletionTest(TestCase):
         b = make_binding(pt, next_run_at=TODAY)
         run = make_run(b, status=ProcessRun.STATUS_PENDING)
         with patch("processes.process_run_completion.run_on_completed_trigger"):
-            apply_process_run_completion(run, {"valid_until": TODAY + timedelta(days=365)})
+            apply_process_run_completion(
+                run, {"valid_until": TODAY + timedelta(days=365)})
         run.refresh_from_db()
         self.assertEqual(run.status, ProcessRun.STATUS_COMPLETED)
 
@@ -182,7 +187,9 @@ class ApplyProcessRunCompletionTest(TestCase):
         expected_next_run_at = valid_until + timedelta(days=12 * 30)
         expected_fire_date = expected_next_run_at - timedelta(days=30)
         self.assertEqual(b.next_run_at, expected_next_run_at)
-        self.assertEqual(expected_fire_date, expected_next_run_at - timedelta(days=30))
+        self.assertEqual(expected_fire_date,
+                         expected_next_run_at - timedelta(days=30))
+
 
 class RunExpiredRemindersTest(TestCase):
 
@@ -214,7 +221,8 @@ class RunExpiredRemindersTest(TestCase):
         b = make_binding(pt, next_run_at=TODAY)
         run = make_run(b, status=ProcessRun.STATUS_COMPLETED,
                        valid_until=TODAY - timedelta(days=1))
-        ProcessRun.objects.filter(pk=run.pk).update(expired_reminder_sent_at=TODAY)
+        ProcessRun.objects.filter(pk=run.pk).update(
+            expired_reminder_sent_at=TODAY)
         mock = self._run()
         called_run_ids = [call.args[0].id for call in mock.call_args_list]
         self.assertNotIn(run.id, called_run_ids)

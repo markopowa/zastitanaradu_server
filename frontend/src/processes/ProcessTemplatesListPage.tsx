@@ -32,6 +32,9 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { enqueueSnackbar } from "notistack";
 
 import { PermissionGate } from "../components/PermissionGate";
+import TemplateTextField from "../components/TemplateTextField";
+import RowActionsMenu from "../components/RowActionsMenu";
+import type { TemplateVariable } from "../components/TemplateTextField";
 import {
     ScrollableTablePaper,
     tableCellEllipsis,
@@ -65,6 +68,22 @@ const TRIGGER_OPTIONS: {
     { value: "ON_SCHEDULED", label: "Na zakazani datum" },
     { value: "ON_COMPLETED", label: "Kada se završi pregled" },
     { value: "ON_EXPIRED", label: "Kada istekne rok važenja" },
+];
+
+const TEMPLATE_VARIABLES: TemplateVariable[] = [
+    { key: "scheduled_for", label: "Datum termina" },
+    { key: "process_type_name", label: "Vrsta obaveze" },
+    { key: "valid_until", label: "Važi do" },
+    { key: "last_exam_date", label: "Prethodni pregled" },
+    { key: "instruction_number", label: "Broj uputa" },
+    { key: "employee.first_name", label: "Ime" },
+    { key: "employee.last_name", label: "Prezime" },
+    { key: "employee.national_id", label: "JMBG" },
+    { key: "employee.position", label: "Radno mesto" },
+    { key: "employee.org_unit", label: "Org. jedinica" },
+    { key: "employee.email", label: "Email zaposlenog" },
+    { key: "client.name", label: "Naziv firme" },
+    { key: "client.tax_id", label: "PIB" },
 ];
 
 const EMAIL_TO_OPTIONS: {
@@ -474,46 +493,35 @@ class ProcessTemplatesListPageInner extends Component<
                                                     py: 1.25,
                                                 }}
                                             >
-                                                <Stack
-                                                    direction="row"
-                                                    flexWrap="wrap"
-                                                    justifyContent="flex-end"
-                                                    alignItems="center"
-                                                    gap={0.5}
-                                                    sx={{ ml: "auto" }}
-                                                >
-                                                    <PermissionGate permission="processes.change_processtemplate">
-                                                        <Button
-                                                            size="small"
-                                                            startIcon={
+                                                <RowActionsMenu
+                                                    actions={[
+                                                        {
+                                                            label: "Izmeni",
+                                                            icon: (
                                                                 <EditIcon fontSize="small" />
-                                                            }
-                                                            onClick={() =>
+                                                            ),
+                                                            permission:
+                                                                "processes.change_processtemplate",
+                                                            onClick: () =>
                                                                 this.openEdit(
                                                                     row,
-                                                                )
-                                                            }
-                                                        >
-                                                            Izmeni
-                                                        </Button>
-                                                    </PermissionGate>
-                                                    <PermissionGate permission="processes.delete_processtemplate">
-                                                        <Button
-                                                            size="small"
-                                                            color="error"
-                                                            startIcon={
+                                                                ),
+                                                        },
+                                                        {
+                                                            label: "Obriši",
+                                                            icon: (
                                                                 <DeleteIcon fontSize="small" />
-                                                            }
-                                                            onClick={() =>
+                                                            ),
+                                                            permission:
+                                                                "processes.delete_processtemplate",
+                                                            color: "error",
+                                                            onClick: () =>
                                                                 this.confirmDelete(
                                                                     row.id,
-                                                                )
-                                                            }
-                                                        >
-                                                            Obriši
-                                                        </Button>
-                                                    </PermissionGate>
-                                                </Stack>
+                                                                ),
+                                                        },
+                                                    ]}
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -751,33 +759,33 @@ class ProcessTemplatesListPageInner extends Component<
                                     </FormControl>
                                 )}
 
-                                <TextField
+                                <TemplateTextField
                                     margin="dense"
-                                    label="Subject mejla (šablon)"
+                                    label="Naslov mejla"
                                     fullWidth
                                     value={form_email_subject_template}
-                                    onChange={(e) =>
+                                    onChange={(v) =>
                                         this.setState((prev) => ({
                                             ...prev,
-                                            form_email_subject_template:
-                                                e.target.value,
+                                            form_email_subject_template: v,
                                         }))
                                     }
+                                    variables={TEMPLATE_VARIABLES}
                                 />
-                                <TextField
+                                <TemplateTextField
                                     margin="dense"
-                                    label="Telo mejla (Jinja2 / tekst)"
+                                    label="Telo mejla"
                                     fullWidth
                                     multiline
                                     minRows={4}
                                     value={form_email_body_template}
-                                    onChange={(e) =>
+                                    onChange={(v) =>
                                         this.setState((prev) => ({
                                             ...prev,
-                                            form_email_body_template:
-                                                e.target.value,
+                                            form_email_body_template: v,
                                         }))
                                     }
+                                    variables={TEMPLATE_VARIABLES}
                                 />
                             </>
                         )}
