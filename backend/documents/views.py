@@ -1,5 +1,4 @@
-import os
-import tempfile
+import logging
 from pathlib import Path
 
 from django.conf import settings
@@ -20,8 +19,7 @@ from .utils import (
     invalidate_page_images,
 )
 
-from processes.tasks import logger
-
+logger = logging.getLogger(__name__)
 
 class DocumentCategoryViewSet(viewsets.ModelViewSet):
     queryset = DocumentCategory.objects.all().order_by("id")
