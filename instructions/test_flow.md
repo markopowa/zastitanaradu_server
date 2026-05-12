@@ -351,6 +351,17 @@ Primer: `next_run_at = danas + 30`, `lead_time_days = 30` → `fire_date = danas
 
 ---
 
+### Čemu služe dokumenti uz aktivnost?
+
+Svaka aktivnost (ProcessRun) može imati priložene dokumente. Postoje dva tipa:
+
+- **Uput (INSTRUCTION)** — generiše se automatski kada sistem okine aktivnost. To je popunjen uput koji korisnik štampa i daje zaposlenom da odnese u zdravstvenu ustanovu.
+- **Izveštaj (REPORT)** — dodaje se ručno posle pregleda. To je izveštaj koji je ustanova vratila (nalaz, ocena sposobnosti). Čuva se kao arhiva uz tu konkretnu aktivnost.
+
+Dugme **"Dokumenti"** na stranici Aktivnosti otvara dijalog gde možeš videti priložene dokumente, preuzeti ih ili dodati novi iz liste dokumenata u sistemu.
+
+---
+
 ## 10. Proveri mejl
 
 - [ ] Otvori inbox `markovuckovic1992@gmail.com`
