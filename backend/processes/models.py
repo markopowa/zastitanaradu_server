@@ -234,16 +234,6 @@ class ProcessRun(models.Model):
     )
     notes = models.TextField(blank=True)
     result_data = models.JSONField(default=dict, blank=True)
-    expired_reminder_sent_at = models.DateField(null=True, blank=True)
-    sent_at = models.DateTimeField(null=True, blank=True)
-    sent_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="sent_process_runs",
-    )
-    email_error = models.TextField(blank=True)
 
     class Meta:
         verbose_name = "Aktivnost obaveze"
@@ -252,6 +242,54 @@ class ProcessRun(models.Model):
 
     def __str__(self) -> str:
         return f"{self.process_type.name} – {self.scheduled_for} ({self.status})"
+
+
+class ProcessTriggerRun(models.Model):
+    TRIGGER_ON_SCHEDULED = "ON_SCHEDULED"
+    TRIGGER_ON_COMPLETED = "ON_COMPLETED"
+    TRIGGER_ON_EXPIRED = "ON_EXPIRED"
+
+    TRIGGER_CHOICES = (
+        (TRIGGER_ON_SCHEDULED, "Na zakazani datum"),
+        (TRIGGER_ON_COMPLETED, "Kada se završi pregled"),
+        (TRIGGER_ON_EXPIRED, "Kada istekne rok važenja"),
+    )
+
+    process_run = models.ForeignKey(
+        ProcessRun,
+        on_delete=models.CASCADE,
+        related_name="trigger_runs",
+    )
+    process_template = models.ForeignKey(
+        ProcessTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="trigger_runs",
+    )
+    trigger = models.CharField(max_length=32, choices=TRIGGER_CHOICES)
+    executed_at = models.DateTimeField()
+    executed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="process_trigger_runs",
+    )
+    email_sent = models.BooleanField(default=False)
+    email_error = models.TextField(blank=True)
+    document_file = models.ForeignKey(
+        "documents.DocumentFile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="trigger_runs",
+    )
+
+    class Meta:
+        verbose_name = "Izvršeni okidač"
+        verbose_name_plural = "Izvršeni okidači"
+        ordering = ("executed_at",)
 
 
 class ProcessRunDocument(models.Model):

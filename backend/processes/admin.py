@@ -5,6 +5,7 @@ from .models import (
     ProcessNote,
     ProcessRun,
     ProcessTemplate,
+    ProcessTriggerRun,
     ProcessType,
     TaskAssignment,
 )
@@ -64,11 +65,22 @@ class ProcessRunAdmin(admin.ModelAdmin):
         "performed_at",
         "valid_until",
         "status",
-        "expired_reminder_sent_at",
     )
     list_filter = ("status", "process_type")
     search_fields = ("process_binding__process_type__name",)
     raw_id_fields = ("process_binding",)
+
+
+@admin.register(ProcessTriggerRun)
+class ProcessTriggerRunAdmin(admin.ModelAdmin):
+    list_display = (
+        "process_run",
+        "trigger",
+        "executed_at",
+        "email_sent",
+    )
+    list_filter = ("trigger",)
+    raw_id_fields = ("process_run", "process_template", "executed_by", "document_file")
 
 
 @admin.register(TaskAssignment)

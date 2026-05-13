@@ -1,8 +1,10 @@
 import logging
 from datetime import date, timedelta
 
+from django.utils import timezone
+
 from .activity_log import log_activity
-from .models import ActivityLog, ProcessBinding, ProcessRun, ProcessTemplate, ProcessType
+from .models import ActivityLog, ProcessBinding, ProcessRun, ProcessTemplate, ProcessTriggerRun, ProcessType
 from .utils import binding_subject_snapshot, execute_template_actions
 
 logger = logging.getLogger(__name__)
@@ -41,9 +43,16 @@ def run_process_binding(binding_id: int) -> None:
         trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
     ).select_related("document_template")
 
+    now = timezone.now()
     for template in templates:
         execute_template_actions(
             "ON_SCHEDULED", run, binding, snapshot, template)
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            process_template=template,
+            trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED,
+            executed_at=now,
+        )
 
     logger.info(
         "ProcessBinding id=%s run id=%s created (PENDING), scheduled_for=%s",
@@ -70,9 +79,16 @@ def run_on_completed_trigger(run: ProcessRun) -> None:
         )
         .select_related("document_template")
     )
+    now = timezone.now()
     for template in templates:
         execute_template_actions(
             "ON_COMPLETED", run, binding, snapshot, template)
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            process_template=template,
+            trigger=ProcessTriggerRun.TRIGGER_ON_COMPLETED,
+            executed_at=now,
+        )
         subject = snapshot.get("name") or snapshot.get("kind") or ""
         log_activity(
             ActivityLog.EVENT_TEMPLATE_EXECUTED,
@@ -137,27 +153,35 @@ def run_on_expired_trigger(run: ProcessRun) -> None:
         )
         .select_related("document_template")
     )
+    now = timezone.now()
     for template in templates:
         execute_template_actions(
             "ON_EXPIRED", run, binding, snapshot, template)
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            process_template=template,
+            trigger=ProcessTriggerRun.TRIGGER_ON_EXPIRED,
+            executed_at=now,
+        )
 
 
 def run_expired_reminders() -> None:
     today = date.today()
+    already_notified_run_ids = ProcessTriggerRun.objects.filter(
+        trigger=ProcessTriggerRun.TRIGGER_ON_EXPIRED,
+    ).values_list("process_run_id", flat=True)
     runs = (
         ProcessRun.objects.filter(
             status=ProcessRun.STATUS_COMPLETED,
             valid_until__lt=today,
-            expired_reminder_sent_at__isnull=True,
         )
+        .exclude(id__in=already_notified_run_ids)
         .select_related("process_binding", "process_type")
     )
     n = 0
     for run in runs:
         try:
             run_on_expired_trigger(run)
-            ProcessRun.objects.filter(pk=run.pk).update(
-                expired_reminder_sent_at=today)
             n += 1
             snapshot = run.subject_snapshot or {}
             subject = snapshot.get("name") or snapshot.get("kind") or ""

@@ -72,6 +72,20 @@ export interface ProcessType {
     lead_time_days: number;
     is_active: boolean;
     include_in_medical_exam_record?: boolean;
+    templates: ProcessTemplate[];
+}
+
+export interface ProcessTriggerRun {
+    id: number;
+    process_template: number | null;
+    trigger: "ON_SCHEDULED" | "ON_COMPLETED" | "ON_EXPIRED";
+    executed_at: string;
+    executed_by: number | null;
+    executed_by_username?: string;
+    email_sent: boolean;
+    email_error: string;
+    document_file: number | null;
+    document_file_url?: string | null;
 }
 
 export interface ProcessRun {
@@ -87,10 +101,7 @@ export interface ProcessRun {
     status: "PENDING" | "SENT" | "COMPLETED" | "CANCELLED" | "FAILED";
     notes?: string;
     result_data?: Record<string, unknown>;
-    expired_reminder_sent_at?: string | null;
-    sent_at?: string | null;
-    sent_by_username?: string;
-    email_error?: string;
+    trigger_runs: ProcessTriggerRun[];
 }
 
 export interface ProcessRunNote {
@@ -125,7 +136,6 @@ export interface ProcessBinding {
 export interface ProcessTemplate {
     id: number;
     process_type: number;
-    process_type_name: string;
     document_template: number | null;
     trigger: string;
     generate_document: boolean;

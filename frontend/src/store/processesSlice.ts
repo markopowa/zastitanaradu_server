@@ -16,7 +16,6 @@ import {
     type ProcessRunsParams,
     completeProcessRun,
     type CompleteProcessRunPayload,
-    getProcessTemplates,
     createProcessTemplate,
     updateProcessTemplate,
     deleteProcessTemplate,
@@ -58,11 +57,6 @@ export interface ProcessesState {
     runsParamsKey: string;
     runsStatus: LoadStatus;
     runsError?: string;
-
-    templatesItems: ProcessTemplate[];
-    templatesParamsKey: string;
-    templatesStatus: LoadStatus;
-    templatesError?: string;
 
     processDocTemplates: DocumentTemplate[];
     processDocTemplatesStatus: LoadStatus;
@@ -110,10 +104,6 @@ function runsParamsKey(p: ProcessRunsParams): string {
     });
 }
 
-function templatesParamsKey(processTypeId: number | undefined): string {
-    return String(processTypeId ?? "");
-}
-
 function equipmentParamsKey(clientCompanyId: string): string {
     return clientCompanyId || "_all";
 }
@@ -134,9 +124,6 @@ const initialState: ProcessesState = {
     runsItems: [],
     runsParamsKey: "",
     runsStatus: "idle",
-    templatesItems: [],
-    templatesParamsKey: "",
-    templatesStatus: "idle",
     processDocTemplates: [],
     processDocTemplatesStatus: "idle",
     equipmentItems: [],
@@ -265,31 +252,6 @@ export const completeRun = createAsyncThunk(
     }) => completeProcessRun(id, payload),
 );
 
-export const fetchProcessTemplatesList = createAsyncThunk(
-    "processes/fetchProcessTemplatesList",
-    async (processTypeId: number | undefined) => {
-        const params =
-            processTypeId != null
-                ? { process_type_id: processTypeId }
-                : undefined;
-        const items = await getProcessTemplates(params);
-        return {
-            paramsKey: templatesParamsKey(processTypeId),
-            items: Array.isArray(items) ? items : [],
-        };
-    },
-    {
-        condition(arg, { getState }) {
-            const p = selectP(getState);
-            const key = templatesParamsKey(arg);
-            return !(
-                p.templatesParamsKey === key &&
-                p.templatesStatus === "succeeded"
-            );
-        },
-    },
-);
-
 export const ensureProcessDocTemplates = createAsyncThunk(
     "processes/ensureProcessDocTemplates",
     async () => getDocumentTemplates(),
@@ -413,8 +375,8 @@ const processesSlice = createSlice({
         invalidateRuns(state) {
             state.runsStatus = "idle";
         },
-        invalidateTemplates(state) {
-            state.templatesStatus = "idle";
+        invalidateProcessTypes(state) {
+            state.processTypesStatus = "idle";
         },
         invalidateEquipment(state) {
             state.equipmentStatus = "idle";
@@ -537,20 +499,6 @@ const processesSlice = createSlice({
                     r.id === u.id ? u : r,
                 );
             })
-            .addCase(fetchProcessTemplatesList.pending, (state) => {
-                state.templatesStatus = "loading";
-                state.templatesError = undefined;
-            })
-            .addCase(fetchProcessTemplatesList.fulfilled, (state, action) => {
-                state.templatesStatus = "succeeded";
-                state.templatesParamsKey = action.payload.paramsKey;
-                state.templatesItems = action.payload.items;
-            })
-            .addCase(fetchProcessTemplatesList.rejected, (state, action) => {
-                state.templatesStatus = "failed";
-                state.templatesError =
-                    (action.error.message as string) ?? "Greška";
-            })
             .addCase(ensureProcessDocTemplates.pending, (state) => {
                 state.processDocTemplatesStatus = "loading";
             })
@@ -561,23 +509,14 @@ const processesSlice = createSlice({
             .addCase(ensureProcessDocTemplates.rejected, (state) => {
                 state.processDocTemplatesStatus = "failed";
             })
-            .addCase(addProcessTemplate.fulfilled, (state, action) => {
-                state.templatesItems = [
-                    ...state.templatesItems,
-                    action.payload,
-                ];
+            .addCase(addProcessTemplate.fulfilled, (state) => {
+                state.processTypesStatus = "idle";
             })
-            .addCase(saveProcessTemplate.fulfilled, (state, action) => {
-                const u = action.payload;
-                state.templatesItems = state.templatesItems.map((t) =>
-                    t.id === u.id ? u : t,
-                );
+            .addCase(saveProcessTemplate.fulfilled, (state) => {
+                state.processTypesStatus = "idle";
             })
-            .addCase(removeProcessTemplate.fulfilled, (state, action) => {
-                const id = action.payload;
-                state.templatesItems = state.templatesItems.filter(
-                    (t) => t.id !== id,
-                );
+            .addCase(removeProcessTemplate.fulfilled, (state) => {
+                state.processTypesStatus = "idle";
             })
             .addCase(fetchEquipmentList.pending, (state) => {
                 state.equipmentStatus = "loading";
@@ -657,7 +596,7 @@ const processesSlice = createSlice({
 export const {
     invalidateBindings,
     invalidateRuns,
-    invalidateTemplates,
+    invalidateProcessTypes,
     invalidateEquipment,
     invalidateEmployees,
     invalidateActivityLog,

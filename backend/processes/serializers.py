@@ -7,12 +7,34 @@ from .models import (
     ProcessRun,
     ProcessRunDocument,
     ProcessTemplate,
+    ProcessTriggerRun,
     ProcessType,
     TaskAssignment,
 )
 
 
+class ProcessTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProcessTemplate
+        fields = (
+            "id",
+            "process_type",
+            "document_template",
+            "trigger",
+            "generate_document",
+            "send_email",
+            "email_to_kind",
+            "email_subject_template",
+            "email_body_template",
+            "custom_email_recipient",
+            "notification_role_group",
+            "followup_process_type",
+        )
+
+
 class ProcessTypeSerializer(serializers.ModelSerializer):
+    templates = ProcessTemplateSerializer(many=True, read_only=True)
+
     class Meta:
         model = ProcessType
         fields = (
@@ -25,31 +47,9 @@ class ProcessTypeSerializer(serializers.ModelSerializer):
             "lead_time_days",
             "is_active",
             "include_in_medical_exam_record",
+            "templates",
         )
-        read_only_fields = ["code"]
-
-
-class ProcessTemplateSerializer(serializers.ModelSerializer):
-    process_type_name = serializers.CharField(
-        source="process_type.name", read_only=True)
-
-    class Meta:
-        model = ProcessTemplate
-        fields = (
-            "id",
-            "process_type",
-            "process_type_name",
-            "document_template",
-            "trigger",
-            "generate_document",
-            "send_email",
-            "email_to_kind",
-            "email_subject_template",
-            "email_body_template",
-            "custom_email_recipient",
-            "notification_role_group",
-            "followup_process_type",
-        )
+        read_only_fields = ["code", "templates"]
 
 
 class ProcessBindingSerializer(serializers.ModelSerializer):
@@ -86,13 +86,47 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
         )
 
 
+class ProcessTriggerRunSerializer(serializers.ModelSerializer):
+    executed_by_username = serializers.CharField(
+        source="executed_by.username", read_only=True, default="")
+    document_file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProcessTriggerRun
+        fields = (
+            "id",
+            "process_template",
+            "trigger",
+            "executed_at",
+            "executed_by",
+            "executed_by_username",
+            "email_sent",
+            "email_error",
+            "document_file",
+            "document_file_url",
+        )
+
+    def get_document_file_url(self, obj: ProcessTriggerRun) -> str | None:
+        if not obj.document_file_id:
+            return None
+        f = getattr(obj.document_file, "file", None)
+        if not f:
+            return None
+        url = f.url
+        if not url:
+            return None
+        request = self.context.get("request")
+        if request and url.startswith("/"):
+            return request.build_absolute_uri(url)
+        return url
+
+
 class ProcessRunSerializer(serializers.ModelSerializer):
     process_type_name = serializers.CharField(
         source="process_type.name", read_only=True)
     process_binding_id = serializers.IntegerField(
         source="process_binding.id", read_only=True)
-    sent_by_username = serializers.CharField(
-        source="sent_by.username", read_only=True, default="")
+    trigger_runs = ProcessTriggerRunSerializer(many=True, read_only=True)
 
     class Meta:
         model = ProcessRun
@@ -109,21 +143,14 @@ class ProcessRunSerializer(serializers.ModelSerializer):
             "status",
             "notes",
             "result_data",
-            "expired_reminder_sent_at",
-            "sent_at",
-            "sent_by",
-            "sent_by_username",
-            "email_error",
+            "trigger_runs",
         )
         read_only_fields = (
             "process_binding",
             "process_type",
             "subject_snapshot",
             "scheduled_for",
-            "expired_reminder_sent_at",
-            "sent_at",
-            "sent_by",
-            "email_error",
+            "trigger_runs",
         )
 
 

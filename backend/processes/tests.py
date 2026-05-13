@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.test import TestCase
 
 from partners.models import ClientCompany
-from processes.models import ProcessBinding, ProcessRun, ProcessType
+from processes.models import ProcessBinding, ProcessRun, ProcessTriggerRun, ProcessType
 from processes.process_run_completion import apply_process_run_completion
 from processes.tasks import run_expired_reminders
 
@@ -213,16 +213,24 @@ class RunExpiredRemindersTest(TestCase):
         run = make_run(b, status=ProcessRun.STATUS_COMPLETED,
                        valid_until=TODAY - timedelta(days=1))
         self._run()
-        run.refresh_from_db()
-        self.assertEqual(run.expired_reminder_sent_at, TODAY)
+        self.assertTrue(
+            ProcessTriggerRun.objects.filter(
+                process_run=run,
+                trigger=ProcessTriggerRun.TRIGGER_ON_EXPIRED,
+            ).exists()
+        )
 
     def test_skips_already_reminded(self):
         pt = make_process_type()
         b = make_binding(pt, next_run_at=TODAY)
         run = make_run(b, status=ProcessRun.STATUS_COMPLETED,
                        valid_until=TODAY - timedelta(days=1))
-        ProcessRun.objects.filter(pk=run.pk).update(
-            expired_reminder_sent_at=TODAY)
+        from django.utils import timezone
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            trigger=ProcessTriggerRun.TRIGGER_ON_EXPIRED,
+            executed_at=timezone.now(),
+        )
         mock = self._run()
         called_run_ids = [call.args[0].id for call in mock.call_args_list]
         self.assertNotIn(run.id, called_run_ids)

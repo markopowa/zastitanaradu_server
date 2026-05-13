@@ -522,7 +522,9 @@ class ProcessRunsListPageInner extends Component<
                                                 <Typography variant="body2">
                                                     {statusLabel(row.status)}
                                                 </Typography>
-                                                {row.email_error?.trim() ? (
+                                                {row.trigger_runs?.some(
+                                                    (tr) => tr.email_error?.trim(),
+                                                ) ? (
                                                     <>
                                                         <Typography
                                                             variant="body2"
@@ -870,14 +872,13 @@ class ProcessRunsListPageInner extends Component<
                                             ?.process_type_name
                                     }
                                 </Typography>
-                                {this.state.emailIssueDialogRun?.email_error?.trim() ? (
-                                    <Alert severity="error" sx={{ mt: 2 }}>
-                                        {
-                                            this.state.emailIssueDialogRun
-                                                .email_error
-                                        }
-                                    </Alert>
-                                ) : null}
+                                {this.state.emailIssueDialogRun?.trigger_runs
+                                    ?.filter((tr) => tr.email_error?.trim())
+                                    .map((tr) => (
+                                        <Alert key={tr.id} severity="error" sx={{ mt: 2 }}>
+                                            {tr.email_error}
+                                        </Alert>
+                                    ))}
                                 <Typography
                                     variant="subtitle2"
                                     sx={{ mt: 2, mb: 1 }}

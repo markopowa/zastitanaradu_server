@@ -19,12 +19,13 @@ from .models import (
     ProcessNote,
     ProcessRun,
     ProcessRunDocument,
-    ProcessTemplate,
+    ProcessTriggerRun,
     ProcessType,
     TaskAssignment,
 )
 from .process_run_completion import apply_process_run_completion
 from .send_now import send_now_for_binding
+from .models import ProcessTemplate
 from .serializers import (
     ActivityLogSerializer,
     EmployeeSendNowSerializer,
@@ -67,7 +68,7 @@ class ProcessTypeViewSet(viewsets.ModelViewSet):
         reasons = []
         if ProcessRun.objects.filter(process_type=instance).exists():
             reasons.append("aktivnosti (procesi)")
-        if ProcessTemplate.objects.filter(process_type=instance).exists():
+        if instance.templates.exists():
             reasons.append("šabloni procesa")
         if ProcessBinding.objects.filter(process_type=instance).exists():
             reasons.append("rasporedi")
@@ -162,14 +163,18 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
         if first_doc and first_doc.document_file.file:
             doc_url = first_doc.document_file.file.url
         subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
-        if run.email_error:
+        scheduled_trigger = run.trigger_runs.filter(
+            trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED
+        ).first()
+        email_error = scheduled_trigger.email_error if scheduled_trigger else ""
+        if email_error:
             log_activity(
                 ActivityLog.EVENT_EMAIL_ERROR,
-                f"Greška pri slanju poziva za '{run.process_type.name}' ({subject}): {run.email_error[:200]}",
+                f"Greška pri slanju poziva za '{run.process_type.name}' ({subject}): {email_error[:200]}",
                 user=user,
                 process_run=run,
                 process_binding=binding,
-                extra_data={"email_error": run.email_error},
+                extra_data={"email_error": email_error},
             )
         else:
             log_activity(
@@ -182,7 +187,7 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
         data = SendNowResponseSerializer({
             "process_run": run,
             "document_url": doc_url,
-            "email_sent": not bool(run.email_error),
+            "email_sent": not bool(email_error),
         }).data
         return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
@@ -191,8 +196,8 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
     queryset = (
         ProcessRun.objects.select_related(
             "process_binding", "process_binding__process_type",
-            "process_type", "sent_by",
-        )
+            "process_type",
+        ).prefetch_related("trigger_runs")
         .all()
         .order_by("-scheduled_for", "-id")
     )
@@ -406,14 +411,18 @@ class EmployeeSendNowView(APIView):
         if first_doc and first_doc.document_file.file:
             doc_url = first_doc.document_file.file.url
         subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
-        if run.email_error:
+        scheduled_trigger = run.trigger_runs.filter(
+            trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED
+        ).first()
+        email_error = scheduled_trigger.email_error if scheduled_trigger else ""
+        if email_error:
             log_activity(
                 ActivityLog.EVENT_EMAIL_ERROR,
-                f"Greška pri slanju poziva za '{run.process_type.name}' ({subject}): {run.email_error[:200]}",
+                f"Greška pri slanju poziva za '{run.process_type.name}' ({subject}): {email_error[:200]}",
                 user=user,
                 process_run=run,
                 process_binding=binding,
-                extra_data={"email_error": run.email_error},
+                extra_data={"email_error": email_error},
             )
         else:
             log_activity(
@@ -426,7 +435,7 @@ class EmployeeSendNowView(APIView):
         data = SendNowResponseSerializer({
             "process_run": run,
             "document_url": doc_url,
-            "email_sent": not bool(run.email_error),
+            "email_sent": not bool(email_error),
         }).data
         return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 

@@ -227,27 +227,6 @@ export async function deleteProcessType(id: number): Promise<void> {
     await api.delete(`/api/processes/types/${id}/`);
 }
 
-export async function getProcessTemplates(params?: {
-    process_type_id?: number;
-}): Promise<ProcessTemplate[]> {
-    const search = new URLSearchParams();
-    if (params?.process_type_id != null)
-        search.set("process_type_id", String(params.process_type_id));
-    const qs = search.toString();
-    const url = qs
-        ? `/api/processes/templates/?${qs}`
-        : "/api/processes/templates/";
-    const { data } = await api.get<ListResponse<ProcessTemplate>>(url);
-    return asList(data);
-}
-
-export async function getProcessTemplate(id: number): Promise<ProcessTemplate> {
-    const { data } = await api.get<ProcessTemplate>(
-        `/api/processes/templates/${id}/`,
-    );
-    return data;
-}
-
 export async function createProcessTemplate(
     payload: Partial<ProcessTemplate>,
 ): Promise<ProcessTemplate> {

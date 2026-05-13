@@ -1,4 +1,3 @@
-import type { DocumentTemplate } from "../api/documents";
 import type {
     CompleteProcessRunPayload,
     ProcessBindingsParams,
@@ -19,69 +18,8 @@ import type {
     ProcessRun,
     ProcessRunDocument,
     ProcessRunNote,
-    ProcessTemplate,
     ProcessType,
 } from "./processes";
-
-export type ProcessTemplatesListTriggerValue =
-    | "ON_SCHEDULED"
-    | "ON_COMPLETED"
-    | "ON_EXPIRED"
-    | "";
-
-export type ProcessTemplatesListEmailToKindValue =
-    | "CLIENT_MAIN_EMAIL"
-    | "EMPLOYEE_EMAIL"
-    | "INTERNAL_ROLE"
-    | "CUSTOM"
-    | "";
-
-export interface ProcessTemplatesListPageStateProps {
-    processTypes: ProcessType[];
-    templatesItems: ProcessTemplate[];
-    templatesLoading: boolean;
-    templatesError: string | null;
-    docTemplates: DocumentTemplate[];
-    docTemplatesLoading: boolean;
-    roles: Role[];
-}
-
-export interface ProcessTemplatesListPageDispatchProps {
-    setLastPath: (path: string) => void;
-    ensureProcessTypes: () => void;
-    ensureProcessDocTemplates: () => void;
-    loadRoles: () => void;
-    loadTemplates: (processTypeId: number | undefined) => void;
-    addTemplate: (
-        payload: Partial<ProcessTemplate>,
-    ) => AsyncThunkDispatchResult;
-    saveTemplate: (args: {
-        id: number;
-        payload: Partial<ProcessTemplate>;
-    }) => AsyncThunkDispatchResult;
-    removeTemplate: (id: number) => AsyncThunkDispatchResult;
-}
-
-export type ProcessTemplatesListPageProps = ProcessTemplatesListPageStateProps &
-    ProcessTemplatesListPageDispatchProps;
-
-export interface ProcessTemplatesListPageState {
-    process_type_id: string;
-    dialogOpen: boolean;
-    deleteConfirmId: number | null;
-    editingId: number | null;
-    form_process_type_id: string;
-    form_trigger: ProcessTemplatesListTriggerValue;
-    form_document_template_id: string;
-    form_generate_document: boolean;
-    form_send_email: boolean;
-    form_email_to_kind: ProcessTemplatesListEmailToKindValue;
-    form_email_subject_template: string;
-    form_email_body_template: string;
-    form_custom_email_recipient: string;
-    form_followup_process_type_id: string;
-    form_notification_role_group_id: string;
-}
 
 export interface ProcessTypesListPageStateProps {
     processTypes: ProcessType[];

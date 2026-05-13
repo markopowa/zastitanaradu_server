@@ -1,13 +1,11 @@
 import logging
 from datetime import date
 
-from django.db import transaction
 from django.utils import timezone
 
 from core.email_sender import get_email_sender
-from documents.models import DocumentFile
 
-from .models import ProcessBinding, ProcessRun, ProcessRunDocument, ProcessTemplate
+from .models import ProcessBinding, ProcessRun, ProcessTemplate, ProcessTriggerRun
 from .utils import (
     _build_document_context,
     _generate_document_for_run,
@@ -59,6 +57,8 @@ def send_now_for_binding(binding, *, user=None):
 
     pt = binding.process_type
     snapshot = binding_subject_snapshot(binding)
+    now = timezone.now()
+    auth_user = user if user and user.is_authenticated else None
 
     run = ProcessRun.objects.create(
         process_binding=binding,
@@ -66,8 +66,6 @@ def send_now_for_binding(binding, *, user=None):
         subject_snapshot=snapshot,
         scheduled_for=today,
         status=ProcessRun.STATUS_SENT,
-        sent_at=timezone.now(),
-        sent_by=user if user and user.is_authenticated else None,
     )
 
     templates = (
@@ -88,18 +86,28 @@ def send_now_for_binding(binding, *, user=None):
                     run.id, template.id, exc,
                 )
 
+        email_sent = False
+        email_error = ""
         if template.send_email:
             try:
                 _send_email_with_attachment(template, binding, snapshot, run)
+                email_sent = True
             except Exception as exc:
-                error_msg = str(exc)
+                email_error = str(exc)
                 logger.exception(
                     "send_now: email failed for run id=%s template id=%s: %s",
                     run.id, template.id, exc,
                 )
-                ProcessRun.objects.filter(
-                    pk=run.pk).update(email_error=error_msg)
-                run.email_error = error_msg
+
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            process_template=template,
+            trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED,
+            executed_at=now,
+            executed_by=auth_user,
+            email_sent=email_sent,
+            email_error=email_error,
+        )
 
     return run, True
 
