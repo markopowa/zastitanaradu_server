@@ -6,7 +6,6 @@ import type {
 
 import type { AsyncThunkDispatchResult } from "../store";
 import type { WithNavigationProps } from "../hocs/withNavigation";
-import type { Role } from "./auth";
 
 import type { DocumentFile } from "./documents";
 import type {
