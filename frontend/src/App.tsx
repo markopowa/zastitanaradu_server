@@ -18,8 +18,8 @@ const DocumentCategoriesListPage = lazy(
 const DocumentTemplatesListPage = lazy(
     () => import("./documents/DocumentTemplatesListPage"),
 );
-const DashboardExpiringPage = lazy(
-    () => import("./processes/DashboardExpiringPage"),
+const DashboardPage = lazy(
+    () => import("./processes/DashboardPage"),
 );
 const ClientCompaniesListPage = lazy(
     () => import("./processes/ClientCompaniesListPage"),
@@ -77,7 +77,7 @@ class App extends Component {
                         <Route index element={<RedirectComponent />} />
                         <Route
                             path="dashboard"
-                            element={<DashboardExpiringPage />}
+                            element={<DashboardPage />}
                         />
                         <Route
                             path="client-companies"

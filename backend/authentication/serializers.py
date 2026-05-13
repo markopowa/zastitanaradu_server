@@ -37,6 +37,7 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "is_active",
+            "is_superuser",
             "roles",
             "permissions",
         )

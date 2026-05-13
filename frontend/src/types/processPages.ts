@@ -1,7 +1,6 @@
 import type { DocumentTemplate } from "../api/documents";
 import type {
     CompleteProcessRunPayload,
-    DashboardExpiringParams,
     ProcessBindingsParams,
     ProcessRunsParams,
 } from "../api/processes";
@@ -20,7 +19,6 @@ import type {
     ProcessRun,
     ProcessRunDocument,
     ProcessRunNote,
-    ProcessSubjectKind,
     ProcessTemplate,
     ProcessType,
 } from "./processes";
@@ -201,6 +199,9 @@ export interface ProcessRunsListPageState {
     notesDialogRunId: number | null;
     notesItems: ProcessRunNote[];
     notesNewBody: string;
+    emailIssueDialogRun: ProcessRun | null;
+    emailIssueDocs: ProcessRunDocument[];
+    emailIssueLoading: boolean;
 }
 
 export interface EquipmentListPageStateProps {
@@ -392,28 +393,3 @@ export interface ClientCompanyEmployeesDetailPageState {
     error: string | null;
 }
 
-export interface DashboardExpiringPageStateProps {
-    dashboardItems: ProcessRun[];
-    clientCompanies: ClientCompany[];
-    processTypes: ProcessType[];
-    dashboardLoading: boolean;
-    dashboardError: string | null;
-}
-
-export interface DashboardExpiringPageDispatchProps {
-    setLastPath: (path: string) => void;
-    ensureClientCompanies: () => void;
-    ensureProcessTypes: () => void;
-    loadDashboard: (params: DashboardExpiringParams) => void;
-}
-
-export type DashboardExpiringPageProps = DashboardExpiringPageStateProps &
-    DashboardExpiringPageDispatchProps;
-
-export interface DashboardExpiringPageState {
-    days: number;
-    use_lead_time: boolean;
-    client_company_id: string;
-    subject_kind: "" | ProcessSubjectKind;
-    process_type_id: string;
-}

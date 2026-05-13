@@ -1,7 +1,8 @@
 import logging
 from datetime import date, timedelta
 
-from .models import ProcessBinding, ProcessRun, ProcessTemplate, ProcessType
+from .activity_log import log_activity
+from .models import ActivityLog, ProcessBinding, ProcessRun, ProcessTemplate, ProcessType
 from .utils import binding_subject_snapshot, execute_template_actions
 
 logger = logging.getLogger(__name__)
@@ -50,6 +51,13 @@ def run_process_binding(binding_id: int) -> None:
         run.id,
         scheduled_for,
     )
+    subject = snapshot.get("name") or snapshot.get("kind") or ""
+    log_activity(
+        ActivityLog.EVENT_SCHEDULED,
+        f"Automatski zakazana aktivnost '{pt.name}' za {subject}, datum: {scheduled_for}",
+        process_run=run,
+        process_binding=binding,
+    )
 
 
 def run_on_completed_trigger(run: ProcessRun) -> None:
@@ -65,6 +73,13 @@ def run_on_completed_trigger(run: ProcessRun) -> None:
     for template in templates:
         execute_template_actions(
             "ON_COMPLETED", run, binding, snapshot, template)
+        subject = snapshot.get("name") or snapshot.get("kind") or ""
+        log_activity(
+            ActivityLog.EVENT_TEMPLATE_EXECUTED,
+            f"Šablon ON_COMPLETED izvršen za '{run.process_type.name}' ({subject})",
+            process_run=run,
+            process_binding=binding,
+        )
 
         followup_type: ProcessType | None = template.followup_process_type
         if not followup_type:
@@ -144,6 +159,14 @@ def run_expired_reminders() -> None:
             ProcessRun.objects.filter(pk=run.pk).update(
                 expired_reminder_sent_at=today)
             n += 1
+            snapshot = run.subject_snapshot or {}
+            subject = snapshot.get("name") or snapshot.get("kind") or ""
+            log_activity(
+                ActivityLog.EVENT_EXPIRED_REMINDER,
+                f"Podsetnik za istek poslat za '{run.process_type.name}' ({subject}), isteklo: {run.valid_until}",
+                process_run=run,
+                process_binding=run.process_binding,
+            )
         except Exception as e:
             logger.exception(
                 "Failed to run ON_EXPIRED for run id=%s: %s", run.id, e

@@ -24,10 +24,11 @@ import {
     createEquipmentItem,
     getEmployees,
     createEmployee,
-    getDashboardExpiring,
-    type DashboardExpiringParams,
+    getActivityLog,
+    type ActivityLogParams,
 } from "../api/processes";
 import type {
+    ActivityLog,
     ClientCompany,
     EmployeeSummary,
     EquipmentItem,
@@ -76,10 +77,9 @@ export interface ProcessesState {
     employeesStatus: LoadStatus;
     employeesError?: string;
 
-    dashboardExpiringItems: ProcessRun[];
-    dashboardExpiringParamsKey: string;
-    dashboardExpiringStatus: LoadStatus;
-    dashboardExpiringError?: string;
+    activityLogItems: ActivityLog[];
+    activityLogStatus: LoadStatus;
+    activityLogError?: string;
 }
 
 type ProcessesRoot = { processes: ProcessesState };
@@ -122,15 +122,6 @@ function employeesParamsKey(clientCompanyId: string): string {
     return clientCompanyId || "_all";
 }
 
-function dashboardParamsKey(p: DashboardExpiringParams): string {
-    return JSON.stringify({
-        d: p.days ?? null,
-        u: p.use_lead_time ?? null,
-        c: p.client_company_id ?? null,
-        sk: p.subject_kind ?? null,
-        t: p.process_type_id ?? null,
-    });
-}
 
 const initialState: ProcessesState = {
     clientCompanies: [],
@@ -154,9 +145,8 @@ const initialState: ProcessesState = {
     employeesItems: [],
     employeesParamsKey: "",
     employeesStatus: "idle",
-    dashboardExpiringItems: [],
-    dashboardExpiringParamsKey: "",
-    dashboardExpiringStatus: "idle",
+    activityLogItems: [],
+    activityLogStatus: "idle",
 };
 
 export const fetchClientCompanies = createAsyncThunk(
@@ -399,24 +389,11 @@ export const addEmployee = createAsyncThunk(
         createEmployee(payload),
 );
 
-export const fetchDashboardExpiring = createAsyncThunk(
-    "processes/fetchDashboardExpiring",
-    async (params: DashboardExpiringParams) => {
-        const items = await getDashboardExpiring(params);
-        return {
-            paramsKey: dashboardParamsKey(params),
-            items: Array.isArray(items) ? items : [],
-        };
-    },
-    {
-        condition(arg, { getState }) {
-            const p = selectP(getState);
-            const key = dashboardParamsKey(arg);
-            return !(
-                p.dashboardExpiringParamsKey === key &&
-                p.dashboardExpiringStatus === "succeeded"
-            );
-        },
+export const fetchActivityLog = createAsyncThunk(
+    "processes/fetchActivityLog",
+    async (params: ActivityLogParams = {}) => {
+        const items = await getActivityLog(params);
+        return Array.isArray(items) ? items : [];
     },
 );
 
@@ -445,8 +422,8 @@ const processesSlice = createSlice({
         invalidateEmployees(state) {
             state.employeesStatus = "idle";
         },
-        invalidateDashboardExpiring(state) {
-            state.dashboardExpiringStatus = "idle";
+        invalidateActivityLog(state) {
+            state.activityLogStatus = "idle";
         },
     },
     extraReducers: (builder) => {
@@ -661,18 +638,17 @@ const processesSlice = createSlice({
                     state.employeesItems = [...state.employeesItems, summary];
                 }
             })
-            .addCase(fetchDashboardExpiring.pending, (state) => {
-                state.dashboardExpiringStatus = "loading";
-                state.dashboardExpiringError = undefined;
+            .addCase(fetchActivityLog.pending, (state) => {
+                state.activityLogStatus = "loading";
+                state.activityLogError = undefined;
             })
-            .addCase(fetchDashboardExpiring.fulfilled, (state, action) => {
-                state.dashboardExpiringStatus = "succeeded";
-                state.dashboardExpiringParamsKey = action.payload.paramsKey;
-                state.dashboardExpiringItems = action.payload.items;
+            .addCase(fetchActivityLog.fulfilled, (state, action) => {
+                state.activityLogStatus = "succeeded";
+                state.activityLogItems = action.payload;
             })
-            .addCase(fetchDashboardExpiring.rejected, (state, action) => {
-                state.dashboardExpiringStatus = "failed";
-                state.dashboardExpiringError =
+            .addCase(fetchActivityLog.rejected, (state, action) => {
+                state.activityLogStatus = "failed";
+                state.activityLogError =
                     (action.error.message as string) ?? "Greška";
             });
     },
@@ -684,7 +660,7 @@ export const {
     invalidateTemplates,
     invalidateEquipment,
     invalidateEmployees,
-    invalidateDashboardExpiring,
+    invalidateActivityLog,
 } = processesSlice.actions;
 
 export default processesSlice.reducer;

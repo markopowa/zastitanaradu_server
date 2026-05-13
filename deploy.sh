@@ -286,6 +286,20 @@ setupCron() {
     (crontab -u root -l 2>/dev/null | grep -v "certbot renew" ; echo "$CRON_CMD") | crontab -u root -
 }
 
+setupLogrotate() {
+    cat > /etc/logrotate.d/pznr << EOF
+$LOG_DIR/*.log {
+    weekly
+    rotate 8
+    compress
+    missingok
+    notifempty
+    create 0640 root root
+}
+EOF
+    echo "Logrotate configured for $LOG_DIR/*.log (weekly, 8 weeks retention)."
+}
+
 setupTaskRunner() {
     mkdir -p "$LOG_DIR"
     TASK_SVC="/etc/systemd/system/pznr-run-due-processes.service"
@@ -404,6 +418,7 @@ runAll() {
     setupSsl
     setupFirewall
     setupCron
+    setupLogrotate
     setupTaskRunner
 }
 
@@ -416,6 +431,7 @@ case "$DEPLOY_TARGET" in
     setupSsl)         setupSsl ;;
     setupFirewall)    setupFirewall ;;
     setupCron)        setupCron ;;
+    setupLogrotate)   setupLogrotate ;;
     setupTaskRunner)  setupTaskRunner ;;
     all)              runAll ;;
     *)                echo "Unknown target: $DEPLOY_TARGET. Use: initialSetup|setupDatabase|setupDocker|setupDockerQuick|setupNginx|setupSsl|setupFirewall|setupCron|setupTaskRunner|all"; exit 1 ;;

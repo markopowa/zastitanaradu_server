@@ -66,9 +66,15 @@ import { withNavigation } from "../hocs/withNavigation";
 
 const STATUS_LABELS: Record<string, string> = {
     PENDING: "Na čekanju",
+    SENT: "Poslat",
     COMPLETED: "Završeno",
     CANCELLED: "Otkazano",
     FAILED: "Neuspešno",
+};
+
+const DIALOG_CONTAINED_BTN_SX = {
+    borderRadius: 2,
+    textTransform: "none" as const,
 };
 
 const USAGE_KIND_LABELS: Record<string, string> = {
@@ -123,6 +129,9 @@ class ProcessRunsListPageInner extends Component<
         notesDialogRunId: null,
         notesItems: [] as ProcessRunNote[],
         notesNewBody: "",
+        emailIssueDialogRun: null,
+        emailIssueDocs: [],
+        emailIssueLoading: false,
     };
 
     load = (): void => {
@@ -290,6 +299,39 @@ class ProcessRunsListPageInner extends Component<
         }));
     };
 
+    openEmailIssue = (run: ProcessRun): void => {
+        this.setState((prev) => ({
+            ...prev,
+            emailIssueDialogRun: run,
+            emailIssueDocs: [],
+            emailIssueLoading: true,
+        }));
+        getProcessRunDocuments(run.id)
+            .then((emailIssueDocs) =>
+                this.setState((prev) => ({
+                    ...prev,
+                    emailIssueDocs,
+                    emailIssueLoading: false,
+                })),
+            )
+            .catch(() =>
+                this.setState((prev) => ({
+                    ...prev,
+                    emailIssueDocs: [],
+                    emailIssueLoading: false,
+                })),
+            );
+    };
+
+    closeEmailIssue = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            emailIssueDialogRun: null,
+            emailIssueDocs: [],
+            emailIssueLoading: false,
+        }));
+    };
+
     handlePostNote = (): void => {
         const { notesDialogRunId, notesNewBody } = this.state;
         if (notesDialogRunId == null || !notesNewBody.trim()) return;
@@ -418,6 +460,7 @@ class ProcessRunsListPageInner extends Component<
                         >
                             <MenuItem value="">Svi</MenuItem>
                             <MenuItem value="PENDING">Na čekanju</MenuItem>
+                            <MenuItem value="SENT">Poslat</MenuItem>
                             <MenuItem value="COMPLETED">Završeno</MenuItem>
                             <MenuItem value="CANCELLED">Otkazano</MenuItem>
                             <MenuItem value="FAILED">Neuspešno</MenuItem>
@@ -467,7 +510,45 @@ class ProcessRunsListPageInner extends Component<
                                         <TableCell>
                                             {formatDateDisplay(row.valid_until)}
                                         </TableCell>
-                                        <TableCell>{statusLabel(row.status)}</TableCell>
+                                        <TableCell sx={{ maxWidth: 260 }}>
+                                            <Box
+                                                sx={{
+                                                    display: "flex",
+                                                    flexDirection: "column",
+                                                    alignItems: "flex-start",
+                                                    gap: 0.75,
+                                                }}
+                                            >
+                                                <Typography variant="body2">
+                                                    {statusLabel(row.status)}
+                                                </Typography>
+                                                {row.email_error?.trim() ? (
+                                                    <>
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="error"
+                                                        >
+                                                            Mejl nije poslat
+                                                        </Typography>
+                                                        <Button
+                                                            size="small"
+                                                            variant="contained"
+                                                            disableElevation
+                                                            onClick={() =>
+                                                                this.openEmailIssue(
+                                                                    row,
+                                                                )
+                                                            }
+                                                            sx={
+                                                                DIALOG_CONTAINED_BTN_SX
+                                                            }
+                                                        >
+                                                            Detalji
+                                                        </Button>
+                                                    </>
+                                                ) : null}
+                                            </Box>
+                                        </TableCell>
                                         <TableCell align="right">
                                             <Button
                                                 size="small"
@@ -602,7 +683,9 @@ class ProcessRunsListPageInner extends Component<
                         <Button
                             onClick={this.handleComplete}
                             variant="contained"
+                            disableElevation
                             disabled={!complete_valid_until.trim()}
+                            sx={DIALOG_CONTAINED_BTN_SX}
                         >
                             Završi
                         </Button>
@@ -639,6 +722,7 @@ class ProcessRunsListPageInner extends Component<
                                             <DeleteIcon />
                                         </IconButton>
                                     }
+                                    sx={{ flexWrap: "wrap", gap: 1 }}
                                 >
                                     <ListItemText
                                         primary={
@@ -647,6 +731,20 @@ class ProcessRunsListPageInner extends Component<
                                         }
                                         secondary={usageKindLabel(rd.usage_kind)}
                                     />
+                                    {rd.document_file_url ? (
+                                        <Button
+                                            size="small"
+                                            variant="contained"
+                                            disableElevation
+                                            component="a"
+                                            href={rd.document_file_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            sx={DIALOG_CONTAINED_BTN_SX}
+                                        >
+                                            Preuzmi
+                                        </Button>
+                                    ) : null}
                                 </ListItem>
                             ))}
                         </List>
@@ -676,9 +774,11 @@ class ProcessRunsListPageInner extends Component<
                                 </Select>
                             </FormControl>
                             <Button
-                                variant="outlined"
+                                variant="contained"
+                                disableElevation
                                 onClick={this.handleAddDocument}
                                 disabled={!this.state.addDocSelectedId}
+                                sx={DIALOG_CONTAINED_BTN_SX}
                             >
                                 Dodaj izveštaj
                             </Button>
@@ -728,11 +828,103 @@ class ProcessRunsListPageInner extends Component<
                         <Button onClick={this.closeNotes}>Zatvori</Button>
                         <Button
                             variant="contained"
+                            disableElevation
                             onClick={this.handlePostNote}
                             disabled={!this.state.notesNewBody.trim()}
+                            sx={DIALOG_CONTAINED_BTN_SX}
                         >
                             Dodaj
                         </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog
+                    open={this.state.emailIssueDialogRun != null}
+                    onClose={this.closeEmailIssue}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Mejl nije poslat</DialogTitle>
+                    <DialogContent>
+                        {this.state.emailIssueLoading ? (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    py: 3,
+                                }}
+                            >
+                                <CircularProgress size={32} />
+                            </Box>
+                        ) : (
+                            <>
+                                <Typography variant="body2" color="text.secondary">
+                                    {this.state.emailIssueDialogRun
+                                        ?.subject_snapshot?.name ??
+                                        this.state.emailIssueDialogRun
+                                            ?.subject_snapshot?.kind ??
+                                        "—"}
+                                    {" · "}
+                                    {
+                                        this.state.emailIssueDialogRun
+                                            ?.process_type_name
+                                    }
+                                </Typography>
+                                {this.state.emailIssueDialogRun?.email_error?.trim() ? (
+                                    <Alert severity="error" sx={{ mt: 2 }}>
+                                        {
+                                            this.state.emailIssueDialogRun
+                                                .email_error
+                                        }
+                                    </Alert>
+                                ) : null}
+                                <Typography
+                                    variant="subtitle2"
+                                    sx={{ mt: 2, mb: 1 }}
+                                >
+                                    Prilozi za ručno slanje
+                                </Typography>
+                                {this.state.emailIssueDocs.some(
+                                    (d) => d.document_file_url,
+                                ) ? (
+                                    this.state.emailIssueDocs.map((d) =>
+                                        d.document_file_url ? (
+                                            <Button
+                                                key={d.id}
+                                                fullWidth
+                                                variant="contained"
+                                                disableElevation
+                                                component="a"
+                                                href={d.document_file_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                sx={{
+                                                    ...DIALOG_CONTAINED_BTN_SX,
+                                                    mb: 1,
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                Preuzmi:{" "}
+                                                {d.document_file_title ??
+                                                    `Dokument #${d.document_file}`}
+                                            </Button>
+                                        ) : null,
+                                    )
+                                ) : this.state.emailIssueDocs.length > 0 ? (
+                                    <Typography variant="body2" color="text.secondary">
+                                        Nema dostupnog fajla za preuzimanje.
+                                    </Typography>
+                                ) : (
+                                    <Typography variant="body2" color="text.secondary">
+                                        Nema priloženih dokumenata na ovoj
+                                        aktivnosti.
+                                    </Typography>
+                                )}
+                            </>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closeEmailIssue}>Zatvori</Button>
                     </DialogActions>
                 </Dialog>
             </Box>

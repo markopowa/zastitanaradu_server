@@ -349,3 +349,59 @@ class ProcessNote(models.Model):
 
     def __str__(self) -> str:
         return f"Beleška #{self.pk} – {self.process_run}"
+
+
+class ActivityLog(models.Model):
+    EVENT_RUN_CREATED = "run_created"
+    EVENT_RUN_SENT = "run_sent"
+    EVENT_EMAIL_ERROR = "email_error"
+    EVENT_RUN_COMPLETED = "run_completed"
+    EVENT_DOCUMENT_ATTACHED = "doc_attached"
+    EVENT_TEMPLATE_EXECUTED = "template_exec"
+    EVENT_EXPIRED_REMINDER = "expired_reminder"
+    EVENT_SCHEDULED = "scheduled"
+
+    EVENT_CHOICES = (
+        (EVENT_RUN_CREATED, "Aktivnost kreirana"),
+        (EVENT_RUN_SENT, "Poslat poziv/email"),
+        (EVENT_EMAIL_ERROR, "Greška pri slanju"),
+        (EVENT_RUN_COMPLETED, "Aktivnost završena"),
+        (EVENT_DOCUMENT_ATTACHED, "Dokument priložen"),
+        (EVENT_TEMPLATE_EXECUTED, "Šablon izvršen"),
+        (EVENT_EXPIRED_REMINDER, "Podsetnik za istek"),
+        (EVENT_SCHEDULED, "Zakazana aktivnost"),
+    )
+
+    event_type = models.CharField(max_length=50, choices=EVENT_CHOICES)
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="activity_logs",
+    )
+    process_run = models.ForeignKey(
+        ProcessRun,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="activity_logs",
+    )
+    process_binding = models.ForeignKey(
+        ProcessBinding,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="activity_logs",
+    )
+    description = models.TextField()
+    extra_data = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        verbose_name = "Log aktivnosti"
+        verbose_name_plural = "Log aktivnosti"
+        ordering = ("-timestamp",)
+
+    def __str__(self) -> str:
+        return f"{self.get_event_type_display()} – {self.timestamp:%Y-%m-%d %H:%M}"

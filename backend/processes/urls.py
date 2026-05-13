@@ -2,7 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    DashboardExpiringView,
+    ActivityLogView,
     EmployeeSendNowView,
     ProcessBindingViewSet,
     ProcessRunViewSet,
@@ -23,8 +23,8 @@ router.register("task-assignments", TaskAssignmentViewSet,
                 basename="task-assignments")
 
 urlpatterns = [
-    path("dashboard/expiring", DashboardExpiringView.as_view(),
-         name="dashboard-expiring"),
+    path("dashboard/activity-log", ActivityLogView.as_view(),
+         name="dashboard-activity-log"),
     path("employees/<int:pk>/send-now/", EmployeeSendNowView.as_view(),
          name="employee-send-now"),
     path("", include(router.urls)),

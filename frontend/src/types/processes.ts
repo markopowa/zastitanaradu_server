@@ -84,10 +84,13 @@ export interface ProcessRun {
     scheduled_for?: string | null;
     performed_at?: string | null;
     valid_until?: string | null;
-    status: "PENDING" | "COMPLETED" | "CANCELLED" | "FAILED";
+    status: "PENDING" | "SENT" | "COMPLETED" | "CANCELLED" | "FAILED";
     notes?: string;
     result_data?: Record<string, unknown>;
     expired_reminder_sent_at?: string | null;
+    sent_at?: string | null;
+    sent_by_username?: string;
+    email_error?: string;
 }
 
 export interface ProcessRunNote {
@@ -140,10 +143,32 @@ export interface ProcessRunDocument {
     process_run: number;
     document_file: number;
     document_file_title?: string;
+    document_file_url?: string | null;
     usage_kind: string;
 }
 
 export type ProcessSubjectKind = "EMPLOYEE" | "EQUIPMENT" | "CLIENT_COMPANY";
+
+export type ActivityLogEventType =
+    | "run_created"
+    | "run_sent"
+    | "email_error"
+    | "run_completed"
+    | "doc_attached"
+    | "template_exec"
+    | "expired_reminder"
+    | "scheduled";
+
+export interface ActivityLog {
+    id: number;
+    event_type: ActivityLogEventType;
+    event_type_display: string;
+    timestamp: string;
+    username: string;
+    process_run_id: number | null;
+    description: string;
+    extra_data: Record<string, unknown>;
+}
 
 export interface TaskAssignment {
     id: number;

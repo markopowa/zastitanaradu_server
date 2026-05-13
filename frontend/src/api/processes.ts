@@ -1,5 +1,7 @@
 import { api } from "./client";
 import type {
+    ActivityLog,
+    ActivityLogEventType,
     ClientCompany,
     Employee,
     EmployeeSummary,
@@ -13,33 +15,22 @@ import type {
     ProcessType,
 } from "../types/processes";
 
-export interface DashboardExpiringParams {
-    days?: number;
-    use_lead_time?: boolean;
-    client_company_id?: number;
-    subject_kind?: ProcessSubjectKind;
-    process_type_id?: number;
-}
-
 type ListResponse<T> = T[] | { results?: T[] };
 
-export async function getDashboardExpiring(
-    params: DashboardExpiringParams = {},
-): Promise<ProcessRun[]> {
+export interface ActivityLogParams {
+    event_type?: ActivityLogEventType;
+}
+
+export async function getActivityLog(
+    params: ActivityLogParams = {},
+): Promise<ActivityLog[]> {
     const search = new URLSearchParams();
-    if (params.days != null) search.set("days", String(params.days));
-    if (params.use_lead_time === true) search.set("use_lead_time", "true");
-    if (params.client_company_id != null)
-        search.set("client_company_id", String(params.client_company_id));
-    if (params.subject_kind != null)
-        search.set("subject_kind", params.subject_kind);
-    if (params.process_type_id != null)
-        search.set("process_type_id", String(params.process_type_id));
+    if (params.event_type) search.set("event_type", params.event_type);
     const qs = search.toString();
     const url = qs
-        ? `/api/processes/dashboard/expiring?${qs}`
-        : "/api/processes/dashboard/expiring";
-    const { data } = await api.get<ListResponse<ProcessRun>>(url);
+        ? `/api/processes/dashboard/activity-log?${qs}`
+        : "/api/processes/dashboard/activity-log";
+    const { data } = await api.get<ListResponse<ActivityLog>>(url);
     return asList(data);
 }
 

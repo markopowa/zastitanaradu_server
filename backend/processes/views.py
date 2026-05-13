@@ -12,7 +12,9 @@ from rest_framework.views import APIView
 from documents.models import DocumentFile
 from partners.models import Employee
 
+from .activity_log import log_activity
 from .models import (
+    ActivityLog,
     ProcessBinding,
     ProcessNote,
     ProcessRun,
@@ -24,6 +26,7 @@ from .models import (
 from .process_run_completion import apply_process_run_completion
 from .send_now import send_now_for_binding
 from .serializers import (
+    ActivityLogSerializer,
     EmployeeSendNowSerializer,
     ProcessBindingSerializer,
     ProcessNoteCreateSerializer,
@@ -42,64 +45,16 @@ from .utils import binding_subject_snapshot
 logger = logging.getLogger(__name__)
 
 
-class DashboardExpiringView(ListAPIView):
-    serializer_class = ProcessRunSerializer
-    permission_classes = [permissions.DjangoModelPermissions]
+class ActivityLogView(ListAPIView):
+    serializer_class = ActivityLogSerializer
+    permission_classes = [permissions.IsAdminUser]
 
     def get_queryset(self):
-        today = date.today()
-        days_param = self.request.query_params.get("days", "30")
-        try:
-            days = int(days_param)
-        except ValueError:
-            days = 30
-        to_date = today + timedelta(days=min(days, 365))
-        use_lead_time = self.request.query_params.get(
-            "use_lead_time", "").lower() in ("true", "1", "yes")
-
-        queryset = (
-            ProcessRun.objects.filter(
-                status=ProcessRun.STATUS_COMPLETED,
-                valid_until__gte=today,
-                valid_until__lte=to_date,
-            )
-            .select_related(
-                "process_binding",
-                "process_binding__process_type",
-                "process_type",
-            )
-            .order_by("valid_until", "id")
-        )
-
-        client_company_id = self.request.query_params.get("client_company_id")
-        subject_kind = self.request.query_params.get("subject_kind")
-        process_type_id = self.request.query_params.get("process_type_id")
-
-        if client_company_id is not None and client_company_id != "":
-            queryset = queryset.filter(
-                Q(process_binding__client_company_id=client_company_id)
-                | Q(process_binding__employee__client_company_id=client_company_id)
-                | Q(process_binding__equipment_item__client_company_id=client_company_id)
-            )
-        if subject_kind is not None and subject_kind != "":
-            queryset = queryset.filter(
-                process_binding__subject_kind=subject_kind)
-        if process_type_id is not None and process_type_id != "":
-            queryset = queryset.filter(process_type_id=process_type_id)
-
-        if use_lead_time:
-            ids = []
-            for run in queryset[:500]:
-                lead_days = (
-                    run.process_type.lead_time_days or 0) if run.process_type_id else 0
-                if run.valid_until and run.valid_until <= today + timedelta(days=lead_days):
-                    ids.append(run.id)
-            if ids:
-                return ProcessRun.objects.filter(pk__in=ids).select_related(
-                    "process_binding", "process_binding__process_type", "process_type"
-                ).order_by("valid_until", "id")
-            return ProcessRun.objects.none()
-        return queryset
+        qs = ActivityLog.objects.select_related("user", "process_run").all()
+        event_type = self.request.query_params.get("event_type")
+        if event_type:
+            qs = qs.filter(event_type=event_type)
+        return qs[:500]
 
 
 class ProcessTypeViewSet(viewsets.ModelViewSet):
@@ -206,6 +161,24 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
         first_doc = run.documents.select_related("document_file").first()
         if first_doc and first_doc.document_file.file:
             doc_url = first_doc.document_file.file.url
+        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        if run.email_error:
+            log_activity(
+                ActivityLog.EVENT_EMAIL_ERROR,
+                f"Greška pri slanju poziva za '{run.process_type.name}' ({subject}): {run.email_error[:200]}",
+                user=user,
+                process_run=run,
+                process_binding=binding,
+                extra_data={"email_error": run.email_error},
+            )
+        else:
+            log_activity(
+                ActivityLog.EVENT_RUN_SENT,
+                f"Poslat poziv za '{run.process_type.name}' ({subject})",
+                user=user,
+                process_run=run,
+                process_binding=binding,
+            )
         data = SendNowResponseSerializer({
             "process_run": run,
             "document_url": doc_url,
@@ -260,10 +233,19 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         binding = serializer.validated_data["process_binding"]
-        serializer.save(
+        run = serializer.save(
             process_type=binding.process_type,
             subject_snapshot=binding_subject_snapshot(binding),
             status=ProcessRun.STATUS_PENDING,
+        )
+        user = getattr(self.request, "user", None)
+        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        log_activity(
+            ActivityLog.EVENT_RUN_CREATED,
+            f"Ručno kreirana aktivnost '{run.process_type.name}' za {subject}",
+            user=user if getattr(user, "is_authenticated", False) else None,
+            process_run=run,
+            process_binding=binding,
         )
 
     @action(detail=True, methods=["post"], url_path="complete")
@@ -280,6 +262,14 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         user = getattr(request, "user", None)
         apply_process_run_completion(
             run, serializer.validated_data, user=user)
+        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        log_activity(
+            ActivityLog.EVENT_RUN_COMPLETED,
+            f"Završena aktivnost '{run.process_type.name}' za {subject}, važi do {run.valid_until}",
+            user=user if getattr(user, "is_authenticated", False) else None,
+            process_run=run,
+            process_binding=run.process_binding,
+        )
         run_serializer = ProcessRunSerializer(run)
         return Response(run_serializer.data)
 
@@ -288,7 +278,9 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         run = self.get_object()
         if request.method == "GET":
             docs = run.documents.select_related("document_file").all()
-            serializer = ProcessRunDocumentSerializer(docs, many=True)
+            serializer = ProcessRunDocumentSerializer(
+                docs, many=True, context={"request": request},
+            )
             return Response(serializer.data)
         serializer = ProcessRunDocumentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -307,16 +299,17 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
             usage_kind=usage_kind,
         )
         user = getattr(request, "user", None)
-        logger.info(
-            "ProcessRunDocument id=%s attached to run id=%s document_file id=%s by user_id=%s (%s)",
-            prd.id,
-            run.id,
-            document_file_id,
-            getattr(user, "id", None),
-            getattr(user, "username", ""),
+        log_activity(
+            ActivityLog.EVENT_DOCUMENT_ATTACHED,
+            f"Priložen dokument '{doc_file.title}' na aktivnost id={run.id}",
+            user=user if getattr(user, "is_authenticated", False) else None,
+            process_run=run,
+            process_binding=run.process_binding,
         )
         return Response(
-            ProcessRunDocumentSerializer(prd).data,
+            ProcessRunDocumentSerializer(
+                prd, context={"request": request},
+            ).data,
             status=status.HTTP_201_CREATED,
         )
 
@@ -412,6 +405,24 @@ class EmployeeSendNowView(APIView):
         first_doc = run.documents.select_related("document_file").first()
         if first_doc and first_doc.document_file.file:
             doc_url = first_doc.document_file.file.url
+        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        if run.email_error:
+            log_activity(
+                ActivityLog.EVENT_EMAIL_ERROR,
+                f"Greška pri slanju poziva za '{run.process_type.name}' ({subject}): {run.email_error[:200]}",
+                user=user,
+                process_run=run,
+                process_binding=binding,
+                extra_data={"email_error": run.email_error},
+            )
+        else:
+            log_activity(
+                ActivityLog.EVENT_RUN_SENT,
+                f"Poslat poziv za '{run.process_type.name}' ({subject})",
+                user=user,
+                process_run=run,
+                process_binding=binding,
+            )
         data = SendNowResponseSerializer({
             "process_run": run,
             "document_url": doc_url,
