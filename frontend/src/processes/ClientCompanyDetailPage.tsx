@@ -1192,7 +1192,7 @@ class ClientCompanyDetailPageInner extends Component<
                 </Paper>
 
                 <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-                    Aktivni rasporedi
+                    Aktivni procesi
                 </Typography>
                 <Paper sx={{ overflow: "auto" }}>
                     <Table size="small">
@@ -1208,7 +1208,7 @@ class ClientCompanyDetailPageInner extends Component<
                             0 ? (
                                 <TableRow>
                                     <TableCell colSpan={3} align="center">
-                                        Nema aktivnih rasporeda.
+                                        Nema aktivnih procesa.
                                     </TableCell>
                                 </TableRow>
                             ) : (

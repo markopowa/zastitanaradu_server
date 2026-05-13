@@ -186,7 +186,7 @@ Potrebna su **tri šablona** koja zajedno pokrivaju ceo tok:
 
 ### 6a. Prethodni — pošalji uput na dan termina
 
-- [ ] **Procesi → Šabloni procesa → Dodaj**
+- [ ] **Procesi → Šablon procesa → Dodaj**
 - [ ] Vrsta obaveze: `Prethodni lekarski pregled`
 - [ ] Okidač: **Na zakazani datum**
 - [ ] Generiši dokument: **DA** ✅
@@ -208,7 +208,7 @@ Datum: {{ scheduled_for }}.
 
 Po završetku prethodnog pregleda sistem automatski kreira raspored za periodični.
 
-- [ ] **Procesi → Šabloni procesa → Dodaj**
+- [ ] **Procesi → Šablon procesa → Dodaj**
 - [ ] Vrsta obaveze: `Prethodni lekarski pregled`
 - [ ] Okidač: **Kada se završi pregled**
 - [ ] Generiši dokument: **NE**
@@ -218,7 +218,7 @@ Po završetku prethodnog pregleda sistem automatski kreira raspored za periodič
 
 ### 6c. Periodični — pošalji uput na dan termina
 
-- [ ] **Procesi → Šabloni procesa → Dodaj**
+- [ ] **Procesi → Šablon procesa → Dodaj**
 - [ ] Vrsta obaveze: `Periodični lekarski pregled`
 - [ ] Okidač: **Na zakazani datum**
 - [ ] Generiši dokument: **DA** ✅
@@ -244,7 +244,7 @@ Datum: {{ scheduled_for }}.
 
 Novi zaposleni uvek počinje sa prethodnim pregledom. Raspored se pravi ručno samo jednom — za prethodni. Periodični se posle kreira automatski.
 
-- [ ] **Procesi → Rasporedi → Dodaj**
+- [ ] **Procesi** (stavka „Procesi“ u meniju) → **Dodaj**
 - [ ] Vrsta obaveze: `Prethodni lekarski pregled`
 - [ ] Zaposleni: `Marko Petrović`
 - [ ] Sledeći termin: **današnji datum + 30 dana**
@@ -279,9 +279,9 @@ Novi zaposleni uvek počinje sa prethodnim pregledom. Raspored se pravi ručno s
 - [ ] Otvori aktivnost → tab **Dokumenti** → uput je prikačen
 - [ ] (Ako je mejl prošao) proveri inbox `markovuckovic1992@gmail.com` — mejl je stigao **sa uputom kao prilogom**
 
-### Način B — sa rasporeda
+### Način B — sa liste Procesi
 
-- [ ] **Procesi → Rasporedi**
+- [ ] **Procesi** (stavka „Procesi“ u meniju)
 - [ ] U redu Markovog rasporeda klikni **"Pošalji sad"**
 
 **Provera:** isto kao Način A — nova aktivnost u statusu "Poslat", dokument prikačen, mejl sa prilogom.

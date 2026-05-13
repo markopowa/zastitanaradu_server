@@ -356,7 +356,7 @@ class ProcessTemplatesListPageInner extends Component<
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="h6">Šabloni procesa</Typography>
+                <Typography variant="h6">Šablon procesa</Typography>
                 <Box
                     sx={{
                         display: "flex",

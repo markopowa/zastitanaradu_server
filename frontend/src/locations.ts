@@ -28,8 +28,8 @@ const pathToTitle: Record<string, string> = {
     [paths.clientCompanies]: "Klijenti",
     [paths.equipment]: "Oprema",
     [paths.processTypes]: "Vrste obaveza",
-    [paths.processTemplates]: "Šabloni procesa",
-    [paths.processBindings]: "Rasporedi",
+    [paths.processTemplates]: "Šablon procesa",
+    [paths.processBindings]: "Procesi",
     [paths.processRuns]: "Aktivnosti",
 };
 
