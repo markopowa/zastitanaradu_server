@@ -147,8 +147,6 @@ export interface ProcessRunDocument {
     usage_kind: string;
 }
 
-export type ProcessSubjectKind = "EMPLOYEE" | "EQUIPMENT" | "CLIENT_COMPANY";
-
 export type ActivityLogEventType =
     | "run_created"
     | "run_sent"

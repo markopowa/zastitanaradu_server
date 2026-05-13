@@ -9,7 +9,6 @@ import type {
     ProcessBinding,
     ProcessRun,
     ProcessRunNote,
-    ProcessSubjectKind,
     ProcessRunDocument,
     ProcessTemplate,
     ProcessType,
