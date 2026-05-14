@@ -3,6 +3,7 @@ from io import StringIO
 from unittest.mock import patch
 
 from django.test import TestCase
+from django.utils import timezone
 
 from partners.models import ClientCompany
 from processes.models import ProcessBinding, ProcessRun, ProcessTriggerRun, ProcessType
@@ -225,7 +226,6 @@ class RunExpiredRemindersTest(TestCase):
         b = make_binding(pt, next_run_at=TODAY)
         run = make_run(b, status=ProcessRun.STATUS_COMPLETED,
                        valid_until=TODAY - timedelta(days=1))
-        from django.utils import timezone
         ProcessTriggerRun.objects.create(
             process_run=run,
             trigger=ProcessTriggerRun.TRIGGER_ON_EXPIRED,

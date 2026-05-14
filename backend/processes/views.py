@@ -19,13 +19,13 @@ from .models import (
     ProcessNote,
     ProcessRun,
     ProcessRunDocument,
+    ProcessTemplate,
     ProcessTriggerRun,
     ProcessType,
     TaskAssignment,
 )
 from .process_run_completion import apply_process_run_completion
 from .send_now import send_now_for_binding
-from .models import ProcessTemplate
 from .serializers import (
     ActivityLogSerializer,
     EmployeeSendNowSerializer,
