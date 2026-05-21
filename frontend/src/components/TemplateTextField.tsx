@@ -197,7 +197,7 @@ export default function TemplateTextField({
                     display: "flex",
                     flexWrap: "wrap",
                     gap: 0.5,
-                    mb: 0.5,
+                    mb: 2,
                     alignItems: "center",
                 }}
             >
