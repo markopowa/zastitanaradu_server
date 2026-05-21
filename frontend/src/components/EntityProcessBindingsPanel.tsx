@@ -49,7 +49,7 @@ export class EntityProcessBindingsPanel extends Component<
         updateProcessBinding(bindingId, { next_run_at: nextRunAtISO })
             .then(() => {
                 this.setState({ savingStartDateBindingId: null });
-                enqueueSnackbar("Početni termin je sačuvan.", {
+                enqueueSnackbar("Termin je sačuvan.", {
                     variant: "success",
                 });
                 this.props.onRefresh();
@@ -116,7 +116,7 @@ export class EntityProcessBindingsPanel extends Component<
                         <TableHead>
                             <TableRow>
                                 <TableCell>Vrsta obaveze</TableCell>
-                                <TableCell>Početni termin</TableCell>
+                                <TableCell>Termin</TableCell>
                                 <TableCell>Aktivan</TableCell>
                             </TableRow>
                         </TableHead>
@@ -136,7 +136,7 @@ export class EntityProcessBindingsPanel extends Component<
                                         <TableCell sx={{ minWidth: 220 }}>
                                             <PermissionGate permission="processes.change_processbinding">
                                                 <DateTextFieldWithPicker
-                                                    label="Početni termin (dd.mm.yyyy)"
+                                                    label="Termin (dd.mm.yyyy)"
                                                     value={isoDateToFormDisplay(
                                                         b.next_run_at,
                                                     )}

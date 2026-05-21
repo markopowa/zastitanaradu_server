@@ -156,7 +156,7 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
         binding = self.get_object()
         if not binding.next_run_at:
             return Response(
-                {"detail": "Obaveza nema početni termin."},
+                {"detail": "Obaveza nema termin."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         user = request.user if getattr(
@@ -403,7 +403,7 @@ class EmployeeSendNowView(APIView):
             return Response(
                 {
                     "detail": (
-                        "Obaveza sa početnim terminom ne postoji. "
+                        "Obaveza sa terminom ne postoji. "
                         "Dodaj obavezu pre slanja."
                     ),
                 },

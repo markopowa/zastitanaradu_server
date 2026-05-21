@@ -573,7 +573,7 @@ class ClientCompanyDetailPageInner extends Component<
                     ...prev,
                     savingStartDateBindingId: null,
                 }));
-                enqueueSnackbar("Početni termin je sačuvan.", {
+                enqueueSnackbar("Termin je sačuvan.", {
                     variant: "success",
                 });
                 this.loadExtra(companyId);
@@ -1286,7 +1286,7 @@ class ClientCompanyDetailPageInner extends Component<
                             <TableRow>
                                 <TableCell>Vrsta obaveze</TableCell>
                                 <TableCell>Subjekt</TableCell>
-                                <TableCell>Početni termin</TableCell>
+                                <TableCell>Termin</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -1316,7 +1316,7 @@ class ClientCompanyDetailPageInner extends Component<
                                             <TableCell sx={{ minWidth: 220 }}>
                                                 <PermissionGate permission="processes.change_processbinding">
                                                     <DateTextFieldWithPicker
-                                                        label="Početni termin (dd.mm.yyyy)"
+                                                        label="Termin (dd.mm.yyyy)"
                                                         value={isoDateToFormDisplay(
                                                             b.next_run_at,
                                                         )}

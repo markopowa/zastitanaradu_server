@@ -151,7 +151,7 @@ export class AddProcessBindingDialog extends Component<
                         </Select>
                     </FormControl>
                     <DateTextFieldWithPicker
-                        label="Početni termin (dd.mm.yyyy)"
+                        label="Termin (dd.mm.yyyy)"
                         value={nextRunAt}
                         helperText="Kada obaveza prvi put treba da se desi"
                         onChange={(v) => this.setState({ nextRunAt: v })}

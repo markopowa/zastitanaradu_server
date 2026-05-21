@@ -88,7 +88,7 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if self.instance is None and not attrs.get("next_run_at"):
             raise serializers.ValidationError(
-                {"next_run_at": "Početni termin je obavezan."}
+                {"next_run_at": "Termin je obavezan."}
             )
         return attrs
 

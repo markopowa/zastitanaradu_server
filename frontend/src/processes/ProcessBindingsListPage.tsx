@@ -174,7 +174,7 @@ class ProcessBindingsListPageInner extends Component<
                     ...prev,
                     savingStartDateBindingId: null,
                 }));
-                enqueueSnackbar("Početni termin je sačuvan.", {
+                enqueueSnackbar("Termin je sačuvan.", {
                     variant: "success",
                 });
             })
@@ -361,7 +361,7 @@ class ProcessBindingsListPageInner extends Component<
                                 <TableRow>
                                     <TableCell>Vrsta obaveze</TableCell>
                                     <TableCell>Subjekt</TableCell>
-                                    <TableCell>Početni termin</TableCell>
+                                    <TableCell>Termin</TableCell>
                                     <TableCell>Aktivan</TableCell>
                                     <TableCell align="right" />
                                 </TableRow>
@@ -381,7 +381,7 @@ class ProcessBindingsListPageInner extends Component<
                                         >
                                             <PermissionGate permission="processes.change_processbinding">
                                                 <DateTextFieldWithPicker
-                                                    label="Početni termin (dd.mm.yyyy)"
+                                                    label="Termin (dd.mm.yyyy)"
                                                     value={isoDateToFormDisplay(
                                                         row.next_run_at,
                                                     )}
@@ -409,7 +409,7 @@ class ProcessBindingsListPageInner extends Component<
                                                     title={
                                                         row.next_run_at
                                                             ? ""
-                                                            : "Postavi početni termin pre slanja"
+                                                            : "Postavi termin pre slanja"
                                                     }
                                                 >
                                                     <span>
@@ -559,7 +559,7 @@ class ProcessBindingsListPageInner extends Component<
                             </FormControl>
                         )}
                         <DateTextFieldWithPicker
-                            label="Početni termin (dd.mm.yyyy)"
+                            label="Termin (dd.mm.yyyy)"
                             value={new_next_run_at}
                             helperText="Kada obaveza prvi put treba da se desi"
                             onChange={(v) =>
