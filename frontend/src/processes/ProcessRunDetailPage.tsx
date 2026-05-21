@@ -711,19 +711,16 @@ class ProcessRunDetailPageInner extends Component<
     }
 }
 
-function ProcessRunDetailPageRoute(
-    props: ProcessRunDetailPageDispatchProps,
-): React.ReactElement {
-    const { id } = useParams();
-    return <ProcessRunDetailPageInner {...props} id={id ?? ""} />;
-}
-
 const mapDispatchToProps = (
     dispatch: AppDispatch,
 ): ProcessRunDetailPageDispatchProps => ({
     setLastPath: (path) => dispatch(setLastPath(path)),
 });
 
-export default withNavigation(
-    connect(null, mapDispatchToProps)(ProcessRunDetailPageRoute),
-);
+const Connected = connect(null, mapDispatchToProps)(ProcessRunDetailPageInner);
+const ProcessRunDetailWithNavigation = withNavigation(Connected);
+
+export default function ProcessRunDetailPage(): React.ReactElement {
+    const { id } = useParams<{ id: string }>();
+    return <ProcessRunDetailWithNavigation id={id ?? ""} />;
+}
