@@ -19,9 +19,9 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    TextField,
     CircularProgress,
-    Alert
+    Alert,
+    Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
@@ -41,9 +41,13 @@ import {
     ensureClientCompanies,
     ensureProcessTypes,
     fetchBindings,
+    saveProcessBinding,
 } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
-import { formatDateDisplay, StringToDate } from "../utils/date";
+import {
+    displayDateToIso,
+    isoDateToFormDisplay,
+} from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
 import type { ProcessBinding } from "../types/processes";
@@ -69,9 +73,9 @@ class ProcessBindingsListPageInner extends Component<
         new_equipment: "",
         new_client_company: "",
         new_process_type: "",
-        new_period: "",
         new_next_run_at: "",
         sendingBindingId: null,
+        savingStartDateBindingId: null,
     };
 
     handleSendNow = (bindingId: number): void => {
@@ -138,7 +142,6 @@ class ProcessBindingsListPageInner extends Component<
             new_equipment: "",
             new_client_company: "",
             new_process_type: firstType ? String(firstType.id) : "",
-            new_period: "",
             new_next_run_at: "",
         }));
         getEmployees().then((e) =>
@@ -153,6 +156,48 @@ class ProcessBindingsListPageInner extends Component<
         this.setState((prev) => ({ ...prev, dialogOpen: false }));
     };
 
+    handleStartDateChange = (bindingId: number, displayDate: string): void => {
+        const nextRunAtISO = displayDateToIso(displayDate);
+        if (!nextRunAtISO) return;
+        this.setState((prev) => ({
+            ...prev,
+            savingStartDateBindingId: bindingId,
+        }));
+        void this.props
+            .saveBinding?.({
+                id: bindingId,
+                payload: { next_run_at: nextRunAtISO },
+            })
+            .unwrap()
+            .then(() => {
+                this.setState((prev) => ({
+                    ...prev,
+                    savingStartDateBindingId: null,
+                }));
+                enqueueSnackbar("Početni termin je sačuvan.", {
+                    variant: "success",
+                });
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState((prev) => ({
+                        ...prev,
+                        savingStartDateBindingId: null,
+                    }));
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju termina.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
+    };
+
     handleCreate = (): void => {
         const {
             new_subject_kind,
@@ -160,24 +205,17 @@ class ProcessBindingsListPageInner extends Component<
             new_equipment,
             new_client_company,
             new_process_type,
-            new_period,
             new_next_run_at,
         } = this.state;
         if (!new_process_type) return;
-        const nextRunAtDate = new_next_run_at.trim()
-            ? StringToDate(new_next_run_at)
-            : null;
-        const nextRunAtISO =
-            nextRunAtDate != null
-                ? `${nextRunAtDate.getFullYear()}-${String(nextRunAtDate.getMonth() + 1).padStart(2, "0")}-${String(nextRunAtDate.getDate()).padStart(2, "0")}`
-                : undefined;
+        const nextRunAtISO = displayDateToIso(new_next_run_at);
+        if (!nextRunAtISO) return;
         const payload: Partial<ProcessBinding> = {
             process_type: Number(new_process_type),
             subject_kind: new_subject_kind as
                 | "EMPLOYEE"
                 | "EQUIPMENT"
                 | "CLIENT_COMPANY",
-            custom_period_months: new_period ? Number(new_period) : undefined,
             next_run_at: nextRunAtISO,
             is_active: true,
         };
@@ -221,11 +259,11 @@ class ProcessBindingsListPageInner extends Component<
             new_equipment,
             new_client_company,
             new_process_type,
-            new_period,
             new_next_run_at,
             employees,
             equipment,
             sendingBindingId,
+            savingStartDateBindingId,
         } = this.state;
         const {
             clientCompanies: clients,
@@ -323,7 +361,7 @@ class ProcessBindingsListPageInner extends Component<
                                 <TableRow>
                                     <TableCell>Vrsta obaveze</TableCell>
                                     <TableCell>Subjekt</TableCell>
-                                    <TableCell>Sledeći termin</TableCell>
+                                    <TableCell>Početni termin</TableCell>
                                     <TableCell>Aktivan</TableCell>
                                     <TableCell align="right" />
                                 </TableRow>
@@ -337,32 +375,72 @@ class ProcessBindingsListPageInner extends Component<
                                         <TableCell>
                                             {subjectLabel(row)}
                                         </TableCell>
-                                        <TableCell>
-                                            {formatDateDisplay(row.next_run_at)}
+                                        <TableCell
+                                            sx={{ minWidth: 220 }}
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <PermissionGate permission="processes.change_processbinding">
+                                                <DateTextFieldWithPicker
+                                                    label="Početni termin (dd.mm.yyyy)"
+                                                    value={isoDateToFormDisplay(
+                                                        row.next_run_at,
+                                                    )}
+                                                    helperText={
+                                                        savingStartDateBindingId ===
+                                                        row.id
+                                                            ? "Čuvam..."
+                                                            : undefined
+                                                    }
+                                                    onChange={(v) =>
+                                                        this.handleStartDateChange(
+                                                            row.id,
+                                                            v,
+                                                        )
+                                                    }
+                                                />
+                                            </PermissionGate>
                                         </TableCell>
                                         <TableCell>
                                             {row.is_active ? "Da" : "Ne"}
                                         </TableCell>
                                         <TableCell align="right">
                                             <PermissionGate permission="processes.add_processrun">
-                                                <Button
-                                                    size="small"
-                                                    variant="outlined"
-                                                    startIcon={<SendIcon />}
-                                                    disabled={
-                                                        sendingBindingId ===
-                                                        row.id
-                                                    }
-                                                    onClick={() =>
-                                                        this.handleSendNow(
-                                                            row.id,
-                                                        )
+                                                <Tooltip
+                                                    title={
+                                                        row.next_run_at
+                                                            ? ""
+                                                            : "Postavi početni termin pre slanja"
                                                     }
                                                 >
-                                                    {sendingBindingId === row.id
-                                                        ? "Šaljem..."
-                                                        : "Pošalji sad"}
-                                                </Button>
+                                                    <span>
+                                                        <Button
+                                                            size="small"
+                                                            variant="outlined"
+                                                            startIcon={
+                                                                <SendIcon />
+                                                            }
+                                                            disabled={
+                                                                sendingBindingId ===
+                                                                    row.id ||
+                                                                !row.next_run_at
+                                                            }
+                                                            onClick={() =>
+                                                                this.handleSendNow(
+                                                                    row.id,
+                                                                )
+                                                            }
+                                                            sx={{
+                                                                whiteSpace:
+                                                                    "nowrap",
+                                                            }}
+                                                        >
+                                                            {sendingBindingId ===
+                                                            row.id
+                                                                ? "Šaljem..."
+                                                                : "Pošalji sad"}
+                                                        </Button>
+                                                    </span>
+                                                </Tooltip>
                                             </PermissionGate>
                                         </TableCell>
                                     </TableRow>
@@ -480,42 +558,10 @@ class ProcessBindingsListPageInner extends Component<
                                 </Select>
                             </FormControl>
                         )}
-                        {(() => {
-                            const selectedType = types.find(
-                                (t) => String(t.id) === new_process_type,
-                            );
-                            const defaultPeriod =
-                                selectedType?.default_period_months;
-                            return (
-                                <TextField
-                                    margin="dense"
-                                    label="Period (meseci)"
-                                    type="number"
-                                    fullWidth
-                                    value={new_period}
-                                    placeholder={
-                                        defaultPeriod != null
-                                            ? String(defaultPeriod)
-                                            : undefined
-                                    }
-                                    helperText={
-                                        defaultPeriod != null
-                                            ? `Podrazumevano iz vrste obaveze: ${defaultPeriod} mes. — ostavi prazno da koristiš tu vrednost`
-                                            : "Ostavi prazno za jednokratno"
-                                    }
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            new_period: e.target.value,
-                                        }))
-                                    }
-                                />
-                            );
-                        })()}
                         <DateTextFieldWithPicker
-                            label="Sledeći termin (dd.mm.yyyy)"
+                            label="Početni termin (dd.mm.yyyy)"
                             value={new_next_run_at}
-                            helperText="Datum zakazanog pregleda / obaveze"
+                            helperText="Kada obaveza prvi put treba da se desi"
                             onChange={(v) =>
                                 this.setState((prev) => ({
                                     ...prev,
@@ -524,13 +570,15 @@ class ProcessBindingsListPageInner extends Component<
                             }
                         />
                     </DialogContent>
-                    <DialogActions>
+                    <DialogActions sx={{ px: 3, pb: 2 }}>
                         <Button onClick={this.closeDialog}>Odustani</Button>
                         <Button
                             onClick={this.handleCreate}
                             variant="contained"
+                            disableElevation
                             disabled={
                                 !new_process_type ||
+                                !new_next_run_at.trim() ||
                                 (new_subject_kind === "EMPLOYEE" &&
                                     !new_employee) ||
                                 (new_subject_kind === "EQUIPMENT" &&
@@ -575,6 +623,7 @@ const mapDispatchToProps = (
         void dispatch(fetchBindings(params));
     },
     addBinding: (payload) => dispatch(addProcessBinding(payload)),
+    saveBinding: (args) => dispatch(saveProcessBinding(args)),
 });
 
 const Connected = connect(

@@ -154,6 +154,11 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"], url_path="send-now")
     def send_now(self, request, pk=None):
         binding = self.get_object()
+        if not binding.next_run_at:
+            return Response(
+                {"detail": "Obaveza nema početni termin."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         user = request.user if getattr(
             request.user, "is_authenticated", False) else None
         run, created = send_now_for_binding(binding, user=user)
@@ -393,13 +398,16 @@ class EmployeeSendNowView(APIView):
         binding = ProcessBinding.objects.filter(
             process_type=pt,
             employee=employee,
-        ).first()
+        ).exclude(next_run_at__isnull=True).first()
         if not binding:
-            binding = ProcessBinding.objects.create(
-                process_type=pt,
-                subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
-                employee=employee,
-                is_active=False,
+            return Response(
+                {
+                    "detail": (
+                        "Obaveza sa početnim terminom ne postoji. "
+                        "Dodaj obavezu pre slanja."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         user = request.user if getattr(

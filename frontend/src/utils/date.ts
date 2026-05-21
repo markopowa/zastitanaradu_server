@@ -41,3 +41,16 @@ export const formatDateTimeISO = (value?: string | null): string => {
     const s = d.getSeconds();
     return `${pad2(day)}.${pad2(m)}.${y} ${pad2(h)}:${pad2(min)}:${pad2(s)}`;
 };
+
+export const isoDateToFormDisplay = (value?: string | null): string => {
+    if (!value) return "";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return DateToString(d);
+};
+
+export const displayDateToIso = (value: string): string | undefined => {
+    const date = StringToDate(value.trim());
+    if (!date) return undefined;
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+};

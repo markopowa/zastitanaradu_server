@@ -85,6 +85,13 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
             "is_active",
         )
 
+    def validate(self, attrs):
+        if self.instance is None and not attrs.get("next_run_at"):
+            raise serializers.ValidationError(
+                {"next_run_at": "Početni termin je obavezan."}
+            )
+        return attrs
+
 
 class ProcessTriggerRunSerializer(serializers.ModelSerializer):
     executed_by_username = serializers.CharField(

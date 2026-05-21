@@ -12,10 +12,13 @@ import {
     Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import { enqueueSnackbar } from "notistack";
 
+import { updateProcessBinding } from "../api/processes";
 import { AddProcessBindingDialog } from "./AddProcessBindingDialog";
+import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import { PermissionGate } from "./PermissionGate";
-import { formatDateDisplay } from "../utils/date";
+import { displayDateToIso, formatDateDisplay, isoDateToFormDisplay } from "../utils/date";
 
 import type {
     EntityProcessBindingsPanelProps,
@@ -36,6 +39,36 @@ export class EntityProcessBindingsPanel extends Component<
 > {
     state: EntityProcessBindingsPanelState = {
         dialogOpen: false,
+        savingStartDateBindingId: null,
+    };
+
+    handleStartDateChange = (bindingId: number, displayDate: string): void => {
+        const nextRunAtISO = displayDateToIso(displayDate);
+        if (!nextRunAtISO) return;
+        this.setState({ savingStartDateBindingId: bindingId });
+        updateProcessBinding(bindingId, { next_run_at: nextRunAtISO })
+            .then(() => {
+                this.setState({ savingStartDateBindingId: null });
+                enqueueSnackbar("Početni termin je sačuvan.", {
+                    variant: "success",
+                });
+                this.props.onRefresh();
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState({ savingStartDateBindingId: null });
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju termina.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
     render() {
@@ -49,7 +82,7 @@ export class EntityProcessBindingsPanel extends Component<
             runs,
             onRefresh,
         } = this.props;
-        const { dialogOpen } = this.state;
+        const { dialogOpen, savingStartDateBindingId } = this.state;
         const activeBindings = bindings.filter((b) => b.is_active);
 
         return (
@@ -83,7 +116,7 @@ export class EntityProcessBindingsPanel extends Component<
                         <TableHead>
                             <TableRow>
                                 <TableCell>Vrsta obaveze</TableCell>
-                                <TableCell>Sledeći termin</TableCell>
+                                <TableCell>Početni termin</TableCell>
                                 <TableCell>Aktivan</TableCell>
                             </TableRow>
                         </TableHead>
@@ -100,8 +133,27 @@ export class EntityProcessBindingsPanel extends Component<
                                         <TableCell>
                                             {b.process_type_name}
                                         </TableCell>
-                                        <TableCell>
-                                            {formatDateDisplay(b.next_run_at)}
+                                        <TableCell sx={{ minWidth: 220 }}>
+                                            <PermissionGate permission="processes.change_processbinding">
+                                                <DateTextFieldWithPicker
+                                                    label="Početni termin (dd.mm.yyyy)"
+                                                    value={isoDateToFormDisplay(
+                                                        b.next_run_at,
+                                                    )}
+                                                    helperText={
+                                                        savingStartDateBindingId ===
+                                                        b.id
+                                                            ? "Čuvam..."
+                                                            : undefined
+                                                    }
+                                                    onChange={(v) =>
+                                                        this.handleStartDateChange(
+                                                            b.id,
+                                                            v,
+                                                        )
+                                                    }
+                                                />
+                                            </PermissionGate>
                                         </TableCell>
                                         <TableCell>
                                             {b.is_active ? "Da" : "Ne"}

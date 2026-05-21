@@ -73,6 +73,10 @@ export interface ProcessBindingsListPageDispatchProps {
     ensureProcessTypes: () => void;
     loadBindings: (params: ProcessBindingsParams) => void;
     addBinding: (payload: Partial<ProcessBinding>) => AsyncThunkDispatchResult;
+    saveBinding: (args: {
+        id: number;
+        payload: Partial<ProcessBinding>;
+    }) => AsyncThunkDispatchResult;
 }
 
 export type ProcessBindingsListPageProps = ProcessBindingsListPageStateProps &
@@ -90,9 +94,9 @@ export interface ProcessBindingsListPageState {
     new_equipment: string;
     new_client_company: string;
     new_process_type: string;
-    new_period: string;
     new_next_run_at: string;
     sendingBindingId: number | null;
+    savingStartDateBindingId: number | null;
 }
 
 export interface ProcessRunsListPageStateProps {
@@ -274,6 +278,7 @@ export interface ClientCompanyDetailPageState {
     savingEquipment: boolean;
     equipmentError: string | null;
     bindingDialogOpen: boolean;
+    savingStartDateBindingId: number | null;
 }
 
 export interface ClientCompaniesEmployeesListPageStateProps {
@@ -349,7 +354,6 @@ export interface AddProcessBindingDialogProps {
 export interface AddProcessBindingDialogState {
     processTypes: ProcessType[];
     processTypeId: string;
-    period: string;
     nextRunAt: string;
     saving: boolean;
 }
@@ -367,5 +371,6 @@ export interface EntityProcessBindingsPanelProps {
 
 export interface EntityProcessBindingsPanelState {
     dialogOpen: boolean;
+    savingStartDateBindingId: number | null;
 }
 

@@ -26,7 +26,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
-import { StringToDate } from "../utils/date";
+import { displayDateToIso, isoDateToFormDisplay, StringToDate } from "../utils/date";
 import {
     isJmbgComplete,
     jmbgMatchesDate,
@@ -44,6 +44,7 @@ import {
     getProcessBindings,
     getProcessRuns,
     updateClientCompany,
+    updateProcessBinding,
     uploadClientCompanyRiskAssessmentAct,
 } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
@@ -148,6 +149,7 @@ class ClientCompanyDetailPageInner extends Component<
         savingEquipment: false,
         equipmentError: null,
         bindingDialogOpen: false,
+        savingStartDateBindingId: null,
     };
 
     openEmpDialog = (): void => {
@@ -552,6 +554,48 @@ class ClientCompanyDetailPageInner extends Component<
                 runs,
             }));
         });
+    };
+
+    handleBindingStartDateChange = (
+        bindingId: number,
+        displayDate: string,
+    ): void => {
+        const nextRunAtISO = displayDateToIso(displayDate);
+        if (!nextRunAtISO) return;
+        const companyId = Number(this.props.id);
+        this.setState((prev) => ({
+            ...prev,
+            savingStartDateBindingId: bindingId,
+        }));
+        updateProcessBinding(bindingId, { next_run_at: nextRunAtISO })
+            .then(() => {
+                this.setState((prev) => ({
+                    ...prev,
+                    savingStartDateBindingId: null,
+                }));
+                enqueueSnackbar("Početni termin je sačuvan.", {
+                    variant: "success",
+                });
+                this.loadExtra(companyId);
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState((prev) => ({
+                        ...prev,
+                        savingStartDateBindingId: null,
+                    }));
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju termina.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
     private static dateToDisplay(iso: string | null | undefined): string {
@@ -1242,7 +1286,7 @@ class ClientCompanyDetailPageInner extends Component<
                             <TableRow>
                                 <TableCell>Vrsta obaveze</TableCell>
                                 <TableCell>Subjekt</TableCell>
-                                <TableCell>Sledeći termin</TableCell>
+                                <TableCell>Početni termin</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -1269,8 +1313,28 @@ class ClientCompanyDetailPageInner extends Component<
                                                     item,
                                                 )}
                                             </TableCell>
-                                            <TableCell>
-                                                {formatDate(b.next_run_at)}
+                                            <TableCell sx={{ minWidth: 220 }}>
+                                                <PermissionGate permission="processes.change_processbinding">
+                                                    <DateTextFieldWithPicker
+                                                        label="Početni termin (dd.mm.yyyy)"
+                                                        value={isoDateToFormDisplay(
+                                                            b.next_run_at,
+                                                        )}
+                                                        helperText={
+                                                            this.state
+                                                                .savingStartDateBindingId ===
+                                                            b.id
+                                                                ? "Čuvam..."
+                                                                : undefined
+                                                        }
+                                                        onChange={(v) =>
+                                                            this.handleBindingStartDateChange(
+                                                                b.id,
+                                                                v,
+                                                            )
+                                                        }
+                                                    />
+                                                </PermissionGate>
                                             </TableCell>
                                         </TableRow>
                                     ))

@@ -11,6 +11,7 @@ import {
     deleteProcessType,
     getProcessBindings,
     createProcessBinding,
+    updateProcessBinding,
     type ProcessBindingsParams,
     getProcessRuns,
     type ProcessRunsParams,
@@ -221,6 +222,17 @@ export const fetchBindings = createAsyncThunk(
 export const addProcessBinding = createAsyncThunk(
     "processes/addProcessBinding",
     async (payload: Partial<ProcessBinding>) => createProcessBinding(payload),
+);
+
+export const saveProcessBinding = createAsyncThunk(
+    "processes/saveProcessBinding",
+    async ({
+        id,
+        payload,
+    }: {
+        id: number;
+        payload: Partial<ProcessBinding>;
+    }) => updateProcessBinding(id, payload),
 );
 
 export const fetchRuns = createAsyncThunk(
@@ -479,6 +491,11 @@ const processesSlice = createSlice({
             })
             .addCase(addProcessBinding.fulfilled, (state, action) => {
                 state.bindingsItems = [...state.bindingsItems, action.payload];
+            })
+            .addCase(saveProcessBinding.fulfilled, (state, action) => {
+                state.bindingsItems = state.bindingsItems.map((b) =>
+                    b.id === action.payload.id ? action.payload : b,
+                );
             })
             .addCase(fetchRuns.pending, (state) => {
                 state.runsStatus = "loading";

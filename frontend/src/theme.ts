@@ -55,8 +55,13 @@ const commonComponents: ThemeOptions["components"] = {
                 borderRadius: 999,
                 textTransform: "none",
                 fontWeight: 600,
-                height: 40,
+                minHeight: 40,
                 padding: "0 16px",
+            },
+            sizeSmall: {
+                minHeight: 32,
+                padding: "6px 12px",
+                fontSize: "0.8125rem",
             },
             containedPrimary: ({ theme }) => ({
                 color: theme.palette.primary.contrastText,

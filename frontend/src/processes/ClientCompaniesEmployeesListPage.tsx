@@ -385,30 +385,44 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                             </TableCell>
                                             <TableCell
                                                 align="right"
+                                                sx={{ whiteSpace: "nowrap" }}
                                                 onClick={(e) =>
                                                     e.stopPropagation()
                                                 }
                                             >
-                                                <PermissionGate permission="processes.add_processrun">
-                                                    <Button
-                                                        size="small"
-                                                        variant="outlined"
-                                                        startIcon={<SendIcon />}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            this.openSendDialog(
-                                                                row.id,
-                                                                `${row.first_name} ${row.last_name}`.trim(),
-                                                            );
-                                                        }}
-                                                        sx={{ mr: 1 }}
-                                                    >
-                                                        Pošalji na pregled
-                                                    </Button>
-                                                </PermissionGate>
-                                                <IconButton size="small">
-                                                    <ChevronRightIcon />
-                                                </IconButton>
+                                                <Box
+                                                    sx={{
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        gap: 0.5,
+                                                    }}
+                                                >
+                                                    <PermissionGate permission="processes.add_processrun">
+                                                        <Button
+                                                            size="small"
+                                                            variant="outlined"
+                                                            startIcon={
+                                                                <SendIcon />
+                                                            }
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                this.openSendDialog(
+                                                                    row.id,
+                                                                    `${row.first_name} ${row.last_name}`.trim(),
+                                                                );
+                                                            }}
+                                                            sx={{
+                                                                whiteSpace:
+                                                                    "nowrap",
+                                                            }}
+                                                        >
+                                                            Pošalji na pregled
+                                                        </Button>
+                                                    </PermissionGate>
+                                                    <IconButton size="small">
+                                                        <ChevronRightIcon />
+                                                    </IconButton>
+                                                </Box>
                                             </TableCell>
                                         </TableRow>
                                     ))

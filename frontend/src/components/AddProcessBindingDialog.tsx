@@ -16,7 +16,7 @@ import { enqueueSnackbar } from "notistack";
 
 import { createProcessBinding, getProcessTypes } from "../api/processes";
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
-import { StringToDate } from "../utils/date";
+import { displayDateToIso } from "../utils/date";
 
 import type { ProcessType } from "../types/processes";
 import type {
@@ -37,7 +37,6 @@ export class AddProcessBindingDialog extends Component<
     state: AddProcessBindingDialogState = {
         processTypes: [],
         processTypeId: "",
-        period: "",
         nextRunAt: "",
         saving: false,
     };
@@ -60,7 +59,6 @@ export class AddProcessBindingDialog extends Component<
             this.setState({
                 processTypes: filtered,
                 processTypeId: first ? String(first.id) : "",
-                period: "",
                 nextRunAt: "",
             });
         });
@@ -74,19 +72,15 @@ export class AddProcessBindingDialog extends Component<
     handleSubmit = (): void => {
         const { subjectKind, clientCompanyId, employeeId, equipmentItemId, onClose, onSuccess } =
             this.props;
-        const { processTypeId, period, nextRunAt } = this.state;
+        const { processTypeId, nextRunAt } = this.state;
         if (!processTypeId) return;
 
-        const nextRunAtDate = nextRunAt.trim() ? StringToDate(nextRunAt) : null;
-        const nextRunAtISO =
-            nextRunAtDate != null
-                ? `${nextRunAtDate.getFullYear()}-${String(nextRunAtDate.getMonth() + 1).padStart(2, "0")}-${String(nextRunAtDate.getDate()).padStart(2, "0")}`
-                : undefined;
+        const nextRunAtISO = displayDateToIso(nextRunAt);
+        if (!nextRunAtISO) return;
 
         const payload = {
             process_type: Number(processTypeId),
             subject_kind: subjectKind,
-            custom_period_months: period ? Number(period) : undefined,
             next_run_at: nextRunAtISO,
             is_active: true,
             ...(subjectKind === "EMPLOYEE" && employeeId != null
@@ -127,13 +121,7 @@ export class AddProcessBindingDialog extends Component<
 
     render() {
         const { open, subjectKind, subjectLabel } = this.props;
-        const { processTypes, processTypeId, period, nextRunAt, saving } =
-            this.state;
-
-        const selectedType = processTypes.find(
-            (t) => String(t.id) === processTypeId,
-        );
-        const defaultPeriod = selectedType?.default_period_months;
+        const { processTypes, processTypeId, nextRunAt, saving } = this.state;
 
         return (
             <Dialog open={open} onClose={this.handleClose} maxWidth="sm" fullWidth>
@@ -162,41 +150,22 @@ export class AddProcessBindingDialog extends Component<
                             ))}
                         </Select>
                     </FormControl>
-                    <TextField
-                        margin="dense"
-                        label="Period (meseci)"
-                        type="number"
-                        fullWidth
-                        value={period}
-                        placeholder={
-                            defaultPeriod != null
-                                ? String(defaultPeriod)
-                                : undefined
-                        }
-                        helperText={
-                            defaultPeriod != null
-                                ? `Podrazumevano iz vrste obaveze: ${defaultPeriod} mes. — ostavi prazno da koristiš tu vrednost`
-                                : "Ostavi prazno za jednokratno"
-                        }
-                        onChange={(e) =>
-                            this.setState({ period: e.target.value })
-                        }
-                    />
                     <DateTextFieldWithPicker
-                        label="Sledeći termin (dd.mm.yyyy)"
+                        label="Početni termin (dd.mm.yyyy)"
                         value={nextRunAt}
-                        helperText="Datum zakazanog pregleda / obaveze"
+                        helperText="Kada obaveza prvi put treba da se desi"
                         onChange={(v) => this.setState({ nextRunAt: v })}
                     />
                 </DialogContent>
-                <DialogActions>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button onClick={this.handleClose} disabled={saving}>
                         Odustani
                     </Button>
                     <Button
                         onClick={this.handleSubmit}
                         variant="contained"
-                        disabled={saving || !processTypeId}
+                        disableElevation
+                        disabled={saving || !processTypeId || !nextRunAt.trim()}
                     >
                         {saving ? "Čuvam..." : "Dodaj"}
                     </Button>
