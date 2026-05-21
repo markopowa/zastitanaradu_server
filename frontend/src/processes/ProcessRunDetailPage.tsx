@@ -43,7 +43,6 @@ import {
 
 import type { AppDispatch } from "../store";
 import type {
-    ProcessRun,
     ProcessRunDocument,
     SubjectSnapshot,
 } from "../types/processes";

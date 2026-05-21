@@ -1,5 +1,4 @@
 import type {
-    CompleteProcessRunPayload,
     ProcessBindingsParams,
     ProcessRunsParams,
 } from "../api/processes";
@@ -7,7 +6,6 @@ import type {
 import type { AsyncThunkDispatchResult } from "../store";
 import type { WithNavigationProps } from "../hocs/withNavigation";
 
-import type { DocumentFile } from "./documents";
 import type {
     ClientCompany,
     Employee,
@@ -128,9 +126,8 @@ export interface ProcessRunDetailPageDispatchProps {
     setLastPath?: (path: string) => void;
 }
 
-export interface ProcessRunDetailPageProps extends ProcessRunDetailPageDispatchProps {
-    id: string;
-}
+export type ProcessRunDetailPageProps = ProcessRunDetailPageDispatchProps &
+    WithNavigationProps & { id: string };
 
 export interface ProcessRunDetailPageState {
     loading: boolean;
