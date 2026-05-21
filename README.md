@@ -156,7 +156,7 @@ Primer: „Obuka – zaštita na radu“ za zaposlenog Marko Marković, sledeći
 
 Produkcijski deploy: **DEPLOY.md** — `deploy.sh`, korak **setupTaskRunner**: `run_due_processes` (06:00), `run_process_reminders` (07:00), `process_ai_document_queue` (svakih 5 min).
 
-**Brzi redeploy** (`./deploy.sh ./deploy.conf all --quick`): bez `docker compose down` pre koraka; umesto punog `setupDocker` koristi se **setupDockerQuick** (backend rebuild/migrate/restart, **bez** ponovnog build-a frontenda i collectstatic). Koristi kada menjaš samo backend ili želiš da sačuvaš trenutni `frontend/dist`.
+**Brzi redeploy** (`./deploy.sh ./deploy.conf all --quick`): bez `docker compose down`; **setupDockerQuick** kopira `backend/` u kontejner (bez `docker build`), `migrate`, koristi postojeći `frontend/dist` na disku, restart backend-a i reload nginx-a. Posle izmene UI-a prvo `npm run build` u `frontend/` ili pun **setupDocker**.
 
 **Nuklearna opcija** (`./deploy.sh ./deploy.conf all --nuclear`): pre pokretanja koraka izvršava se `docker compose down -v` — gasi se kontejneri i **brišu Docker volumeni** (uključujući bazu). Korisno za potpuno čisto ponovno postavljanje okruženja; svi podaci u bazi i na volumenima se gube.
 

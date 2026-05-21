@@ -150,7 +150,7 @@ cd /var/www/zastitanaradu_server
 | Invocation | Before `all` steps | Docker / app step |
 |------------|-------------------|-------------------|
 | `./deploy.sh ./deploy.conf all` (default) | `docker compose down` (containers stopped; **volumes kept**) | **setupDocker** — full frontend build, `collectstatic`, copy static to host |
-| `./deploy.sh ./deploy.conf all --quick` | Nothing (containers left running if already up) | **setupDockerQuick** — backend image build, `migrate`, backend restart; **no** frontend rebuild, **no** `collectstatic` / static copy (script prints *Quick deploy done. Frontend not rebuilt.*) |
+| `./deploy.sh ./deploy.conf all --quick` | Nothing (containers left running if already up) | **setupDockerQuick** — copy host `backend/` into the running container (tar, no image build), `migrate`, use existing `frontend/dist` on host, restart backend + reload nginx; **no** `npm` build, **no** `collectstatic` |
 | `./deploy.sh ./deploy.conf all --nuclear` | `docker compose down -v` (**all volumes removed**, DB wiped) | Same as default: **setupDocker** |
 
 You can also pass the flag as the second argument: `./deploy.sh ./deploy.conf --quick` is treated as `all --quick` (see `deploy.sh`).
@@ -159,7 +159,7 @@ This command is **idempotent** – you can safely run it again if something fail
 
 1. **initialSetup** – install Docker if missing, configure Docker repo/key once, add your user to `www-data` and `docker`, create certbot webroot and log dir
 2. **setupDatabase** – start Postgres container, create DB and user if they don’t exist yet
-3. **setupDocker** or **setupDockerQuick** (see table above) – **setupDocker**: build backend, start postgres + backend, delete `frontend/dist`, production build of frontend (`npm ci` / `npm run build` on host or in Node container), `migrate`, `collectstatic`, copy staticfiles to host. **setupDockerQuick**: build backend, up postgres + backend, `migrate`, restart backend only.
+3. **setupDocker** or **setupDockerQuick** (see table above) – **setupDocker**: build backend, start postgres + backend, delete `frontend/dist`, production build of frontend (`npm ci` / `npm run build` on host or in Node container), `migrate`, `collectstatic`, copy staticfiles to host. **setupDockerQuick**: copy host backend into container, `migrate`, serve existing `frontend/dist`, restart backend and reload nginx (no build).
 4. **setupNginx** – install nginx, write HTTP (80) vhost with redirect to HTTPS and ACME path
 5. **setupSsl** – obtain Let’s Encrypt cert (skipped if one already exists for DOMAIN), append HTTPS (443) vhost, reload nginx
 6. **setupFirewall** – UFW: allow 22, 80, 443; default deny
@@ -182,7 +182,7 @@ cd /var/www/zastitanaradu_server
 
 Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupDockerQuick` | `setupNginx` | `setupSsl` | `setupFirewall` | `setupCron` | `setupTaskRunner`.
 
-- **setupDockerQuick** – use alone when you changed backend code only and want a fast cycle: no `docker compose down`, no frontend build, no static refresh. After UI changes you still need **setupDocker** (or a manual `npm run build` + static deploy if you maintain that separately).
+- **setupDockerQuick** – use alone after `git pull` (or editing on server): copies `backend/` into the container and reloads backend + nginx; no image or frontend build. For UI changes, build `frontend/dist` once (`npm run build` or full **setupDocker**), then quick redeploys pick up the new dist from disk.
 - **You can re-run any step** after fixing config or code – the script checks existing state where needed (e.g. DB/user creation, SSL certs, cron) and uses idempotent operations (`mkdir -p`, `ufw allow`, `docker compose up -d`, Django `migrate`/`collectstatic`). If in doubt, just rerun the step.
 
 ---

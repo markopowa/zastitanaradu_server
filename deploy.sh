@@ -170,6 +170,43 @@ makeMigrations() {
     cd "$APP_DIR"
 }
 
+copyBackendIntoContainer() {
+    echo "Copying backend into container (no image build)..."
+    cd "$APP_DIR"
+    docker compose up -d postgres backend
+    sleep 2
+    cd "$BACKEND_DIR"
+    tar cf - \
+        --exclude='./.venv' \
+        --exclude='./__pycache__' \
+        --exclude='.pytest_cache' \
+        --exclude='./media' \
+        --exclude='./logs' \
+        --exclude='./staticfiles' \
+        --exclude='*.pyc' \
+        . | docker compose exec -T backend tar xf - -C /app
+    cd "$APP_DIR"
+}
+
+syncFrontendDist() {
+    if [ ! -d "$FRONTEND_BUILD_DIR" ]; then
+        echo "WARNING: $FRONTEND_BUILD_DIR not found — nginx keeps previous build (if any). Run setupDocker once or npm run build."
+        return 0
+    fi
+    echo "Using host frontend dist at $FRONTEND_BUILD_DIR"
+    chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
+}
+
+reloadCodeDependantServices() {
+    cd "$APP_DIR"
+    echo "Restarting backend..."
+    docker compose restart backend
+    if nginx -t >/dev/null 2>&1; then
+        systemctl reload nginx 2>/dev/null || systemctl start nginx 2>/dev/null || true
+        echo "Nginx reloaded."
+    fi
+}
+
 setupDockerQuick() {
     source "$ENV_FILE" 2>/dev/null || true
     export PZNR_DB_NAME="${PZNR_DB_NAME:-pznr}"
@@ -178,13 +215,11 @@ setupDockerQuick() {
     mkdir -p "$LOG_DIR/backend"
     chown -R 33:33 "$LOG_DIR/backend" 2>/dev/null || true
     makeMigrations
-    cd "$APP_DIR"
-    docker compose build backend
-    docker compose up -d postgres backend
-    sleep 3
+    copyBackendIntoContainer
     docker compose exec -T backend python manage.py migrate --noinput
-    docker compose restart backend
-    echo "Quick deploy done. Frontend not rebuilt."
+    syncFrontendDist
+    reloadCodeDependantServices
+    echo "Quick deploy done: code copied, backend restarted, nginx reloaded (no docker/npm build)."
 }
 
 setupDocker() {
