@@ -40,6 +40,34 @@ export class EntityProcessBindingsPanel extends Component<
     state: EntityProcessBindingsPanelState = {
         dialogOpen: false,
         savingStartDateBindingId: null,
+        deactivatingBindingId: null,
+    };
+
+    handleDeactivate = (bindingId: number): void => {
+        this.setState({ deactivatingBindingId: bindingId });
+        updateProcessBinding(bindingId, { is_active: false })
+            .then(() => {
+                this.setState({ deactivatingBindingId: null });
+                enqueueSnackbar("Obaveza je deaktivirana.", {
+                    variant: "success",
+                });
+                this.props.onRefresh();
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState({ deactivatingBindingId: null });
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri deaktivaciji obaveze.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
     };
 
     handleStartDateChange = (bindingId: number, displayDate: string): void => {
@@ -87,7 +115,8 @@ export class EntityProcessBindingsPanel extends Component<
             runs,
             onRefresh,
         } = this.props;
-        const { dialogOpen, savingStartDateBindingId } = this.state;
+        const { dialogOpen, savingStartDateBindingId, deactivatingBindingId } =
+            this.state;
         const activeBindings = bindings.filter((b) => b.is_active);
 
         return (
@@ -122,7 +151,7 @@ export class EntityProcessBindingsPanel extends Component<
                             <TableRow>
                                 <TableCell>Vrsta obaveze</TableCell>
                                 <TableCell>Termin</TableCell>
-                                <TableCell>Aktivan</TableCell>
+                                <TableCell align="right" />
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -139,30 +168,56 @@ export class EntityProcessBindingsPanel extends Component<
                                             {b.process_type_name}
                                         </TableCell>
                                         <TableCell sx={{ minWidth: 220 }}>
-                                            <PermissionGate permission="processes.change_processbinding">
-                                                <DateTextFieldWithPicker
-                                                    label="Termin (dd.mm.yyyy)"
-                                                    value={isoDateToFormDisplay(
-                                                        b.next_run_at,
-                                                    )}
-                                                    minToday
-                                                    helperText={
-                                                        savingStartDateBindingId ===
-                                                        b.id
-                                                            ? "Čuvam..."
-                                                            : undefined
-                                                    }
-                                                    onChange={(v) =>
-                                                        this.handleStartDateChange(
-                                                            b.id,
-                                                            v,
-                                                        )
-                                                    }
-                                                />
-                                            </PermissionGate>
+                                            {b.has_open_run ? (
+                                                formatDateDisplay(b.next_run_at)
+                                            ) : (
+                                                <PermissionGate permission="processes.change_processbinding">
+                                                    <DateTextFieldWithPicker
+                                                        label="Termin (dd.mm.yyyy)"
+                                                        value={isoDateToFormDisplay(
+                                                            b.next_run_at,
+                                                        )}
+                                                        minToday
+                                                        helperText={
+                                                            savingStartDateBindingId ===
+                                                            b.id
+                                                                ? "Čuvam..."
+                                                                : undefined
+                                                        }
+                                                        onChange={(v) =>
+                                                            this.handleStartDateChange(
+                                                                b.id,
+                                                                v,
+                                                            )
+                                                        }
+                                                    />
+                                                </PermissionGate>
+                                            )}
                                         </TableCell>
-                                        <TableCell>
-                                            {b.is_active ? "Da" : "Ne"}
+                                        <TableCell align="right">
+                                            {b.has_open_run ? (
+                                                <PermissionGate permission="processes.change_processbinding">
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="warning"
+                                                        disabled={
+                                                            deactivatingBindingId ===
+                                                            b.id
+                                                        }
+                                                        onClick={() =>
+                                                            this.handleDeactivate(
+                                                                b.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        {deactivatingBindingId ===
+                                                        b.id
+                                                            ? "Deaktiviram..."
+                                                            : "Deaktiviraj"}
+                                                    </Button>
+                                                </PermissionGate>
+                                            ) : null}
                                         </TableCell>
                                     </TableRow>
                                 ))

@@ -95,6 +95,7 @@ export interface ProcessBindingsListPageState {
     new_next_run_at: string;
     sendingBindingId: number | null;
     savingStartDateBindingId: number | null;
+    deactivatingBindingId: number | null;
 }
 
 export interface ProcessRunsListPageStateProps {
@@ -283,6 +284,7 @@ export interface ClientCompanyDetailPageState {
     equipmentError: string | null;
     bindingDialogOpen: boolean;
     savingStartDateBindingId: number | null;
+    deactivatingBindingId: number | null;
 }
 
 export interface ClientCompaniesEmployeesListPageStateProps {
@@ -376,5 +378,6 @@ export interface EntityProcessBindingsPanelProps {
 export interface EntityProcessBindingsPanelState {
     dialogOpen: boolean;
     savingStartDateBindingId: number | null;
+    deactivatingBindingId: number | null;
 }
 

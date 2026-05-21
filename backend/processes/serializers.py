@@ -13,6 +13,7 @@ from .models import (
     ProcessType,
     TaskAssignment,
 )
+from .tasks import get_open_run_for_binding
 
 
 class ProcessTemplateSerializer(serializers.ModelSerializer):
@@ -65,6 +66,7 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
         source="equipment_item.name", read_only=True, default="")
     client_company_name = serializers.CharField(
         source="client_company.name", read_only=True, default="")
+    has_open_run = serializers.BooleanField(read_only=True, default=False)
 
     class Meta:
         model = ProcessBinding
@@ -85,6 +87,7 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
             "next_run_at",
             "last_run_at",
             "is_active",
+            "has_open_run",
         )
 
     def validate_next_run_at(self, value):
@@ -99,6 +102,25 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"next_run_at": "Termin je obavezan."}
             )
+        if self.instance is not None and get_open_run_for_binding(self.instance):
+            changed = set(attrs.keys())
+            if changed - {"is_active"}:
+                if "next_run_at" in changed:
+                    raise serializers.ValidationError(
+                        {
+                            "next_run_at": (
+                                "Termin se ne može menjati dok traje aktivnost."
+                            )
+                        }
+                    )
+                raise serializers.ValidationError(
+                    {
+                        "detail": (
+                            "Obaveza sa aktivnom aktivnošću ne može da se menja. "
+                            "Deaktiviraj je ako treba da prestane."
+                        )
+                    }
+                )
         return attrs
 
 

@@ -351,6 +351,8 @@ class AppLayoutInner extends Component<Props, State> {
                         component="nav"
                         sx={(theme) => ({
                             width: SIDEBAR_WIDTH,
+                            minWidth: SIDEBAR_WIDTH,
+                            flexShrink: 0,
                             borderRight: 1,
                             borderColor: "divider",
                             p: 3,
@@ -515,6 +517,7 @@ class AppLayoutInner extends Component<Props, State> {
                     component="main"
                     sx={{
                         flex: 1,
+                        minWidth: 0,
                         display: "flex",
                         flexDirection: "column",
                     }}

@@ -149,6 +149,7 @@ class ClientCompanyDetailPageInner extends Component<
         equipmentError: null,
         bindingDialogOpen: false,
         savingStartDateBindingId: null,
+        deactivatingBindingId: null,
     };
 
     openEmpDialog = (): void => {
@@ -597,6 +598,43 @@ class ClientCompanyDetailPageInner extends Component<
                             .response?.data?.detail ??
                         (err as { message?: string }).message ??
                         "Greška pri čuvanju termina.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
+    };
+
+    handleBindingDeactivate = (bindingId: number): void => {
+        const companyId = Number(this.props.id);
+        this.setState((prev) => ({
+            ...prev,
+            deactivatingBindingId: bindingId,
+        }));
+        updateProcessBinding(bindingId, { is_active: false })
+            .then(() => {
+                this.setState((prev) => ({
+                    ...prev,
+                    deactivatingBindingId: null,
+                }));
+                enqueueSnackbar("Obaveza je deaktivirana.", {
+                    variant: "success",
+                });
+                this.loadExtra(companyId);
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState((prev) => ({
+                        ...prev,
+                        deactivatingBindingId: null,
+                    }));
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri deaktivaciji obaveze.";
                     enqueueSnackbar(msg, { variant: "error" });
                 },
             );
@@ -1291,13 +1329,14 @@ class ClientCompanyDetailPageInner extends Component<
                                 <TableCell>Vrsta obaveze</TableCell>
                                 <TableCell>Subjekt</TableCell>
                                 <TableCell>Termin</TableCell>
+                                <TableCell align="right" />
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {bindings.filter((b) => b.is_active).length ===
                             0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={3} align="center">
+                                    <TableCell colSpan={4} align="center">
                                         Nema aktivnih obaveza.
                                     </TableCell>
                                 </TableRow>
@@ -1318,28 +1357,61 @@ class ClientCompanyDetailPageInner extends Component<
                                                 )}
                                             </TableCell>
                                             <TableCell sx={{ minWidth: 220 }}>
-                                                <PermissionGate permission="processes.change_processbinding">
-                                                    <DateTextFieldWithPicker
-                                                        label="Termin (dd.mm.yyyy)"
-                                                        value={isoDateToFormDisplay(
-                                                            b.next_run_at,
-                                                        )}
-                                                        minToday
-                                                        helperText={
-                                                            this.state
-                                                                .savingStartDateBindingId ===
+                                                {b.has_open_run ? (
+                                                    formatDateDisplay(
+                                                        b.next_run_at,
+                                                    )
+                                                ) : (
+                                                    <PermissionGate permission="processes.change_processbinding">
+                                                        <DateTextFieldWithPicker
+                                                            label="Termin (dd.mm.yyyy)"
+                                                            value={isoDateToFormDisplay(
+                                                                b.next_run_at,
+                                                            )}
+                                                            minToday
+                                                            helperText={
+                                                                this.state
+                                                                    .savingStartDateBindingId ===
+                                                                b.id
+                                                                    ? "Čuvam..."
+                                                                    : undefined
+                                                            }
+                                                            onChange={(v) =>
+                                                                this.handleBindingStartDateChange(
+                                                                    b.id,
+                                                                    v,
+                                                                )
+                                                            }
+                                                        />
+                                                    </PermissionGate>
+                                                )}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                {b.has_open_run ? (
+                                                    <PermissionGate permission="processes.change_processbinding">
+                                                        <Button
+                                                            size="small"
+                                                            variant="outlined"
+                                                            color="warning"
+                                                            disabled={
+                                                                this.state
+                                                                    .deactivatingBindingId ===
+                                                                b.id
+                                                            }
+                                                            onClick={() =>
+                                                                this.handleBindingDeactivate(
+                                                                    b.id,
+                                                                )
+                                                            }
+                                                        >
+                                                            {this.state
+                                                                .deactivatingBindingId ===
                                                             b.id
-                                                                ? "Čuvam..."
-                                                                : undefined
-                                                        }
-                                                        onChange={(v) =>
-                                                            this.handleBindingStartDateChange(
-                                                                b.id,
-                                                                v,
-                                                            )
-                                                        }
-                                                    />
-                                                </PermissionGate>
+                                                                ? "Deaktiviram..."
+                                                                : "Deaktiviraj"}
+                                                        </Button>
+                                                    </PermissionGate>
+                                                ) : null}
                                             </TableCell>
                                         </TableRow>
                                     ))

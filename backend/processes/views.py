@@ -1,7 +1,7 @@
 import logging
 from datetime import date, timedelta
 
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
 
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -43,7 +43,12 @@ from .serializers import (
     SendNowResponseSerializer,
     TaskAssignmentSerializer,
 )
-from .tasks import ensure_process_run_for_binding, process_lead_for_run
+from .tasks import (
+    OPEN_RUN_STATUSES,
+    cancel_open_runs_for_binding,
+    ensure_process_run_for_binding,
+    process_lead_for_run,
+)
 from .utils import binding_subject_snapshot
 
 logger = logging.getLogger(__name__)
@@ -130,6 +135,11 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        open_run_qs = ProcessRun.objects.filter(
+            process_binding=OuterRef("pk"),
+            status__in=OPEN_RUN_STATUSES,
+        )
+        queryset = queryset.annotate(has_open_run=Exists(open_run_qs))
         client_company_id = self.request.query_params.get("client_company_id")
         employee_id = self.request.query_params.get("employee_id")
         equipment_item_id = self.request.query_params.get("equipment_item_id")
@@ -161,10 +171,16 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
             process_lead_for_run(run, binding)
 
     def perform_update(self, serializer):
+        binding = serializer.instance
+        was_active = binding.is_active
         binding = serializer.save()
-        run = ensure_process_run_for_binding(binding)
-        if run:
-            process_lead_for_run(run, binding)
+        if was_active and not binding.is_active:
+            cancel_open_runs_for_binding(binding)
+            return
+        if binding.is_active:
+            run = ensure_process_run_for_binding(binding)
+            if run:
+                process_lead_for_run(run, binding)
 
     @action(detail=True, methods=["post"], url_path="send-now")
     def send_now(self, request, pk=None):

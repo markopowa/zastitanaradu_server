@@ -25,15 +25,19 @@ def get_open_run_for_binding(binding: ProcessBinding) -> ProcessRun | None:
     )
 
 
+def cancel_open_runs_for_binding(binding: ProcessBinding) -> int:
+    return ProcessRun.objects.filter(
+        process_binding=binding,
+        status__in=OPEN_RUN_STATUSES,
+    ).update(status=ProcessRun.STATUS_CANCELLED)
+
+
 def ensure_process_run_for_binding(binding: ProcessBinding) -> ProcessRun | None:
     if not binding.is_active or not binding.next_run_at:
         return None
 
     existing = get_open_run_for_binding(binding)
     if existing:
-        if existing.scheduled_for != binding.next_run_at:
-            existing.scheduled_for = binding.next_run_at
-            existing.save(update_fields=["scheduled_for"])
         return existing
 
     pt = binding.process_type

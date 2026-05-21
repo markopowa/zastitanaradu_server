@@ -131,6 +131,7 @@ export interface ProcessBinding {
     next_run_at?: string | null;
     last_run_at?: string | null;
     is_active: boolean;
+    has_open_run?: boolean;
 }
 
 export interface ProcessTemplate {

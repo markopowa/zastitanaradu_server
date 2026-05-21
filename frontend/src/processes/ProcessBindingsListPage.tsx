@@ -47,6 +47,7 @@ import { setLastPath } from "../store/locationSlice";
 import {
     bindingTermDateError,
     displayDateToIso,
+    formatDateDisplay,
     isoDateToFormDisplay,
 } from "../utils/date";
 
@@ -77,6 +78,7 @@ class ProcessBindingsListPageInner extends Component<
         new_next_run_at: "",
         sendingBindingId: null,
         savingStartDateBindingId: null,
+        deactivatingBindingId: null,
     };
 
     handleSendNow = (bindingId: number): void => {
@@ -111,6 +113,44 @@ class ProcessBindingsListPageInner extends Component<
                             .response?.data?.detail ??
                         (err as { message?: string }).message ??
                         "Greška pri slanju pregleda.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
+    };
+
+    handleDeactivate = (bindingId: number): void => {
+        this.setState((prev) => ({ ...prev, deactivatingBindingId: bindingId }));
+        void this.props
+            .saveBinding?.({
+                id: bindingId,
+                payload: { is_active: false },
+            })
+            .unwrap()
+            .then(() => {
+                this.setState((prev) => ({
+                    ...prev,
+                    deactivatingBindingId: null,
+                }));
+                enqueueSnackbar("Obaveza je deaktivirana.", {
+                    variant: "success",
+                });
+                this.load();
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState((prev) => ({
+                        ...prev,
+                        deactivatingBindingId: null,
+                    }));
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri deaktivaciji obaveze.";
                     enqueueSnackbar(msg, { variant: "error" });
                 },
             );
@@ -275,6 +315,7 @@ class ProcessBindingsListPageInner extends Component<
             equipment,
             sendingBindingId,
             savingStartDateBindingId,
+            deactivatingBindingId,
         } = this.state;
         const {
             clientCompanies: clients,
@@ -392,32 +433,64 @@ class ProcessBindingsListPageInner extends Component<
                                             sx={{ minWidth: 220 }}
                                             onClick={(e) => e.stopPropagation()}
                                         >
-                                            <PermissionGate permission="processes.change_processbinding">
-                                                <DateTextFieldWithPicker
-                                                    label="Termin (dd.mm.yyyy)"
-                                                    value={isoDateToFormDisplay(
-                                                        row.next_run_at,
-                                                    )}
-                                                    minToday
-                                                    helperText={
-                                                        savingStartDateBindingId ===
-                                                        row.id
-                                                            ? "Čuvam..."
-                                                            : undefined
-                                                    }
-                                                    onChange={(v) =>
-                                                        this.handleStartDateChange(
-                                                            row.id,
-                                                            v,
-                                                        )
-                                                    }
-                                                />
-                                            </PermissionGate>
+                                            {row.has_open_run ? (
+                                                formatDateDisplay(row.next_run_at)
+                                            ) : (
+                                                <PermissionGate permission="processes.change_processbinding">
+                                                    <DateTextFieldWithPicker
+                                                        label="Termin (dd.mm.yyyy)"
+                                                        value={isoDateToFormDisplay(
+                                                            row.next_run_at,
+                                                        )}
+                                                        minToday
+                                                        helperText={
+                                                            savingStartDateBindingId ===
+                                                            row.id
+                                                                ? "Čuvam..."
+                                                                : undefined
+                                                        }
+                                                        onChange={(v) =>
+                                                            this.handleStartDateChange(
+                                                                row.id,
+                                                                v,
+                                                            )
+                                                        }
+                                                    />
+                                                </PermissionGate>
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             {row.is_active ? "Da" : "Ne"}
                                         </TableCell>
                                         <TableCell align="right">
+                                            {row.has_open_run &&
+                                            row.is_active ? (
+                                                <PermissionGate permission="processes.change_processbinding">
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="warning"
+                                                        disabled={
+                                                            deactivatingBindingId ===
+                                                            row.id
+                                                        }
+                                                        onClick={() =>
+                                                            this.handleDeactivate(
+                                                                row.id,
+                                                            )
+                                                        }
+                                                        sx={{
+                                                            whiteSpace: "nowrap",
+                                                            mr: 1,
+                                                        }}
+                                                    >
+                                                        {deactivatingBindingId ===
+                                                        row.id
+                                                            ? "Deaktiviram..."
+                                                            : "Deaktiviraj"}
+                                                    </Button>
+                                                </PermissionGate>
+                                            ) : null}
                                             <PermissionGate permission="processes.add_processrun">
                                                 <Tooltip
                                                     title={
