@@ -2,17 +2,31 @@
 set -e
 [ "$(id -u)" -eq 0 ] || exec sudo "$0" "$@"
 CONFIG_FILE="${1:-./deploy.conf}"
-# $2 can be a target name or a flag (--quick / --nuclear); if it starts with
-# '--' treat it as the flag and default the target to 'all'.
-if [[ "${2:-}" == --* ]]; then
-    DEPLOY_TARGET="all"
-    DEPLOY_FLAG="${2}"
-else
-    DEPLOY_TARGET="${2:-all}"
-    DEPLOY_FLAG="${3:-}"
-fi
+shift || true
+DEPLOY_TARGET="all"
+DEPLOY_FLAG=""
+CLEAN_LOGS=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --quick | --nuclear)
+            DEPLOY_FLAG="$1"
+            ;;
+        --clean-logs)
+            CLEAN_LOGS=1
+            ;;
+        --*)
+            echo "Unknown flag: $1" >&2
+            echo "Usage: $0 [deploy.conf] [target] [--quick|--nuclear] [--clean-logs]" >&2
+            exit 1
+            ;;
+        *)
+            DEPLOY_TARGET="$1"
+            ;;
+    esac
+    shift
+done
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "Config $CONFIG_FILE not found. Usage: $0 [deploy.conf] [--quick|--nuclear] or $0 [deploy.conf] [target]"
+    echo "Config $CONFIG_FILE not found. Usage: $0 [deploy.conf] [target] [--quick|--nuclear] [--clean-logs]"
     exit 1
 fi
 source "$CONFIG_FILE"
@@ -352,6 +366,22 @@ EOF
     echo "Logrotate configured for $LOG_DIR/*.log (weekly, 8 weeks retention)."
 }
 
+cleanLogs() {
+    mkdir -p "$LOG_DIR/backend"
+    echo "Cleaning logs under $LOG_DIR"
+    find "$LOG_DIR" -mindepth 1 -type f -delete 2>/dev/null || true
+    chown -R 33:33 "$LOG_DIR/backend" 2>/dev/null || true
+    nginx -t >/dev/null 2>&1 && systemctl reload nginx 2>/dev/null || true
+    if [ -f "$APP_DIR/docker-compose.yml" ]; then
+        cd "$APP_DIR"
+        if docker compose ps -q backend >/dev/null 2>&1; then
+            docker compose exec -T backend sh -c \
+                'truncate -s 0 /app/logs/*.log 2>/dev/null || true' 2>/dev/null || true
+        fi
+    fi
+    echo "Logs cleaned."
+}
+
 setupTaskRunner() {
     mkdir -p "$LOG_DIR"
     TASK_SVC="/etc/systemd/system/pznr-run-due-processes.service"
@@ -459,6 +489,9 @@ EOF
 
 runAll() {
     maybeResetBeforeRunAll
+    if [ "$CLEAN_LOGS" -eq 1 ]; then
+        cleanLogs
+    fi
     initialSetup
     setupDatabase
     if [ "$DEPLOY_FLAG" = "--quick" ]; then
@@ -484,7 +517,8 @@ case "$DEPLOY_TARGET" in
     setupFirewall)    setupFirewall ;;
     setupCron)        setupCron ;;
     setupLogrotate)   setupLogrotate ;;
+    cleanLogs)        cleanLogs ;;
     setupTaskRunner)  setupTaskRunner ;;
     all)              runAll ;;
-    *)                echo "Unknown target: $DEPLOY_TARGET. Use: initialSetup|setupDatabase|setupDocker|setupDockerQuick|setupNginx|setupSsl|setupFirewall|setupCron|setupTaskRunner|all"; exit 1 ;;
+    *)                echo "Unknown target: $DEPLOY_TARGET. Use: initialSetup|setupDatabase|setupDocker|setupDockerQuick|setupNginx|setupSsl|setupFirewall|setupCron|setupLogrotate|cleanLogs|setupTaskRunner|all"; exit 1 ;;
 esac
