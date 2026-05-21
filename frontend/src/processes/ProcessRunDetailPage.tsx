@@ -140,6 +140,13 @@ function renderTriggerEmailStatus(tr: ProcessTriggerRun): ReactNode {
             <Chip label="Poslat" color="success" size="small" variant="outlined" />
         );
     }
+    if (tr.template_send_email === false) {
+        return (
+            <Typography variant="body2" color="text.secondary">
+                Bez mejla
+            </Typography>
+        );
+    }
     return (
         <Typography variant="body2" color="text.secondary">
             —
@@ -341,11 +348,43 @@ class ProcessRunDetailPageInner extends Component<
                     {items.map((d) => (
                         <ListItem
                             key={d.id}
-                            sx={{ px: 0, alignItems: "flex-start", gap: 1 }}
-                            secondaryAction={
-                                deletable ? (
+                            disablePadding
+                            sx={{
+                                py: 0.5,
+                                display: "flex",
+                                alignItems: "flex-start",
+                                gap: 1,
+                            }}
+                        >
+                            <ListItemText
+                                primary={d.document_file_title ?? "Dokument"}
+                                secondary={usageKindLabel(d.usage_kind)}
+                                sx={{ flex: 1, minWidth: 0, my: 0 }}
+                            />
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    flexShrink: 0,
+                                }}
+                            >
+                                {d.document_file_url ? (
+                                    <Button
+                                        size="small"
+                                        variant="contained"
+                                        disableElevation
+                                        component="a"
+                                        href={d.document_file_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        sx={BTN_SX}
+                                    >
+                                        Preuzmi
+                                    </Button>
+                                ) : null}
+                                {deletable ? (
                                     <IconButton
-                                        edge="end"
                                         size="small"
                                         aria-label="obriši prilog"
                                         onClick={() =>
@@ -354,27 +393,8 @@ class ProcessRunDetailPageInner extends Component<
                                     >
                                         <DeleteIcon fontSize="small" />
                                     </IconButton>
-                                ) : undefined
-                            }
-                        >
-                            <ListItemText
-                                primary={d.document_file_title ?? "Dokument"}
-                                secondary={usageKindLabel(d.usage_kind)}
-                            />
-                            {d.document_file_url ? (
-                                <Button
-                                    size="small"
-                                    variant="contained"
-                                    disableElevation
-                                    component="a"
-                                    href={d.document_file_url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    sx={BTN_SX}
-                                >
-                                    Preuzmi
-                                </Button>
-                            ) : null}
+                                ) : null}
+                            </Box>
                         </ListItem>
                     ))}
                 </List>

@@ -82,12 +82,34 @@ def _execute_lead_triggers_for_run(
     )
     snapshot = run.subject_snapshot or {}
     subject = snapshot.get("name") or snapshot.get("kind") or ""
-    log_activity(
-        ActivityLog.EVENT_LEAD_NOTIFIED,
-        f"Poslato obaveštenje pre termina za '{run.process_type.name}' ({subject})",
+    lead_triggers = ProcessTriggerRun.objects.filter(
         process_run=run,
-        process_binding=binding,
+        trigger=ProcessTemplate.TRIGGER_ON_LEAD,
     )
+    if lead_triggers.filter(email_sent=True).exists():
+        log_activity(
+            ActivityLog.EVENT_LEAD_NOTIFIED,
+            f"Poslato obaveštenje pre termina za '{run.process_type.name}' ({subject})",
+            process_run=run,
+            process_binding=binding,
+        )
+    elif lead_triggers.exclude(email_error="").exists():
+        first_error = (
+            lead_triggers.exclude(email_error="")
+            .values_list("email_error", flat=True)
+            .first()
+            or ""
+        )
+        log_activity(
+            ActivityLog.EVENT_EMAIL_ERROR,
+            (
+                f"Greška pri slanju obaveštenja pre termina za "
+                f"'{run.process_type.name}' ({subject}): {first_error[:200]}"
+            ),
+            process_run=run,
+            process_binding=binding,
+            extra_data={"email_error": first_error},
+        )
     return True
 
 

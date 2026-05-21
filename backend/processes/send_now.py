@@ -1,18 +1,10 @@
-import logging
 from datetime import date
 
 from django.utils import timezone
 
 from .models import ProcessRun, ProcessTemplate, ProcessTriggerRun
 from .trigger_utils import trigger_already_executed
-from .utils import (
-    _generate_document_for_run,
-    _send_email_for_template,
-    binding_subject_snapshot,
-)
-
-logger = logging.getLogger(__name__)
-
+from .utils import binding_subject_snapshot, execute_template_actions
 
 def send_now_for_binding(binding, *, user=None):
     open_run = (
@@ -63,36 +55,13 @@ def send_now_for_binding(binding, *, user=None):
             trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED,
         ).exists():
             continue
-        generated_document = None
-        if template.generate_document and template.document_template_id:
-            try:
-                generated_document = _generate_document_for_run(
-                    run, template, snapshot,
-                )
-            except Exception as exc:
-                logger.exception(
-                    "send_now: doc generation failed for run id=%s template id=%s: %s",
-                    run.id, template.id, exc,
-                )
-
-        email_sent = False
-        email_error = ""
-        if template.send_email:
-            try:
-                email_sent = _send_email_for_template(
-                    template,
-                    binding,
-                    snapshot,
-                    run=run,
-                    generated_document=generated_document,
-                    fail_silently=False,
-                )
-            except Exception as exc:
-                email_error = str(exc)
-                logger.exception(
-                    "send_now: email failed for run id=%s template id=%s: %s",
-                    run.id, template.id, exc,
-                )
+        generated_document, email_sent, email_error = execute_template_actions(
+            "send_now ON_SCHEDULED",
+            run,
+            binding,
+            snapshot,
+            template,
+        )
 
         ProcessTriggerRun.objects.create(
             process_run=run,

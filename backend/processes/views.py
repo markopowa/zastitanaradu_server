@@ -280,6 +280,7 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
             trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED
         ).first()
         email_error = scheduled_trigger.email_error if scheduled_trigger else ""
+        email_sent = bool(scheduled_trigger and scheduled_trigger.email_sent)
         if email_error:
             log_activity(
                 ActivityLog.EVENT_EMAIL_ERROR,
@@ -300,7 +301,7 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
         data = SendNowResponseSerializer({
             "process_run": run,
             "document_url": doc_url,
-            "email_sent": not bool(email_error),
+            "email_sent": email_sent,
         }).data
         return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
@@ -313,7 +314,10 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         ).prefetch_related(
             Prefetch(
                 "trigger_runs",
-                queryset=ProcessTriggerRun.objects.select_related("executed_by"),
+                queryset=ProcessTriggerRun.objects.select_related(
+                    "executed_by",
+                    "process_template",
+                ),
             ),
         )
         .all()
@@ -585,6 +589,7 @@ class EmployeeSendNowView(APIView):
             trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED
         ).first()
         email_error = scheduled_trigger.email_error if scheduled_trigger else ""
+        email_sent = bool(scheduled_trigger and scheduled_trigger.email_sent)
         if email_error:
             log_activity(
                 ActivityLog.EVENT_EMAIL_ERROR,
@@ -605,7 +610,7 @@ class EmployeeSendNowView(APIView):
         data = SendNowResponseSerializer({
             "process_run": run,
             "document_url": doc_url,
-            "email_sent": not bool(email_error),
+            "email_sent": email_sent,
         }).data
         return Response(data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 

@@ -192,6 +192,7 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
 class ProcessTriggerRunSerializer(serializers.ModelSerializer):
     executed_by_display = serializers.SerializerMethodField()
     document_file_url = serializers.SerializerMethodField()
+    template_send_email = serializers.SerializerMethodField()
 
     class Meta:
         model = ProcessTriggerRun
@@ -203,9 +204,14 @@ class ProcessTriggerRunSerializer(serializers.ModelSerializer):
             "executed_by_display",
             "email_sent",
             "email_error",
+            "template_send_email",
             "document_file",
             "document_file_url",
         )
+
+    def get_template_send_email(self, obj: ProcessTriggerRun) -> bool:
+        template = obj.process_template
+        return bool(template and template.send_email)
 
     def get_executed_by_display(self, obj: ProcessTriggerRun) -> str | None:
         label = _user_display_label(obj.executed_by)

@@ -83,6 +83,7 @@ export interface ProcessTriggerRun {
     executed_by_display?: string | null;
     email_sent: boolean;
     email_error: string;
+    template_send_email?: boolean;
     document_file: number | null;
     document_file_url?: string | null;
 }

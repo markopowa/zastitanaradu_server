@@ -554,6 +554,8 @@ def _send_email_for_template(
             "No email recipient for ProcessTemplate id=%s",
             template.id,
         )
+        if not fail_silently:
+            raise ValueError("Nema podešenog primaoca mejla.")
         return False
 
     subject = template.email_subject_template or "Process notification"
@@ -639,6 +641,7 @@ def execute_template_actions(
                 snapshot,
                 run=run,
                 generated_document=generated_document,
+                fail_silently=False,
             )
         except Exception as e:
             email_error = str(e)
@@ -649,4 +652,6 @@ def execute_template_actions(
                 template.id,
                 e,
             )
+        if not email_sent and not email_error:
+            email_error = "Mejl nije poslat."
     return generated_document, email_sent, email_error
