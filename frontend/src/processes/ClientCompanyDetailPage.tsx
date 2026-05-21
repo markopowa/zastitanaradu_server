@@ -26,7 +26,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
-import { bindingTermDateError, displayDateToIso, isoDateToFormDisplay, StringToDate } from "../utils/date";
+import { bindingTermDateError, displayDateToIso, formatDateDisplay, isoDateToFormDisplay, StringToDate } from "../utils/date";
 import {
     isJmbgComplete,
     jmbgMatchesDate,
@@ -64,8 +64,7 @@ import type {
     ProcessBinding,
 } from "../types/processes";
 
-const formatDate = (v?: string | null) =>
-    v ? new Date(v).toLocaleDateString("sr-RS") : "—";
+const formatDate = (v?: string | null) => formatDateDisplay(v);
 
 const STATUS_LABELS: Record<string, string> = {
     PENDING: "Na čekanju",

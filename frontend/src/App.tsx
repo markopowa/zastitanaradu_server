@@ -49,6 +49,9 @@ const ProcessBindingsListPage = lazy(
 const ProcessRunsListPage = lazy(
     () => import("./processes/ProcessRunsListPage"),
 );
+const ProcessRunDetailPage = lazy(
+    () => import("./processes/ProcessRunDetailPage"),
+);
 
 const routeFallback = (
     <Box
@@ -118,6 +121,10 @@ class App extends Component {
                         <Route
                             path="processes/runs"
                             element={<ProcessRunsListPage />}
+                        />
+                        <Route
+                            path="processes/runs/:id"
+                            element={<ProcessRunDetailPage />}
                         />
                         <Route path="profile" element={<UserProfilePage />} />
                         <Route path="users" element={<UsersListPage />} />

@@ -208,13 +208,25 @@ class ProcessRunDocumentSerializer(serializers.ModelSerializer):
         return url
 
 
+class ProcessRunDocumentUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+    title = serializers.CharField(required=False, allow_blank=True, max_length=255)
+
+
 class ProcessRunDocumentCreateSerializer(serializers.Serializer):
-    document_file_id = serializers.IntegerField(required=True)
+    document_file_id = serializers.IntegerField(required=False)
     usage_kind = serializers.ChoiceField(
         choices=ProcessRunDocument.USAGE_CHOICES,
         required=False,
         default=ProcessRunDocument.USAGE_REPORT,
     )
+
+    def validate(self, attrs):
+        if not self.initial_data.get("file") and not attrs.get("document_file_id"):
+            raise serializers.ValidationError(
+                {"detail": "Pošaljite fajl ili izaberite postojeći dokument."}
+            )
+        return attrs
 
 
 class ProcessNoteSerializer(serializers.ModelSerializer):
@@ -273,7 +285,7 @@ class TaskAssignmentSerializer(serializers.ModelSerializer):
 
 
 class ActivityLogSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source="user.username", read_only=True, default="")
+    username = serializers.SerializerMethodField()
     event_type_display = serializers.CharField(source="get_event_type_display", read_only=True)
     process_run_id = serializers.IntegerField(source="process_run.id", read_only=True, default=None)
 
@@ -289,3 +301,8 @@ class ActivityLogSerializer(serializers.ModelSerializer):
             "description",
             "extra_data",
         )
+
+    def get_username(self, obj: ActivityLog) -> str:
+        if obj.user_id:
+            return obj.user.username
+        return "Sistem"

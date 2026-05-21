@@ -25,6 +25,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 
 import { fetchActivityLog, invalidateActivityLog } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
+import { formatDateTimeDisplay } from "../utils/date";
 import type { AppDispatch, RootState } from "../store";
 import type { ActivityLog, ActivityLogEventType } from "../types/processes";
 
@@ -42,17 +43,6 @@ const EVENT_COLORS: Record<
     overdue_reminder: "error",
     scheduled: "info",
 };
-
-const pad = (n: number) => String(n).padStart(2, "0");
-
-function formatTimestamp(value: string): string {
-    const d = new Date(value);
-    if (Number.isNaN(d.getTime())) return value;
-    return (
-        `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ` +
-        `${pad(d.getHours())}:${pad(d.getMinutes())}`
-    );
-}
 
 const EVENT_TYPE_OPTIONS: { value: ActivityLogEventType | ""; label: string }[] = [
     { value: "", label: "Svi događaji" },
@@ -171,7 +161,7 @@ class DashboardPage extends Component<Props, State> {
                                     items.map((log) => (
                                         <TableRow key={log.id}>
                                             <TableCell sx={{ whiteSpace: "nowrap" }}>
-                                                {formatTimestamp(log.timestamp)}
+                                                {formatDateTimeDisplay(log.timestamp)}
                                             </TableCell>
                                             <TableCell>
                                                 <Chip
@@ -180,7 +170,7 @@ class DashboardPage extends Component<Props, State> {
                                                     color={EVENT_COLORS[log.event_type] ?? "default"}
                                                 />
                                             </TableCell>
-                                            <TableCell>{log.username || "—"}</TableCell>
+                                            <TableCell>{log.username}</TableCell>
                                             <TableCell>{log.description}</TableCell>
                                         </TableRow>
                                     ))

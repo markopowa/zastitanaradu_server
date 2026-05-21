@@ -65,13 +65,14 @@ const commonComponents: ThemeOptions["components"] = {
             },
             containedPrimary: ({ theme }) => ({
                 color: theme.palette.primary.contrastText,
-                backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.main}, ${theme.palette.primary.dark})`,
+                backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
                 boxShadow:
                     theme.palette.mode === "light"
                         ? `0 4px 14px ${alpha(theme.palette.primary.dark, 0.28)}`
                         : `0 4px 14px ${alpha(theme.palette.primary.dark, 0.45)}`,
                 "&:hover": {
                     color: theme.palette.primary.contrastText,
+                    backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${alpha(theme.palette.primary.main, 0.92)})`,
                 },
             }),
             containedSecondary: ({ theme }) => ({
@@ -102,7 +103,18 @@ const commonComponents: ThemeOptions["components"] = {
                               color: theme.palette.common.white,
                           },
                       }
-                    : {},
+                    : {
+                          color: theme.palette.text.primary,
+                          borderColor: alpha(theme.palette.primary.main, 0.45),
+                          "&:hover": {
+                              borderColor: theme.palette.primary.main,
+                              backgroundColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.06,
+                              ),
+                              color: theme.palette.primary.main,
+                          },
+                      },
             outlinedSecondary: ({ theme }) =>
                 theme.palette.mode === "dark"
                     ? {
@@ -133,7 +145,16 @@ const commonComponents: ThemeOptions["components"] = {
                               color: theme.palette.common.white,
                           },
                       }
-                    : {},
+                    : {
+                          color: theme.palette.text.primary,
+                          "&:hover": {
+                              backgroundColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.08,
+                              ),
+                              color: theme.palette.primary.main,
+                          },
+                      },
             textSecondary: ({ theme }) =>
                 theme.palette.mode === "dark"
                     ? {
@@ -146,7 +167,16 @@ const commonComponents: ThemeOptions["components"] = {
                               color: theme.palette.common.white,
                           },
                       }
-                    : {},
+                    : {
+                          color: theme.palette.text.secondary,
+                          "&:hover": {
+                              backgroundColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.06,
+                              ),
+                              color: theme.palette.text.primary,
+                          },
+                      },
         },
     },
     MuiToggleButton: {

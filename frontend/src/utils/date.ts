@@ -1,5 +1,23 @@
 const pad2 = (n: number): string => String(n).padStart(2, "0");
 
+export const SERBIAN_MONTH_NAMES = [
+    "januar",
+    "februar",
+    "mart",
+    "april",
+    "maj",
+    "jun",
+    "jul",
+    "avgust",
+    "septembar",
+    "oktobar",
+    "novembar",
+    "decembar",
+] as const;
+
+const formatDateParts = (day: number, monthIndex: number, year: number): string =>
+    `${day}. ${SERBIAN_MONTH_NAMES[monthIndex]} ${year}.`;
+
 export const DateToString = (value?: Date | null): string => {
     if (!value) return "";
     const y = value.getFullYear();
@@ -21,25 +39,33 @@ export const StringToDate = (value?: string | null): Date | null => {
 
 export const formatDateDisplay = (value?: string | null): string => {
     if (!value) return "—";
-    const d = new Date(value);
+    const isoMatch = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+    if (isoMatch) {
+        const [, yyyy, mm, dd] = isoMatch;
+        const monthIndex = Number(mm) - 1;
+        if (monthIndex >= 0 && monthIndex < 12) {
+            return formatDateParts(Number(dd), monthIndex, Number(yyyy));
+        }
+    }
+    const d = StringToDate(value) ?? new Date(value);
     if (Number.isNaN(d.getTime())) return value;
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const day = d.getDate();
-    return `${pad2(day)}.${pad2(m)}.${y}`;
+    return formatDateParts(d.getDate(), d.getMonth(), d.getFullYear());
 };
 
 export const formatDateTimeISO = (value?: string | null): string => {
     if (!value) return "—";
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
-    const y = d.getFullYear();
-    const m = d.getMonth() + 1;
-    const day = d.getDate();
-    const h = d.getHours();
-    const min = d.getMinutes();
-    const s = d.getSeconds();
-    return `${pad2(day)}.${pad2(m)}.${y} ${pad2(h)}:${pad2(min)}:${pad2(s)}`;
+    const datePart = formatDateParts(d.getDate(), d.getMonth(), d.getFullYear());
+    return `${datePart} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+};
+
+export const formatDateTimeDisplay = (value?: string | null): string => {
+    if (!value) return "—";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return value;
+    const datePart = formatDateParts(d.getDate(), d.getMonth(), d.getFullYear());
+    return `${datePart} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 };
 
 export const isoDateToFormDisplay = (value?: string | null): string => {

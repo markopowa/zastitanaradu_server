@@ -15,6 +15,7 @@ export const paths = {
     processTemplates: "/processes/templates",
     processBindings: "/processes/bindings",
     processRuns: "/processes/runs",
+    processRunDetail: (id: number) => `/processes/runs/${id}`,
 } as const;
 
 const pathToTitle: Record<string, string> = {
@@ -36,6 +37,7 @@ const pathToTitle: Record<string, string> = {
 export function getPageTitle(pathname: string): string {
     if (pathname.startsWith("/client-companies/")) return "Klijent";
     if (pathname.startsWith("/equipment/")) return "Oprema";
+    if (pathname.startsWith("/processes/runs/")) return "Aktivnost";
     return pathToTitle[pathname] ?? "Zaštita na radu";
 }
 

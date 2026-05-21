@@ -112,10 +112,6 @@ export interface ProcessRunsListPageDispatchProps {
     ensureClientCompanies: () => void;
     ensureProcessTypes: () => void;
     loadRuns: (params: ProcessRunsParams) => void;
-    completeRun: (args: {
-        id: number;
-        payload: CompleteProcessRunPayload;
-    }) => AsyncThunkDispatchResult;
 }
 
 export type ProcessRunsListPageProps = ProcessRunsListPageStateProps &
@@ -126,23 +122,34 @@ export interface ProcessRunsListPageState {
     client_company_id: string;
     process_type_id: string;
     status: string;
-    completeDialogRunId: number | null;
+}
+
+export interface ProcessRunDetailPageDispatchProps {
+    setLastPath?: (path: string) => void;
+}
+
+export interface ProcessRunDetailPageProps extends ProcessRunDetailPageDispatchProps {
+    id: string;
+}
+
+export interface ProcessRunDetailPageState {
+    loading: boolean;
+    error: string | null;
+    run: ProcessRun | null;
+    documents: ProcessRunDocument[];
+    notes: ProcessRunNote[];
+    notesNewBody: string;
+    uploadTitle: string;
+    uploadFile: File | null;
+    uploading: boolean;
+    showCompleteForm: boolean;
     complete_valid_until: string;
     complete_performed_at: string;
     complete_notes: string;
     complete_report_number: string;
     complete_fitness_assessment: string;
     complete_measures_taken: string;
-    documentsDialogRunId: number | null;
-    runDocuments: ProcessRunDocument[];
-    allDocuments: DocumentFile[];
-    addDocSelectedId: number | "";
-    notesDialogRunId: number | null;
-    notesItems: ProcessRunNote[];
-    notesNewBody: string;
-    emailIssueDialogRun: ProcessRun | null;
-    emailIssueDocs: ProcessRunDocument[];
-    emailIssueLoading: boolean;
+    completing: boolean;
 }
 
 export interface EquipmentListPageStateProps {

@@ -9,10 +9,11 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from documents.models import DocumentFile
+from documents.models import DocumentCategory, DocumentFile
 from partners.models import Employee
 
 from .activity_log import log_activity
+from .date_format import format_date_display
 from .models import (
     ActivityLog,
     ProcessBinding,
@@ -35,6 +36,7 @@ from .serializers import (
     ProcessRunCompleteSerializer,
     ProcessRunDocumentCreateSerializer,
     ProcessRunDocumentSerializer,
+    ProcessRunDocumentUploadSerializer,
     ProcessRunSerializer,
     ProcessTemplateSerializer,
     ProcessTypeSerializer,
@@ -288,7 +290,7 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
         log_activity(
             ActivityLog.EVENT_RUN_COMPLETED,
-            f"Završena aktivnost '{run.process_type.name}' za {subject}, važi do {run.valid_until}",
+            f"Završena aktivnost '{run.process_type.name}' za {subject}, važi do {format_date_display(run.valid_until)}",
             user=user if getattr(user, "is_authenticated", False) else None,
             process_run=run,
             process_binding=run.process_binding,
@@ -305,6 +307,54 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
                 docs, many=True, context={"request": request},
             )
             return Response(serializer.data)
+        if request.FILES.get("file"):
+            upload_serializer = ProcessRunDocumentUploadSerializer(
+                data=request.data,
+            )
+            upload_serializer.is_valid(raise_exception=True)
+            category = DocumentCategory.objects.order_by("id").first()
+            if category is None:
+                return Response(
+                    {"detail": "Nema kategorije dokumenata."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user = getattr(request, "user", None)
+            uploaded = upload_serializer.validated_data["file"]
+            title = (
+                upload_serializer.validated_data.get("title") or ""
+            ).strip() or uploaded.name
+            doc_file = DocumentFile(
+                category=category,
+                title=title,
+                valid_from=run.scheduled_for,
+            )
+            doc_file.file = uploaded
+            if user and getattr(user, "is_authenticated", False):
+                doc_file.uploaded_by = user
+            doc_file.save()
+            prd = ProcessRunDocument.objects.create(
+                process_run=run,
+                document_file=doc_file,
+                usage_kind=ProcessRunDocument.USAGE_REPORT,
+            )
+            subject = (
+                run.subject_snapshot.get("name")
+                or run.subject_snapshot.get("kind")
+                or ""
+            )
+            log_activity(
+                ActivityLog.EVENT_DOCUMENT_ATTACHED,
+                f"Dodat prilog '{doc_file.title}' na aktivnost '{run.process_type.name}' ({subject})",
+                user=user if getattr(user, "is_authenticated", False) else None,
+                process_run=run,
+                process_binding=run.process_binding,
+            )
+            return Response(
+                ProcessRunDocumentSerializer(
+                    prd, context={"request": request},
+                ).data,
+                status=status.HTTP_201_CREATED,
+            )
         serializer = ProcessRunDocumentCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         document_file_id = serializer.validated_data["document_file_id"]
@@ -321,10 +371,11 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
             document_file=doc_file,
             usage_kind=usage_kind,
         )
+        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
         user = getattr(request, "user", None)
         log_activity(
             ActivityLog.EVENT_DOCUMENT_ATTACHED,
-            f"Priložen dokument '{doc_file.title}' na aktivnost id={run.id}",
+            f"Priložen dokument '{doc_file.title}' na aktivnost '{run.process_type.name}' ({subject})",
             user=user if getattr(user, "is_authenticated", False) else None,
             process_run=run,
             process_binding=run.process_binding,

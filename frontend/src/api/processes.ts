@@ -362,6 +362,30 @@ export async function completeProcessRun(
     return data;
 }
 
+export async function getProcessRun(id: number): Promise<ProcessRun> {
+    const { data } = await api.get<ProcessRun>(`/api/processes/runs/${id}/`);
+    return data;
+}
+
+export async function uploadDocumentToRun(
+    runId: number,
+    file: File,
+    title?: string,
+): Promise<ProcessRunDocument> {
+    const form = new FormData();
+    form.append("file", file);
+    if (title?.trim()) form.append("title", title.trim());
+    const { data } = await api.post<ProcessRunDocument>(
+        `/api/processes/runs/${runId}/documents/`,
+        form,
+        {
+            maxContentLength: Infinity,
+            maxBodyLength: Infinity,
+        },
+    );
+    return data;
+}
+
 export async function getProcessRunNotes(
     runId: number,
 ): Promise<ProcessRunNote[]> {

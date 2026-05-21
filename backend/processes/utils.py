@@ -12,6 +12,7 @@ from core.email_sender import get_email_sender
 from documents.models import DocumentCategory, DocumentFile
 from documents.utils import fill_pdf_at_coordinates
 
+from .date_format import format_date_display
 from .models import (
     ProcessBinding,
     ProcessRun,
@@ -175,9 +176,9 @@ def _normalize_snapshot_for_context(snapshot: dict) -> dict:
 
 def _build_document_context(run: ProcessRun, snapshot: dict) -> dict:
     ctx = _normalize_snapshot_for_context(snapshot)
-    ctx["scheduled_for"] = str(run.scheduled_for) if run.scheduled_for else ""
-    ctx["performed_at"] = str(run.performed_at) if run.performed_at else ""
-    ctx["valid_until"] = str(run.valid_until) if run.valid_until else ""
+    ctx["scheduled_for"] = format_date_display(run.scheduled_for)
+    ctx["performed_at"] = format_date_display(run.performed_at)
+    ctx["valid_until"] = format_date_display(run.valid_until)
     ctx["process_type_name"] = run.process_type.name if run.process_type_id else ""
     ctx["run_id"] = run.id
     try:
@@ -200,7 +201,7 @@ def _build_document_context(run: ProcessRun, snapshot: dict) -> dict:
                 .first()
             )
             if prev_run:
-                last_exam_date = prev_run.strftime("%d.%m.%Y")
+                last_exam_date = format_date_display(prev_run)
     except Exception:
         pass
     ctx["last_exam_date"] = last_exam_date
@@ -209,8 +210,10 @@ def _build_document_context(run: ProcessRun, snapshot: dict) -> dict:
     dob = emp.get("date_of_birth") or snapshot.get("date_of_birth")
     if dob and isinstance(dob, str) and len(dob) >= 4:
         ctx["year_of_birth"] = dob[:4]
+        ctx["date_of_birth"] = format_date_display(dob[:10])
     else:
         ctx["year_of_birth"] = str(dob)[:4] if dob else ""
+        ctx["date_of_birth"] = format_date_display(dob) if dob else ""
     snapshot_values = [
         v for k, v in snapshot.items() if k != "kind" and v is not None
     ]

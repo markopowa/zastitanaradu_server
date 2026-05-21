@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from django.utils import timezone
 
 from .activity_log import log_activity
+from .date_format import format_date_display
 from .models import ActivityLog, ProcessBinding, ProcessRun, ProcessTemplate, ProcessTriggerRun, ProcessType
 from .trigger_utils import execute_templates_for_trigger, run_lead_date, trigger_already_executed
 from .utils import binding_subject_snapshot
@@ -47,7 +48,7 @@ def ensure_process_run_for_binding(binding: ProcessBinding) -> ProcessRun | None
     subject = snapshot.get("name") or snapshot.get("kind") or ""
     log_activity(
         ActivityLog.EVENT_RUN_CREATED,
-        f"Kreirana aktivnost '{pt.name}' za {subject}, termin: {binding.next_run_at}",
+        f"Kreirana aktivnost '{pt.name}' za {subject}, termin: {format_date_display(binding.next_run_at)}",
         process_run=run,
         process_binding=binding,
     )
@@ -79,7 +80,7 @@ def _execute_lead_triggers_for_run(
     subject = snapshot.get("name") or snapshot.get("kind") or ""
     log_activity(
         ActivityLog.EVENT_LEAD_NOTIFIED,
-        f"Obaveštenje pre termina (ON_LEAD) za '{run.process_type.name}' ({subject})",
+        f"Poslato obaveštenje pre termina za '{run.process_type.name}' ({subject})",
         process_run=run,
         process_binding=binding,
     )
@@ -192,7 +193,7 @@ def run_on_completed_trigger(run: ProcessRun) -> None:
         subject = snapshot.get("name") or snapshot.get("kind") or ""
         log_activity(
             ActivityLog.EVENT_TEMPLATE_EXECUTED,
-            f"Šablon ON_COMPLETED izvršen za '{run.process_type.name}' ({subject})",
+            f"Izvršen šablon po završetku za '{run.process_type.name}' ({subject})",
             process_run=run,
             process_binding=binding,
         )
@@ -308,7 +309,7 @@ def run_process_reminders(*, today: date | None = None) -> int:
             subject = snapshot.get("name") or snapshot.get("kind") or ""
             log_activity(
                 ActivityLog.EVENT_OVERDUE_REMINDER,
-                f"Podsetnik: aktivnost nije završena za '{run.process_type.name}' ({subject}), termin: {run.scheduled_for}",
+                f"Podsetnik: aktivnost nije završena za '{run.process_type.name}' ({subject}), termin: {format_date_display(run.scheduled_for)}",
                 process_run=run,
                 process_binding=run.process_binding,
             )
