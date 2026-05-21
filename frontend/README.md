@@ -32,8 +32,8 @@ npm run build
 ## Struktura (kratko)
 
 - `src/App.tsx` — rute (`react-router-dom`)
-- `src/components/AppLayout.tsx` — navigacija (grupe: Pregled, Klijenti, Aktivnosti, Dokumenti, **Procesi**, Korisnici)
-- `src/processes/` — klijenti, zaposleni, oprema, procesi (tipovi, šablon procesa, procesi, aktivnosti), dashboard „Ističe uskoro“
+- `src/components/AppLayout.tsx` — navigacija (grupe: Pregled, Klijenti, Aktivnosti, Dokumenti, **Procesi i Obaveze**, Korisnici)
+- `src/processes/` — klijenti, zaposleni, oprema, obaveze (tipovi, šablon obaveze, obaveze, aktivnosti), dashboard „Ističe uskoro“
 - `src/documents/` — dokumenti, kategorije, šabloni dokumenata
 - `src/api/` — pozivi ka backendu
 

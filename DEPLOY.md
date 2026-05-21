@@ -166,9 +166,9 @@ This command is **idempotent** – you can safely run it again if something fail
 7. **setupCron** – install root cron: Sunday midnight `certbot renew` + nginx reload
 8. **setupTaskRunner** – **systemd na hostu** (ne u Docker kontejneru): oneshot servisi koji pozivaju `docker compose exec -T backend python manage.py …` iz `$APP_DIR`, plus timeri:
    - dnevno 06:00 — `run_due_processes`
-   - dnevno 07:00 — `run_expired_reminders`
+   - dnevno 07:00 — `run_process_reminders`
    - svakih 5 minuta — `process_ai_document_queue` (AI red)
-   Logovi: `$LOG_DIR/run_due_processes.log`, `$LOG_DIR/run_expired_reminders.log`, `$LOG_DIR/process_ai_document_queue.log`.  
+   Logovi: `$LOG_DIR/run_due_processes.log`, `$LOG_DIR/run_process_reminders.log`, `$LOG_DIR/process_ai_document_queue.log`.  
    *Zašto ne systemd unutar image-a:* PID 1 u kontejneru treba da ostane jednostavan (gunicorn); pun systemd u kontejneru zahteva privilegije i otežava održavanje. Host timeri + `docker compose exec` su uobičajeni i dovoljni.
 
 ---
@@ -194,7 +194,7 @@ Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupDockerQuick` | `
 - **Logs (on host):**
   - Nginx: `$LOG_DIR/nginx-access.log`, `$LOG_DIR/nginx-error.log`
   - Backend: `$LOG_DIR/backend/access.log`, `$LOG_DIR/backend/error.log`, `$LOG_DIR/backend/django.log`
-  - Task runner (due processes): `$LOG_DIR/run_due_processes.log`; podsetnici na istekle: `$LOG_DIR/run_expired_reminders.log`; AI red: `$LOG_DIR/process_ai_document_queue.log`
+  - Task runner (due processes): `$LOG_DIR/run_due_processes.log`; podsetnici (termin / overdue): `$LOG_DIR/run_process_reminders.log`; AI red: `$LOG_DIR/process_ai_document_queue.log`
 - **Containers:** `cd $APP_DIR && docker compose ps`
 - **Backend only on localhost:** port 8000 is bound to `127.0.0.1`; only nginx is exposed on 80/443.
 - **Unknown Host / IP:** nginx `default_server` drops requests that are not for `$DOMAIN` (HTTP 444, no Django). Legitimate vhost proxies send `X-Pznr-Proxy`; Django rejects backend calls without that header in production.

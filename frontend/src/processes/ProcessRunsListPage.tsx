@@ -599,7 +599,7 @@ class ProcessRunsListPageInner extends Component<
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>Završi proces</DialogTitle>
+                    <DialogTitle>Završi obavezu</DialogTitle>
                     <DialogContent>
                         <Tooltip title="Datum do kada važi pregled / potvrda.">
                             <Box>

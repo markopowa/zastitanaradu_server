@@ -103,7 +103,7 @@ export class AddProcessBindingDialog extends Component<
         this.setState({ saving: true });
         createProcessBinding(payload)
             .then(() => {
-                enqueueSnackbar("Proces je dodat.", { variant: "success" });
+                enqueueSnackbar("Obaveza je dodata.", { variant: "success" });
                 this.setState({ saving: false });
                 onClose();
                 onSuccess();
@@ -118,7 +118,7 @@ export class AddProcessBindingDialog extends Component<
                         (err as { response?: { data?: { detail?: string } } })
                             .response?.data?.detail ??
                         (err as { message?: string }).message ??
-                        "Greška pri dodavanju procesa.";
+                        "Greška pri dodavanju obaveze.";
                     enqueueSnackbar(msg, { variant: "error" });
                     this.setState({ saving: false });
                 },
@@ -137,7 +137,7 @@ export class AddProcessBindingDialog extends Component<
 
         return (
             <Dialog open={open} onClose={this.handleClose} maxWidth="sm" fullWidth>
-                <DialogTitle>Dodaj proces</DialogTitle>
+                <DialogTitle>Dodaj obavezu</DialogTitle>
                 <DialogContent>
                     <TextField
                         margin="dense"

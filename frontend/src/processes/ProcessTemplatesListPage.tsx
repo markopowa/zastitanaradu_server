@@ -55,9 +55,10 @@ import type { DocumentTemplate } from "../api/documents";
 import type { Role } from "../types/auth";
 
 const TRIGGER_OPTIONS = [
+    { value: "ON_LEAD", label: "N dana pre termina" },
     { value: "ON_SCHEDULED", label: "Na zakazani datum" },
     { value: "ON_COMPLETED", label: "Kada se završi pregled" },
-    { value: "ON_EXPIRED", label: "Kada istekne rok važenja" },
+    { value: "ON_OVERDUE", label: "Kada nije završeno na vreme" },
 ] as const;
 
 const EMAIL_TO_OPTIONS = [
@@ -310,7 +311,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="h6">Šabloni procesa</Typography>
+                <Typography variant="h6">Šabloni obaveza</Typography>
 
                 {loading ? (
                     <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>

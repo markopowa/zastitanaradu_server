@@ -415,20 +415,20 @@ Persistent=true
 [Install]
 WantedBy=timers.target
 EOF
-    SVC2="/etc/systemd/system/pznr-run-expired-reminders.service"
-    TMR2="/etc/systemd/system/pznr-run-expired-reminders.timer"
+    SVC2="/etc/systemd/system/pznr-run-process-reminders.service"
+    TMR2="/etc/systemd/system/pznr-run-process-reminders.timer"
     cat > "$SVC2" << EOF
 [Unit]
-Description=PZNR run expired reminders (ON_EXPIRED process templates)
+Description=PZNR run process reminders (ON_SCHEDULED / ON_OVERDUE)
 After=docker.service
 Requires=docker.service
 
 [Service]
 Type=oneshot
 WorkingDirectory=$APP_DIR
-ExecStart=/usr/bin/docker compose exec -T backend python manage.py run_expired_reminders
-StandardOutput=append:$LOG_DIR/run_expired_reminders.log
-StandardError=append:$LOG_DIR/run_expired_reminders.log
+ExecStart=/usr/bin/docker compose exec -T backend python manage.py run_process_reminders
+StandardOutput=append:$LOG_DIR/run_process_reminders.log
+StandardError=append:$LOG_DIR/run_process_reminders.log
 User=root
 
 [Install]
@@ -436,8 +436,8 @@ WantedBy=multi-user.target
 EOF
     cat > "$TMR2" << EOF
 [Unit]
-Description=Run PZNR expired reminders daily at 07:00
-Requires=pznr-run-expired-reminders.service
+Description=Run PZNR process reminders daily at 07:00
+Requires=pznr-run-process-reminders.service
 
 [Timer]
 OnCalendar=*-*-* 07:00:00
@@ -480,11 +480,11 @@ EOF
     systemctl daemon-reload
     systemctl enable pznr-run-due-processes.timer
     systemctl start pznr-run-due-processes.timer
-    systemctl enable pznr-run-expired-reminders.timer
-    systemctl start pznr-run-expired-reminders.timer
+    systemctl enable pznr-run-process-reminders.timer
+    systemctl start pznr-run-process-reminders.timer
     systemctl enable pznr-process-ai-document-queue.timer
     systemctl start pznr-process-ai-document-queue.timer
-    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-expired-reminders.timer (daily 07:00), pznr-process-ai-document-queue.timer (every 5 min). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_expired_reminders.log, $LOG_DIR/process_ai_document_queue.log"
+    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-process-reminders.timer (daily 07:00), pznr-process-ai-document-queue.timer (every 5 min). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_process_reminders.log, $LOG_DIR/process_ai_document_queue.log"
 }
 
 runAll() {

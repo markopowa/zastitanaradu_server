@@ -78,7 +78,7 @@ export interface ProcessType {
 export interface ProcessTriggerRun {
     id: number;
     process_template: number | null;
-    trigger: "ON_SCHEDULED" | "ON_COMPLETED" | "ON_EXPIRED";
+    trigger: "ON_LEAD" | "ON_SCHEDULED" | "ON_COMPLETED" | "ON_OVERDUE";
     executed_at: string;
     executed_by: number | null;
     executed_by_username?: string;
@@ -164,7 +164,8 @@ export type ActivityLogEventType =
     | "run_completed"
     | "doc_attached"
     | "template_exec"
-    | "expired_reminder"
+    | "lead_notified"
+    | "overdue_reminder"
     | "scheduled";
 
 export interface ActivityLog {

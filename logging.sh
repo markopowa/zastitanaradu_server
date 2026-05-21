@@ -133,7 +133,7 @@ add_source() {
 add_source "$LOG_DIR/nginx-access.log" "nginx-access"
 add_source "$LOG_DIR/nginx-error.log" "nginx-error"
 add_source "$LOG_DIR/run_due_processes.log" "run-due-processes"
-add_source "$LOG_DIR/run_expired_reminders.log" "run-expired-reminders"
+add_source "$LOG_DIR/run_process_reminders.log" "run-process-reminders"
 add_source "$LOG_DIR/process_ai_document_queue.log" "process-ai-queue"
 add_source "$LOG_DIR/mail.log" "mail"
 

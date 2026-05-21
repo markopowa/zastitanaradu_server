@@ -80,7 +80,7 @@ const PROCESS_FIELDS: TemplateField[] = [
     { key: "scheduled_for", label: "Datum zakazivanja" },
     { key: "performed_at", label: "Datum izvođenja" },
     { key: "valid_until", label: "Važi do" },
-    { key: "process_type_name", label: "Vrsta procesa" },
+    { key: "process_type_name", label: "Vrsta obaveze" },
     { key: "instruction_number", label: "Broj uputa" },
     { key: "last_exam_date", label: "Datum prethodnog pregleda" },
     { key: "year_of_birth", label: "Godina rođenja" },

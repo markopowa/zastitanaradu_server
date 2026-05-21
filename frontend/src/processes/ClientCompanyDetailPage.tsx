@@ -1218,7 +1218,7 @@ class ClientCompanyDetailPageInner extends Component<
                     }}
                 >
                     <Typography variant="subtitle1" fontWeight={600}>
-                        Aktivni procesi
+                        Aktivne obaveze
                     </Typography>
                     <PermissionGate permission="processes.add_processbinding">
                         <Button
@@ -1232,7 +1232,7 @@ class ClientCompanyDetailPageInner extends Component<
                                 }))
                             }
                         >
-                            Dodaj proces
+                            Dodaj obavezu
                         </Button>
                     </PermissionGate>
                 </Box>
@@ -1250,7 +1250,7 @@ class ClientCompanyDetailPageInner extends Component<
                             0 ? (
                                 <TableRow>
                                     <TableCell colSpan={3} align="center">
-                                        Nema aktivnih procesa.
+                                        Nema aktivnih obaveza.
                                     </TableCell>
                                 </TableRow>
                             ) : (

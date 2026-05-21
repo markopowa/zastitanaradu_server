@@ -65,14 +65,16 @@ class ProcessType(models.Model):
 
 
 class ProcessTemplate(models.Model):
+    TRIGGER_ON_LEAD = "ON_LEAD"
     TRIGGER_ON_SCHEDULED = "ON_SCHEDULED"
     TRIGGER_ON_COMPLETED = "ON_COMPLETED"
-    TRIGGER_ON_EXPIRED = "ON_EXPIRED"
+    TRIGGER_ON_OVERDUE = "ON_OVERDUE"
 
     TRIGGER_CHOICES = (
+        (TRIGGER_ON_LEAD, "N dana pre termina"),
         (TRIGGER_ON_SCHEDULED, "Na zakazani datum"),
         (TRIGGER_ON_COMPLETED, "Kada se završi pregled"),
-        (TRIGGER_ON_EXPIRED, "Kada istekne rok važenja"),
+        (TRIGGER_ON_OVERDUE, "Kada nije završeno na vreme"),
     )
 
     EMAIL_TO_CLIENT_MAIN = "CLIENT_MAIN_EMAIL"
@@ -133,8 +135,8 @@ class ProcessTemplate(models.Model):
     )
 
     class Meta:
-        verbose_name = "Šablon procesa"
-        verbose_name_plural = "Šabloni procesa"
+        verbose_name = "Šablon obaveze"
+        verbose_name_plural = "Šabloni obaveza"
         ordering = ("process_type", "trigger")
 
     def __str__(self) -> str:
@@ -245,14 +247,16 @@ class ProcessRun(models.Model):
 
 
 class ProcessTriggerRun(models.Model):
+    TRIGGER_ON_LEAD = "ON_LEAD"
     TRIGGER_ON_SCHEDULED = "ON_SCHEDULED"
     TRIGGER_ON_COMPLETED = "ON_COMPLETED"
-    TRIGGER_ON_EXPIRED = "ON_EXPIRED"
+    TRIGGER_ON_OVERDUE = "ON_OVERDUE"
 
     TRIGGER_CHOICES = (
+        (TRIGGER_ON_LEAD, "N dana pre termina"),
         (TRIGGER_ON_SCHEDULED, "Na zakazani datum"),
         (TRIGGER_ON_COMPLETED, "Kada se završi pregled"),
-        (TRIGGER_ON_EXPIRED, "Kada istekne rok važenja"),
+        (TRIGGER_ON_OVERDUE, "Kada nije završeno na vreme"),
     )
 
     process_run = models.ForeignKey(
@@ -355,8 +359,8 @@ class TaskAssignment(models.Model):
     )
 
     class Meta:
-        verbose_name = "Zadatak procesa"
-        verbose_name_plural = "Zadaci procesa"
+        verbose_name = "Zadatak obaveze"
+        verbose_name_plural = "Zadaci obaveza"
         ordering = ("-due_date", "id")
 
     def __str__(self) -> str:
@@ -396,7 +400,8 @@ class ActivityLog(models.Model):
     EVENT_RUN_COMPLETED = "run_completed"
     EVENT_DOCUMENT_ATTACHED = "doc_attached"
     EVENT_TEMPLATE_EXECUTED = "template_exec"
-    EVENT_EXPIRED_REMINDER = "expired_reminder"
+    EVENT_LEAD_NOTIFIED = "lead_notified"
+    EVENT_OVERDUE_REMINDER = "overdue_reminder"
     EVENT_SCHEDULED = "scheduled"
 
     EVENT_CHOICES = (
@@ -406,7 +411,8 @@ class ActivityLog(models.Model):
         (EVENT_RUN_COMPLETED, "Aktivnost završena"),
         (EVENT_DOCUMENT_ATTACHED, "Dokument priložen"),
         (EVENT_TEMPLATE_EXECUTED, "Šablon izvršen"),
-        (EVENT_EXPIRED_REMINDER, "Podsetnik za istek"),
+        (EVENT_LEAD_NOTIFIED, "Obaveštenje pre termina"),
+        (EVENT_OVERDUE_REMINDER, "Podsetnik: nije završeno"),
         (EVENT_SCHEDULED, "Zakazana aktivnost"),
     )
 

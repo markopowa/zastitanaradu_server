@@ -6,9 +6,15 @@ from django.test import TestCase
 from django.utils import timezone
 
 from partners.models import ClientCompany
-from processes.models import ProcessBinding, ProcessRun, ProcessTriggerRun, ProcessType
+from processes.models import (
+    ProcessBinding,
+    ProcessRun,
+    ProcessTemplate,
+    ProcessTriggerRun,
+    ProcessType,
+)
 from processes.process_run_completion import apply_process_run_completion
-from processes.tasks import run_expired_reminders
+from processes.tasks import run_process_reminders, run_process_binding
 
 
 TODAY = date.today()
@@ -131,6 +137,42 @@ class RunDueProcessesCommandTest(TestCase):
         self.assertEqual(fired, [])
 
 
+class RunProcessBindingTriggersTest(TestCase):
+    def test_creates_run_with_on_lead_not_on_scheduled(self):
+        pt = make_process_type(lead_time_days=30)
+        b = make_binding(pt, next_run_at=TODAY + timedelta(days=30))
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_LEAD,
+            send_email=True,
+            email_to_kind=ProcessTemplate.EMAIL_TO_CUSTOM,
+            custom_email_recipient="lead@test.local",
+        )
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+            send_email=True,
+            email_to_kind=ProcessTemplate.EMAIL_TO_CUSTOM,
+            custom_email_recipient="scheduled@test.local",
+        )
+        with patch("processes.trigger_utils.execute_template_actions"):
+            run_process_binding(b.id)
+        run = ProcessRun.objects.get(process_binding=b)
+        self.assertEqual(run.status, ProcessRun.STATUS_PENDING)
+        self.assertTrue(
+            ProcessTriggerRun.objects.filter(
+                process_run=run,
+                trigger=ProcessTemplate.TRIGGER_ON_LEAD,
+            ).exists()
+        )
+        self.assertFalse(
+            ProcessTriggerRun.objects.filter(
+                process_run=run,
+                trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+            ).exists()
+        )
+
+
 class ApplyProcessRunCompletionTest(TestCase):
 
     def _complete(self, binding, valid_until, period_override=None):
@@ -192,63 +234,112 @@ class ApplyProcessRunCompletionTest(TestCase):
                          expected_next_run_at - timedelta(days=30))
 
 
-class RunExpiredRemindersTest(TestCase):
+class RunProcessRemindersTest(TestCase):
 
-    def _run(self):
-        with patch("processes.tasks.run_on_expired_trigger") as mock_trigger:
-            run_expired_reminders()
-        return mock_trigger
+    def _run(self, today=None):
+        with patch("processes.trigger_utils.execute_template_actions") as mock_actions:
+            run_process_reminders(today=today or TODAY)
+        return mock_actions
 
-    def test_fires_for_expired_completed_run(self):
+    def test_fires_on_scheduled_for_today(self):
         pt = make_process_type()
         b = make_binding(pt, next_run_at=TODAY)
-        run = make_run(b, status=ProcessRun.STATUS_COMPLETED,
-                       valid_until=TODAY - timedelta(days=1))
+        run = make_run(b, scheduled_for=TODAY)
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+            send_email=True,
+        )
         mock = self._run()
-        called_run_ids = [call.args[0].id for call in mock.call_args_list]
-        self.assertIn(run.id, called_run_ids)
-
-    def test_marks_expired_reminder_sent(self):
-        pt = make_process_type()
-        b = make_binding(pt, next_run_at=TODAY)
-        run = make_run(b, status=ProcessRun.STATUS_COMPLETED,
-                       valid_until=TODAY - timedelta(days=1))
-        self._run()
+        self.assertEqual(mock.call_count, 1)
+        self.assertEqual(mock.call_args[0][0], "ON_SCHEDULED")
         self.assertTrue(
             ProcessTriggerRun.objects.filter(
                 process_run=run,
-                trigger=ProcessTriggerRun.TRIGGER_ON_EXPIRED,
+                trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
             ).exists()
         )
 
-    def test_skips_already_reminded(self):
+    def test_skips_scheduled_already_sent(self):
         pt = make_process_type()
         b = make_binding(pt, next_run_at=TODAY)
-        run = make_run(b, status=ProcessRun.STATUS_COMPLETED,
-                       valid_until=TODAY - timedelta(days=1))
+        run = make_run(b, scheduled_for=TODAY)
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+            send_email=True,
+        )
         ProcessTriggerRun.objects.create(
             process_run=run,
-            trigger=ProcessTriggerRun.TRIGGER_ON_EXPIRED,
+            trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
             executed_at=timezone.now(),
         )
         mock = self._run()
-        called_run_ids = [call.args[0].id for call in mock.call_args_list]
-        self.assertNotIn(run.id, called_run_ids)
+        self.assertEqual(mock.call_count, 0)
 
-    def test_skips_not_yet_expired(self):
+    def test_fires_overdue_for_pending_past_scheduled(self):
+        pt = make_process_type()
+        b = make_binding(pt, next_run_at=TODAY - timedelta(days=5))
+        run = make_run(
+            b,
+            scheduled_for=TODAY - timedelta(days=1),
+        )
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_OVERDUE,
+            send_email=True,
+        )
+        mock = self._run()
+        self.assertEqual(mock.call_count, 1)
+        self.assertEqual(mock.call_args[0][0], "ON_OVERDUE")
+        self.assertTrue(
+            ProcessTriggerRun.objects.filter(
+                process_run=run,
+                trigger=ProcessTemplate.TRIGGER_ON_OVERDUE,
+            ).exists()
+        )
+
+    def test_skips_overdue_for_completed_run(self):
         pt = make_process_type()
         b = make_binding(pt, next_run_at=TODAY)
-        run = make_run(b, status=ProcessRun.STATUS_COMPLETED,
-                       valid_until=TODAY)
+        make_run(
+            b,
+            status=ProcessRun.STATUS_COMPLETED,
+            scheduled_for=TODAY - timedelta(days=1),
+        )
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_OVERDUE,
+            send_email=True,
+        )
         mock = self._run()
-        called_run_ids = [call.args[0].id for call in mock.call_args_list]
-        self.assertNotIn(run.id, called_run_ids)
+        self.assertEqual(mock.call_count, 0)
 
-    def test_skips_pending_run(self):
+    def test_skips_overdue_already_sent(self):
         pt = make_process_type()
         b = make_binding(pt, next_run_at=TODAY)
-        run = make_run(b, status=ProcessRun.STATUS_PENDING,
-                       valid_until=TODAY - timedelta(days=1))
+        run = make_run(b, scheduled_for=TODAY - timedelta(days=1))
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_OVERDUE,
+            send_email=True,
+        )
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            trigger=ProcessTemplate.TRIGGER_ON_OVERDUE,
+            executed_at=timezone.now(),
+        )
         mock = self._run()
-        called_run_ids = [call.args[0].id for call in mock.call_args_list]
-        self.assertNotIn(run.id, called_run_ids)
+        self.assertEqual(mock.call_count, 0)
+
+    def test_does_not_fire_scheduled_before_appointment_day(self):
+        pt = make_process_type()
+        b = make_binding(pt, next_run_at=TODAY + timedelta(days=10))
+        make_run(b, scheduled_for=TODAY + timedelta(days=10))
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+            send_email=True,
+        )
+        mock = self._run()
+        self.assertEqual(mock.call_count, 0)

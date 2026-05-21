@@ -102,14 +102,14 @@ const STATIC_NAV_ITEMS: NavItem[] = [
     },
     {
         path: "/processes/templates",
-        label: "Šablon procesa",
+        label: "Šablon obaveze",
         icon: <MenuBookIcon />,
         group: "settings",
         permissionPrefix: "processes.view_processtemplate",
     },
     {
         path: "/processes/bindings",
-        label: "Procesi",
+        label: "Obaveze",
         icon: <EventIcon />,
         group: "settings",
         permissionPrefix: "processes.view_processbinding",

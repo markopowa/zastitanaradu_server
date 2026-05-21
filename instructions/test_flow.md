@@ -164,18 +164,29 @@ Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje)
 
 ---
 
-## 6. Napravi šablone procesa
+## 6. Napravi šablone obaveza
 
-Potrebna su **dva šablona**:
+Potrebna su **tri šablona** (četvrti opciono):
 
-### 6a. Pošalji uput na dan termina
+### 6a. N dana pre termina — interno (opciono za test mejla)
 
-- [ ] **Procesi i Obaveze → Šablon procesa → Dodaj**
+- [ ] **Procesi i Obaveze → Šablon obaveze → Dodaj**
+- [ ] Vrsta obaveze: `Periodični lekarski pregled`
+- [ ] Okidač: **N dana pre termina**
+- [ ] Generiši dokument: **NE**
+- [ ] Pošalji mejl: **DA** ✅
+- [ ] Primalac: **Custom email** → `markovuckovic1992@gmail.com` *(ili Interna uloga)*
+- [ ] Naslov: `Pripremi pregled - {{ process_type_name }}`
+- [ ] Telo: `Termin {{ scheduled_for }} za {{ name }}.`
+- [ ] Sačuvaj
+
+### 6b. Dan termina — uput zaposlenom
+
+- [ ] **Procesi i Obaveze → Šablon obaveze → Dodaj**
 - [ ] Vrsta obaveze: `Periodični lekarski pregled`
 - [ ] Okidač: **Na zakazani datum**
 - [ ] Generiši dokument: **DA** ✅
 - [ ] Šablon dokumenta: `Uput - periodični lekarski pregled`
-- [ ] Kategorija dokumenta: `Lekarski pregledi`
 - [ ] Pošalji mejl: **DA** ✅
 - [ ] Primalac: **Custom email** → `markovuckovic1992@gmail.com`
 - [ ] Naslov: `Uput za pregled - {{ process_type_name }}`
@@ -188,19 +199,20 @@ Datum: {{ scheduled_for }}.
 ```
 - [ ] Sačuvaj
 
-### 6b. Po završetku — zakaži sledeći pregled
+### 6c. Po završetku — sledeći ciklus
 
-Po završetku pregleda sistem automatski kreira raspored za sledeći ciklus.
-
-- [ ] **Procesi i Obaveze → Šablon procesa → Dodaj**
-- [ ] Vrsta obaveze: `Periodični lekarski pregled`
 - [ ] Okidač: **Kada se završi pregled**
-- [ ] Generiši dokument: **NE**
-- [ ] Pošalji mejl: **NE**
+- [ ] Generiši dokument: **NE**, Pošalji mejl: **NE**
 - [ ] Sledeća vrsta obaveze: `Periodični lekarski pregled`
 - [ ] Sačuvaj
 
-**Provera:** U listi šablona postoje tačno 2 šablona za Periodični — Na zakazani datum + Kada se završi.
+### 6d. (Opciono) Nije završeno na vreme
+
+- [ ] Okidač: **Kada nije završeno na vreme**
+- [ ] Pošalji mejl: **DA** → Custom `markovuckovic1992@gmail.com`
+- [ ] Naslov: `Pregled nije evidentiran - {{ name }}`
+
+**Provera:** Minimum 3 šablona (6a–6c) za Periodični lekarski pregled.
 
 ---
 
@@ -208,7 +220,7 @@ Po završetku pregleda sistem automatski kreira raspored za sledeći ciklus.
 
 Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po završetku pregleda.
 
-- [ ] **Procesi i Obaveze → Procesi** → **Dodaj**
+- [ ] **Procesi i Obaveze → Obaveze** → **Dodaj**
 - [ ] Vrsta obaveze: `Periodični lekarski pregled`
 
   > Subjekt tip (Zaposleni) se automatski preuzima iz vrste obaveze — polje nije vidljivo.
@@ -217,7 +229,7 @@ Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po zavr
 - [ ] Period (meseci): *(ostavi prazno — helper text pokazuje podrazumevano: 12 mes.)*
 - [ ] Sledeći termin: **današnji datum + 30 dana**
 
-  > Rok unapred = 30 dana → `fire_date = termin - 30 = danas` → `run_due_processes` okida odmah.
+  > Rok unapred = 30 → `fire_date = termin - 30 = danas` → `run_due_processes` kreira aktivnost i šalje **ON_LEAD** (ne uput).
 
 - [ ] Aktivan: **DA** ✅
 - [ ] Sačuvaj
@@ -247,9 +259,9 @@ Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po zavr
 - [ ] Otvori aktivnost → tab **Dokumenti** → uput je prikačen
 - [ ] (Ako je mejl prošao) proveri inbox `markovuckovic1992@gmail.com` — mejl je stigao **sa uputom kao prilogom**
 
-### Način B — sa liste Procesi
+### Način B — sa liste Obaveze
 
-- [ ] **Procesi i Obaveze → Procesi**
+- [ ] **Procesi i Obaveze → Obaveze**
 - [ ] U redu Markovog rasporeda klikni **"Pošalji sad"**
 
 **Provera:** isto kao Način A — nova aktivnost u statusu "Poslat", dokument prikačen, mejl sa prilogom.
@@ -268,36 +280,55 @@ Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po zavr
 
 ---
 
-## 8. Pokreni komandu koja zakazuje aktivnosti
+## 8. Pokreni `run_due_processes` (kreira aktivnost + ON_LEAD)
 
-U terminalu, u root projekta:
+U terminalu (folder `backend` ili gde je `manage.py`):
 
 ```bash
 python manage.py run_due_processes
 ```
 
-- [ ] Komanda se izvršila bez crvenog teksta (greške)
-
-**Kako komanda računa kada da okine:**
-```
-fire_date = next_run_at - lead_time_days
-Okida ako: fire_date <= danas
-```
-Primer: `next_run_at = danas + 30`, `lead_time_days = 30` → `fire_date = danas` → **okida**.
+- [ ] Komanda bez greške
 
 **Provera:**
-- [ ] **Procesi i Obaveze → Aktivnosti** — postoji nova aktivnost u statusu **"Na čekanju"** za Marka
-- [ ] `scheduled_for` u aktivnosti = postavljeni termin (danas + 30), ne danas
-- [ ] Otvori aktivnost — u snapshot-u vidiš `Marko Petrović`, JMBG `0102990710123`, radno mesto `Električar na visini`
-- [ ] Ako pokreneš komandu ponovo isti dan — **nova aktivnost se NE pravi** (postoji već PENDING za Marka)
+- [ ] Aktivnost **Na čekanju**, `scheduled_for` = termin (danas + 30)
+- [ ] **Još nema** uputa u tabu Dokumenti (uput ide na dan termina)
+- [ ] Ako imaš šablon 6a: mejl **Pripremi pregled** je stigao (ON_LEAD)
+- [ ] Ponovni `run_due_processes` isti dan — **nema** duplog run-a
+
+---
+
+## 8b. Pokreni `run_process_reminders` (uput na dan termina)
+
+Uput i mejl zaposlenom idu **na dan termina**, ne pri kreiranju aktivnosti.
+
+**A)** Sačekaj dan termina, pa:
+
+```bash
+python manage.py run_process_reminders
+```
+
+**B)** Test odmah — simuliraj dan termina (`scheduled_for` iz koraka 7, npr. `2026-06-20`):
+
+```bash
+python manage.py run_process_reminders --date 2026-06-20
+```
+
+(zameni datum iz aktivnosti Marka)
+
+- [ ] Komanda bez greške
+
+**Provera:** posle 8b aktivnost ima dokument i (ako SES radi) mejl **Uput za pregled**.
+
+> Za ceo test **bez čekanja 30 dana**: u koraku 7 stavi **Sledeći termin = danas**, **Rok unapred = 0**, pa 8 → 8b isti dan.
 
 ---
 
 ## 9. Proveri generisani dokument (Uput koji ide na štampu)
 
-> 🎯 **Ovo simulira realnu situaciju:** korisnik ulazi u aktivnost, skida popunjen uput i daje ga zaposlenom da odnese u ustanovu.
+> 🎯 Posle koraka **8b** (ne posle samo 8).
 
-- [ ] **Procesi i Obaveze → Aktivnosti** — pronađi aktivnost za Marka u statusu "Na čekanju"
+- [ ] **Procesi i Obaveze → Aktivnosti** — aktivnost Marka **Na čekanju** (ili Poslat ako je mejl prošao)
 - [ ] Klikni red da otvoriš aktivnost
 - [ ] Klikni tab **"Dokumenti"**
 - [ ] Postoji dokument naziva `Uput - periodični lekarski pregled – Run #1`
@@ -330,12 +361,12 @@ Dugme **"Dokumenti"** na stranici Aktivnosti otvara dijalog gde možeš videti p
 
 ---
 
-## 10. Proveri mejl
+## 10. Proveri mejlove
 
-- [ ] Otvori inbox `markovuckovic1992@gmail.com`
-- [ ] Stigao je mejl sa `noreply@mak-total-safety.pznr.in.rs`
-- [ ] Naslov: `Uput za pregled - Periodični lekarski pregled` (NIJE `{{ process_type_name }}` — varijabla je zamenjena)
-- [ ] Telo mejla je popunjeno, datum je današnji
+- [ ] Inbox `markovuckovic1992@gmail.com`
+- [ ] Posle **8**: eventualno `Pripremi pregled` (ON_LEAD, šablon 6a)
+- [ ] Posle **8b**: `Uput za pregled - Periodični lekarski pregled` sa prilogom (ON_SCHEDULED)
+- [ ] Naslovi bez sirovih `{{ ... }}` — varijable zamenjene
 
 **Ako mejl nije stigao:**
 
@@ -360,7 +391,7 @@ python manage.py send_test_email markovuckovic1992@gmail.com
 
 **Provera:**
 - [ ] Aktivnost je u statusu **"Završeno"**
-- [ ] Chaining je proradio — **Procesi i Obaveze → Procesi** → postoji novi raspored za Marka za `Periodični lekarski pregled` (automatski kreiran)
+- [ ] Chaining je proradio — **Procesi i Obaveze → Obaveze** → postoji novi raspored za Marka za `Periodični lekarski pregled` (automatski kreiran)
 - [ ] Termin sledećeg = `valid_until + 12 * 30 dana`
 - [ ] Raspored nikad ne treba brisati niti ponovo kreirati — ponavlja se sam svake godine
 
@@ -392,6 +423,8 @@ Otvori fajl i proveri:
 |--------------|-------------|
 | Nije se generisao dokument | Ulogovan si kao superuser? Postoji li kategorija `Lekarski pregledi`? Vidi `backend/logs/django.log` |
 | Mejl nije stigao | Pokreni `python manage.py send_test_email tvoj@mejl.com`. Ako test mejl ne stiže — SES nije podešen. Ako stiže — vidi `django.log` |
-| `run_due_processes` ne pravi aktivnost | Da li je `Sledeći termin` u rasporedu **danas ili u prošlosti**? Da li je raspored aktivan? Da li već postoji "Na čekanju" za Marka? |
-| Chaining ne radi | Ima li šablon procesa sa okidačem **"Kada se završi pregled"** i popunjenom **Sledeća vrsta obaveze = Periodični lekarski pregled**? |
+| `run_due_processes` ne pravi aktivnost | `Sledeći termin` i `fire_date = termin − rok unapred <= danas`? Aktivan raspored? Već postoji PENDING? |
+| Nema uputa posle `run_due_processes` | Očekivano — pokreni `run_process_reminders` na dan termina (korak 8b) |
+| `run_process_reminders` ne šalje uput | `--date` mora biti **tačno** `scheduled_for` aktivnosti; status Na čekanju/Poslat? |
+| Chaining ne radi | Ima li šablon obaveze sa okidačem **"Kada se završi pregled"** i popunjenom **Sledeća vrsta obaveze = Periodični lekarski pregled**? |
 | Medicinska evidencija je prazna | Vrsta obaveze ima **"Lekarska evidencija" = DA**? Pregled je u statusu **Završeno** (ne "Na čekanju")? |

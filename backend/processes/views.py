@@ -67,9 +67,9 @@ class ProcessTypeViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         reasons = []
         if ProcessRun.objects.filter(process_type=instance).exists():
-            reasons.append("aktivnosti (procesi)")
+            reasons.append("aktivnosti (obaveze)")
         if instance.templates.exists():
-            reasons.append("šabloni procesa")
+            reasons.append("šabloni obaveza")
         if ProcessBinding.objects.filter(process_type=instance).exists():
             reasons.append("rasporedi")
         if reasons:

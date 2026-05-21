@@ -205,7 +205,7 @@ class ProcessBindingsListPageInner extends Component<
                         (err as { response?: { data?: { detail?: string } } })
                             .response?.data?.detail ??
                         (err as { message?: string }).message ??
-                        "Greška pri dodavanju procesa.";
+                        "Greška pri dodavanju obaveze.";
                     enqueueSnackbar(msg, { variant: "error" });
                 },
             );
@@ -247,7 +247,7 @@ class ProcessBindingsListPageInner extends Component<
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="h6">Procesi</Typography>
+                <Typography variant="h6">Obaveze</Typography>
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                     <FormControl size="small" sx={{ minWidth: 200 }}>
                         <InputLabel>Klijent</InputLabel>
@@ -302,7 +302,7 @@ class ProcessBindingsListPageInner extends Component<
                         startIcon={<AddIcon />}
                         onClick={this.openAdd}
                     >
-                        Dodaj proces
+                        Dodaj obavezu
                     </Button>
                 </Box>
                 {error && <Alert severity="error">{error}</Alert>}
@@ -378,7 +378,7 @@ class ProcessBindingsListPageInner extends Component<
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>Dodaj proces</DialogTitle>
+                    <DialogTitle>Dodaj obavezu</DialogTitle>
                     <DialogContent>
                         <FormControl fullWidth margin="dense">
                             <InputLabel>Vrsta obaveze</InputLabel>

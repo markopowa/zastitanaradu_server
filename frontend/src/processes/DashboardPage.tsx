@@ -38,7 +38,8 @@ const EVENT_COLORS: Record<
     run_completed: "success",
     doc_attached: "default",
     template_exec: "default",
-    expired_reminder: "warning",
+    lead_notified: "info",
+    overdue_reminder: "error",
     scheduled: "info",
 };
 
@@ -61,7 +62,8 @@ const EVENT_TYPE_OPTIONS: { value: ActivityLogEventType | ""; label: string }[] 
     { value: "run_completed", label: "Aktivnost završena" },
     { value: "doc_attached", label: "Dokument priložen" },
     { value: "template_exec", label: "Šablon izvršen" },
-    { value: "expired_reminder", label: "Podsetnik za istek" },
+    { value: "lead_notified", label: "Obaveštenje pre termina" },
+    { value: "overdue_reminder", label: "Nije završeno na vreme" },
     { value: "scheduled", label: "Zakazana aktivnost" },
 ];
 
