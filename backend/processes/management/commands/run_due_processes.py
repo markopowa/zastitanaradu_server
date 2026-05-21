@@ -1,57 +1,35 @@
-from datetime import date, timedelta
+from datetime import date
 
 from django.core.management.base import BaseCommand
 
-from processes.models import ProcessBinding, ProcessRun
-from processes.tasks import run_process_binding
+from processes.tasks import ensure_open_runs_for_active_bindings, process_lead_triggers
 
 
 class Command(BaseCommand):
-    help = "Find ProcessBindings whose fire date (next_run_at - lead_time_days) <= today and run each."
+    help = (
+        "Ensure open activities exist for active bindings, then run ON_LEAD "
+        "templates when fire date (termin - lead_time_days) <= today."
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="Only list binding IDs that would be run, do not execute.",
+            help="Only report counts, do not execute.",
         )
 
     def handle(self, *args, **options):
         today = date.today()
-        candidates = (
-            ProcessBinding.objects.filter(
-                is_active=True,
-                next_run_at__isnull=False,
-            )
-            .exclude(runs__status=ProcessRun.STATUS_PENDING)
-            .select_related("process_type")
-        )
-
-        binding_ids = []
-        for b in candidates:
-            lead = (
-                b.lead_time_days
-                if b.lead_time_days is not None
-                else b.process_type.lead_time_days
-            )
-            fire_date = b.next_run_at - timedelta(days=lead or 0)
-            if fire_date <= today:
-                binding_ids.append(b.id)
-
-        if not binding_ids:
-            self.stdout.write(self.style.SUCCESS("No due process bindings."))
-            return
-
-        self.stdout.write(
-            f"Found {len(binding_ids)} due binding(s): {binding_ids}")
-
         if options["dry_run"]:
-            self.stdout.write("Dry run: not executing run_process_binding.")
+            self.stdout.write(
+                f"Dry run for {today}: would ensure open runs and process ON_LEAD."
+            )
             return
 
-        for binding_id in binding_ids:
-            self.stdout.write(f"Running binding id={binding_id} ...")
-            run_process_binding(binding_id)
-
-        self.stdout.write(self.style.SUCCESS(
-            f"Done. Processed {len(binding_ids)} binding(s)."))
+        created = ensure_open_runs_for_active_bindings()
+        processed = process_lead_triggers(today=today)
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Done. Created {created} run(s), processed {processed} ON_LEAD trigger(s)."
+            )
+        )

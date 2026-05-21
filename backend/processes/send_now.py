@@ -5,7 +5,8 @@ from django.utils import timezone
 
 from core.email_sender import get_email_sender
 
-from .models import ProcessBinding, ProcessRun, ProcessTemplate, ProcessTriggerRun
+from .models import ProcessRun, ProcessTemplate, ProcessTriggerRun
+from .trigger_utils import trigger_already_executed
 from .utils import (
     _build_document_context,
     _generate_document_for_run,
@@ -15,18 +16,6 @@ from .utils import (
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _find_existing_run(binding, today):
-    return (
-        ProcessRun.objects.filter(
-            process_binding=binding,
-            scheduled_for=today,
-            status__in=(ProcessRun.STATUS_PENDING, ProcessRun.STATUS_SENT),
-        )
-        .order_by("-id")
-        .first()
-    )
 
 
 def _collect_attachments(run):
@@ -50,23 +39,38 @@ def _collect_attachments(run):
 
 
 def send_now_for_binding(binding, *, user=None):
-    today = date.today()
-    existing = _find_existing_run(binding, today)
-    if existing:
-        return existing, False
+    open_run = (
+        ProcessRun.objects.filter(
+            process_binding=binding,
+            status__in=(ProcessRun.STATUS_PENDING, ProcessRun.STATUS_SENT),
+        )
+        .order_by("-id")
+        .first()
+    )
+    if open_run and open_run.status == ProcessRun.STATUS_SENT:
+        if trigger_already_executed(
+            open_run.id, ProcessTriggerRun.TRIGGER_ON_SCHEDULED
+        ):
+            return open_run, False
 
     pt = binding.process_type
     snapshot = binding_subject_snapshot(binding)
     now = timezone.now()
     auth_user = user if user and user.is_authenticated else None
 
-    run = ProcessRun.objects.create(
-        process_binding=binding,
-        process_type=pt,
-        subject_snapshot=snapshot,
-        scheduled_for=today,
-        status=ProcessRun.STATUS_SENT,
-    )
+    if open_run:
+        run = open_run
+        run.status = ProcessRun.STATUS_SENT
+        run.save(update_fields=["status"])
+    else:
+        scheduled_for = binding.next_run_at or date.today()
+        run = ProcessRun.objects.create(
+            process_binding=binding,
+            process_type=pt,
+            subject_snapshot=snapshot,
+            scheduled_for=scheduled_for,
+            status=ProcessRun.STATUS_SENT,
+        )
 
     templates = (
         ProcessTemplate.objects.filter(
@@ -77,6 +81,12 @@ def send_now_for_binding(binding, *, user=None):
     )
 
     for template in templates:
+        if ProcessTriggerRun.objects.filter(
+            process_run=run,
+            process_template=template,
+            trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED,
+        ).exists():
+            continue
         if template.generate_document and template.document_template_id:
             try:
                 _generate_document_for_run(run, template, snapshot)

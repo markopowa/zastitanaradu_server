@@ -1,3 +1,5 @@
+from datetime import date
+
 from rest_framework import serializers
 
 from .models import (
@@ -84,6 +86,13 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
             "last_run_at",
             "is_active",
         )
+
+    def validate_next_run_at(self, value):
+        if value is not None and value < date.today():
+            raise serializers.ValidationError(
+                "Termin ne može biti u prošlosti."
+            )
+        return value
 
     def validate(self, attrs):
         if self.instance is None and not attrs.get("next_run_at"):

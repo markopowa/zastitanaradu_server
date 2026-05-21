@@ -41,6 +41,7 @@ from .serializers import (
     SendNowResponseSerializer,
     TaskAssignmentSerializer,
 )
+from .tasks import ensure_process_run_for_binding, process_lead_for_run
 from .utils import binding_subject_snapshot
 
 logger = logging.getLogger(__name__)
@@ -150,6 +151,18 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
             elif is_active.lower() in ("false", "0", "no"):
                 queryset = queryset.filter(is_active=False)
         return queryset
+
+    def perform_create(self, serializer):
+        binding = serializer.save()
+        run = ensure_process_run_for_binding(binding)
+        if run:
+            process_lead_for_run(run, binding)
+
+    def perform_update(self, serializer):
+        binding = serializer.save()
+        run = ensure_process_run_for_binding(binding)
+        if run:
+            process_lead_for_run(run, binding)
 
     @action(detail=True, methods=["post"], url_path="send-now")
     def send_now(self, request, pk=None):

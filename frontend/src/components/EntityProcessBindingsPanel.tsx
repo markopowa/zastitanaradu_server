@@ -18,7 +18,7 @@ import { updateProcessBinding } from "../api/processes";
 import { AddProcessBindingDialog } from "./AddProcessBindingDialog";
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import { PermissionGate } from "./PermissionGate";
-import { displayDateToIso, formatDateDisplay, isoDateToFormDisplay } from "../utils/date";
+import { bindingTermDateError, displayDateToIso, formatDateDisplay, isoDateToFormDisplay } from "../utils/date";
 
 import type {
     EntityProcessBindingsPanelProps,
@@ -43,6 +43,11 @@ export class EntityProcessBindingsPanel extends Component<
     };
 
     handleStartDateChange = (bindingId: number, displayDate: string): void => {
+        const termError = bindingTermDateError(displayDate);
+        if (termError) {
+            enqueueSnackbar(termError, { variant: "error" });
+            return;
+        }
         const nextRunAtISO = displayDateToIso(displayDate);
         if (!nextRunAtISO) return;
         this.setState({ savingStartDateBindingId: bindingId });
@@ -140,6 +145,7 @@ export class EntityProcessBindingsPanel extends Component<
                                                     value={isoDateToFormDisplay(
                                                         b.next_run_at,
                                                     )}
+                                                    minToday
                                                     helperText={
                                                         savingStartDateBindingId ===
                                                         b.id

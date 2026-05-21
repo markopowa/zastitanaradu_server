@@ -16,7 +16,7 @@ import { enqueueSnackbar } from "notistack";
 
 import { createProcessBinding, getProcessTypes } from "../api/processes";
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
-import { displayDateToIso } from "../utils/date";
+import { bindingTermDateError, displayDateToIso } from "../utils/date";
 
 import type { ProcessType } from "../types/processes";
 import type {
@@ -77,6 +77,11 @@ export class AddProcessBindingDialog extends Component<
 
         const nextRunAtISO = displayDateToIso(nextRunAt);
         if (!nextRunAtISO) return;
+        const termError = bindingTermDateError(nextRunAt);
+        if (termError) {
+            enqueueSnackbar(termError, { variant: "error" });
+            return;
+        }
 
         const payload = {
             process_type: Number(processTypeId),
@@ -122,6 +127,7 @@ export class AddProcessBindingDialog extends Component<
     render() {
         const { open, subjectKind, subjectLabel } = this.props;
         const { processTypes, processTypeId, nextRunAt, saving } = this.state;
+        const termError = bindingTermDateError(nextRunAt);
 
         return (
             <Dialog open={open} onClose={this.handleClose} maxWidth="sm" fullWidth>
@@ -153,7 +159,12 @@ export class AddProcessBindingDialog extends Component<
                     <DateTextFieldWithPicker
                         label="Termin (dd.mm.yyyy)"
                         value={nextRunAt}
-                        helperText="Kada obaveza prvi put treba da se desi"
+                        minToday
+                        error={termError != null}
+                        helperText={
+                            termError ??
+                            "Kada obaveza prvi put treba da se desi"
+                        }
                         onChange={(v) => this.setState({ nextRunAt: v })}
                     />
                 </DialogContent>
@@ -165,7 +176,12 @@ export class AddProcessBindingDialog extends Component<
                         onClick={this.handleSubmit}
                         variant="contained"
                         disableElevation
-                        disabled={saving || !processTypeId || !nextRunAt.trim()}
+                        disabled={
+                            saving ||
+                            !processTypeId ||
+                            !nextRunAt.trim() ||
+                            termError != null
+                        }
                     >
                         {saving ? "Čuvam..." : "Dodaj"}
                     </Button>

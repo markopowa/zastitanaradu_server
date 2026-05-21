@@ -388,7 +388,7 @@ setupTaskRunner() {
     TASK_TMR="/etc/systemd/system/pznr-run-due-processes.timer"
     cat > "$TASK_SVC" << EOF
 [Unit]
-Description=PZNR run due process bindings (processes/tasks)
+Description=PZNR process due checks (ensure open runs, ON_LEAD at 06:00)
 After=docker.service
 Requires=docker.service
 
@@ -484,7 +484,7 @@ EOF
     systemctl start pznr-run-process-reminders.timer
     systemctl enable pznr-process-ai-document-queue.timer
     systemctl start pznr-process-ai-document-queue.timer
-    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-process-reminders.timer (daily 07:00), pznr-process-ai-document-queue.timer (every 5 min). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_process_reminders.log, $LOG_DIR/process_ai_document_queue.log"
+    echo "Task runner: pznr-run-due-processes.timer (daily 06:00 — ON_LEAD checks), pznr-run-process-reminders.timer (daily 07:00), pznr-process-ai-document-queue.timer (every 5 min). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_process_reminders.log, $LOG_DIR/process_ai_document_queue.log"
 }
 
 runAll() {

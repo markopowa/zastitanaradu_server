@@ -54,3 +54,24 @@ export const displayDateToIso = (value: string): string | undefined => {
     if (!date) return undefined;
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 };
+
+export const todayLocalDate = (): Date => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate());
+};
+
+export const isDateTodayOrFuture = (value: string): boolean => {
+    const date = StringToDate(value.trim());
+    if (!date) return false;
+    return date.getTime() >= todayLocalDate().getTime();
+};
+
+export const bindingTermDateError = (value: string): string | undefined => {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    if (!StringToDate(trimmed)) return "Unesi datum kao dd.mm.yyyy.";
+    if (!isDateTodayOrFuture(trimmed)) {
+        return "Termin ne može biti u prošlosti.";
+    }
+    return undefined;
+};

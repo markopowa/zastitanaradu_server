@@ -14,7 +14,7 @@ import {
     Typography,
 } from "@mui/material";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
-import { DateToString, StringToDate } from "../utils/date";
+import { DateToString, StringToDate, todayLocalDate } from "../utils/date";
 
 import type { DateTextFieldWithPickerProps } from "../types/components";
 
@@ -25,7 +25,9 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
     defaultYearsAgo,
     minYearsAgo,
     minYearsAgoMessage,
+    minToday,
     helperText,
+    error,
 }) => {
     const [open, setOpen] = useState(false);
 
@@ -83,6 +85,12 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
         const year = currentMonth.getFullYear();
         const month = currentMonth.getMonth() + 1;
         const d = new Date(year, month - 1, day);
+        if (minToday) {
+            const today = todayLocalDate();
+            if (d.getTime() < today.getTime()) {
+                return;
+            }
+        }
         if (minYearsAgo != null) {
             const threshold = new Date();
             threshold.setFullYear(threshold.getFullYear() - minYearsAgo);
@@ -162,6 +170,7 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
                 fullWidth
                 value={value}
                 onClick={handleOpen}
+                error={error}
                 helperText={helperText}
                 slotProps={{
                     inputLabel: { shrink: true },
@@ -283,21 +292,37 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
                             day == null ? (
                                 <Box key={idx} />
                             ) : (
-                                <Button
-                                    key={idx}
-                                    size="small"
-                                    variant={
-                                        selectedDay === day &&
-                                        selectedMonth === month &&
-                                        selectedYear === year
-                                            ? "contained"
-                                            : "text"
-                                    }
-                                    onClick={() => handleSelectDay(day)}
-                                    sx={{ minWidth: 0, p: 0.5 }}
-                                >
-                                    {day}
-                                </Button>
+                                (() => {
+                                    const dayDate = new Date(
+                                        year,
+                                        month,
+                                        day,
+                                    );
+                                    const isPast =
+                                        minToday &&
+                                        dayDate.getTime() <
+                                            todayLocalDate().getTime();
+                                    return (
+                                        <Button
+                                            key={idx}
+                                            size="small"
+                                            disabled={isPast}
+                                            variant={
+                                                selectedDay === day &&
+                                                selectedMonth === month &&
+                                                selectedYear === year
+                                                    ? "contained"
+                                                    : "text"
+                                            }
+                                            onClick={() =>
+                                                handleSelectDay(day)
+                                            }
+                                            sx={{ minWidth: 0, p: 0.5 }}
+                                        >
+                                            {day}
+                                        </Button>
+                                    );
+                                })()
                             ),
                         )}
                     </Box>

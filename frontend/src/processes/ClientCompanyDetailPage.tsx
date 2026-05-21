@@ -26,7 +26,7 @@ import AddIcon from "@mui/icons-material/Add";
 import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
-import { displayDateToIso, isoDateToFormDisplay, StringToDate } from "../utils/date";
+import { bindingTermDateError, displayDateToIso, isoDateToFormDisplay, StringToDate } from "../utils/date";
 import {
     isJmbgComplete,
     jmbgMatchesDate,
@@ -560,6 +560,11 @@ class ClientCompanyDetailPageInner extends Component<
         bindingId: number,
         displayDate: string,
     ): void => {
+        const termError = bindingTermDateError(displayDate);
+        if (termError) {
+            enqueueSnackbar(termError, { variant: "error" });
+            return;
+        }
         const nextRunAtISO = displayDateToIso(displayDate);
         if (!nextRunAtISO) return;
         const companyId = Number(this.props.id);
@@ -1320,6 +1325,7 @@ class ClientCompanyDetailPageInner extends Component<
                                                         value={isoDateToFormDisplay(
                                                             b.next_run_at,
                                                         )}
+                                                        minToday
                                                         helperText={
                                                             this.state
                                                                 .savingStartDateBindingId ===

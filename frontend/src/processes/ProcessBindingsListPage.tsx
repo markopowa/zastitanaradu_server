@@ -45,6 +45,7 @@ import {
 } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
 import {
+    bindingTermDateError,
     displayDateToIso,
     isoDateToFormDisplay,
 } from "../utils/date";
@@ -157,6 +158,11 @@ class ProcessBindingsListPageInner extends Component<
     };
 
     handleStartDateChange = (bindingId: number, displayDate: string): void => {
+        const termError = bindingTermDateError(displayDate);
+        if (termError) {
+            enqueueSnackbar(termError, { variant: "error" });
+            return;
+        }
         const nextRunAtISO = displayDateToIso(displayDate);
         if (!nextRunAtISO) return;
         this.setState((prev) => ({
@@ -208,6 +214,11 @@ class ProcessBindingsListPageInner extends Component<
             new_next_run_at,
         } = this.state;
         if (!new_process_type) return;
+        const termError = bindingTermDateError(new_next_run_at);
+        if (termError) {
+            enqueueSnackbar(termError, { variant: "error" });
+            return;
+        }
         const nextRunAtISO = displayDateToIso(new_next_run_at);
         if (!nextRunAtISO) return;
         const payload: Partial<ProcessBinding> = {
@@ -272,6 +283,8 @@ class ProcessBindingsListPageInner extends Component<
             bindingsLoading: loading,
             bindingsError: error,
         } = this.props;
+
+        const newTermError = bindingTermDateError(new_next_run_at);
 
         const subjectLabel = (b: ProcessBinding) => {
             if (b.employee) {
@@ -385,6 +398,7 @@ class ProcessBindingsListPageInner extends Component<
                                                     value={isoDateToFormDisplay(
                                                         row.next_run_at,
                                                     )}
+                                                    minToday
                                                     helperText={
                                                         savingStartDateBindingId ===
                                                         row.id
@@ -561,7 +575,12 @@ class ProcessBindingsListPageInner extends Component<
                         <DateTextFieldWithPicker
                             label="Termin (dd.mm.yyyy)"
                             value={new_next_run_at}
-                            helperText="Kada obaveza prvi put treba da se desi"
+                            minToday
+                            error={newTermError != null}
+                            helperText={
+                                newTermError ??
+                                "Kada obaveza prvi put treba da se desi"
+                            }
                             onChange={(v) =>
                                 this.setState((prev) => ({
                                     ...prev,
@@ -579,6 +598,7 @@ class ProcessBindingsListPageInner extends Component<
                             disabled={
                                 !new_process_type ||
                                 !new_next_run_at.trim() ||
+                                newTermError != null ||
                                 (new_subject_kind === "EMPLOYEE" &&
                                     !new_employee) ||
                                 (new_subject_kind === "EQUIPMENT" &&

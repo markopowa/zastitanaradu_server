@@ -53,7 +53,7 @@ def make_run(binding, status=ProcessRun.STATUS_PENDING, valid_until=None, schedu
     return ProcessRun.objects.create(
         process_binding=binding,
         process_type=binding.process_type,
-        scheduled_for=scheduled_for or TODAY,
+        scheduled_for=scheduled_for or binding.next_run_at or TODAY,
         status=status,
         valid_until=valid_until,
     )
@@ -61,80 +61,87 @@ def make_run(binding, status=ProcessRun.STATUS_PENDING, valid_until=None, schedu
 
 class RunDueProcessesCommandTest(TestCase):
     def _run_command(self):
-        fired = []
-        with patch("processes.management.commands.run_due_processes.run_process_binding",
-                   side_effect=lambda bid: fired.append(bid)):
-            from django.core.management import call_command
-            call_command("run_due_processes", stdout=StringIO())
-        return fired
+        from django.core.management import call_command
 
-    def test_fires_on_exact_fire_date(self):
+        call_command("run_due_processes", stdout=StringIO())
+
+    def test_fires_on_lead_when_due(self):
         pt = make_process_type(lead_time_days=30)
         b = make_binding(pt, next_run_at=TODAY + timedelta(days=30))
-        self.assertIn(b.id, self._run_command())
-
-    def test_fires_when_overdue(self):
-        pt = make_process_type(lead_time_days=30)
-        b = make_binding(pt, next_run_at=TODAY + timedelta(days=10))
-        self.assertIn(b.id, self._run_command())
+        run = make_run(b)
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_LEAD,
+            send_email=False,
+        )
+        with patch("processes.trigger_utils.execute_template_actions"):
+            self._run_command()
+        self.assertTrue(
+            ProcessTriggerRun.objects.filter(
+                process_run=run,
+                trigger=ProcessTemplate.TRIGGER_ON_LEAD,
+            ).exists()
+        )
 
     def test_does_not_fire_when_too_early(self):
         pt = make_process_type(lead_time_days=30)
         b = make_binding(pt, next_run_at=TODAY + timedelta(days=31))
-        self.assertNotIn(b.id, self._run_command())
+        run = make_run(b)
+        ProcessTemplate.objects.create(
+            process_type=pt,
+            trigger=ProcessTemplate.TRIGGER_ON_LEAD,
+            send_email=False,
+        )
+        with patch("processes.trigger_utils.execute_template_actions"):
+            self._run_command()
+        self.assertFalse(
+            ProcessTriggerRun.objects.filter(
+                process_run=run,
+                trigger=ProcessTemplate.TRIGGER_ON_LEAD,
+            ).exists()
+        )
 
-    def test_no_lead_time_fires_on_exact_date(self):
+    def test_creates_missing_open_run(self):
         pt = make_process_type(lead_time_days=0)
         b = make_binding(pt, next_run_at=TODAY)
-        self.assertIn(b.id, self._run_command())
+        self.assertFalse(ProcessRun.objects.filter(process_binding=b).exists())
+        self._run_command()
+        self.assertTrue(
+            ProcessRun.objects.filter(
+                process_binding=b,
+                status=ProcessRun.STATUS_PENDING,
+            ).exists()
+        )
 
-    def test_no_lead_time_does_not_fire_tomorrow(self):
+    def test_lead_not_fired_twice(self):
         pt = make_process_type(lead_time_days=0)
-        b = make_binding(pt, next_run_at=TODAY + timedelta(days=1))
-        self.assertNotIn(b.id, self._run_command())
-
-    def test_uses_process_type_lead_time_as_fallback(self):
-        pt = make_process_type(lead_time_days=30)
-        b = make_binding(pt, next_run_at=TODAY +
-                         timedelta(days=30), lead_time_days=None)
-        self.assertIn(b.id, self._run_command())
-
-    def test_binding_lead_time_overrides_process_type(self):
-        pt = make_process_type(lead_time_days=30)
-        b_early = make_binding(pt, next_run_at=TODAY +
-                               timedelta(days=8), lead_time_days=7)
-        b_fire = make_binding(pt, next_run_at=TODAY +
-                              timedelta(days=7), lead_time_days=7)
-        fired = self._run_command()
-        self.assertIn(b_fire.id, fired)
-        self.assertNotIn(b_early.id, fired)
+        b = make_binding(pt, next_run_at=TODAY)
+        run = make_run(b)
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            trigger=ProcessTemplate.TRIGGER_ON_LEAD,
+            executed_at=timezone.now(),
+        )
+        with patch("processes.trigger_utils.execute_template_actions") as mock_exec:
+            self._run_command()
+            mock_exec.assert_not_called()
 
     def test_inactive_binding_skipped(self):
         pt = make_process_type(lead_time_days=0)
         b = make_binding(pt, next_run_at=TODAY, is_active=False)
-        self.assertNotIn(b.id, self._run_command())
-
-    def test_pending_run_blocks_refire(self):
-        pt = make_process_type(lead_time_days=0)
-        b = make_binding(pt, next_run_at=TODAY)
-        make_run(b, status=ProcessRun.STATUS_PENDING)
-        self.assertNotIn(b.id, self._run_command())
-
-    def test_completed_run_does_not_block(self):
-        pt = make_process_type(lead_time_days=0)
-        b = make_binding(pt, next_run_at=TODAY)
-        make_run(b, status=ProcessRun.STATUS_COMPLETED)
-        self.assertIn(b.id, self._run_command())
+        self._run_command()
+        self.assertFalse(ProcessRun.objects.filter(process_binding=b).exists())
 
     def test_dry_run_does_not_execute(self):
         pt = make_process_type(lead_time_days=0)
         make_binding(pt, next_run_at=TODAY)
-        fired = []
-        with patch("processes.management.commands.run_due_processes.run_process_binding",
-                   side_effect=lambda bid: fired.append(bid)):
+        with patch(
+            "processes.management.commands.run_due_processes.process_lead_triggers"
+        ) as mock_lead:
             from django.core.management import call_command
+
             call_command("run_due_processes", dry_run=True, stdout=StringIO())
-        self.assertEqual(fired, [])
+            mock_lead.assert_not_called()
 
 
 class RunProcessBindingTriggersTest(TestCase):

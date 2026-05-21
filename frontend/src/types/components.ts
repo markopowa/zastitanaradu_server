@@ -7,7 +7,9 @@ export interface DateTextFieldWithPickerProps {
     defaultYearsAgo?: number;
     minYearsAgo?: number;
     minYearsAgoMessage?: string;
+    minToday?: boolean;
     helperText?: string;
+    error?: boolean;
 }
 
 export interface AuthInitializerOwnProps {
