@@ -25,6 +25,7 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
     defaultYearsAgo,
     minYearsAgo,
     minYearsAgoMessage,
+    helperText,
 }) => {
     const [open, setOpen] = useState(false);
 
@@ -161,6 +162,7 @@ const DateTextFieldWithPicker: FC<DateTextFieldWithPickerProps> = ({
                 fullWidth
                 value={value}
                 onClick={handleOpen}
+                helperText={helperText}
                 slotProps={{
                     inputLabel: { shrink: true },
                     input: {

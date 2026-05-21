@@ -172,7 +172,7 @@ const NAV_GROUP_LABEL: Record<NavGroup, string> = {
     clients: "Klijenti",
     activities: "Aktivnosti",
     documents: "Dokumenti",
-    settings: "Procesi",
+    settings: "Procesi i Obaveze",
     users: "Korisnici / Role",
 };
 

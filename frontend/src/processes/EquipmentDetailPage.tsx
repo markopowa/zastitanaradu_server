@@ -12,7 +12,12 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-import { getEquipmentItem } from "../api/processes";
+import {
+    getEquipmentItem,
+    getProcessBindings,
+    getProcessRuns,
+} from "../api/processes";
+import { EntityProcessBindingsPanel } from "../components/EntityProcessBindingsPanel";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
 
@@ -27,8 +32,19 @@ class EquipmentDetailPageInner extends Component<
 > {
     state: EquipmentDetailPageState = {
         item: null,
+        bindings: [],
+        runs: [],
         loading: true,
         error: null,
+    };
+
+    loadProcessData = (id: number): void => {
+        Promise.all([
+            getProcessBindings({ equipment_item_id: id }),
+            getProcessRuns({ equipment_item_id: id }),
+        ]).then(([bindings, runs]) => {
+            this.setState((prev) => ({ ...prev, bindings, runs }));
+        });
     };
 
     private applyRouteId(mode: "mount" | "update"): void {
@@ -71,6 +87,7 @@ class EquipmentDetailPageInner extends Component<
                     error: "Greška pri učitavanju.",
                 })),
             );
+        this.loadProcessData(id);
     }
 
     componentDidMount(): void {
@@ -84,7 +101,7 @@ class EquipmentDetailPageInner extends Component<
     }
 
     render() {
-        const { item, loading, error } = this.state;
+        const { item, bindings, runs, loading, error } = this.state;
         const { navigate } = this.props;
 
         if (loading) {
@@ -147,6 +164,15 @@ class EquipmentDetailPageInner extends Component<
                         <dd>{item.is_active ? "Da" : "Ne"}</dd>
                     </Box>
                 </Paper>
+
+                <EntityProcessBindingsPanel
+                    subjectKind="EQUIPMENT"
+                    subjectLabel={item.name}
+                    equipmentItemId={item.id}
+                    bindings={bindings}
+                    runs={runs}
+                    onRefresh={() => this.loadProcessData(item.id)}
+                />
             </Box>
         );
     }

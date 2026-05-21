@@ -47,6 +47,7 @@ import {
     uploadClientCompanyRiskAssessmentAct,
 } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
+import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
 
@@ -146,6 +147,7 @@ class ClientCompanyDetailPageInner extends Component<
         eq_notes: "",
         savingEquipment: false,
         equipmentError: null,
+        bindingDialogOpen: false,
     };
 
     openEmpDialog = (): void => {
@@ -1125,7 +1127,16 @@ class ClientCompanyDetailPageInner extends Component<
                                 </TableRow>
                             ) : (
                                 employees.map((e) => (
-                                    <TableRow key={e.id}>
+                                    <TableRow
+                                        key={e.id}
+                                        hover
+                                        sx={{ cursor: "pointer" }}
+                                        onClick={() =>
+                                            navigate(
+                                                `/client-companies-employees/${e.id}`,
+                                            )
+                                        }
+                                    >
                                         <TableCell>{e.first_name}</TableCell>
                                         <TableCell>{e.last_name}</TableCell>
                                         <TableCell>{e.email ?? "—"}</TableCell>
@@ -1176,7 +1187,14 @@ class ClientCompanyDetailPageInner extends Component<
                                 </TableRow>
                             ) : (
                                 equipment.map((eq) => (
-                                    <TableRow key={eq.id}>
+                                    <TableRow
+                                        key={eq.id}
+                                        hover
+                                        sx={{ cursor: "pointer" }}
+                                        onClick={() =>
+                                            navigate(`/equipment/${eq.id}`)
+                                        }
+                                    >
                                         <TableCell>{eq.name}</TableCell>
                                         <TableCell>
                                             {eq.category ?? "—"}
@@ -1191,9 +1209,33 @@ class ClientCompanyDetailPageInner extends Component<
                     </Table>
                 </Paper>
 
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-                    Aktivni procesi
-                </Typography>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mt: 2,
+                    }}
+                >
+                    <Typography variant="subtitle1" fontWeight={600}>
+                        Aktivni procesi
+                    </Typography>
+                    <PermissionGate permission="processes.add_processbinding">
+                        <Button
+                            size="small"
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    bindingDialogOpen: true,
+                                }))
+                            }
+                        >
+                            Dodaj proces
+                        </Button>
+                    </PermissionGate>
+                </Box>
                 <Paper sx={{ overflow: "auto" }}>
                     <Table size="small">
                         <TableHead>
@@ -1601,6 +1643,20 @@ class ClientCompanyDetailPageInner extends Component<
                         </DialogActions>
                     </Dialog>
                 )}
+
+                <AddProcessBindingDialog
+                    open={this.state.bindingDialogOpen}
+                    onClose={() =>
+                        this.setState((prev) => ({
+                            ...prev,
+                            bindingDialogOpen: false,
+                        }))
+                    }
+                    onSuccess={() => this.loadExtra(Number(this.props.id))}
+                    subjectKind="CLIENT_COMPANY"
+                    subjectLabel={item.name}
+                    clientCompanyId={item.id}
+                />
             </Box>
         );
     }

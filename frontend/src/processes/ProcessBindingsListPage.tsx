@@ -21,8 +21,7 @@ import {
     MenuItem,
     TextField,
     CircularProgress,
-    Alert,
-    Tooltip,
+    Alert
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
@@ -130,14 +129,15 @@ class ProcessBindingsListPageInner extends Component<
 
     openAdd = (): void => {
         const types = this.props.processTypes;
+        const firstType = types[0];
         this.setState((prev) => ({
             ...prev,
             dialogOpen: true,
-            new_subject_kind: "EMPLOYEE",
+            new_subject_kind: firstType?.subject_kind ?? "EMPLOYEE",
             new_employee: "",
             new_equipment: "",
             new_client_company: "",
-            new_process_type: types[0] ? String(types[0].id) : "",
+            new_process_type: firstType ? String(firstType.id) : "",
             new_period: "",
             new_next_run_at: "",
         }));
@@ -385,37 +385,27 @@ class ProcessBindingsListPageInner extends Component<
                             <Select
                                 value={new_process_type}
                                 label="Vrsta obaveze"
-                                onChange={(e) =>
+                                onChange={(e) => {
+                                    const selectedType = types.find(
+                                        (t) => String(t.id) === e.target.value,
+                                    );
                                     this.setState((prev) => ({
                                         ...prev,
                                         new_process_type: e.target.value,
-                                    }))
-                                }
+                                        new_subject_kind:
+                                            selectedType?.subject_kind ??
+                                            prev.new_subject_kind,
+                                        new_employee: "",
+                                        new_equipment: "",
+                                        new_client_company: "",
+                                    }));
+                                }}
                             >
                                 {types.map((t) => (
                                     <MenuItem key={t.id} value={String(t.id)}>
                                         {t.name}
                                     </MenuItem>
                                 ))}
-                            </Select>
-                        </FormControl>
-                        <FormControl fullWidth margin="dense">
-                            <InputLabel>Subjekt</InputLabel>
-                            <Select
-                                value={new_subject_kind}
-                                label="Subjekt"
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        new_subject_kind: e.target.value,
-                                    }))
-                                }
-                            >
-                                <MenuItem value="EMPLOYEE">Zaposleni</MenuItem>
-                                <MenuItem value="EQUIPMENT">Oprema</MenuItem>
-                                <MenuItem value="CLIENT_COMPANY">
-                                    Firma
-                                </MenuItem>
                             </Select>
                         </FormControl>
                         {new_subject_kind === "EMPLOYEE" && (
@@ -490,35 +480,49 @@ class ProcessBindingsListPageInner extends Component<
                                 </Select>
                             </FormControl>
                         )}
-                        <Tooltip title="Ostavi prazno da koristi vrednost iz vrste obaveze.">
-                            <TextField
-                                margin="dense"
-                                label="Period (meseci)"
-                                type="number"
-                                fullWidth
-                                value={new_period}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        new_period: e.target.value,
-                                    }))
-                                }
-                            />
-                        </Tooltip>
-                        <Tooltip title="Datum kada je zakazan sledeći pregled / obaveza.">
-                            <Box>
-                                <DateTextFieldWithPicker
-                                    label="Sledeći termin (dd.mm.yyyy)"
-                                    value={new_next_run_at}
-                                    onChange={(v) =>
+                        {(() => {
+                            const selectedType = types.find(
+                                (t) => String(t.id) === new_process_type,
+                            );
+                            const defaultPeriod =
+                                selectedType?.default_period_months;
+                            return (
+                                <TextField
+                                    margin="dense"
+                                    label="Period (meseci)"
+                                    type="number"
+                                    fullWidth
+                                    value={new_period}
+                                    placeholder={
+                                        defaultPeriod != null
+                                            ? String(defaultPeriod)
+                                            : undefined
+                                    }
+                                    helperText={
+                                        defaultPeriod != null
+                                            ? `Podrazumevano iz vrste obaveze: ${defaultPeriod} mes. — ostavi prazno da koristiš tu vrednost`
+                                            : "Ostavi prazno za jednokratno"
+                                    }
+                                    onChange={(e) =>
                                         this.setState((prev) => ({
                                             ...prev,
-                                            new_next_run_at: v,
+                                            new_period: e.target.value,
                                         }))
                                     }
                                 />
-                            </Box>
-                        </Tooltip>
+                            );
+                        })()}
+                        <DateTextFieldWithPicker
+                            label="Sledeći termin (dd.mm.yyyy)"
+                            value={new_next_run_at}
+                            helperText="Datum zakazanog pregleda / obaveze"
+                            onChange={(v) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    new_next_run_at: v,
+                                }))
+                            }
+                        />
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Odustani</Button>

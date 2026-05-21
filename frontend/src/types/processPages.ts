@@ -179,6 +179,8 @@ export type EquipmentDetailPageProps = EquipmentDetailPageDispatchProps &
 
 export interface EquipmentDetailPageState {
     item: EquipmentItem | null;
+    bindings: ProcessBinding[];
+    runs: ProcessRun[];
     loading: boolean;
     error: string | null;
 }
@@ -271,6 +273,7 @@ export interface ClientCompanyDetailPageState {
     eq_notes: string;
     savingEquipment: boolean;
     equipmentError: string | null;
+    bindingDialogOpen: boolean;
 }
 
 export interface ClientCompaniesEmployeesListPageStateProps {
@@ -326,7 +329,43 @@ export type ClientCompanyEmployeesDetailPageProps =
 
 export interface ClientCompanyEmployeesDetailPageState {
     item: Employee | null;
+    bindings: ProcessBinding[];
+    runs: ProcessRun[];
     loading: boolean;
     error: string | null;
+}
+
+export interface AddProcessBindingDialogProps {
+    open: boolean;
+    onClose: () => void;
+    onSuccess: () => void;
+    subjectKind: ProcessType["subject_kind"];
+    subjectLabel: string;
+    clientCompanyId?: number;
+    employeeId?: number;
+    equipmentItemId?: number;
+}
+
+export interface AddProcessBindingDialogState {
+    processTypes: ProcessType[];
+    processTypeId: string;
+    period: string;
+    nextRunAt: string;
+    saving: boolean;
+}
+
+export interface EntityProcessBindingsPanelProps {
+    subjectKind: ProcessType["subject_kind"];
+    subjectLabel: string;
+    clientCompanyId?: number;
+    employeeId?: number;
+    equipmentItemId?: number;
+    bindings: ProcessBinding[];
+    runs: ProcessRun[];
+    onRefresh: () => void;
+}
+
+export interface EntityProcessBindingsPanelState {
+    dialogOpen: boolean;
 }
 

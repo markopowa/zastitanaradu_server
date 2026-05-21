@@ -80,7 +80,6 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Email: `markovuckovic1992@gmail.com`
 - [ ] Website: `https://test-firma-07.rs`
 - [ ] Napomene: `Test unos — slobodno obrisati`
-- [ ] (Opciono) Otpremi logo
 - [ ] Sačuvaj
 
 **Provera:** Firma se otvori — vidiš stranicu sa njenim imenom.
@@ -115,7 +114,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Naziv radnog mesta sa povećanim rizikom: `Električar na visini`
 - [ ] Sačuvaj
 
-**Provera:** Vrati se na stranicu firme — vidiš Marka Petrovića u listi zaposlenih.
+**Provera:** Vrati se na stranicu firme — vidiš Marka Petrovića u listi zaposlenih. Klik na red vodi na detalj zaposlenog.
 
 ---
 
@@ -147,24 +146,9 @@ Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje)
 
 ---
 
-## 5. Napravi vrste obaveza
+## 5. Napravi vrstu obaveze
 
-> Realan tok za novog zaposlenog: **jednom** radi prethodni pregled, a zatim se **periodično** ponavlja svake 12 meseci. Treba nam po jedna vrsta za svaki.
-
-### 5a. Prethodni lekarski pregled
-
-- [ ] **Procesi → Vrste obaveza → Dodaj**
-- [ ] Naziv: `Prethodni lekarski pregled`
-- [ ] Subjekt: `Zaposleni`
-- [ ] Period (meseci): *(prazno — jednokratno)*
-- [ ] Rok unapred (dana): `30`
-- [ ] Uključi u evidenciju lekarskih pregleda: **DA** ✅
-- [ ] Aktivan: **DA** ✅
-- [ ] Sačuvaj
-
-### 5b. Periodični lekarski pregled
-
-- [ ] **Procesi → Vrste obaveza → Dodaj**
+- [ ] **Procesi i Obaveze → Vrste obaveza → Dodaj**
 - [ ] Naziv: `Periodični lekarski pregled`
 - [ ] Subjekt: `Zaposleni`
 - [ ] Period (meseci): `12`
@@ -172,53 +156,21 @@ Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje)
 
   > ⚠️ "Rok unapred = 30" znači da sistem šalje uput **30 dana PRE** datuma pregleda.
 
-- [ ] Uključi u evidenciju lekarskih pregleda: **DA** ✅
+- [ ] Lekarska evidencija: **DA** ✅
 - [ ] Aktivan: **DA** ✅
 - [ ] Sačuvaj
 
-**Provera:** U listi vrste obaveza postoje i Prethodni i Periodični, svaki sa automatski generisanim kodom.
+**Provera:** Vrsta obaveze `Periodični lekarski pregled` se vidi u listi sa automatski generisanim kodom.
 
 ---
 
 ## 6. Napravi šablone procesa
 
-Potrebna su **tri šablona** koja zajedno pokrivaju ceo tok:
+Potrebna su **dva šablona**:
 
-### 6a. Prethodni — pošalji uput na dan termina
+### 6a. Pošalji uput na dan termina
 
-- [ ] **Procesi → Šablon procesa → Dodaj**
-- [ ] Vrsta obaveze: `Prethodni lekarski pregled`
-- [ ] Okidač: **Na zakazani datum**
-- [ ] Generiši dokument: **DA** ✅
-- [ ] Šablon dokumenta: `Uput - periodični lekarski pregled` *(ili poseban šablon za prethodni ako postoji)*
-- [ ] Kategorija dokumenta: `Lekarski pregledi`
-- [ ] Pošalji mejl: **DA** ✅
-- [ ] Primalac: **Custom email** → `markovuckovic1992@gmail.com`
-- [ ] Naslov: `Uput za pregled - {{ process_type_name }}`
-- [ ] Telo:
-```
-Poštovani,
-
-U prilogu je uput za {{ process_type_name }}.
-Datum: {{ scheduled_for }}.
-```
-- [ ] Sačuvaj
-
-### 6b. Prethodni → Periodični (chaining)
-
-Po završetku prethodnog pregleda sistem automatski kreira raspored za periodični.
-
-- [ ] **Procesi → Šablon procesa → Dodaj**
-- [ ] Vrsta obaveze: `Prethodni lekarski pregled`
-- [ ] Okidač: **Kada se završi pregled**
-- [ ] Generiši dokument: **NE**
-- [ ] Pošalji mejl: **NE**
-- [ ] Sledeća vrsta obaveze: `Periodični lekarski pregled`
-- [ ] Sačuvaj
-
-### 6c. Periodični — pošalji uput na dan termina
-
-- [ ] **Procesi → Šablon procesa → Dodaj**
+- [ ] **Procesi i Obaveze → Šablon procesa → Dodaj**
 - [ ] Vrsta obaveze: `Periodični lekarski pregled`
 - [ ] Okidač: **Na zakazani datum**
 - [ ] Generiši dokument: **DA** ✅
@@ -236,17 +188,33 @@ Datum: {{ scheduled_for }}.
 ```
 - [ ] Sačuvaj
 
-**Provera:** U listi šablona postoje tačno 3 šablona — dva za Prethodni (Na zakazani datum + Kada se završi), jedan za Periodični (Na zakazani datum).
+### 6b. Po završetku — zakaži sledeći pregled
+
+Po završetku pregleda sistem automatski kreira raspored za sledeći ciklus.
+
+- [ ] **Procesi i Obaveze → Šablon procesa → Dodaj**
+- [ ] Vrsta obaveze: `Periodični lekarski pregled`
+- [ ] Okidač: **Kada se završi pregled**
+- [ ] Generiši dokument: **NE**
+- [ ] Pošalji mejl: **NE**
+- [ ] Sledeća vrsta obaveze: `Periodični lekarski pregled`
+- [ ] Sačuvaj
+
+**Provera:** U listi šablona postoje tačno 2 šablona za Periodični — Na zakazani datum + Kada se završi.
 
 ---
 
-## 7. Napravi raspored za Marka (Prethodni pregled)
+## 7. Napravi raspored za Marka
 
-Novi zaposleni uvek počinje sa prethodnim pregledom. Raspored se pravi ručno samo jednom — za prethodni. Periodični se posle kreira automatski.
+Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po završetku pregleda.
 
-- [ ] **Procesi** (stavka „Procesi“ u meniju) → **Dodaj**
-- [ ] Vrsta obaveze: `Prethodni lekarski pregled`
+- [ ] **Procesi i Obaveze → Procesi** → **Dodaj**
+- [ ] Vrsta obaveze: `Periodični lekarski pregled`
+
+  > Subjekt tip (Zaposleni) se automatski preuzima iz vrste obaveze — polje nije vidljivo.
+
 - [ ] Zaposleni: `Marko Petrović`
+- [ ] Period (meseci): *(ostavi prazno — helper text pokazuje podrazumevano: 12 mes.)*
 - [ ] Sledeći termin: **današnji datum + 30 dana**
 
   > Rok unapred = 30 dana → `fire_date = termin - 30 = danas` → `run_due_processes` okida odmah.
@@ -254,7 +222,7 @@ Novi zaposleni uvek počinje sa prethodnim pregledom. Raspored se pravi ručno s
 - [ ] Aktivan: **DA** ✅
 - [ ] Sačuvaj
 
-**Provera:** Raspored za Marka — Prethodni lekarski pregled, termin za 30 dana.
+**Provera:** Raspored za Marka — Periodični lekarski pregled, termin za 30 dana.
 
 ---
 
@@ -274,14 +242,14 @@ Novi zaposleni uvek počinje sa prethodnim pregledom. Raspored se pravi ručno s
 
 **Provera:**
 - [ ] Snackbar **"Uput je poslat na mejl"** (zelen) ili "Uput je generisan, ali mejl nije poslat" (žut)
-- [ ] Stranica se prebaci na **Procesi → Aktivnosti**
+- [ ] Stranica se prebaci na **Procesi i Obaveze → Aktivnosti**
 - [ ] Nova aktivnost za Marka u statusu **"Poslat"** (ne "Na čekanju") — sa današnjim datumom
 - [ ] Otvori aktivnost → tab **Dokumenti** → uput je prikačen
 - [ ] (Ako je mejl prošao) proveri inbox `markovuckovic1992@gmail.com` — mejl je stigao **sa uputom kao prilogom**
 
 ### Način B — sa liste Procesi
 
-- [ ] **Procesi** (stavka „Procesi“ u meniju)
+- [ ] **Procesi i Obaveze → Procesi**
 - [ ] U redu Markovog rasporeda klikni **"Pošalji sad"**
 
 **Provera:** isto kao Način A — nova aktivnost u statusu "Poslat", dokument prikačen, mejl sa prilogom.
@@ -318,7 +286,7 @@ Okida ako: fire_date <= danas
 Primer: `next_run_at = danas + 30`, `lead_time_days = 30` → `fire_date = danas` → **okida**.
 
 **Provera:**
-- [ ] **Procesi → Aktivnosti** — postoji nova aktivnost u statusu **"Na čekanju"** za Marka
+- [ ] **Procesi i Obaveze → Aktivnosti** — postoji nova aktivnost u statusu **"Na čekanju"** za Marka
 - [ ] `scheduled_for` u aktivnosti = postavljeni termin (danas + 30), ne danas
 - [ ] Otvori aktivnost — u snapshot-u vidiš `Marko Petrović`, JMBG `0102990710123`, radno mesto `Električar na visini`
 - [ ] Ako pokreneš komandu ponovo isti dan — **nova aktivnost se NE pravi** (postoji već PENDING za Marka)
@@ -329,7 +297,7 @@ Primer: `next_run_at = danas + 30`, `lead_time_days = 30` → `fire_date = danas
 
 > 🎯 **Ovo simulira realnu situaciju:** korisnik ulazi u aktivnost, skida popunjen uput i daje ga zaposlenom da odnese u ustanovu.
 
-- [ ] **Procesi → Aktivnosti** — pronađi aktivnost za Marka u statusu "Na čekanju"
+- [ ] **Procesi i Obaveze → Aktivnosti** — pronađi aktivnost za Marka u statusu "Na čekanju"
 - [ ] Klikni red da otvoriš aktivnost
 - [ ] Klikni tab **"Dokumenti"**
 - [ ] Postoji dokument naziva `Uput - periodični lekarski pregled – Run #1`
@@ -344,7 +312,7 @@ Primer: `next_run_at = danas + 30`, `lead_time_days = 30` → `fire_date = danas
   - [ ] Naziv Akta o proceni rizika: naziv fajla koji si otpremio (bez `.pdf`)
   - [ ] Datum donošenja Akta: `15.01.2025.`
   - [ ] Broj uputa: `UP-0001` (ili sledeći u nizu)
-  - [ ] Datum prethodnog pregleda: **prazan** (jer je prvi pregled — očekivano)
+  - [ ] Datum prethodnog pregleda: **prazan** (prvi pregled — očekivano)
 - [ ] **Test štampe:** Ctrl+P (ili File → Print) — pregled za štampu treba da izgleda kao popunjen uput, ne kao šablon sa praznim poljima
 
 **Šta ovaj korak dokazuje:** flow generisanja uputa za potpis i štampu radi end-to-end. Ovo je dokument koji bi korisnik dao zaposlenom u realnoj upotrebi.
@@ -380,40 +348,25 @@ python manage.py send_test_email markovuckovic1992@gmail.com
 
 ---
 
-## 11. Završi prethodni pregled
+## 11. Završi pregled i proveri ciklus
 
-- [ ] **Procesi → Aktivnosti** → otvori Markovu aktivnost za **Prethodni lekarski pregled** → klikni **"Završi"**
-- [ ] Datum izvršenog pregleda: **današnji datum**
-- [ ] Važi do: **današnji datum + 12 meseci** (npr. `11.05.2027`)
+- [ ] **Procesi i Obaveze → Aktivnosti** → otvori Markovu aktivnost → klikni **"Završi"**
+- [ ] Datum pregleda: **današnji datum**
+- [ ] Važi do: **današnji datum + 12 meseci** (npr. `21.05.2027`)
 - [ ] Broj izveštaja: `IZV-2026-001`
 - [ ] Ocena sposobnosti: `Sposoban`
 - [ ] Preduzete mere: `/`
 - [ ] Potvrdi
 
 **Provera:**
-- [ ] Aktivnost Prethodnog je u statusu **"Završeno"**
-- [ ] Chaining je proradio — **Procesi → Rasporedi** → postoji novi raspored za Marka za `Periodični lekarski pregled` (automatski kreiran)
-- [ ] Termin Periodičnog = `valid_until + 12 * 30 dana`
+- [ ] Aktivnost je u statusu **"Završeno"**
+- [ ] Chaining je proradio — **Procesi i Obaveze → Procesi** → postoji novi raspored za Marka za `Periodični lekarski pregled` (automatski kreiran)
+- [ ] Termin sledećeg = `valid_until + 12 * 30 dana`
+- [ ] Raspored nikad ne treba brisati niti ponovo kreirati — ponavlja se sam svake godine
 
 ---
 
-## 12. Proveri ciklus Periodičnog
-
-Periodični se od sad sam ponavlja na svakih 12 meseci — nema potrebe za ručnim pravljenjem rasporeda.
-
-- [ ] **Procesi → Rasporedi** → raspored Periodičnog za Marka postoji, aktivan
-- [ ] Pokreni `run_due_processes` kad dođe termin (ili postavi termin na `danas + 30` za brzi test)
-- [ ] Nova aktivnost za Periodični se kreira — uput se generiše i šalje
-- [ ] Završi Periodični → **`next_run_at` se automatski pomera** za sledeći ciklus:
-  ```
-  next_run_at = valid_until + 12 * 30 dana
-  fire_date   = next_run_at - 30 dana
-  ```
-- [ ] Raspored nikad ne treba brisati niti ponovo kreirati — ponavlja se sam
-
----
-
-## 13. Generiši Obrazac 1 (evidencija)
+## 12. Generiši medicinsku evidenciju
 
 - [ ] **Klijenti** → otvori `Test firma 07 d.o.o.`
 - [ ] Klikni **"Generiši Obrazac 1"**
@@ -440,5 +393,5 @@ Otvori fajl i proveri:
 | Nije se generisao dokument | Ulogovan si kao superuser? Postoji li kategorija `Lekarski pregledi`? Vidi `backend/logs/django.log` |
 | Mejl nije stigao | Pokreni `python manage.py send_test_email tvoj@mejl.com`. Ako test mejl ne stiže — SES nije podešen. Ako stiže — vidi `django.log` |
 | `run_due_processes` ne pravi aktivnost | Da li je `Sledeći termin` u rasporedu **danas ili u prošlosti**? Da li je raspored aktivan? Da li već postoji "Na čekanju" za Marka? |
-| Chaining ne radi | Ima li šablon procesa sa okidačem **"Pri završetku"** i popunjenom **Sledeća vrsta obaveze**? |
-| Obrazac 1 je prazan | Vrsta obaveze ima **"Uključi u evidenciju" = DA**? Pregled je u statusu **Završeno** (ne "Na čekanju")? |
+| Chaining ne radi | Ima li šablon procesa sa okidačem **"Kada se završi pregled"** i popunjenom **Sledeća vrsta obaveze = Periodični lekarski pregled**? |
+| Medicinska evidencija je prazna | Vrsta obaveze ima **"Lekarska evidencija" = DA**? Pregled je u statusu **Završeno** (ne "Na čekanju")? |

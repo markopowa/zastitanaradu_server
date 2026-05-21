@@ -11,7 +11,12 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
-import { getEmployee } from "../api/processes";
+import {
+    getEmployee,
+    getProcessBindings,
+    getProcessRuns,
+} from "../api/processes";
+import { EntityProcessBindingsPanel } from "../components/EntityProcessBindingsPanel";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
 import { formatDateDisplay } from "../utils/date";
@@ -27,8 +32,19 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
 > {
     state: ClientCompanyEmployeesDetailPageState = {
         item: null,
+        bindings: [],
+        runs: [],
         loading: true,
         error: null,
+    };
+
+    loadProcessData = (id: number): void => {
+        Promise.all([
+            getProcessBindings({ employee_id: id }),
+            getProcessRuns({ employee_id: id }),
+        ]).then(([bindings, runs]) => {
+            this.setState((prev) => ({ ...prev, bindings, runs }));
+        });
     };
 
     loadById = (id: number): void => {
@@ -48,6 +64,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                     error: "Greška pri učitavanju.",
                 })),
             );
+        this.loadProcessData(id);
     };
 
     private applyRouteId(mode: "mount" | "update"): void {
@@ -88,7 +105,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
     }
 
     render() {
-        const { item, loading, error } = this.state;
+        const { item, bindings, runs, loading, error } = this.state;
         const { navigate } = this.props;
 
         if (loading) {
@@ -114,6 +131,8 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
             );
         }
 
+        const employeeName = `${item.first_name} ${item.last_name}`.trim();
+
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Button
@@ -125,7 +144,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                 </Button>
                 <Paper sx={{ p: 3 }}>
                     <Typography variant="h6" gutterBottom>
-                        {item.first_name} {item.last_name}
+                        {employeeName}
                     </Typography>
                     <Box
                         component="dl"
@@ -161,6 +180,15 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                         <dd>{item.high_risk_position_name ?? "—"}</dd>
                     </Box>
                 </Paper>
+
+                <EntityProcessBindingsPanel
+                    subjectKind="EMPLOYEE"
+                    subjectLabel={employeeName || `Zaposleni #${item.id}`}
+                    employeeId={item.id}
+                    bindings={bindings}
+                    runs={runs}
+                    onRefresh={() => this.loadProcessData(item.id)}
+                />
             </Box>
         );
     }
