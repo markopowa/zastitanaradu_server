@@ -40,10 +40,13 @@ import {
 } from "../api/processes";
 import { setLastPath } from "../store/locationSlice";
 import {
+    addMonths,
+    DateToString,
     displayDateToIso,
     formatDateDisplay,
     formatDateTimeDisplay,
-    StringToDate,
+    todayLocalDate,
+    validUntilDateError,
 } from "../utils/date";
 
 import type { AppDispatch } from "../store";
@@ -697,9 +700,17 @@ class ProcessRunDetailPageInner extends Component<
                                     variant="contained"
                                     disableElevation
                                     startIcon={<CheckCircleIcon />}
-                                    onClick={() =>
-                                        this.setState({ showCompleteForm: true })
-                                    }
+                                    onClick={() => {
+                                        const today = todayLocalDate();
+                                        this.setState({
+                                            showCompleteForm: true,
+                                            complete_performed_at:
+                                                DateToString(today),
+                                            complete_valid_until: DateToString(
+                                                addMonths(today, 12),
+                                            ),
+                                        });
+                                    }}
                                     sx={BTN_SX}
                                 >
                                     Završi aktivnost
@@ -711,6 +722,15 @@ class ProcessRunDetailPageInner extends Component<
                                 <DateTextFieldWithPicker
                                     label="Važi do (dd.mm.yyyy)"
                                     value={complete_valid_until}
+                                    allowToday={false}
+                                    error={
+                                        validUntilDateError(
+                                            complete_valid_until,
+                                        ) != null
+                                    }
+                                    helperText={validUntilDateError(
+                                        complete_valid_until,
+                                    )}
                                     onChange={(v) =>
                                         this.setState({ complete_valid_until: v })
                                     }
@@ -718,6 +738,7 @@ class ProcessRunDetailPageInner extends Component<
                                 <DateTextFieldWithPicker
                                     label="Izvršeno (dd.mm.yyyy)"
                                     value={complete_performed_at}
+                                    allowPast
                                     onChange={(v) =>
                                         this.setState({ complete_performed_at: v })
                                     }
@@ -774,8 +795,9 @@ class ProcessRunDetailPageInner extends Component<
                                         variant="contained"
                                         disableElevation
                                         disabled={
-                                            !complete_valid_until.trim() ||
-                                            !StringToDate(complete_valid_until) ||
+                                            !!validUntilDateError(
+                                                complete_valid_until,
+                                            ) ||
                                             completing
                                         }
                                         onClick={this.handleComplete}

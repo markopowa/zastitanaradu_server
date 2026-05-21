@@ -547,14 +547,14 @@ def _send_email_for_template(
     generated_document: DocumentFile | None = None,
     *,
     fail_silently: bool = True,
-) -> None:
+) -> bool:
     recipients = _resolve_email_recipients(template, binding)
     if not recipients:
         logger.warning(
             "No email recipient for ProcessTemplate id=%s",
             template.id,
         )
-        return
+        return False
 
     subject = template.email_subject_template or "Process notification"
     body = template.email_body_template or ""
@@ -585,6 +585,8 @@ def _send_email_for_template(
             )
             if not fail_silently:
                 raise RuntimeError("Email sender returned False")
+            return False
+        return True
     except Exception as e:
         logger.exception(
             "Failed to send email for ProcessTemplate id=%s: %s",
@@ -593,6 +595,7 @@ def _send_email_for_template(
         )
         if not fail_silently:
             raise
+        return False
 
 
 def execute_template_actions(
@@ -601,7 +604,7 @@ def execute_template_actions(
     binding: ProcessBinding,
     snapshot: dict,
     template: ProcessTemplate,
-) -> DocumentFile | None:
+) -> tuple[DocumentFile | None, bool, str]:
     logger.info(
         "%s trigger: run_id=%s process_type=%s template_id=%s template=%s",
         trigger,
@@ -626,9 +629,11 @@ def execute_template_actions(
                 e,
             )
 
+    email_sent = False
+    email_error = ""
     if template.send_email:
         try:
-            _send_email_for_template(
+            email_sent = _send_email_for_template(
                 template,
                 binding,
                 snapshot,
@@ -636,6 +641,7 @@ def execute_template_actions(
                 generated_document=generated_document,
             )
         except Exception as e:
+            email_error = str(e)
             logger.exception(
                 "Failed to send email in %s for run id=%s template id=%s: %s",
                 trigger,
@@ -643,4 +649,4 @@ def execute_template_actions(
                 template.id,
                 e,
             )
-    return generated_document
+    return generated_document, email_sent, email_error

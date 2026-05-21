@@ -1064,6 +1064,7 @@ class ClientCompanyDetailPageInner extends Component<
                                 <DateTextFieldWithPicker
                                     label="Datum donošenja (dd.mm.yyyy)"
                                     value={riskActDateValue}
+                                    allowPast
                                     onChange={(v) =>
                                         this.setState((prev) => ({
                                             ...prev,
@@ -1370,7 +1371,6 @@ class ClientCompanyDetailPageInner extends Component<
                                                             value={isoDateToFormDisplay(
                                                                 b.next_run_at,
                                                             )}
-                                                            minToday
                                                             helperText={
                                                                 this.state
                                                                     .savingStartDateBindingId ===
@@ -1545,6 +1545,7 @@ class ClientCompanyDetailPageInner extends Component<
                             <DateTextFieldWithPicker
                                 label="Datum rođenja (dd.mm.yyyy)"
                                 value={emp_date_of_birth}
+                                allowPast
                                 onChange={(v) =>
                                     this.setState((prev) => ({
                                         ...prev,

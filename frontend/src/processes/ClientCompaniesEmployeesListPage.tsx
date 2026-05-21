@@ -525,6 +525,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                 <DateTextFieldWithPicker
                                     label="Datum rođenja (dd.mm.yyyy)"
                                     value={date_of_birth}
+                                    allowPast
                                     onChange={(v) =>
                                         this.setState((prev) => ({
                                             ...prev,

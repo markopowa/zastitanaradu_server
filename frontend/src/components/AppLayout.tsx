@@ -67,7 +67,7 @@ interface NavItem {
 const STATIC_NAV_ITEMS: NavItem[] = [
     {
         path: "/dashboard",
-        label: "Dashboard",
+        label: "Kontrolna tabla",
         icon: <DashboardIcon />,
         group: "overview",
         permissionPrefix: "processes.view_processrun",

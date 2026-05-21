@@ -86,10 +86,22 @@ export const todayLocalDate = (): Date => {
     return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 };
 
+export const addMonths = (value: Date, months: number): Date => {
+    const d = new Date(value.getFullYear(), value.getMonth(), value.getDate());
+    d.setMonth(d.getMonth() + months);
+    return d;
+};
+
 export const isDateTodayOrFuture = (value: string): boolean => {
     const date = StringToDate(value.trim());
     if (!date) return false;
     return date.getTime() >= todayLocalDate().getTime();
+};
+
+export const isDateStrictlyFuture = (value: string): boolean => {
+    const date = StringToDate(value.trim());
+    if (!date) return false;
+    return date.getTime() > todayLocalDate().getTime();
 };
 
 export const bindingTermDateError = (value: string): string | undefined => {
@@ -98,6 +110,16 @@ export const bindingTermDateError = (value: string): string | undefined => {
     if (!StringToDate(trimmed)) return "Unesi datum kao dd.mm.yyyy.";
     if (!isDateTodayOrFuture(trimmed)) {
         return "Termin ne može biti u prošlosti.";
+    }
+    return undefined;
+};
+
+export const validUntilDateError = (value: string): string | undefined => {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    if (!StringToDate(trimmed)) return "Unesi datum kao dd.mm.yyyy.";
+    if (!isDateStrictlyFuture(trimmed)) {
+        return "Datum mora biti u budućnosti.";
     }
     return undefined;
 };

@@ -179,7 +179,6 @@ export class EntityProcessBindingsPanel extends Component<
                                                         value={isoDateToFormDisplay(
                                                             b.next_run_at,
                                                         )}
-                                                        minToday
                                                         helperText={
                                                             savingStartDateBindingId ===
                                                             b.id

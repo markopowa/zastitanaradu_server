@@ -38,7 +38,7 @@ def execute_templates_for_trigger(
     binding = run.process_binding
     snapshot = run.subject_snapshot or {}
     for template in _templates_for_trigger(run.process_type_id, trigger_constant):
-        generated_document = execute_template_actions(
+        generated_document, email_sent, email_error = execute_template_actions(
             trigger_label, run, binding, snapshot, template,
         )
         ProcessTriggerRun.objects.create(
@@ -47,6 +47,8 @@ def execute_templates_for_trigger(
             trigger=trigger_constant,
             executed_at=executed_at,
             executed_by=executed_by,
+            email_sent=email_sent,
+            email_error=email_error,
             document_file=generated_document,
         )
 

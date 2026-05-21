@@ -423,6 +423,7 @@ class DocumentsListPage extends Component<
                         <DateTextFieldWithPicker
                             label="Važi od (datum)"
                             value={valid_from}
+                            allowPast
                             onChange={(newValue) =>
                                 this.setState((prev) => ({
                                     ...prev,

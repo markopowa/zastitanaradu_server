@@ -25,7 +25,7 @@ const pathToTitle: Record<string, string> = {
     [paths.documents]: "Dokumenti",
     [paths.documentCategories]: "Kategorije dokumenata",
     [paths.documentTemplates]: "Šabloni dokumenata",
-    [paths.dashboard]: "Dashboard",
+    [paths.dashboard]: "Kontrolna tabla",
     [paths.clientCompanies]: "Klijenti",
     [paths.equipment]: "Oprema",
     [paths.processTypes]: "Vrste obaveza",

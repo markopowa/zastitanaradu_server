@@ -18,6 +18,14 @@ type ListResponse<T> = T[] | { results?: T[] };
 
 export interface ActivityLogParams {
     event_type?: ActivityLogEventType;
+    date_from?: string;
+    date_to?: string;
+    user_id?: number | "system";
+    username?: string;
+    process_run_id?: number;
+    process_type_id?: number;
+    client_company_id?: number;
+    q?: string;
 }
 
 export async function getActivityLog(
@@ -25,6 +33,25 @@ export async function getActivityLog(
 ): Promise<ActivityLog[]> {
     const search = new URLSearchParams();
     if (params.event_type) search.set("event_type", params.event_type);
+    if (params.date_from) search.set("date_from", params.date_from);
+    if (params.date_to) search.set("date_to", params.date_to);
+    if (params.user_id != null) {
+        search.set(
+            "user_id",
+            params.user_id === "system" ? "system" : String(params.user_id),
+        );
+    }
+    if (params.username) search.set("username", params.username);
+    if (params.process_run_id != null) {
+        search.set("process_run_id", String(params.process_run_id));
+    }
+    if (params.process_type_id != null) {
+        search.set("process_type_id", String(params.process_type_id));
+    }
+    if (params.client_company_id != null) {
+        search.set("client_company_id", String(params.client_company_id));
+    }
+    if (params.q) search.set("q", params.q);
     const qs = search.toString();
     const url = qs
         ? `/api/processes/dashboard/activity-log?${qs}`

@@ -79,7 +79,7 @@ def send_now_for_binding(binding, *, user=None):
         email_error = ""
         if template.send_email:
             try:
-                _send_email_for_template(
+                email_sent = _send_email_for_template(
                     template,
                     binding,
                     snapshot,
@@ -87,7 +87,6 @@ def send_now_for_binding(binding, *, user=None):
                     generated_document=generated_document,
                     fail_silently=False,
                 )
-                email_sent = True
             except Exception as exc:
                 email_error = str(exc)
                 logger.exception(

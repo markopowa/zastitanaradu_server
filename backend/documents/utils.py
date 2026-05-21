@@ -68,6 +68,38 @@ def _path_str(path: Path) -> str:
     return unicodedata.normalize("NFC", str(path))
 
 
+PDF_UNICODE_FONT_NAME = "ProcessDocUnicode"
+
+
+def _resolve_unicode_font_path() -> str:
+    bundled = Path(__file__).resolve().parent / "fonts" / "DejaVuSans.ttf"
+    candidates = (
+        bundled,
+        Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"),
+        Path("/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"),
+        Path("C:/Windows/Fonts/arial.ttf"),
+        Path("C:/Windows/Fonts/segoeui.ttf"),
+    )
+    for candidate in candidates:
+        if candidate.is_file():
+            return _path_str(candidate)
+    raise RuntimeError(
+        "No Unicode font found for PDF generation. "
+        "Install fonts-dejavu-core or add DejaVuSans.ttf to documents/fonts/."
+    )
+
+
+def _ensure_page_unicode_font(page: fitz.Page, pages_with_font: set[int]) -> None:
+    page_number = page.number
+    if page_number in pages_with_font:
+        return
+    page.insert_font(
+        fontname=PDF_UNICODE_FONT_NAME,
+        fontfile=_resolve_unicode_font_path(),
+    )
+    pages_with_font.add(page_number)
+
+
 def _resolve_file_path(path: Path) -> Path:
     if path.exists():
         return path
@@ -123,6 +155,7 @@ def fill_pdf_at_coordinates(
 ) -> bytes:
     pdf_path = convert_document_to_pdf(pdf_path)
     doc = fitz.open(_path_str(pdf_path))
+    pages_with_font: set[int] = set()
 
     for ph in placeholders:
         fixed_text = ph.get("fixedText") or ph.get("staticText")
@@ -140,6 +173,7 @@ def fill_pdf_at_coordinates(
         if page_num >= len(doc):
             continue
         page = doc[page_num]
+        _ensure_page_unicode_font(page, pages_with_font)
         rect = page.rect
 
         x_pct = float(ph.get("xPct", 0))
@@ -154,7 +188,7 @@ def fill_pdf_at_coordinates(
             point,
             value,
             fontsize=font_size,
-            fontname="helv",
+            fontname=PDF_UNICODE_FONT_NAME,
         )
 
     result = doc.tobytes()

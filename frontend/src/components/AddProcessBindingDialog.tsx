@@ -159,7 +159,6 @@ export class AddProcessBindingDialog extends Component<
                     <DateTextFieldWithPicker
                         label="Termin (dd.mm.yyyy)"
                         value={nextRunAt}
-                        minToday
                         error={termError != null}
                         helperText={
                             termError ??

@@ -443,7 +443,6 @@ class ProcessBindingsListPageInner extends Component<
                                                         value={isoDateToFormDisplay(
                                                             row.next_run_at,
                                                         )}
-                                                        minToday
                                                         helperText={
                                                             savingStartDateBindingId ===
                                                             row.id
@@ -635,7 +634,6 @@ class ProcessBindingsListPageInner extends Component<
                         <DateTextFieldWithPicker
                             label="Termin (dd.mm.yyyy)"
                             value={new_next_run_at}
-                            minToday
                             error={newTermError != null}
                             helperText={
                                 newTermError ??

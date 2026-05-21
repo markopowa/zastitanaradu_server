@@ -59,10 +59,87 @@ class ActivityLogView(ListAPIView):
     permission_classes = [permissions.IsAdminUser]
 
     def get_queryset(self):
-        qs = ActivityLog.objects.select_related("user", "process_run").all()
-        event_type = self.request.query_params.get("event_type")
+        qs = (
+            ActivityLog.objects.select_related(
+                "user",
+                "process_run",
+                "process_run__process_type",
+                "process_run__process_binding",
+                "process_binding",
+                "process_binding__process_type",
+            )
+            .order_by("-timestamp")
+        )
+        params = self.request.query_params
+
+        event_type = params.get("event_type")
         if event_type:
             qs = qs.filter(event_type=event_type)
+
+        date_from = params.get("date_from")
+        if date_from:
+            qs = qs.filter(timestamp__date__gte=date_from)
+
+        date_to = params.get("date_to")
+        if date_to:
+            qs = qs.filter(timestamp__date__lte=date_to)
+
+        user_id = params.get("user_id")
+        if user_id == "system":
+            qs = qs.filter(user__isnull=True)
+        elif user_id:
+            qs = qs.filter(user_id=user_id)
+
+        username = params.get("username", "").strip()
+        if username:
+            qs = qs.filter(user__username__icontains=username)
+
+        process_run_id = params.get("process_run_id")
+        if process_run_id:
+            qs = qs.filter(process_run_id=process_run_id)
+
+        process_type_id = params.get("process_type_id")
+        if process_type_id:
+            qs = qs.filter(
+                Q(process_run__process_type_id=process_type_id)
+                | Q(process_binding__process_type_id=process_type_id)
+            )
+
+        client_company_id = params.get("client_company_id")
+        if client_company_id:
+            qs = qs.filter(
+                Q(
+                    process_run__process_binding__employee__client_company_id=(
+                        client_company_id
+                    )
+                )
+                | Q(
+                    process_run__process_binding__equipment_item__client_company_id=(
+                        client_company_id
+                    )
+                )
+                | Q(
+                    process_run__process_binding__client_company_id=(
+                        client_company_id
+                    )
+                )
+                | Q(
+                    process_binding__employee__client_company_id=(
+                        client_company_id
+                    )
+                )
+                | Q(
+                    process_binding__equipment_item__client_company_id=(
+                        client_company_id
+                    )
+                )
+                | Q(process_binding__client_company_id=client_company_id)
+            )
+
+        search = params.get("q", "").strip()
+        if search:
+            qs = qs.filter(description__icontains=search)
+
         return qs[:500]
 
 

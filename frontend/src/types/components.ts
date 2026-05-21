@@ -7,7 +7,8 @@ export interface DateTextFieldWithPickerProps {
     defaultYearsAgo?: number;
     minYearsAgo?: number;
     minYearsAgoMessage?: string;
-    minToday?: boolean;
+    allowPast?: boolean;
+    allowToday?: boolean;
     helperText?: string;
     error?: boolean;
 }
