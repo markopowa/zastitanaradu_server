@@ -25,7 +25,6 @@ import {
     FormControlLabel,
     Switch,
     IconButton,
-    Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -35,6 +34,7 @@ import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import { enqueueSnackbar } from "notistack";
 
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import TemplateTextField from "../components/TemplateTextField";
 import type { TemplateVariable } from "../components/TemplateTextField";
 import { ScrollableTablePaper } from "../components/ScrollableTablePaper";
@@ -426,27 +426,35 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                                                                 {t.send_email ? "Da" : "Ne"}
                                                                             </TableCell>
                                                                             <TableCell align="right">
-                                                                                <PermissionGate permission="processes.change_processtemplate">
-                                                                                    <Tooltip title="Izmeni">
-                                                                                        <IconButton
-                                                                                            size="small"
-                                                                                            onClick={() => this.openEdit(t)}
-                                                                                        >
-                                                                                            <EditIcon fontSize="small" />
-                                                                                        </IconButton>
-                                                                                    </Tooltip>
-                                                                                </PermissionGate>
-                                                                                <PermissionGate permission="processes.delete_processtemplate">
-                                                                                    <Tooltip title="Obriši">
-                                                                                        <IconButton
-                                                                                            size="small"
-                                                                                            color="error"
-                                                                                            onClick={() => this.confirmDelete(t.id)}
-                                                                                        >
-                                                                                            <DeleteIcon fontSize="small" />
-                                                                                        </IconButton>
-                                                                                    </Tooltip>
-                                                                                </PermissionGate>
+                                                                                <RowActionsMenu
+                                                                                    actions={[
+                                                                                        {
+                                                                                            label: "Izmeni",
+                                                                                            icon: (
+                                                                                                <EditIcon fontSize="small" />
+                                                                                            ),
+                                                                                            permission:
+                                                                                                "processes.change_processtemplate",
+                                                                                            onClick: () =>
+                                                                                                this.openEdit(
+                                                                                                    t,
+                                                                                                ),
+                                                                                        },
+                                                                                        {
+                                                                                            label: "Obriši",
+                                                                                            icon: (
+                                                                                                <DeleteIcon fontSize="small" />
+                                                                                            ),
+                                                                                            permission:
+                                                                                                "processes.delete_processtemplate",
+                                                                                            color: "error",
+                                                                                            onClick: () =>
+                                                                                                this.confirmDelete(
+                                                                                                    t.id,
+                                                                                                ),
+                                                                                        },
+                                                                                    ]}
+                                                                                />
                                                                             </TableCell>
                                                                         </TableRow>
                                                                     ))}

@@ -6,6 +6,7 @@ import {
     MenuItem,
     ListItemIcon,
     ListItemText,
+    Tooltip,
 } from "@mui/material";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import type { ReactElement } from "react";
@@ -17,9 +18,10 @@ export interface RowAction {
     icon?: ReactElement;
     onClick: () => void;
     color?: "error" | "warning" | "success" | "inherit";
-    /** Prikaži samo ako korisnik ima ovu permisiju */
     permission?: string;
     hidden?: boolean;
+    disabled?: boolean;
+    disabledTitle?: string;
 }
 
 interface RowActionsMenuProps {
@@ -57,26 +59,38 @@ export default function RowActionsMenu({ actions }: RowActionsMenuProps) {
                 onClose={() => setAnchor(null)}
                 onClick={() => setAnchor(null)}
             >
-                {visible.map((action, i) => (
-                    <MenuItem
-                        key={i}
-                        onClick={action.onClick}
-                        sx={
-                            action.color === "error"
-                                ? { color: "error.main" }
-                                : action.color
-                                  ? { color: `${action.color}.main` }
-                                  : undefined
-                        }
-                    >
-                        {action.icon && (
-                            <ListItemIcon sx={{ color: "inherit" }}>
-                                {action.icon}
-                            </ListItemIcon>
-                        )}
-                        <ListItemText>{action.label}</ListItemText>
-                    </MenuItem>
-                ))}
+                {visible.map((action, i) => {
+                    const item = (
+                        <MenuItem
+                            disabled={action.disabled}
+                            onClick={action.onClick}
+                            sx={
+                                action.color === "error"
+                                    ? { color: "error.main" }
+                                    : action.color
+                                      ? { color: `${action.color}.main` }
+                                      : undefined
+                            }
+                        >
+                            {action.icon && (
+                                <ListItemIcon sx={{ color: "inherit" }}>
+                                    {action.icon}
+                                </ListItemIcon>
+                            )}
+                            <ListItemText>{action.label}</ListItemText>
+                        </MenuItem>
+                    );
+                    if (action.disabled && action.disabledTitle) {
+                        return (
+                            <Tooltip key={i} title={action.disabledTitle}>
+                                <span>{item}</span>
+                            </Tooltip>
+                        );
+                    }
+                    return (
+                        <span key={i}>{item}</span>
+                    );
+                })}
             </Menu>
         </>
     );

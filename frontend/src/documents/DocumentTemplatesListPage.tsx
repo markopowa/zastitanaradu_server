@@ -1,4 +1,4 @@
-import { Component, useState, type MouseEvent } from "react";
+import { Component, useState } from "react";
 import { connect } from "react-redux";
 
 import {
@@ -25,18 +25,17 @@ import {
     RadioGroup,
     FormControlLabel,
     Radio,
-    Menu,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import BuildIcon from "@mui/icons-material/Build";
-import MoreVertIcon from "@mui/icons-material/MoreVert";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { enqueueSnackbar } from "notistack";
 
 import TemplateStructureEditorDialog from "./TemplateStructureEditorDialog";
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import {
     getDocumentCategories,
     getDocumentTemplates,
@@ -685,71 +684,34 @@ function RowActions({
     onDelete: () => void;
     onTemplateUpdated: (updated: DocumentTemplate) => void;
 }) {
-    const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
     const [structureOpen, setStructureOpen] = useState(false);
-
-    const handleOpenMenu = (event: MouseEvent<HTMLElement>) => {
-        setMenuAnchor(event.currentTarget);
-    };
-
-    const handleCloseMenu = () => {
-        setMenuAnchor(null);
-    };
 
     return (
         <>
-            <Button
-                size="small"
-                onClick={handleOpenMenu}
-                startIcon={<MoreVertIcon />}
-            >
-                Akcije
-            </Button>
-            <Menu
-                anchorEl={menuAnchor}
-                open={Boolean(menuAnchor)}
-                onClose={handleCloseMenu}
-            >
-                <PermissionGate permission="documents.change_documenttemplate">
-                    <MenuItem
-                        onClick={() => {
-                            handleCloseMenu();
-                            onEdit();
-                        }}
-                    >
-                        <EditIcon fontSize="small" style={{ marginRight: 8 }} />
-                        Izmeni
-                    </MenuItem>
-                    {template.template_file && (
-                        <MenuItem
-                            onClick={() => {
-                                handleCloseMenu();
-                                setStructureOpen(true);
-                            }}
-                        >
-                            <BuildIcon
-                                fontSize="small"
-                                style={{ marginRight: 8 }}
-                            />
-                            Uredi polja
-                        </MenuItem>
-                    )}
-                </PermissionGate>
-                <PermissionGate permission="documents.delete_documenttemplate">
-                    <MenuItem
-                        onClick={() => {
-                            handleCloseMenu();
-                            onDelete();
-                        }}
-                    >
-                        <DeleteIcon
-                            fontSize="small"
-                            style={{ marginRight: 8 }}
-                        />
-                        Obriši
-                    </MenuItem>
-                </PermissionGate>
-            </Menu>
+            <RowActionsMenu
+                actions={[
+                    {
+                        label: "Izmeni",
+                        icon: <EditIcon fontSize="small" />,
+                        permission: "documents.change_documenttemplate",
+                        onClick: onEdit,
+                    },
+                    {
+                        label: "Uredi polja",
+                        icon: <BuildIcon fontSize="small" />,
+                        permission: "documents.change_documenttemplate",
+                        hidden: !template.template_file,
+                        onClick: () => setStructureOpen(true),
+                    },
+                    {
+                        label: "Obriši",
+                        icon: <DeleteIcon fontSize="small" />,
+                        permission: "documents.delete_documenttemplate",
+                        color: "error",
+                        onClick: onDelete,
+                    },
+                ]}
+            />
             {structureOpen && (
                 <TemplateStructureEditorDialog
                     open={structureOpen}

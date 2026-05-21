@@ -51,132 +51,151 @@ const DARK_ERROR = "#F87171";
 const commonComponents: ThemeOptions["components"] = {
     MuiButton: {
         styleOverrides: {
-            root: {
+            root: ({ theme }) => ({
                 borderRadius: 999,
                 textTransform: "none",
                 fontWeight: 600,
                 minHeight: 40,
                 padding: "0 16px",
-            },
-            sizeSmall: {
-                minHeight: 32,
-                padding: "6px 12px",
-                fontSize: "0.8125rem",
-            },
-            containedPrimary: ({ theme }) => ({
-                color: theme.palette.primary.contrastText,
-                backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-                boxShadow:
-                    theme.palette.mode === "light"
-                        ? `0 4px 14px ${alpha(theme.palette.primary.dark, 0.28)}`
-                        : `0 4px 14px ${alpha(theme.palette.primary.dark, 0.45)}`,
-                "&:hover": {
+                "&.MuiButton-sizeSmall": {
+                    minHeight: 32,
+                    padding: "6px 12px",
+                    fontSize: "0.8125rem",
+                },
+                "&.MuiButton-containedPrimary, &.MuiButton-contained.MuiButton-colorPrimary": {
                     color: theme.palette.primary.contrastText,
-                    backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${alpha(theme.palette.primary.main, 0.92)})`,
+                    backgroundColor: theme.palette.primary.main,
+                    backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                    boxShadow:
+                        theme.palette.mode === "light"
+                            ? `0 4px 14px ${alpha(theme.palette.primary.dark, 0.28)}`
+                            : `0 4px 14px ${alpha(theme.palette.primary.dark, 0.45)}`,
+                    "&:hover": {
+                        color: theme.palette.primary.contrastText,
+                        backgroundColor: theme.palette.primary.dark,
+                        backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${alpha(theme.palette.primary.main, 0.92)})`,
+                    },
+                    "& .MuiButton-startIcon, & .MuiButton-endIcon": {
+                        color: "inherit",
+                    },
                 },
-            }),
-            containedSecondary: ({ theme }) => ({
-                color: theme.palette.secondary.contrastText,
-                backgroundImage: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
-                boxShadow:
-                    theme.palette.mode === "light"
-                        ? `0 3px 10px ${alpha(theme.palette.secondary.dark, 0.22)}`
-                        : `0 3px 10px ${alpha(CH_DARK_0C2B4E, 0.5)}`,
-                "&:hover": {
+                "&.MuiButton-containedSecondary, &.MuiButton-contained.MuiButton-colorSecondary": {
                     color: theme.palette.secondary.contrastText,
+                    backgroundColor: theme.palette.secondary.main,
+                    backgroundImage: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
+                    boxShadow:
+                        theme.palette.mode === "light"
+                            ? `0 3px 10px ${alpha(theme.palette.secondary.dark, 0.22)}`
+                            : `0 3px 10px ${alpha(CH_DARK_0C2B4E, 0.5)}`,
+                    "&:hover": {
+                        color: theme.palette.secondary.contrastText,
+                        backgroundColor: theme.palette.secondary.dark,
+                    },
+                    "& .MuiButton-startIcon, & .MuiButton-endIcon": {
+                        color: "inherit",
+                    },
                 },
-            }),
-            outlinedPrimary: ({ theme }) =>
-                theme.palette.mode === "dark"
-                    ? {
-                          color: theme.palette.common.white,
-                          borderColor: alpha(theme.palette.common.white, 0.42),
-                          "&:hover": {
+                "&.MuiButton-outlinedPrimary":
+                    theme.palette.mode === "dark"
+                        ? {
+                              color: theme.palette.common.white,
                               borderColor: alpha(
                                   theme.palette.common.white,
-                                  0.65,
+                                  0.42,
                               ),
-                              backgroundColor: alpha(
-                                  theme.palette.common.white,
-                                  0.07,
-                              ),
-                              color: theme.palette.common.white,
-                          },
-                      }
-                    : {
-                          color: theme.palette.text.primary,
-                          borderColor: alpha(theme.palette.primary.main, 0.45),
-                          "&:hover": {
-                              borderColor: theme.palette.primary.main,
-                              backgroundColor: alpha(
-                                  theme.palette.primary.main,
-                                  0.06,
-                              ),
-                              color: theme.palette.primary.main,
-                          },
-                      },
-            outlinedSecondary: ({ theme }) =>
-                theme.palette.mode === "dark"
-                    ? {
-                          color: theme.palette.common.white,
-                          borderColor: alpha(theme.palette.common.white, 0.42),
-                          "&:hover": {
-                              borderColor: alpha(
-                                  theme.palette.common.white,
-                                  0.65,
-                              ),
-                              backgroundColor: alpha(
-                                  theme.palette.common.white,
-                                  0.07,
-                              ),
-                              color: theme.palette.common.white,
-                          },
-                      }
-                    : {},
-            textPrimary: ({ theme }) =>
-                theme.palette.mode === "dark"
-                    ? {
-                          color: theme.palette.common.white,
-                          "&:hover": {
-                              backgroundColor: alpha(
-                                  theme.palette.common.white,
-                                  0.08,
-                              ),
-                              color: theme.palette.common.white,
-                          },
-                      }
-                    : {
-                          color: theme.palette.text.primary,
-                          "&:hover": {
-                              backgroundColor: alpha(
-                                  theme.palette.primary.main,
-                                  0.08,
-                              ),
-                              color: theme.palette.primary.main,
-                          },
-                      },
-            textSecondary: ({ theme }) =>
-                theme.palette.mode === "dark"
-                    ? {
-                          color: alpha(theme.palette.common.white, 0.88),
-                          "&:hover": {
-                              backgroundColor: alpha(
-                                  theme.palette.common.white,
-                                  0.08,
-                              ),
-                              color: theme.palette.common.white,
-                          },
-                      }
-                    : {
-                          color: theme.palette.text.secondary,
-                          "&:hover": {
-                              backgroundColor: alpha(
-                                  theme.palette.primary.main,
-                                  0.06,
-                              ),
+                              "&:hover": {
+                                  borderColor: alpha(
+                                      theme.palette.common.white,
+                                      0.65,
+                                  ),
+                                  backgroundColor: alpha(
+                                      theme.palette.common.white,
+                                      0.07,
+                                  ),
+                                  color: theme.palette.common.white,
+                              },
+                          }
+                        : {
                               color: theme.palette.text.primary,
+                              borderColor: alpha(
+                                  theme.palette.primary.main,
+                                  0.45,
+                              ),
+                              "&:hover": {
+                                  borderColor: theme.palette.primary.main,
+                                  backgroundColor: alpha(
+                                      theme.palette.primary.main,
+                                      0.06,
+                                  ),
+                                  color: theme.palette.primary.main,
+                              },
                           },
-                      },
+                "&.MuiButton-outlinedSecondary":
+                    theme.palette.mode === "dark"
+                        ? {
+                              color: theme.palette.common.white,
+                              borderColor: alpha(
+                                  theme.palette.common.white,
+                                  0.42,
+                              ),
+                              "&:hover": {
+                                  borderColor: alpha(
+                                      theme.palette.common.white,
+                                      0.65,
+                                  ),
+                                  backgroundColor: alpha(
+                                      theme.palette.common.white,
+                                      0.07,
+                                  ),
+                                  color: theme.palette.common.white,
+                              },
+                          }
+                        : {},
+                "&.MuiButton-textPrimary":
+                    theme.palette.mode === "dark"
+                        ? {
+                              color: theme.palette.common.white,
+                              "&:hover": {
+                                  backgroundColor: alpha(
+                                      theme.palette.common.white,
+                                      0.08,
+                                  ),
+                                  color: theme.palette.common.white,
+                              },
+                          }
+                        : {
+                              color: theme.palette.text.primary,
+                              "&:hover": {
+                                  backgroundColor: alpha(
+                                      theme.palette.primary.main,
+                                      0.08,
+                                  ),
+                                  color: theme.palette.primary.main,
+                              },
+                          },
+                "&.MuiButton-textSecondary":
+                    theme.palette.mode === "dark"
+                        ? {
+                              color: alpha(theme.palette.common.white, 0.88),
+                              "&:hover": {
+                                  backgroundColor: alpha(
+                                      theme.palette.common.white,
+                                      0.08,
+                                  ),
+                                  color: theme.palette.common.white,
+                              },
+                          }
+                        : {
+                              color: theme.palette.text.secondary,
+                              "&:hover": {
+                                  backgroundColor: alpha(
+                                      theme.palette.primary.main,
+                                      0.06,
+                                  ),
+                                  color: theme.palette.text.primary,
+                              },
+                          },
+            }),
         },
     },
     MuiToggleButton: {

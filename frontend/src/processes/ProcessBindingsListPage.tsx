@@ -21,10 +21,10 @@ import {
     MenuItem,
     CircularProgress,
     Alert,
-    Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
+import BlockIcon from "@mui/icons-material/Block";
 import { enqueueSnackbar } from "notistack";
 
 import type { ProcessBindingsParams } from "../api/processes";
@@ -34,6 +34,7 @@ import {
     sendNowForBinding,
 } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import {
@@ -463,72 +464,58 @@ class ProcessBindingsListPageInner extends Component<
                                             {row.is_active ? "Da" : "Ne"}
                                         </TableCell>
                                         <TableCell align="right">
-                                            {row.has_open_run &&
-                                            row.is_active ? (
-                                                <PermissionGate permission="processes.change_processbinding">
-                                                    <Button
-                                                        size="small"
-                                                        variant="outlined"
-                                                        color="warning"
-                                                        disabled={
+                                            <RowActionsMenu
+                                                actions={[
+                                                    {
+                                                        label:
                                                             deactivatingBindingId ===
                                                             row.id
-                                                        }
-                                                        onClick={() =>
+                                                                ? "Deaktiviram..."
+                                                                : "Deaktiviraj",
+                                                        icon: (
+                                                            <BlockIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "processes.change_processbinding",
+                                                        color: "warning",
+                                                        hidden: !(
+                                                            row.has_open_run &&
+                                                            row.is_active
+                                                        ),
+                                                        disabled:
+                                                            deactivatingBindingId ===
+                                                            row.id,
+                                                        onClick: () =>
                                                             this.handleDeactivate(
                                                                 row.id,
-                                                            )
-                                                        }
-                                                        sx={{
-                                                            whiteSpace: "nowrap",
-                                                            mr: 1,
-                                                        }}
-                                                    >
-                                                        {deactivatingBindingId ===
-                                                        row.id
-                                                            ? "Deaktiviram..."
-                                                            : "Deaktiviraj"}
-                                                    </Button>
-                                                </PermissionGate>
-                                            ) : null}
-                                            <PermissionGate permission="processes.add_processrun">
-                                                <Tooltip
-                                                    title={
-                                                        row.next_run_at
-                                                            ? ""
-                                                            : "Postavi termin pre slanja"
-                                                    }
-                                                >
-                                                    <span>
-                                                        <Button
-                                                            size="small"
-                                                            variant="outlined"
-                                                            startIcon={
-                                                                <SendIcon />
-                                                            }
-                                                            disabled={
-                                                                sendingBindingId ===
-                                                                    row.id ||
-                                                                !row.next_run_at
-                                                            }
-                                                            onClick={() =>
-                                                                this.handleSendNow(
-                                                                    row.id,
-                                                                )
-                                                            }
-                                                            sx={{
-                                                                whiteSpace:
-                                                                    "nowrap",
-                                                            }}
-                                                        >
-                                                            {sendingBindingId ===
+                                                            ),
+                                                    },
+                                                    {
+                                                        label:
+                                                            sendingBindingId ===
                                                             row.id
                                                                 ? "Šaljem..."
-                                                                : "Pošalji sad"}
-                                                        </Button>
-                                                    </span>
-                                                </Tooltip>
-                                            </PermissionGate>
+                                                                : "Pošalji sad",
+                                                        icon: (
+                                                            <SendIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "processes.add_processrun",
+                                                        disabled:
+                                                            sendingBindingId ===
+                                                                row.id ||
+                                                            !row.next_run_at,
+                                                        disabledTitle:
+                                                            !row.next_run_at
+                                                                ? "Postavi termin pre slanja"
+                                                                : undefined,
+                                                        onClick: () =>
+                                                            this.handleSendNow(
+                                                                row.id,
+                                                            ),
+                                                    },
+                                                ]}
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))}

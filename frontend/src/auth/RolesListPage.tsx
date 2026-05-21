@@ -9,7 +9,6 @@ import {
     TableRow,
     TableCell,
     TableBody,
-    IconButton,
     Button,
     Dialog,
     DialogTitle,
@@ -30,6 +29,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import {
     loadRoles,
     loadPermissions,
@@ -277,28 +277,33 @@ class RolesListPage extends Component<RolesListPageProps, RolesListPageState> {
                                             : "—"}
                                     </TableCell>
                                     <TableCell align="right">
-                                        <PermissionGate permission="auth.change_group">
-                                            <IconButton
-                                                size="small"
-                                                aria-label="izmeni"
-                                                onClick={() =>
-                                                    this.openEdit(role)
-                                                }
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </PermissionGate>
-                                        <PermissionGate permission="auth.delete_group">
-                                            <IconButton
-                                                size="small"
-                                                aria-label="obriši"
-                                                onClick={() =>
-                                                    this.confirmDelete(role.id)
-                                                }
-                                            >
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </PermissionGate>
+                                        <RowActionsMenu
+                                            actions={[
+                                                {
+                                                    label: "Izmeni",
+                                                    icon: (
+                                                        <EditIcon fontSize="small" />
+                                                    ),
+                                                    permission:
+                                                        "auth.change_group",
+                                                    onClick: () =>
+                                                        this.openEdit(role),
+                                                },
+                                                {
+                                                    label: "Obriši",
+                                                    icon: (
+                                                        <DeleteIcon fontSize="small" />
+                                                    ),
+                                                    permission:
+                                                        "auth.delete_group",
+                                                    color: "error",
+                                                    onClick: () =>
+                                                        this.confirmDelete(
+                                                            role.id,
+                                                        ),
+                                                },
+                                            ]}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}

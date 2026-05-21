@@ -9,7 +9,6 @@ import {
     TableRow,
     TableCell,
     TableBody,
-    IconButton,
     Button,
     Dialog,
     DialogTitle,
@@ -23,6 +22,7 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import {
     fetchDocumentCategories,
     createDocumentCategory,
@@ -164,30 +164,33 @@ class DocumentCategoriesListPage extends Component<
                                         {cat.description ?? "—"}
                                     </TableCell>
                                     <TableCell align="right">
-                                        <PermissionGate permission="documents.change_documentcategory">
-                                            <IconButton
-                                                size="small"
-                                                aria-label="izmeni"
-                                                onClick={() =>
-                                                    this.openEdit(cat)
-                                                }
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </PermissionGate>
-                                        <PermissionGate permission="documents.delete_documentcategory">
-                                            <IconButton
-                                                size="small"
-                                                aria-label="obriši"
-                                                onClick={() =>
-                                                    this.confirmDelete(
-                                                        Number(cat.id),
-                                                    )
-                                                }
-                                            >
-                                                <DeleteIcon />
-                                            </IconButton>
-                                        </PermissionGate>
+                                        <RowActionsMenu
+                                            actions={[
+                                                {
+                                                    label: "Izmeni",
+                                                    icon: (
+                                                        <EditIcon fontSize="small" />
+                                                    ),
+                                                    permission:
+                                                        "documents.change_documentcategory",
+                                                    onClick: () =>
+                                                        this.openEdit(cat),
+                                                },
+                                                {
+                                                    label: "Obriši",
+                                                    icon: (
+                                                        <DeleteIcon fontSize="small" />
+                                                    ),
+                                                    permission:
+                                                        "documents.delete_documentcategory",
+                                                    color: "error",
+                                                    onClick: () =>
+                                                        this.confirmDelete(
+                                                            Number(cat.id),
+                                                        ),
+                                                },
+                                            ]}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}

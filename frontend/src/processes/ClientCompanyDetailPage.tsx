@@ -23,6 +23,7 @@ import {
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
+import BlockIcon from "@mui/icons-material/Block";
 import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
@@ -49,6 +50,7 @@ import {
 } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
+import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
 
@@ -1387,31 +1389,34 @@ class ClientCompanyDetailPageInner extends Component<
                                                 )}
                                             </TableCell>
                                             <TableCell align="right">
-                                                {b.has_open_run ? (
-                                                    <PermissionGate permission="processes.change_processbinding">
-                                                        <Button
-                                                            size="small"
-                                                            variant="outlined"
-                                                            color="warning"
-                                                            disabled={
+                                                <RowActionsMenu
+                                                    actions={[
+                                                        {
+                                                            label:
                                                                 this.state
                                                                     .deactivatingBindingId ===
                                                                 b.id
-                                                            }
-                                                            onClick={() =>
+                                                                    ? "Deaktiviram..."
+                                                                    : "Deaktiviraj",
+                                                            icon: (
+                                                                <BlockIcon fontSize="small" />
+                                                            ),
+                                                            permission:
+                                                                "processes.change_processbinding",
+                                                            color: "warning",
+                                                            hidden:
+                                                                !b.has_open_run,
+                                                            disabled:
+                                                                this.state
+                                                                    .deactivatingBindingId ===
+                                                                b.id,
+                                                            onClick: () =>
                                                                 this.handleBindingDeactivate(
                                                                     b.id,
-                                                                )
-                                                            }
-                                                        >
-                                                            {this.state
-                                                                .deactivatingBindingId ===
-                                                            b.id
-                                                                ? "Deaktiviram..."
-                                                                : "Deaktiviraj"}
-                                                        </Button>
-                                                    </PermissionGate>
-                                                ) : null}
+                                                                ),
+                                                        },
+                                                    ]}
+                                                />
                                             </TableCell>
                                         </TableRow>
                                     ))

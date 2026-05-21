@@ -12,12 +12,14 @@ import {
     Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import BlockIcon from "@mui/icons-material/Block";
 import { enqueueSnackbar } from "notistack";
 
 import { updateProcessBinding } from "../api/processes";
 import { AddProcessBindingDialog } from "./AddProcessBindingDialog";
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import { PermissionGate } from "./PermissionGate";
+import RowActionsMenu from "./RowActionsMenu";
 import { bindingTermDateError, displayDateToIso, formatDateDisplay, isoDateToFormDisplay } from "../utils/date";
 
 import type {
@@ -195,29 +197,31 @@ export class EntityProcessBindingsPanel extends Component<
                                             )}
                                         </TableCell>
                                         <TableCell align="right">
-                                            {b.has_open_run ? (
-                                                <PermissionGate permission="processes.change_processbinding">
-                                                    <Button
-                                                        size="small"
-                                                        variant="outlined"
-                                                        color="warning"
-                                                        disabled={
+                                            <RowActionsMenu
+                                                actions={[
+                                                    {
+                                                        label:
                                                             deactivatingBindingId ===
                                                             b.id
-                                                        }
-                                                        onClick={() =>
+                                                                ? "Deaktiviram..."
+                                                                : "Deaktiviraj",
+                                                        icon: (
+                                                            <BlockIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "processes.change_processbinding",
+                                                        color: "warning",
+                                                        hidden: !b.has_open_run,
+                                                        disabled:
+                                                            deactivatingBindingId ===
+                                                            b.id,
+                                                        onClick: () =>
                                                             this.handleDeactivate(
                                                                 b.id,
-                                                            )
-                                                        }
-                                                    >
-                                                        {deactivatingBindingId ===
-                                                        b.id
-                                                            ? "Deaktiviram..."
-                                                            : "Deaktiviraj"}
-                                                    </Button>
-                                                </PermissionGate>
-                                            ) : null}
+                                                            ),
+                                                    },
+                                                ]}
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))

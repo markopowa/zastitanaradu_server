@@ -32,6 +32,7 @@ import SendIcon from "@mui/icons-material/Send";
 import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import RowActionsMenu from "../components/RowActionsMenu";
 import {
     isJmbgComplete,
     jmbgMatchesDate,
@@ -397,28 +398,24 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                                         gap: 0.5,
                                                     }}
                                                 >
-                                                    <PermissionGate permission="processes.add_processrun">
-                                                        <Button
-                                                            size="small"
-                                                            variant="outlined"
-                                                            startIcon={
-                                                                <SendIcon />
-                                                            }
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                this.openSendDialog(
-                                                                    row.id,
-                                                                    `${row.first_name} ${row.last_name}`.trim(),
-                                                                );
-                                                            }}
-                                                            sx={{
-                                                                whiteSpace:
-                                                                    "nowrap",
-                                                            }}
-                                                        >
-                                                            Pošalji na pregled
-                                                        </Button>
-                                                    </PermissionGate>
+                                                    <RowActionsMenu
+                                                        actions={[
+                                                            {
+                                                                label: "Pošalji na pregled",
+                                                                icon: (
+                                                                    <SendIcon fontSize="small" />
+                                                                ),
+                                                                permission:
+                                                                    "processes.add_processrun",
+                                                                onClick: () => {
+                                                                    this.openSendDialog(
+                                                                        row.id,
+                                                                        `${row.first_name} ${row.last_name}`.trim(),
+                                                                    );
+                                                                },
+                                                            },
+                                                        ]}
+                                                    />
                                                     <IconButton size="small">
                                                         <ChevronRightIcon />
                                                     </IconButton>

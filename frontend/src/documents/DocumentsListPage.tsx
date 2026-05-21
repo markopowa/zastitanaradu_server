@@ -9,7 +9,6 @@ import {
     TableRow,
     TableCell,
     TableBody,
-    IconButton,
     Button,
     Dialog,
     DialogTitle,
@@ -28,6 +27,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DownloadIcon from "@mui/icons-material/Download";
 
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import {
     fetchDocuments,
@@ -249,17 +249,20 @@ class DocumentsListPage extends Component<
                                         )}
                                     </TableCell>
                                     <TableCell align="right">
-                                        <PermissionGate permission="documents.change_documentfile">
-                                            <IconButton
-                                                size="small"
-                                                aria-label="izmeni"
-                                                onClick={() =>
-                                                    this.openEdit(doc)
-                                                }
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </PermissionGate>
+                                        <RowActionsMenu
+                                            actions={[
+                                                {
+                                                    label: "Izmeni",
+                                                    icon: (
+                                                        <EditIcon fontSize="small" />
+                                                    ),
+                                                    permission:
+                                                        "documents.change_documentfile",
+                                                    onClick: () =>
+                                                        this.openEdit(doc),
+                                                },
+                                            ]}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}

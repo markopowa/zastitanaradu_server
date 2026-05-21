@@ -1,4 +1,4 @@
-import { Component, createRef, type ChangeEvent } from "react";
+import { Component, createRef, type ChangeEvent, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { connect } from "react-redux";
 import {
@@ -13,6 +13,11 @@ import {
     ListItem,
     ListItemText,
     Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
     TextField,
     Typography,
 } from "@mui/material";
@@ -44,6 +49,7 @@ import {
 import type { AppDispatch } from "../store";
 import type {
     ProcessRunDocument,
+    ProcessTriggerRun,
     SubjectSnapshot,
 } from "../types/processes";
 import type {
@@ -89,6 +95,48 @@ function usageKindLabel(kind: string): string {
 
 function triggerLabel(trigger: string): string {
     return TRIGGER_LABELS[trigger] ?? trigger;
+}
+
+function triggerRunsChronological(
+    runs: ProcessTriggerRun[] | undefined,
+): ProcessTriggerRun[] {
+    return [...(runs ?? [])].sort(
+        (a, b) =>
+            new Date(a.executed_at).getTime() -
+            new Date(b.executed_at).getTime(),
+    );
+}
+
+function renderTriggerEmailStatus(tr: ProcessTriggerRun): ReactNode {
+    if (tr.email_error?.trim()) {
+        return (
+            <Box sx={{ maxWidth: 320 }}>
+                <Chip
+                    label="Greška pri slanju"
+                    color="error"
+                    size="small"
+                    sx={{ mb: 0.5 }}
+                />
+                <Typography
+                    variant="caption"
+                    color="error.main"
+                    sx={{ display: "block", lineHeight: 1.45 }}
+                >
+                    {tr.email_error.trim()}
+                </Typography>
+            </Box>
+        );
+    }
+    if (tr.email_sent) {
+        return (
+            <Chip label="Poslat" color="success" size="small" variant="outlined" />
+        );
+    }
+    return (
+        <Typography variant="body2" color="text.secondary">
+            —
+        </Typography>
+    );
 }
 
 class ProcessRunDetailPageInner extends Component<
@@ -463,46 +511,76 @@ class ProcessRunDetailPageInner extends Component<
                         Obaveštenja i okidači
                     </Typography>
                     {run.trigger_runs?.length ? (
-                        <List dense disablePadding>
-                            {run.trigger_runs.map((tr) => (
-                                <ListItem key={tr.id} alignItems="flex-start" sx={{ px: 0 }}>
-                                    <ListItemText
-                                        primary={triggerLabel(tr.trigger)}
-                                        secondary={
-                                            <>
-                                                {formatDateTimeDisplay(tr.executed_at)}
-                                                {tr.executed_by_username
-                                                    ? ` · ${tr.executed_by_username}`
-                                                    : " · Sistem"}
-                                                {tr.email_sent ? " · Mejl poslat" : ""}
-                                                {tr.email_error?.trim() ? (
-                                                    <Alert
-                                                        severity="error"
-                                                        sx={{ mt: 1 }}
+                        <Box sx={{ overflow: "auto" }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Okidač</TableCell>
+                                        <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                            Datum i vreme
+                                        </TableCell>
+                                        <TableCell>Izvršio</TableCell>
+                                        <TableCell>Mejl</TableCell>
+                                        <TableCell align="right">
+                                            Dokument
+                                        </TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {triggerRunsChronological(
+                                        run.trigger_runs,
+                                    ).map((tr) => (
+                                        <TableRow key={tr.id}>
+                                            <TableCell sx={{ minWidth: 180 }}>
+                                                <Typography
+                                                    variant="body2"
+                                                    fontWeight={600}
+                                                >
+                                                    {triggerLabel(tr.trigger)}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                                {formatDateTimeDisplay(
+                                                    tr.executed_at,
+                                                )}
+                                            </TableCell>
+                                            <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                                {tr.executed_by_username ??
+                                                    "Sistem"}
+                                            </TableCell>
+                                            <TableCell>
+                                                {renderTriggerEmailStatus(tr)}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                {tr.document_file_url ? (
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        disableElevation
+                                                        component="a"
+                                                        href={
+                                                            tr.document_file_url
+                                                        }
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        sx={BTN_SX}
                                                     >
-                                                        {tr.email_error}
-                                                    </Alert>
-                                                ) : null}
-                                            </>
-                                        }
-                                    />
-                                    {tr.document_file_url ? (
-                                        <Button
-                                            size="small"
-                                            variant="contained"
-                                            disableElevation
-                                            component="a"
-                                            href={tr.document_file_url}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            sx={BTN_SX}
-                                        >
-                                            Preuzmi
-                                        </Button>
-                                    ) : null}
-                                </ListItem>
-                            ))}
-                        </List>
+                                                        Preuzmi
+                                                    </Button>
+                                                ) : (
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                    >
+                                                        —
+                                                    </Typography>
+                                                )}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </Box>
                     ) : (
                         <Typography variant="body2" color="text.secondary">
                             Još nema izvršenih obaveštenja.

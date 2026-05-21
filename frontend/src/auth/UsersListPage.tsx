@@ -7,7 +7,6 @@ import {
     TableRow,
     TableCell,
     TableBody,
-    IconButton,
     Button,
     Dialog,
     DialogTitle,
@@ -29,6 +28,7 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import {
     ScrollableTablePaper,
     tableCellEllipsis,
@@ -233,17 +233,20 @@ class UsersListPage extends Component<UsersListPageProps, UsersListPageState> {
                                         {user.is_active ? "Da" : "Ne"}
                                     </TableCell>
                                     <TableCell align="right">
-                                        <PermissionGate permission="auth.change_user">
-                                            <IconButton
-                                                size="small"
-                                                aria-label="izmeni"
-                                                onClick={() =>
-                                                    this.openEdit(user)
-                                                }
-                                            >
-                                                <EditIcon />
-                                            </IconButton>
-                                        </PermissionGate>
+                                        <RowActionsMenu
+                                            actions={[
+                                                {
+                                                    label: "Izmeni",
+                                                    icon: (
+                                                        <EditIcon fontSize="small" />
+                                                    ),
+                                                    permission:
+                                                        "auth.change_user",
+                                                    onClick: () =>
+                                                        this.openEdit(user),
+                                                },
+                                            ]}
+                                        />
                                     </TableCell>
                                 </TableRow>
                             ))}
