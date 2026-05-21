@@ -197,6 +197,7 @@ Steps: `initialSetup` | `setupDatabase` | `setupDocker` | `setupDockerQuick` | `
   - Task runner (due processes): `$LOG_DIR/run_due_processes.log`; podsetnici na istekle: `$LOG_DIR/run_expired_reminders.log`; AI red: `$LOG_DIR/process_ai_document_queue.log`
 - **Containers:** `cd $APP_DIR && docker compose ps`
 - **Backend only on localhost:** port 8000 is bound to `127.0.0.1`; only nginx is exposed on 80/443.
+- **Unknown Host / IP:** nginx `default_server` drops requests that are not for `$DOMAIN` (HTTP 444, no Django). Legitimate vhost proxies send `X-Pznr-Proxy`; Django rejects backend calls without that header in production.
 
 ---
 

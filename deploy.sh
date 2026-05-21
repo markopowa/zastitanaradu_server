@@ -33,11 +33,53 @@ STATIC_DIR="${APP_DIR}/staticfiles"
 BACKEND_DIR="${APP_DIR}/backend"
 NGINX_SITE="/etc/nginx/sites-available/${DOMAIN}"
 NGINX_ENABLED="/etc/nginx/sites-enabled/${DOMAIN}"
+NGINX_DROP="/etc/nginx/sites-available/pznr-drop-default"
+NGINX_DROP_ENABLED="/etc/nginx/sites-enabled/000-pznr-drop-default"
 COMPOSE_DIR="${COMPOSE_DIR:-$APP_DIR}"
 export PZNR_ENV_FILE="$ENV_FILE"
 export PZNR_DOMAIN="$DOMAIN"
 export PZNR_CORS_ORIGIN="https://${DOMAIN}"
 export PZNR_LOG_DIR="$LOG_DIR"
+
+ensureNginxProxySecret() {
+    if [ -z "${PZNR_NGINX_PROXY_SECRET:-}" ] && [ -f "$ENV_FILE" ]; then
+        PZNR_NGINX_PROXY_SECRET="$(grep '^PZNR_NGINX_PROXY_SECRET=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
+    fi
+    if [ -z "${PZNR_NGINX_PROXY_SECRET:-}" ]; then
+        PZNR_NGINX_PROXY_SECRET="$(openssl rand -hex 32 2>/dev/null || od -An -N32 -tx1 /dev/urandom | tr -d ' \n')"
+        if [ -f "$ENV_FILE" ] && ! grep -q '^PZNR_NGINX_PROXY_SECRET=' "$ENV_FILE" 2>/dev/null; then
+            echo "PZNR_NGINX_PROXY_SECRET=$PZNR_NGINX_PROXY_SECRET" >> "$ENV_FILE"
+            echo "Added PZNR_NGINX_PROXY_SECRET to $ENV_FILE"
+        fi
+    fi
+    export PZNR_NGINX_PROXY_SECRET
+}
+
+writeNginxDrop() {
+    cat > "$NGINX_DROP" << 'NGINX_DROP_HTTP'
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+    server_name _;
+    access_log off;
+    return 444;
+}
+NGINX_DROP_HTTP
+    if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+        cat >> "$NGINX_DROP" << NGINX_DROP_HTTPS
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    server_name _;
+    access_log off;
+    ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
+    return 444;
+}
+NGINX_DROP_HTTPS
+    fi
+    ln -sf "$NGINX_DROP" "$NGINX_DROP_ENABLED"
+}
 
 resetContainers() {
     echo "Stopping and removing containers in $APP_DIR (volumes preserved)."
@@ -163,7 +205,9 @@ setupDocker() {
 
 setupNginx() {
     apt-get install -y nginx
+    ensureNginxProxySecret
     mkdir -p "$(dirname "$NGINX_SITE")" "$LOG_DIR"
+    writeNginxDrop
     cat > "$NGINX_SITE" << NGINX_80
 server {
     listen 80;
@@ -179,6 +223,9 @@ server {
 }
 NGINX_80
     ln -sf "$NGINX_SITE" "$NGINX_ENABLED" 2>/dev/null || true
+    if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
+        grep -q "listen 443" "$NGINX_SITE" 2>/dev/null || writeNginxSsl
+    fi
     nginx -t && systemctl reload nginx 2>/dev/null || systemctl start nginx
 }
 
@@ -198,6 +245,7 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Pznr-Proxy "$PZNR_NGINX_PROXY_SECRET";
     }
     location /static/ {
         alias $STATIC_DIR/;
@@ -210,6 +258,7 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Pznr-Proxy "$PZNR_NGINX_PROXY_SECRET";
         proxy_cookie_path / "/; HTTPOnly; Secure; SameSite=Lax";
     }
     location /api/ {
@@ -218,6 +267,7 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Pznr-Proxy "$PZNR_NGINX_PROXY_SECRET";
         proxy_cookie_path / "/; HTTPOnly; Secure; SameSite=Lax";
     }
     location /admin/ {
@@ -226,6 +276,7 @@ server {
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Pznr-Proxy "$PZNR_NGINX_PROXY_SECRET";
         proxy_cookie_path / "/; HTTPOnly; Secure; SameSite=Lax";
     }
     location / {
@@ -267,6 +318,7 @@ setupSsl() {
     fi
     if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
         grep -q "listen 443" "$NGINX_SITE" 2>/dev/null || writeNginxSsl
+        writeNginxDrop
         nginx -t && systemctl reload nginx
     fi
 }

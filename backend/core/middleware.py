@@ -3,9 +3,16 @@ import uuid
 
 from django.conf import settings
 from django.core.exceptions import DisallowedHost
-from django.http import Http404
+from django.http import Http404, HttpResponseForbidden
 
 logger = logging.getLogger(__name__)
+
+
+def client_ip(request) -> str:
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR", "")
 
 
 def _get_access_cookie_name():
@@ -18,6 +25,19 @@ def _get_refresh_cookie_name():
 
 def get_jwt_cookie_names():
     return _get_access_cookie_name(), _get_refresh_cookie_name()
+
+
+class NginxProxyMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+        self._secret = getattr(settings, "PZNR_NGINX_PROXY_SECRET", "")
+
+    def __call__(self, request):
+        if self._secret and not settings.DEBUG:
+            token = request.META.get("HTTP_X_PZNR_PROXY", "")
+            if token != self._secret:
+                return HttpResponseForbidden()
+        return self.get_response(request)
 
 
 class JWTCookieToAuthMiddleware:
@@ -64,6 +84,17 @@ class ErrorLoggingMiddleware:
     def __call__(self, request):
         try:
             response = self.get_response(request)
+        except DisallowedHost as exc:
+            logger.warning(
+                "DisallowedHost host=%s client=%s method=%s path=%s user_agent=%s (%s)",
+                request.META.get("HTTP_HOST", ""),
+                client_ip(request),
+                request.method,
+                request.get_full_path(),
+                request.META.get("HTTP_USER_AGENT", ""),
+                exc,
+            )
+            raise
         except Exception:
             logger.exception("Unhandled exception for path %s", request.path)
             raise

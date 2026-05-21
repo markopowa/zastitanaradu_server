@@ -55,6 +55,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
+    "core.middleware.NginxProxyMiddleware",
     "core.middleware.JWTCookieToAuthMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
@@ -115,6 +116,48 @@ EMAIL_FROM_ADDRESS = os.environ.get("EMAIL_FROM_ADDRESS", "")
 AWS_REGION = os.environ.get("AWS_REGION", "") or os.environ.get(
     "AWS_DEFAULT_REGION", "eu-central-1"
 )
+
+_log_dir = os.environ.get("LOG_DIR", "logs")
+_log_file = os.path.join(_log_dir, "django.log")
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "default": {
+            "format": "%(asctime)s %(levelname)s %(name)s %(message)s",
+        },
+    },
+    "filters": {
+        "ignore_disallowed_host": {
+            "()": "core.middleware.IgnoreDisallowedHost",
+        },
+    },
+    "handlers": {
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": _log_file,
+            "maxBytes": 10 * 1024 * 1024,
+            "backupCount": 3,
+            "formatter": "default",
+            "filters": ["ignore_disallowed_host"],
+        },
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "default",
+            "filters": ["ignore_disallowed_host"],
+        },
+    },
+    "loggers": {
+        "django.security.DisallowedHost": {
+            "handlers": [],
+            "propagate": False,
+        },
+    },
+    "root": {
+        "handlers": ["file", "console"],
+        "level": "INFO",
+    },
+}
 
 DOCUMENT_CONVERTIBLE_SUFFIXES = frozenset(
     {".docx", ".doc", ".odt", ".rtf", ".xlsx", ".pptx"})
