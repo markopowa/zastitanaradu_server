@@ -58,15 +58,16 @@ DIM='\033[2m'
 color_line() {
     local line="$1"
     local lower
+    local error_re='(^|[^a-z])(error|err|critical|crit|emerg|alert|fatal|failed|failure)([^a-z]|$)|\[error\]| (4[0-9]{2}|5[0-9]{2}) '
+    local warn_re='(^|[^a-z])(warning|warn)([^a-z]|$)|\[warn\]'
+    local info_re='(^|[^a-z])(info)([^a-z]|$)|\[info\]'
     lower="$(printf '%s' "$line" | tr '[:upper:]' '[:lower:]')"
     local color="$BLUE"
-    if [[ "$lower" =~ (^|[^a-z])(error|err|critical|crit|emerg|alert|fatal|failed|failure)([^a-z]|$) ]] \
-        || [[ "$lower" =~ \[error\] ]] \
-        || [[ "$lower" =~ \" (4[0-9]{2}|5[0-9]{2}) ]]; then
+    if [[ "$lower" =~ $error_re ]]; then
         color="$RED"
-    elif [[ "$lower" =~ (^|[^a-z])(warning|warn)([^a-z]|$) ]] || [[ "$lower" =~ \[warn\] ]]; then
+    elif [[ "$lower" =~ $warn_re ]]; then
         color="$ORANGE"
-    elif [[ "$lower" =~ (^|[^a-z])(info)([^a-z]|$) ]] || [[ "$lower" =~ \[info\] ]]; then
+    elif [[ "$lower" =~ $info_re ]]; then
         color="$GREEN"
     fi
     printf '%b%s%b\n' "$color" "$line" "$RESET"
@@ -75,16 +76,19 @@ color_line() {
 parse_epoch() {
     local line="$1"
     local epoch=""
+    local gunicorn_re='\[([0-9]{2}/[A-Za-z]{3}/[0-9]{4}:[0-9]{2}:[0-9]{2}:[0-9]{2})'
+    local iso_re='([0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2})'
+    local nginx_re='([0-9]{4}/[0-9]{2}/[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2})'
 
-    if [[ "$line" =~ \[([0-9]{2}/[A-Za-z]{3}/[0-9]{4}:[0-9]{2}:[0-9]{2}:[0-9]{2}) ]]; then
+    if [[ "$line" =~ $gunicorn_re ]]; then
         epoch="$(date -d "${BASH_REMATCH[1]}" +%s 2>/dev/null || true)"
     fi
-    if [ -z "$epoch" ] && [[ "$line" =~ ([0-9]{4}-[0-9]{2}-[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2}) ]]; then
+    if [ -z "$epoch" ] && [[ "$line" =~ $iso_re ]]; then
         local ts="${BASH_REMATCH[1]}"
         ts="${ts/,/.}"
         epoch="$(date -d "${ts%.*}" +%s 2>/dev/null || true)"
     fi
-    if [ -z "$epoch" ] && [[ "$line" =~ ([0-9]{4}/[0-9]{2}/[0-9]{2}[[:space:]][0-9]{2}:[0-9]{2}:[0-9]{2}) ]]; then
+    if [ -z "$epoch" ] && [[ "$line" =~ $nginx_re ]]; then
         local nginx_ts="${BASH_REMATCH[1]//\//-}"
         epoch="$(date -d "$nginx_ts" +%s 2>/dev/null || true)"
     fi
@@ -222,8 +226,9 @@ follow_logs() {
     }
 
     local current_label=""
+    local tail_marker_re='^==>[[:space:]]*(.+)[[:space:]]*<==$'
     tail -n 0 -F "${paths[@]}" 2>/dev/null | while IFS= read -r line; do
-        if [[ "$line" =~ ^==\>[[:space:]]*(.+)[[:space:]]*<\==$ ]]; then
+        if [[ "$line" =~ $tail_marker_re ]]; then
             current_label="${label_for[${BASH_REMATCH[1]}]:-$(basename "${BASH_REMATCH[1]}")}"
             continue
         fi
