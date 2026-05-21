@@ -329,10 +329,10 @@ def _generate_document_for_run(
     run: ProcessRun,
     template: ProcessTemplate,
     snapshot: dict,
-) -> None:
+) -> DocumentFile | None:
     doc_template = template.document_template
     if not doc_template:
-        return
+        return None
 
     system_user = _get_system_user()
     if not system_user:
@@ -340,7 +340,7 @@ def _generate_document_for_run(
             "Cannot generate document for run id=%s: no system user (superuser) found",
             run.id,
         )
-        return
+        return None
 
     category = doc_template.category
     if not category:
@@ -350,7 +350,7 @@ def _generate_document_for_run(
             "Cannot generate document for run id=%s: no document category (template has no category and none in DB)",
             run.id,
         )
-        return
+        return None
 
     context = _build_document_context(run, snapshot)
     content_bytes: bytes | None = None
@@ -411,7 +411,7 @@ def _generate_document_for_run(
             run.id,
             template.id,
         )
-        return
+        return None
 
     title = f"{doc_template.name} – {title_suffix}"
     doc_file = DocumentFile(
@@ -432,6 +432,7 @@ def _generate_document_for_run(
         process_run=run,
         document_file=doc_file,
         usage_kind=ProcessRunDocument.USAGE_REPORT,
+        generated_by_template=template,
     )
     logger.info(
         "Generated document id=%s for run id=%s from template id=%s",
@@ -439,6 +440,7 @@ def _generate_document_for_run(
         run.id,
         template.id,
     )
+    return doc_file
 
 
 def _resolve_email_recipients(
@@ -488,11 +490,63 @@ def _resolve_email_recipients(
     return []
 
 
+def _read_document_file_attachment(
+    doc_file: DocumentFile,
+) -> tuple[str, bytes] | None:
+    if not doc_file.file:
+        return None
+    try:
+        with doc_file.file.open("rb") as fh:
+            data = fh.read()
+    except Exception as exc:
+        logger.warning(
+            "Could not read attachment for doc id=%s: %s",
+            doc_file.id,
+            exc,
+        )
+        return None
+    name = doc_file.file.name.split("/")[-1]
+    return name, data
+
+
+def _collect_template_email_attachments(
+    run: ProcessRun,
+    template: ProcessTemplate,
+    generated_document: DocumentFile | None = None,
+) -> list[tuple[str, bytes]]:
+    attachments: list[tuple[str, bytes]] = []
+    seen_ids: set[int] = set()
+
+    def add_doc_file(doc_file: DocumentFile | None) -> None:
+        if doc_file is None or doc_file.id in seen_ids:
+            return
+        item = _read_document_file_attachment(doc_file)
+        if item is None:
+            return
+        seen_ids.add(doc_file.id)
+        attachments.append(item)
+
+    if template.attach_generated_document and generated_document is not None:
+        add_doc_file(generated_document)
+
+    if template.attach_uploaded_documents:
+        uploaded = run.documents.select_related("document_file").filter(
+            generated_by_template__isnull=True,
+        )
+        for prd in uploaded:
+            add_doc_file(prd.document_file)
+
+    return attachments
+
+
 def _send_email_for_template(
     template: ProcessTemplate,
     binding: ProcessBinding,
     snapshot: dict,
     run: ProcessRun | None = None,
+    generated_document: DocumentFile | None = None,
+    *,
+    fail_silently: bool = True,
 ) -> None:
     recipients = _resolve_email_recipients(template, binding)
     if not recipients:
@@ -508,24 +562,37 @@ def _send_email_for_template(
         context = _build_document_context(run, snapshot)
         subject = _render_template_body(subject, context)
         body = _render_template_body(body, context)
+    attachments = None
+    if run is not None:
+        collected = _collect_template_email_attachments(
+            run,
+            template,
+            generated_document,
+        )
+        attachments = collected if collected else None
     try:
         sent = get_email_sender().send(
             recipients=recipients,
             subject=subject,
             body=body,
-            fail_silently=True,
+            attachments=attachments,
+            fail_silently=fail_silently,
         )
         if not sent:
             logger.warning(
                 "Email send returned False for ProcessTemplate id=%s",
                 template.id,
             )
+            if not fail_silently:
+                raise RuntimeError("Email sender returned False")
     except Exception as e:
         logger.exception(
             "Failed to send email for ProcessTemplate id=%s: %s",
             template.id,
             e,
         )
+        if not fail_silently:
+            raise
 
 
 def execute_template_actions(
@@ -534,7 +601,7 @@ def execute_template_actions(
     binding: ProcessBinding,
     snapshot: dict,
     template: ProcessTemplate,
-) -> None:
+) -> DocumentFile | None:
     logger.info(
         "%s trigger: run_id=%s process_type=%s template_id=%s template=%s",
         trigger,
@@ -544,9 +611,12 @@ def execute_template_actions(
         template,
     )
 
+    generated_document: DocumentFile | None = None
     if template.generate_document and template.document_template_id:
         try:
-            _generate_document_for_run(run, template, snapshot)
+            generated_document = _generate_document_for_run(
+                run, template, snapshot,
+            )
         except Exception as e:
             logger.exception(
                 "Failed to generate document in %s for run id=%s template id=%s: %s",
@@ -558,7 +628,13 @@ def execute_template_actions(
 
     if template.send_email:
         try:
-            _send_email_for_template(template, binding, snapshot, run=run)
+            _send_email_for_template(
+                template,
+                binding,
+                snapshot,
+                run=run,
+                generated_document=generated_document,
+            )
         except Exception as e:
             logger.exception(
                 "Failed to send email in %s for run id=%s template id=%s: %s",
@@ -567,3 +643,4 @@ def execute_template_actions(
                 template.id,
                 e,
             )
+    return generated_document

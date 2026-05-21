@@ -1,7 +1,7 @@
 import logging
 from datetime import date, timedelta
 
-from django.db.models import Exists, OuterRef, Q
+from django.db.models import Exists, OuterRef, Prefetch, Q
 
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -233,7 +233,12 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         ProcessRun.objects.select_related(
             "process_binding", "process_binding__process_type",
             "process_type",
-        ).prefetch_related("trigger_runs")
+        ).prefetch_related(
+            Prefetch(
+                "trigger_runs",
+                queryset=ProcessTriggerRun.objects.select_related("executed_by"),
+            ),
+        )
         .all()
         .order_by("-scheduled_for", "-id")
     )

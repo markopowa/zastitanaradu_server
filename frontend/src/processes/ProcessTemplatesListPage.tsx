@@ -119,12 +119,25 @@ interface State {
     form_document_template_id: string;
     form_generate_document: boolean;
     form_send_email: boolean;
+    form_attach_generated_document: boolean;
+    form_attach_uploaded_documents: boolean;
     form_email_to_kind: string;
     form_email_subject_template: string;
     form_email_body_template: string;
     form_custom_email_recipient: string;
     form_followup_process_type_id: string;
     form_notification_role_group_id: string;
+}
+
+function attachmentSummary(template: ProcessTemplate): string {
+    const parts: string[] = [];
+    if (template.attach_generated_document) {
+        parts.push("Generisani");
+    }
+    if (template.attach_uploaded_documents) {
+        parts.push("Otpremljeni");
+    }
+    return parts.length > 0 ? parts.join(", ") : "—";
 }
 
 class ProcessTemplatesListPageInner extends Component<Props, State> {
@@ -138,6 +151,8 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
         form_document_template_id: "",
         form_generate_document: false,
         form_send_email: false,
+        form_attach_generated_document: false,
+        form_attach_uploaded_documents: false,
         form_email_to_kind: "",
         form_email_subject_template: "",
         form_email_body_template: "",
@@ -168,6 +183,8 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_document_template_id: "",
             form_generate_document: false,
             form_send_email: false,
+            form_attach_generated_document: false,
+            form_attach_uploaded_documents: false,
             form_email_to_kind: "",
             form_email_subject_template: "",
             form_email_body_template: "",
@@ -188,6 +205,10 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                 : "",
             form_generate_document: template.generate_document,
             form_send_email: template.send_email,
+            form_attach_generated_document:
+                template.attach_generated_document ?? false,
+            form_attach_uploaded_documents:
+                template.attach_uploaded_documents ?? false,
             form_email_to_kind: template.email_to_kind ?? "",
             form_email_subject_template: template.email_subject_template ?? "",
             form_email_body_template: template.email_body_template ?? "",
@@ -213,6 +234,8 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_document_template_id,
             form_generate_document,
             form_send_email,
+            form_attach_generated_document,
+            form_attach_uploaded_documents,
             form_email_to_kind,
             form_email_subject_template,
             form_email_body_template,
@@ -233,6 +256,12 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             document_template: form_document_template_id ? Number(form_document_template_id) : null,
             generate_document: form_generate_document,
             send_email: form_send_email,
+            attach_generated_document:
+                form_send_email &&
+                form_generate_document &&
+                form_attach_generated_document,
+            attach_uploaded_documents:
+                form_send_email && form_attach_uploaded_documents,
             email_to_kind: form_send_email ? form_email_to_kind || undefined : "",
             email_subject_template: form_send_email ? form_email_subject_template || "" : "",
             email_body_template: form_send_email ? form_email_body_template || "" : "",
@@ -301,6 +330,8 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
             form_document_template_id,
             form_generate_document,
             form_send_email,
+            form_attach_generated_document,
+            form_attach_uploaded_documents,
             form_email_to_kind,
             form_email_subject_template,
             form_email_body_template,
@@ -405,6 +436,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                                                         <TableCell>Šablon dokumenta</TableCell>
                                                                         <TableCell>Dokument</TableCell>
                                                                         <TableCell>Mejl</TableCell>
+                                                                        <TableCell>Prilozi</TableCell>
                                                                         <TableCell align="right" />
                                                                     </TableRow>
                                                                 </TableHead>
@@ -424,6 +456,9 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                                                             </TableCell>
                                                                             <TableCell>
                                                                                 {t.send_email ? "Da" : "Ne"}
+                                                                            </TableCell>
+                                                                            <TableCell>
+                                                                                {attachmentSummary(t)}
                                                                             </TableCell>
                                                                             <TableCell align="right">
                                                                                 <RowActionsMenu
@@ -529,7 +564,17 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                             control={
                                 <Switch
                                     checked={form_generate_document}
-                                    onChange={(e) => this.setState({ form_generate_document: e.target.checked })}
+                                    onChange={(e) =>
+                                        this.setState({
+                                            form_generate_document:
+                                                e.target.checked,
+                                            form_attach_generated_document:
+                                                e.target.checked
+                                                    ? this.state
+                                                          .form_attach_generated_document
+                                                    : false,
+                                        })
+                                    }
                                 />
                             }
                             label="Generiši dokument"
@@ -540,11 +585,65 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                             control={
                                 <Switch
                                     checked={form_send_email}
-                                    onChange={(e) => this.setState({ form_send_email: e.target.checked })}
+                                    onChange={(e) =>
+                                        this.setState({
+                                            form_send_email: e.target.checked,
+                                            form_attach_generated_document:
+                                                e.target.checked
+                                                    ? this.state
+                                                          .form_attach_generated_document
+                                                    : false,
+                                            form_attach_uploaded_documents:
+                                                e.target.checked
+                                                    ? this.state
+                                                          .form_attach_uploaded_documents
+                                                    : false,
+                                        })
+                                    }
                                 />
                             }
                             label="Pošalji mejl"
                         />
+
+                        {form_send_email && form_generate_document && (
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={
+                                            form_attach_generated_document
+                                        }
+                                        onChange={(e) =>
+                                            this.setState({
+                                                form_attach_generated_document:
+                                                    e.target.checked,
+                                            })
+                                        }
+                                    />
+                                }
+                                label="Priloži generisani dokument u mejl"
+                                sx={{ ml: 1 }}
+                            />
+                        )}
+
+                        {form_send_email && (
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        checked={
+                                            form_attach_uploaded_documents
+                                        }
+                                        onChange={(e) =>
+                                            this.setState({
+                                                form_attach_uploaded_documents:
+                                                    e.target.checked,
+                                            })
+                                        }
+                                    />
+                                }
+                                label="Priloži otpremljene dokumente sa aktivnosti"
+                                sx={{ ml: 1 }}
+                            />
+                        )}
 
                         {form_send_email && (
                             <>

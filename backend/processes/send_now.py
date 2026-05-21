@@ -3,39 +3,15 @@ from datetime import date
 
 from django.utils import timezone
 
-from core.email_sender import get_email_sender
-
 from .models import ProcessRun, ProcessTemplate, ProcessTriggerRun
 from .trigger_utils import trigger_already_executed
 from .utils import (
-    _build_document_context,
     _generate_document_for_run,
-    _render_template_body,
-    _resolve_email_recipients,
+    _send_email_for_template,
     binding_subject_snapshot,
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _collect_attachments(run):
-    attachments = []
-    for prd in run.documents.select_related("document_file").all():
-        doc_file = prd.document_file
-        if not doc_file.file:
-            continue
-        try:
-            with doc_file.file.open("rb") as fh:
-                data = fh.read()
-        except Exception as exc:
-            logger.warning(
-                "Could not read attachment for doc id=%s: %s",
-                doc_file.id, exc,
-            )
-            continue
-        name = doc_file.file.name.split("/")[-1]
-        attachments.append((name, data))
-    return attachments
 
 
 def send_now_for_binding(binding, *, user=None):
@@ -87,9 +63,12 @@ def send_now_for_binding(binding, *, user=None):
             trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED,
         ).exists():
             continue
+        generated_document = None
         if template.generate_document and template.document_template_id:
             try:
-                _generate_document_for_run(run, template, snapshot)
+                generated_document = _generate_document_for_run(
+                    run, template, snapshot,
+                )
             except Exception as exc:
                 logger.exception(
                     "send_now: doc generation failed for run id=%s template id=%s: %s",
@@ -100,7 +79,14 @@ def send_now_for_binding(binding, *, user=None):
         email_error = ""
         if template.send_email:
             try:
-                _send_email_with_attachment(template, binding, snapshot, run)
+                _send_email_for_template(
+                    template,
+                    binding,
+                    snapshot,
+                    run=run,
+                    generated_document=generated_document,
+                    fail_silently=False,
+                )
                 email_sent = True
             except Exception as exc:
                 email_error = str(exc)
@@ -117,32 +103,7 @@ def send_now_for_binding(binding, *, user=None):
             executed_by=auth_user,
             email_sent=email_sent,
             email_error=email_error,
+            document_file=generated_document,
         )
 
     return run, True
-
-
-def _send_email_with_attachment(template, binding, snapshot, run):
-    recipients = _resolve_email_recipients(template, binding)
-    if not recipients:
-        logger.warning(
-            "send_now: no email recipient for template id=%s", template.id,
-        )
-        return
-
-    context = _build_document_context(run, snapshot)
-    subject = _render_template_body(
-        template.email_subject_template or "Process notification", context,
-    )
-    body = _render_template_body(template.email_body_template or "", context)
-    attachments = _collect_attachments(run)
-
-    sent = get_email_sender().send(
-        recipients=recipients,
-        subject=subject,
-        body=body,
-        attachments=attachments if attachments else None,
-        fail_silently=False,
-    )
-    if not sent:
-        raise RuntimeError("Email sender returned False")

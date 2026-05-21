@@ -40,6 +40,8 @@ class ProcessTemplateAdmin(admin.ModelAdmin):
         "trigger",
         "generate_document",
         "send_email",
+        "attach_generated_document",
+        "attach_uploaded_documents",
         "email_to_kind",
         "notification_role_group",
     )

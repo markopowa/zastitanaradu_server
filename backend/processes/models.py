@@ -107,6 +107,14 @@ class ProcessTemplate(models.Model):
     )
     generate_document = models.BooleanField(default=False)
     send_email = models.BooleanField(default=False)
+    attach_generated_document = models.BooleanField(
+        default=False,
+        help_text="Priloži dokument koji ovaj okidač generiše (samo uz generisanje i mejl).",
+    )
+    attach_uploaded_documents = models.BooleanField(
+        default=False,
+        help_text="Priloži ručno otpremljene dokumente sa aktivnosti (samo uz mejl).",
+    )
     email_to_kind = models.CharField(
         max_length=32,
         choices=EMAIL_TO_CHOICES,
@@ -320,6 +328,13 @@ class ProcessRunDocument(models.Model):
     usage_kind = models.CharField(
         max_length=32,
         choices=USAGE_CHOICES,
+    )
+    generated_by_template = models.ForeignKey(
+        ProcessTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="generated_run_documents",
     )
 
     class Meta:

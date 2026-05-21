@@ -16,6 +16,20 @@ from .models import (
 from .tasks import get_open_run_for_binding
 
 
+def _user_display_label(user) -> str:
+    if user is None:
+        return ""
+    email = (getattr(user, "email", None) or "").strip()
+    if email:
+        return email
+    username = (getattr(user, "username", None) or "").strip()
+    if username:
+        return username
+    first = (getattr(user, "first_name", None) or "").strip()
+    last = (getattr(user, "last_name", None) or "").strip()
+    return f"{first} {last}".strip()
+
+
 class ProcessTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProcessTemplate
@@ -26,6 +40,8 @@ class ProcessTemplateSerializer(serializers.ModelSerializer):
             "trigger",
             "generate_document",
             "send_email",
+            "attach_generated_document",
+            "attach_uploaded_documents",
             "email_to_kind",
             "email_subject_template",
             "email_body_template",
@@ -33,6 +49,55 @@ class ProcessTemplateSerializer(serializers.ModelSerializer):
             "notification_role_group",
             "followup_process_type",
         )
+
+    def validate(self, attrs):
+        instance = self.instance
+        generate = attrs.get(
+            "generate_document",
+            getattr(instance, "generate_document", False) if instance else False,
+        )
+        send = attrs.get(
+            "send_email",
+            getattr(instance, "send_email", False) if instance else False,
+        )
+        attach_generated = attrs.get(
+            "attach_generated_document",
+            getattr(instance, "attach_generated_document", False)
+            if instance
+            else False,
+        )
+        attach_uploaded = attrs.get(
+            "attach_uploaded_documents",
+            getattr(instance, "attach_uploaded_documents", False)
+            if instance
+            else False,
+        )
+
+        if attach_generated and not generate:
+            raise serializers.ValidationError(
+                {
+                    "attach_generated_document": (
+                        "Prilog generisanog dokumenta zahteva uključeno generisanje."
+                    )
+                }
+            )
+        if attach_generated and not send:
+            raise serializers.ValidationError(
+                {
+                    "attach_generated_document": (
+                        "Prilog generisanog dokumenta zahteva uključen mejl."
+                    )
+                }
+            )
+        if attach_uploaded and not send:
+            raise serializers.ValidationError(
+                {
+                    "attach_uploaded_documents": (
+                        "Prilog otpremljenih dokumenata zahteva uključen mejl."
+                    )
+                }
+            )
+        return attrs
 
 
 class ProcessTypeSerializer(serializers.ModelSerializer):
@@ -125,8 +190,7 @@ class ProcessBindingSerializer(serializers.ModelSerializer):
 
 
 class ProcessTriggerRunSerializer(serializers.ModelSerializer):
-    executed_by_username = serializers.CharField(
-        source="executed_by.username", read_only=True, default="")
+    executed_by_display = serializers.SerializerMethodField()
     document_file_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -136,13 +200,16 @@ class ProcessTriggerRunSerializer(serializers.ModelSerializer):
             "process_template",
             "trigger",
             "executed_at",
-            "executed_by",
-            "executed_by_username",
+            "executed_by_display",
             "email_sent",
             "email_error",
             "document_file",
             "document_file_url",
         )
+
+    def get_executed_by_display(self, obj: ProcessTriggerRun) -> str | None:
+        label = _user_display_label(obj.executed_by)
+        return label or None
 
     def get_document_file_url(self, obj: ProcessTriggerRun) -> str | None:
         if not obj.document_file_id:

@@ -80,8 +80,7 @@ export interface ProcessTriggerRun {
     process_template: number | null;
     trigger: "ON_LEAD" | "ON_SCHEDULED" | "ON_COMPLETED" | "ON_OVERDUE";
     executed_at: string;
-    executed_by: number | null;
-    executed_by_username?: string;
+    executed_by_display?: string | null;
     email_sent: boolean;
     email_error: string;
     document_file: number | null;
@@ -141,6 +140,8 @@ export interface ProcessTemplate {
     trigger: string;
     generate_document: boolean;
     send_email: boolean;
+    attach_generated_document?: boolean;
+    attach_uploaded_documents?: boolean;
     email_to_kind?: string;
     email_subject_template?: string;
     email_body_template?: string;

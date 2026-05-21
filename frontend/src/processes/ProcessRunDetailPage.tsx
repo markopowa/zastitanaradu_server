@@ -107,6 +107,11 @@ function triggerRunsChronological(
     );
 }
 
+function triggerExecutorLabel(tr: ProcessTriggerRun): string {
+    const label = tr.executed_by_display?.trim();
+    return label || "Sistem";
+}
+
 function renderTriggerEmailStatus(tr: ProcessTriggerRun): ReactNode {
     if (tr.email_error?.trim()) {
         return (
@@ -545,8 +550,7 @@ class ProcessRunDetailPageInner extends Component<
                                                 )}
                                             </TableCell>
                                             <TableCell sx={{ whiteSpace: "nowrap" }}>
-                                                {tr.executed_by_username ??
-                                                    "Sistem"}
+                                                {triggerExecutorLabel(tr)}
                                             </TableCell>
                                             <TableCell>
                                                 {renderTriggerEmailStatus(tr)}
