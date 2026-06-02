@@ -11,11 +11,13 @@ import type {
     Employee,
     EmployeeSummary,
     EquipmentItem,
+    JobRole,
     ProcessBinding,
     ProcessRun,
     ProcessRunDocument,
     ProcessRunNote,
     ProcessType,
+    RiskLevel,
 } from "./processes";
 
 export interface ProcessTypesListPageStateProps {
@@ -260,6 +262,13 @@ export interface ClientCompanyDetailPageState {
     savingRiskActDate: boolean;
     riskActUploading: boolean;
     riskActPreviewOpen: boolean;
+    riskLevels: RiskLevel[];
+    jobRoles: JobRole[];
+    roleDialogOpen: boolean;
+    role_name: string;
+    role_risk_level: string;
+    savingRole: boolean;
+    roleError: string | null;
     empDialogOpen: boolean;
     emp_first_name: string;
     emp_last_name: string;
@@ -272,6 +281,8 @@ export interface ClientCompanyDetailPageState {
     emp_position: string;
     emp_occupation: string;
     emp_high_risk_position_name: string;
+    emp_job_role: string;
+    emp_risk_level_override: string;
     savingEmployee: boolean;
     employeeError: string | null;
     eqDialogOpen: boolean;

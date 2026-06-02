@@ -20,6 +20,10 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
@@ -38,12 +42,15 @@ import {
     clearClientCompanyRiskAssessmentAct,
     createEmployee,
     createEquipmentItem,
+    createJobRole,
     generateMedicalExamRecord,
     getClientCompany,
     getEmployees,
     getEquipment,
+    getJobRoles,
     getProcessBindings,
     getProcessRuns,
+    getRiskLevels,
     updateClientCompany,
     updateProcessBinding,
     uploadClientCompanyRiskAssessmentAct,
@@ -63,7 +70,9 @@ import type {
     Employee,
     EmployeeSummary,
     EquipmentItem,
+    JobRole,
     ProcessBinding,
+    RiskLevel,
 } from "../types/processes";
 
 const formatDate = (v?: string | null) => formatDateDisplay(v);
@@ -127,6 +136,13 @@ class ClientCompanyDetailPageInner extends Component<
         savingRiskActDate: false,
         riskActUploading: false,
         riskActPreviewOpen: false,
+        riskLevels: [],
+        jobRoles: [],
+        roleDialogOpen: false,
+        role_name: "",
+        role_risk_level: "",
+        savingRole: false,
+        roleError: null,
         empDialogOpen: false,
         emp_first_name: "",
         emp_last_name: "",
@@ -139,6 +155,8 @@ class ClientCompanyDetailPageInner extends Component<
         emp_position: "",
         emp_occupation: "",
         emp_high_risk_position_name: "",
+        emp_job_role: "",
+        emp_risk_level_override: "",
         savingEmployee: false,
         employeeError: null,
         eqDialogOpen: false,
@@ -170,6 +188,8 @@ class ClientCompanyDetailPageInner extends Component<
             emp_position: "",
             emp_occupation: "",
             emp_high_risk_position_name: "",
+            emp_job_role: "",
+            emp_risk_level_override: "",
         }));
     };
 
@@ -191,6 +211,8 @@ class ClientCompanyDetailPageInner extends Component<
             emp_position,
             emp_occupation,
             emp_high_risk_position_name,
+            emp_job_role,
+            emp_risk_level_override,
         } = this.state;
         if (
             !emp_first_name.trim() ||
@@ -220,6 +242,10 @@ class ClientCompanyDetailPageInner extends Component<
             occupation: emp_occupation.trim() || undefined,
             high_risk_position_name:
                 emp_high_risk_position_name.trim() || undefined,
+            job_role: emp_job_role ? Number(emp_job_role) : null,
+            risk_level_override: emp_risk_level_override
+                ? Number(emp_risk_level_override)
+                : null,
             client_company: id,
         };
         this.setState((prev) => ({
@@ -332,6 +358,63 @@ class ClientCompanyDetailPageInner extends Component<
                         ...prev,
                         savingEquipment: false,
                         equipmentError: msg,
+                    }));
+                },
+            );
+    };
+
+    openRoleDialog = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            roleDialogOpen: true,
+            roleError: null,
+            role_name: "",
+            role_risk_level: "",
+        }));
+    };
+
+    closeRoleDialog = (): void => {
+        this.setState((prev) => ({ ...prev, roleDialogOpen: false }));
+    };
+
+    saveRole = (): void => {
+        const id = Number(this.props.id);
+        const { role_name, role_risk_level } = this.state;
+        if (!role_name.trim()) return;
+        this.setState((prev) => ({
+            ...prev,
+            savingRole: true,
+            roleError: null,
+        }));
+        createJobRole({
+            client_company: id,
+            name: role_name.trim(),
+            risk_level: role_risk_level ? Number(role_risk_level) : null,
+        })
+            .then((created) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    jobRoles: [...prev.jobRoles, created],
+                    savingRole: false,
+                    roleDialogOpen: false,
+                }));
+                enqueueSnackbar("Radno mesto dodato.", { variant: "success" });
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju radnog mesta.";
+                    this.setState((prev) => ({
+                        ...prev,
+                        savingRole: false,
+                        roleError: msg,
                     }));
                 },
             );
@@ -547,13 +630,17 @@ class ClientCompanyDetailPageInner extends Component<
             getEquipment({ client_company_id: id }),
             getProcessBindings({ client_company_id: id }),
             getProcessRuns({ client_company_id: id }),
-        ]).then(([employees, equipment, bindings, runs]) => {
+            getJobRoles({ client_company_id: id }),
+            getRiskLevels(),
+        ]).then(([employees, equipment, bindings, runs, jobRoles, riskLevels]) => {
             this.setState((prev) => ({
                 ...prev,
                 employees,
                 equipment,
                 bindings,
                 runs,
+                jobRoles,
+                riskLevels,
             }));
         });
     };
@@ -740,6 +827,10 @@ class ClientCompanyDetailPageInner extends Component<
             savingRiskActDate,
             riskActUploading,
             riskActPreviewOpen,
+            jobRoles,
+            riskLevels,
+            emp_job_role,
+            emp_risk_level_override,
             empDialogOpen,
             emp_first_name,
             emp_last_name,
@@ -764,6 +855,11 @@ class ClientCompanyDetailPageInner extends Component<
             equipmentError,
         } = this.state;
         const { navigate } = this.props;
+
+        const selectedJobRole = jobRoles.find(
+            (r) => String(r.id) === emp_job_role,
+        );
+        const inheritedRisk = selectedJobRole?.risk_level_detail ?? null;
 
         if (loading) {
             return (
@@ -1174,6 +1270,63 @@ class ClientCompanyDetailPageInner extends Component<
                             </PermissionGate>
                         </Box>
                     )}
+                </Paper>
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        mt: 2,
+                    }}
+                >
+                    <Typography variant="subtitle1" fontWeight={600}>
+                        Radna mesta
+                    </Typography>
+                    <PermissionGate permission="partners.add_jobrole">
+                        <Button
+                            size="small"
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={this.openRoleDialog}
+                        >
+                            Dodaj radno mesto
+                        </Button>
+                    </PermissionGate>
+                </Box>
+                <Paper sx={{ overflow: "auto" }}>
+                    <Table size="small">
+                        <TableHead>
+                            <TableRow>
+                                <TableCell>Naziv</TableCell>
+                                <TableCell>Nivo rizika</TableCell>
+                                <TableCell>Broj zaposlenih</TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {jobRoles.length === 0 ? (
+                                <TableRow>
+                                    <TableCell colSpan={3} align="center">
+                                        Nema radnih mesta.
+                                    </TableCell>
+                                </TableRow>
+                            ) : (
+                                jobRoles.map((r) => (
+                                    <TableRow key={r.id}>
+                                        <TableCell>{r.name}</TableCell>
+                                        <TableCell>
+                                            {r.risk_level_detail
+                                                ? `${r.risk_level_detail.label} (R=${r.risk_level_detail.score})`
+                                                : "—"}
+                                        </TableCell>
+                                        <TableCell>
+                                            {r.employee_count ?? 0}
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
+                        </TableBody>
+                    </Table>
                 </Paper>
 
                 <Box
@@ -1641,6 +1794,70 @@ class ClientCompanyDetailPageInner extends Component<
                                 }))
                             }
                         />
+                        <FormControl margin="dense" fullWidth size="small">
+                            <InputLabel>Radno mesto</InputLabel>
+                            <Select
+                                label="Radno mesto"
+                                value={emp_job_role}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        emp_job_role: String(e.target.value),
+                                    }))
+                                }
+                            >
+                                <MenuItem value="">
+                                    <em>—</em>
+                                </MenuItem>
+                                {jobRoles.map((r) => (
+                                    <MenuItem key={r.id} value={String(r.id)}>
+                                        {r.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        {inheritedRisk && (
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "block", mt: 0.5 }}
+                            >
+                                Nivo rizika se nasleđuje iz radnog mesta:{" "}
+                                {inheritedRisk.label} (R={inheritedRisk.score})
+                            </Typography>
+                        )}
+                        <FormControl margin="dense" fullWidth size="small">
+                            <InputLabel>Rizik — izuzetak</InputLabel>
+                            <Select
+                                label="Rizik — izuzetak"
+                                value={emp_risk_level_override}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        emp_risk_level_override: String(
+                                            e.target.value,
+                                        ),
+                                    }))
+                                }
+                            >
+                                <MenuItem value="">
+                                    <em>Nasleđeno iz radnog mesta</em>
+                                </MenuItem>
+                                {riskLevels.map((rl) => (
+                                    <MenuItem key={rl.id} value={String(rl.id)}>
+                                        {rl.label} (R={rl.score})
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ display: "block", mt: 0.5 }}
+                        >
+                            Popuni samo ako se rizik za ovog zaposlenog razlikuje
+                            od rizika radnog mesta.
+                        </Typography>
                     </DialogContent>
                     <DialogActions>
                         <Button
@@ -1790,6 +2007,75 @@ class ClientCompanyDetailPageInner extends Component<
                         </DialogActions>
                     </Dialog>
                 )}
+
+                <Dialog
+                    open={this.state.roleDialogOpen}
+                    onClose={this.closeRoleDialog}
+                    maxWidth="sm"
+                    fullWidth
+                >
+                    <DialogTitle>Novo radno mesto</DialogTitle>
+                    <DialogContent>
+                        {this.state.roleError && (
+                            <Alert severity="error" sx={{ mb: 1 }}>
+                                {this.state.roleError}
+                            </Alert>
+                        )}
+                        <TextField
+                            margin="dense"
+                            label="Naziv radnog mesta"
+                            fullWidth
+                            required
+                            value={this.state.role_name}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    role_name: e.target.value,
+                                }))
+                            }
+                        />
+                        <FormControl margin="dense" fullWidth size="small">
+                            <InputLabel>Nivo rizika</InputLabel>
+                            <Select
+                                label="Nivo rizika"
+                                value={this.state.role_risk_level}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        role_risk_level: String(e.target.value),
+                                    }))
+                                }
+                            >
+                                <MenuItem value="">
+                                    <em>—</em>
+                                </MenuItem>
+                                {riskLevels.map((rl) => (
+                                    <MenuItem key={rl.id} value={String(rl.id)}>
+                                        {rl.label} (R={rl.score})
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={this.closeRoleDialog}
+                            disabled={this.state.savingRole}
+                        >
+                            Odustani
+                        </Button>
+                        <Button
+                            onClick={this.saveRole}
+                            variant="contained"
+                            disabled={
+                                this.state.savingRole ||
+                                !this.state.role_name.trim()
+                            }
+                        >
+                            {this.state.savingRole ? "Čuvam..." : "Sačuvaj"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
 
                 <AddProcessBindingDialog
                     open={this.state.bindingDialogOpen}

@@ -23,6 +23,7 @@ import { enqueueSnackbar } from "notistack";
 import type { DocumentTemplate, VisualPlaceholder } from "../api/documents";
 import {
     getDocumentTemplatePages,
+    getTemplateFieldDefinitions,
     saveVisualPlaceholders,
 } from "../api/documents";
 
@@ -30,6 +31,13 @@ interface TemplateField {
     key: string;
     label: string;
 }
+
+type FieldGroups = {
+    EMPLOYEE: TemplateField[];
+    EQUIPMENT: TemplateField[];
+    CLIENT_COMPANY: TemplateField[];
+    PROCESS: TemplateField[];
+};
 
 const EMPLOYEE_FIELDS: TemplateField[] = [
     { key: "employee.first_name", label: "Ime zaposlenog" },
@@ -91,16 +99,30 @@ const FIXED_TEXT_FIELD: TemplateField = {
     label: "Unos teksta",
 };
 
+const FALLBACK_GROUPS: FieldGroups = {
+    EMPLOYEE: EMPLOYEE_FIELDS,
+    EQUIPMENT: EQUIPMENT_FIELDS,
+    CLIENT_COMPANY: CLIENT_FIELDS,
+    PROCESS: PROCESS_FIELDS,
+};
+
 function fieldsForContext(
     context: DocumentTemplate["context_type"],
+    groups: FieldGroups,
 ): TemplateField[] {
-    const base = [FIXED_TEXT_FIELD, ...PROCESS_FIELDS];
+    const base = [FIXED_TEXT_FIELD, ...groups.PROCESS];
     if (context === "EMPLOYEE")
-        return [...EMPLOYEE_FIELDS, ...CLIENT_FIELDS, ...base];
+        return [...groups.EMPLOYEE, ...groups.CLIENT_COMPANY, ...base];
     if (context === "EQUIPMENT")
-        return [...EQUIPMENT_FIELDS, ...CLIENT_FIELDS, ...base];
-    if (context === "CLIENT_COMPANY") return [...CLIENT_FIELDS, ...base];
-    return [...EMPLOYEE_FIELDS, ...EQUIPMENT_FIELDS, ...CLIENT_FIELDS, ...base];
+        return [...groups.EQUIPMENT, ...groups.CLIENT_COMPANY, ...base];
+    if (context === "CLIENT_COMPANY")
+        return [...groups.CLIENT_COMPANY, ...base];
+    return [
+        ...groups.EMPLOYEE,
+        ...groups.EQUIPMENT,
+        ...groups.CLIENT_COMPANY,
+        ...base,
+    ];
 }
 
 const MARKER_W = 12;
@@ -135,6 +157,7 @@ interface State {
     editingPhId: string | null;
     dragState: DragSnapshot | null;
     fieldSearch: string;
+    fieldGroups: FieldGroups | null;
 }
 
 export default class TemplateStructureEditorDialog extends Component<
@@ -159,13 +182,33 @@ export default class TemplateStructureEditorDialog extends Component<
         editingPhId: null,
         dragState: null,
         fieldSearch: "",
+        fieldGroups: null,
     };
 
     componentDidMount(): void {
+        this.loadFieldDefinitions();
         if (this.props.open) {
             this.loadEditorData();
         }
     }
+
+    private loadFieldDefinitions = (): void => {
+        getTemplateFieldDefinitions()
+            .then((defs) => {
+                if (!defs.length) return;
+                const groups: FieldGroups = {
+                    EMPLOYEE: [],
+                    EQUIPMENT: [],
+                    CLIENT_COMPANY: [],
+                    PROCESS: [],
+                };
+                for (const d of defs) {
+                    groups[d.category]?.push({ key: d.key, label: d.label });
+                }
+                this.setState((prev) => ({ ...prev, fieldGroups: groups }));
+            })
+            .catch(() => undefined);
+    };
 
     componentDidUpdate(prevProps: Props): void {
         const { open, template } = this.props;
@@ -445,7 +488,10 @@ export default class TemplateStructureEditorDialog extends Component<
             fieldSearch,
         } = this.state;
 
-        const availableFields = fieldsForContext(template.context_type);
+        const availableFields = fieldsForContext(
+            template.context_type,
+            this.state.fieldGroups ?? FALLBACK_GROUPS,
+        );
         const editingPh = editingPhId
             ? placeholders.find((p) => p.id === editingPhId)
             : undefined;
@@ -588,8 +634,11 @@ export default class TemplateStructureEditorDialog extends Component<
                                                             borderRadius: "3px",
                                                             display: "flex",
                                                             alignItems:
-                                                                "center",
+                                                                "flex-end",
+                                                            justifyContent:
+                                                                "flex-start",
                                                             px: "4px",
+                                                            pb: "1px",
                                                             cursor:
                                                                 dragState?.phId ===
                                                                 ph.id

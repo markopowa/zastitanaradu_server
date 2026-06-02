@@ -6,7 +6,14 @@ from .models import (
     DocumentFile,
     DocumentFileAIFormat,
     DocumentTemplate,
+    TemplateFieldDefinition,
 )
+
+
+class TemplateFieldDefinitionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TemplateFieldDefinition
+        fields = ("id", "key", "label", "category", "order", "is_active")
 
 
 class DocumentCategorySerializer(serializers.ModelSerializer):

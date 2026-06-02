@@ -6,8 +6,34 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 
 from .medical_exam_record import generate_medical_exam_record
-from .models import ClientCompany, Employee, EquipmentItem
-from .serializers import ClientCompanySerializer, EmployeeSerializer, EquipmentItemSerializer
+from .models import ClientCompany, Employee, EquipmentItem, JobRole, RiskLevel
+from .serializers import (
+    ClientCompanySerializer,
+    EmployeeSerializer,
+    EquipmentItemSerializer,
+    JobRoleSerializer,
+    RiskLevelSerializer,
+)
+
+
+class RiskLevelViewSet(viewsets.ModelViewSet):
+    queryset = RiskLevel.objects.all().order_by("order", "score")
+    serializer_class = RiskLevelSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+
+class JobRoleViewSet(viewsets.ModelViewSet):
+    queryset = JobRole.objects.select_related(
+        "client_company", "risk_level").all().order_by("client_company", "name")
+    serializer_class = JobRoleSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        client_company_id = self.request.query_params.get("client_company_id")
+        if client_company_id is not None and client_company_id != "":
+            queryset = queryset.filter(client_company_id=client_company_id)
+        return queryset
 
 
 class ClientCompanyViewSet(viewsets.ModelViewSet):

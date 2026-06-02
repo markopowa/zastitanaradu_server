@@ -23,6 +23,26 @@ export interface ClientCompany {
     risk_assessment_act_date?: string | null;
 }
 
+export interface RiskLevel {
+    id: number;
+    code: string;
+    label: string;
+    score: number;
+    is_acceptable: boolean;
+    is_high_risk: boolean;
+    order: number;
+}
+
+export interface JobRole {
+    id: number;
+    client_company: number;
+    name: string;
+    description?: string;
+    risk_level: number | null;
+    risk_level_detail?: RiskLevel | null;
+    employee_count?: number;
+}
+
 export interface Employee {
     id: number;
     client_company: number | null;
@@ -38,6 +58,12 @@ export interface Employee {
     position?: string;
     occupation?: string;
     high_risk_position_name?: string;
+    job_role?: number | null;
+    job_role_name?: string | null;
+    job_role_risk_level?: RiskLevel | null;
+    risk_level_override?: number | null;
+    risk_level_override_detail?: RiskLevel | null;
+    effective_risk_level?: RiskLevel | null;
 }
 
 export interface EmployeeSummary {

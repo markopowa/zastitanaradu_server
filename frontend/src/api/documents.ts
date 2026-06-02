@@ -125,6 +125,24 @@ export interface VisualPlaceholder {
     fixedText?: string;
 }
 
+export interface TemplateFieldDefinition {
+    id: number;
+    key: string;
+    label: string;
+    category: "EMPLOYEE" | "EQUIPMENT" | "CLIENT_COMPANY" | "PROCESS";
+    order: number;
+    is_active: boolean;
+}
+
+export async function getTemplateFieldDefinitions(): Promise<
+    TemplateFieldDefinition[]
+> {
+    const { data } = await api.get<ListResponse<TemplateFieldDefinition>>(
+        "/api/documents/template-fields/",
+    );
+    return asList(data);
+}
+
 export async function getDocumentTemplatePages(id: number): Promise<string[]> {
     const { data } = await api.get<string[]>(
         `/api/documents/templates/${id}/pages/`,

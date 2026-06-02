@@ -1,6 +1,49 @@
 from django.db import models
 
 
+class RiskLevel(models.Model):
+    code = models.CharField(max_length=32, unique=True)
+    label = models.CharField(max_length=64)
+    score = models.PositiveIntegerField()
+    is_acceptable = models.BooleanField(default=True)
+    is_high_risk = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Risk level"
+        verbose_name_plural = "Risk levels"
+        ordering = ("order", "score")
+
+    def __str__(self) -> str:
+        return f"{self.label} (R={self.score})"
+
+
+class JobRole(models.Model):
+    client_company = models.ForeignKey(
+        "ClientCompany",
+        on_delete=models.CASCADE,
+        related_name="job_roles",
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    risk_level = models.ForeignKey(
+        RiskLevel,
+        on_delete=models.PROTECT,
+        related_name="job_roles",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Job role"
+        verbose_name_plural = "Job roles"
+        ordering = ("client_company", "name")
+        unique_together = ("client_company", "name")
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class ClientCompany(models.Model):
     name = models.CharField(max_length=255)
     tax_id = models.CharField("PIB", max_length=32, unique=True)
@@ -79,6 +122,20 @@ class Employee(models.Model):
         blank=True,
         help_text="Naziv radnog mesta sa povećanim rizikom.",
     )
+    job_role = models.ForeignKey(
+        JobRole,
+        on_delete=models.SET_NULL,
+        related_name="employees",
+        null=True,
+        blank=True,
+    )
+    risk_level_override = models.ForeignKey(
+        RiskLevel,
+        on_delete=models.SET_NULL,
+        related_name="employee_overrides",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = "Zaposleni klijenta"
@@ -86,6 +143,14 @@ class Employee(models.Model):
 
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name}".strip()
+
+    @property
+    def effective_risk_level(self) -> "RiskLevel | None":
+        if self.risk_level_override_id:
+            return self.risk_level_override
+        if self.job_role_id:
+            return self.job_role.risk_level
+        return None
 
 
 class EquipmentItem(models.Model):

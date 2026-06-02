@@ -178,12 +178,14 @@ def fill_pdf_at_coordinates(
 
         x_pct = float(ph.get("xPct", 0))
         y_pct = float(ph.get("yPct", 0))
+        height_pct = float(ph.get("heightPct", 0))
 
         x = rect.width * x_pct / 100.0
-        y = rect.height * y_pct / 100.0
+        y_bottom = rect.height * (y_pct + height_pct) / 100.0
 
         font_size = float(ph.get("fontSize", 10))
-        point = fitz.Point(x, y + font_size)
+        descender = font_size * 0.2
+        point = fitz.Point(x, y_bottom - descender)
         page.insert_text(
             point,
             value,

@@ -178,6 +178,18 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                         <dd>{item.occupation ?? "—"}</dd>
                         <dt>Naziv radnog mesta sa povećanim rizikom</dt>
                         <dd>{item.high_risk_position_name ?? "—"}</dd>
+                        <dt>Radno mesto</dt>
+                        <dd>{item.job_role_name ?? "—"}</dd>
+                        <dt>Nivo rizika</dt>
+                        <dd>
+                            {item.effective_risk_level
+                                ? `${item.effective_risk_level.label} (R=${item.effective_risk_level.score})${
+                                      item.risk_level_override
+                                          ? " — izuzetak"
+                                          : " — iz radnog mesta"
+                                  }`
+                                : "—"}
+                        </dd>
                     </Box>
                 </Paper>
 

@@ -1,6 +1,20 @@
 from django.contrib import admin
 
-from .models import ClientCompany, Employee, EquipmentItem
+from .models import ClientCompany, Employee, EquipmentItem, JobRole, RiskLevel
+
+
+@admin.register(RiskLevel)
+class RiskLevelAdmin(admin.ModelAdmin):
+    list_display = ("code", "label", "score", "is_acceptable", "is_high_risk", "order")
+    search_fields = ("code", "label")
+    list_filter = ("is_acceptable", "is_high_risk")
+
+
+@admin.register(JobRole)
+class JobRoleAdmin(admin.ModelAdmin):
+    list_display = ("name", "client_company", "risk_level")
+    search_fields = ("name",)
+    list_filter = ("client_company", "risk_level")
 
 
 @admin.register(ClientCompany)
@@ -17,6 +31,7 @@ class EmployeeAdmin(admin.ModelAdmin):
         "national_id",
         "org_unit",
         "position",
+        "job_role",
         "client_company",
     )
     search_fields = (
@@ -29,7 +44,7 @@ class EmployeeAdmin(admin.ModelAdmin):
         "occupation",
         "high_risk_position_name",
     )
-    list_filter = ("client_company",)
+    list_filter = ("client_company", "job_role")
 
 
 @admin.register(EquipmentItem)

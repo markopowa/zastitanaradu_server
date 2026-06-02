@@ -6,12 +6,14 @@ import type {
     Employee,
     EmployeeSummary,
     EquipmentItem,
+    JobRole,
     ProcessBinding,
     ProcessRun,
     ProcessRunNote,
     ProcessRunDocument,
     ProcessTemplate,
     ProcessType,
+    RiskLevel,
 } from "../types/processes";
 
 type ListResponse<T> = T[] | { results?: T[] };
@@ -155,6 +157,52 @@ export async function clearClientCompanyRiskAssessmentAct(
 function asList<T>(data: ListResponse<T> | undefined): T[] {
     if (Array.isArray(data)) return data;
     return (data as { results?: T[] })?.results ?? [];
+}
+
+export async function getRiskLevels(): Promise<RiskLevel[]> {
+    const { data } = await api.get<ListResponse<RiskLevel>>(
+        "/api/partners/risk-levels/",
+    );
+    return asList(data);
+}
+
+export async function getJobRoles(params?: {
+    client_company_id?: number;
+}): Promise<JobRole[]> {
+    const search = new URLSearchParams();
+    if (params?.client_company_id != null)
+        search.set("client_company_id", String(params.client_company_id));
+    const qs = search.toString();
+    const url = qs
+        ? `/api/partners/job-roles/?${qs}`
+        : "/api/partners/job-roles/";
+    const { data } = await api.get<ListResponse<JobRole>>(url);
+    return asList(data);
+}
+
+export async function createJobRole(
+    payload: Partial<JobRole>,
+): Promise<JobRole> {
+    const { data } = await api.post<JobRole>(
+        "/api/partners/job-roles/",
+        payload,
+    );
+    return data;
+}
+
+export async function updateJobRole(
+    id: number,
+    payload: Partial<JobRole>,
+): Promise<JobRole> {
+    const { data } = await api.patch<JobRole>(
+        `/api/partners/job-roles/${id}/`,
+        payload,
+    );
+    return data;
+}
+
+export async function deleteJobRole(id: number): Promise<void> {
+    await api.delete(`/api/partners/job-roles/${id}/`);
 }
 
 export async function getEmployees(params?: {

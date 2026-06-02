@@ -113,6 +113,34 @@ class DocumentTemplate(models.Model):
         return self.name
 
 
+class TemplateFieldDefinition(models.Model):
+    CATEGORY_EMPLOYEE = "EMPLOYEE"
+    CATEGORY_EQUIPMENT = "EQUIPMENT"
+    CATEGORY_CLIENT_COMPANY = "CLIENT_COMPANY"
+    CATEGORY_PROCESS = "PROCESS"
+
+    CATEGORY_CHOICES = (
+        (CATEGORY_EMPLOYEE, "Employee"),
+        (CATEGORY_EQUIPMENT, "Equipment"),
+        (CATEGORY_CLIENT_COMPANY, "Client company"),
+        (CATEGORY_PROCESS, "Process"),
+    )
+
+    key = models.CharField(max_length=128, unique=True)
+    label = models.CharField(max_length=255)
+    category = models.CharField(max_length=32, choices=CATEGORY_CHOICES)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Template field"
+        verbose_name_plural = "Template fields"
+        ordering = ("category", "order", "label")
+
+    def __str__(self) -> str:
+        return f"{self.label} ({self.key})"
+
+
 class DocumentFileAIFormat(models.Model):
     STATUS_PENDING = "PENDING"
     STATUS_IN_PROGRESS = "IN_PROGRESS"

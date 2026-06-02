@@ -6,7 +6,16 @@ from .models import (
     DocumentFile,
     DocumentFileAIFormat,
     DocumentTemplate,
+    TemplateFieldDefinition,
 )
+
+
+@admin.register(TemplateFieldDefinition)
+class TemplateFieldDefinitionAdmin(admin.ModelAdmin):
+    list_display = ("label", "key", "category", "order", "is_active")
+    list_filter = ("category", "is_active")
+    search_fields = ("key", "label")
+    list_editable = ("order", "is_active")
 
 
 @admin.register(DocumentCategory)

@@ -6,6 +6,7 @@ from .views import (
     DocumentCategoryViewSet,
     DocumentFileViewSet,
     DocumentTemplateViewSet,
+    TemplateFieldDefinitionViewSet,
 )
 
 app_name = "documents"
@@ -15,6 +16,8 @@ router.register("categories", DocumentCategoryViewSet,
                 basename="document-categories")
 router.register("templates", DocumentTemplateViewSet,
                 basename="document-templates")
+router.register("template-fields", TemplateFieldDefinitionViewSet,
+                basename="template-fields")
 router.register("", DocumentFileViewSet, basename="documents")
 
 urlpatterns = [

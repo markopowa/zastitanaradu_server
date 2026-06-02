@@ -6,13 +6,20 @@ from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import DocumentAIFormat, DocumentCategory, DocumentFile, DocumentTemplate
+from .models import (
+    DocumentAIFormat,
+    DocumentCategory,
+    DocumentFile,
+    DocumentTemplate,
+    TemplateFieldDefinition,
+)
 from .serializers import (
     DocumentAIFormatSerializer,
     DocumentCategorySerializer,
     DocumentFileSerializer,
     DocumentTemplatePageImageUrlListSerializer,
     DocumentTemplateSerializer,
+    TemplateFieldDefinitionSerializer,
 )
 from .utils import (
     generate_page_images,
@@ -178,4 +185,11 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
 class DocumentAIFormatViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DocumentAIFormat.objects.filter(is_active=True).order_by("id")
     serializer_class = DocumentAIFormatSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+
+class TemplateFieldDefinitionViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = TemplateFieldDefinition.objects.filter(
+        is_active=True).order_by("category", "order", "label")
+    serializer_class = TemplateFieldDefinitionSerializer
     permission_classes = [permissions.IsAuthenticated]
