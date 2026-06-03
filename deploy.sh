@@ -238,9 +238,11 @@ setupDocker() {
     cd "$APP_DIR/frontend"
     if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
         npm ci
+        npm i
+        npm audit fix || true
         VITE_API_BASE_URL="${API_BASE_URL}" npm run build
     else
-        docker run --rm -v "$APP_DIR/frontend:/app" -w /app -e VITE_API_BASE_URL="${API_BASE_URL}" node:20-slim sh -c "rm -rf dist && npm ci && npm run build"
+        docker run --rm -v "$APP_DIR/frontend:/app" -w /app -e VITE_API_BASE_URL="${API_BASE_URL}" node:20-slim sh -c "rm -rf dist && npm ci && npm i && (npm audit fix || true) && npm run build"
     fi
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
     cd "$APP_DIR"

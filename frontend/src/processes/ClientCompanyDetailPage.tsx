@@ -70,9 +70,7 @@ import type {
     Employee,
     EmployeeSummary,
     EquipmentItem,
-    JobRole,
     ProcessBinding,
-    RiskLevel,
 } from "../types/processes";
 
 const formatDate = (v?: string | null) => formatDateDisplay(v);
