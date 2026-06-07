@@ -23,7 +23,8 @@ TEST_EMPLOYEE_NATIONAL_ID = "0102990710123"
 def _test_querysets():
     companies = ClientCompany.objects.filter(TEST_COMPANY_Q)
     employees = Employee.objects.filter(
-        Q(client_company__in=companies) | Q(national_id=TEST_EMPLOYEE_NATIONAL_ID)
+        Q(client_company__in=companies) | Q(
+            national_id=TEST_EMPLOYEE_NATIONAL_ID)
     )
     bindings = ProcessBinding.objects.filter(employee__in=employees)
     runs = ProcessRun.objects.filter(process_binding__in=bindings)
@@ -88,7 +89,8 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             log_deleted, _ = ActivityLog.objects.filter(
-                Q(process_run__in=qs["runs"]) | Q(process_binding__in=qs["bindings"])
+                Q(process_run__in=qs["runs"]) | Q(
+                    process_binding__in=qs["bindings"])
             ).delete()
             runs_deleted, runs_breakdown = qs["runs"].delete()
             bindings_deleted, bindings_breakdown = qs["bindings"].delete()
@@ -132,4 +134,5 @@ class Command(BaseCommand):
                 short = model_label.rsplit(".", 1)[-1]
                 parts.append(f"{count} {short} ({label} cascade)")
 
-        self.stdout.write(self.style.SUCCESS(f"OK: deleted {', '.join(parts)}."))
+        self.stdout.write(self.style.SUCCESS(
+            f"OK: deleted {', '.join(parts)}."))

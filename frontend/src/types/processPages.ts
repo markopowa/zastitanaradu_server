@@ -247,7 +247,7 @@ export interface ClientCompanyDetailPageState {
     editWebsite: string;
     editNotes: string;
     editActivity_code: string;
-    aprImporting: boolean;
+    registryImporting: boolean;
     riskLevels: RiskLevel[];
     jobRoles: JobRole[];
     roleDialogOpen: boolean;
@@ -441,4 +441,3 @@ export interface EntityProcessBindingsPanelState {
     savingStartDateBindingId: number | null;
     deactivatingBindingId: number | null;
 }
-

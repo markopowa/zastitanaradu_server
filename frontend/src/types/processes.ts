@@ -23,10 +23,7 @@ export interface ClientCompany {
     risk_assessment_act_date?: string | null;
 }
 
-export type RiskAssessmentSectionType =
-    | "INTRO"
-    | "ASSESSMENTS"
-    | "CONCLUSION";
+export type RiskAssessmentSectionType = "INTRO" | "ASSESSMENTS" | "CONCLUSION";
 
 export interface RiskAssessmentSectionRevision {
     id: number;

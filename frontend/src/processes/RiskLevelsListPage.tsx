@@ -323,14 +323,10 @@ class RiskLevelsListPage extends Component<
                                             <TableCell>{rl.label}</TableCell>
                                             <TableCell>{rl.score}</TableCell>
                                             <TableCell>
-                                                {rl.is_acceptable
-                                                    ? "Da"
-                                                    : "Ne"}
+                                                {rl.is_acceptable ? "Da" : "Ne"}
                                             </TableCell>
                                             <TableCell>
-                                                {rl.is_high_risk
-                                                    ? "Da"
-                                                    : "Ne"}
+                                                {rl.is_high_risk ? "Da" : "Ne"}
                                             </TableCell>
                                             <TableCell>{rl.order}</TableCell>
                                             <TableCell align="right">
@@ -483,8 +479,8 @@ class RiskLevelsListPage extends Component<
                     message={
                         deleteTarget != null ? (
                             <>
-                                Da li si siguran da želiš da obrišeš nivo
-                                rizika „{deleteTarget.label}"?
+                                Da li si siguran da želiš da obrišeš nivo rizika
+                                „{deleteTarget.label}"?
                             </>
                         ) : (
                             ""

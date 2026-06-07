@@ -28,9 +28,6 @@ export function parseCompanyTab(search: string): CompanyTabKey {
     return "identity";
 }
 
-export function companyTabUrl(
-    companyId: number,
-    tab: CompanyTabKey,
-): string {
+export function companyTabUrl(companyId: number, tab: CompanyTabKey): string {
     return `/client-companies/${companyId}?tab=${tab}`;
 }

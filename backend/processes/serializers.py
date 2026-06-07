@@ -54,7 +54,8 @@ class ProcessTemplateSerializer(serializers.ModelSerializer):
         instance = self.instance
         generate = attrs.get(
             "generate_document",
-            getattr(instance, "generate_document", False) if instance else False,
+            getattr(instance, "generate_document",
+                    False) if instance else False,
         )
         send = attrs.get(
             "send_email",
@@ -305,7 +306,8 @@ class ProcessRunDocumentSerializer(serializers.ModelSerializer):
 
 class ProcessRunDocumentUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
-    title = serializers.CharField(required=False, allow_blank=True, max_length=255)
+    title = serializers.CharField(
+        required=False, allow_blank=True, max_length=255)
 
 
 class ProcessRunDocumentCreateSerializer(serializers.Serializer):
@@ -396,8 +398,10 @@ class UpcomingDeadlineSerializer(serializers.Serializer):
 
 class ActivityLogSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
-    event_type_display = serializers.CharField(source="get_event_type_display", read_only=True)
-    process_run_id = serializers.IntegerField(source="process_run.id", read_only=True, default=None)
+    event_type_display = serializers.CharField(
+        source="get_event_type_display", read_only=True)
+    process_run_id = serializers.IntegerField(
+        source="process_run.id", read_only=True, default=None)
 
     class Meta:
         model = ActivityLog

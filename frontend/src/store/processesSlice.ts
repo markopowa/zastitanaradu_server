@@ -123,7 +123,6 @@ function employeesParamsKey(params: FetchEmployeesListParams): string {
     });
 }
 
-
 const initialState: ProcessesState = {
     clientCompanies: [],
     clientCompaniesStatus: "idle",
@@ -236,13 +235,8 @@ export const addProcessBinding = createAsyncThunk(
 
 export const saveProcessBinding = createAsyncThunk(
     "processes/saveProcessBinding",
-    async ({
-        id,
-        payload,
-    }: {
-        id: number;
-        payload: Partial<ProcessBinding>;
-    }) => updateProcessBinding(id, payload),
+    async ({ id, payload }: { id: number; payload: Partial<ProcessBinding> }) =>
+        updateProcessBinding(id, payload),
 );
 
 export const fetchRuns = createAsyncThunk(
@@ -611,8 +605,7 @@ const processesSlice = createSlice({
                         ? String(row.client_company)
                         : "";
                 const matchesCompany =
-                    key.includes(`"c":"_all"`) ||
-                    key.includes(`"c":"${cid}"`);
+                    key.includes(`"c":"_all"`) || key.includes(`"c":"${cid}"`);
                 if (matchesCompany) {
                     state.employeesItems = [...state.employeesItems, summary];
                 }

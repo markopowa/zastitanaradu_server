@@ -106,10 +106,7 @@ export class CompanyDocumentsPanel extends Component<
     docByKind = (kind: CompanyDocumentKind): CompanyDocument | undefined =>
         this.state.items.find((d) => d.kind === kind);
 
-    handleUpload = (
-        kind: CompanyDocumentKind,
-        file: File | null,
-    ): void => {
+    handleUpload = (kind: CompanyDocumentKind, file: File | null): void => {
         if (!file) return;
         const { clientCompanyId } = this.props;
         this.setState({ uploadingKind: kind });
@@ -380,9 +377,7 @@ export class CompanyDocumentsPanel extends Component<
                         <DialogContent>
                             <FilePreviewContent
                                 url={previewDoc.file}
-                                label={
-                                    previewDoc.file_name ?? "Dokument"
-                                }
+                                label={previewDoc.file_name ?? "Dokument"}
                             />
                         </DialogContent>
                         <DialogActions>
@@ -393,9 +388,7 @@ export class CompanyDocumentsPanel extends Component<
                             >
                                 Otvori u novom prozoru
                             </Button>
-                            <Button onClick={this.closePreview}>
-                                Zatvori
-                            </Button>
+                            <Button onClick={this.closePreview}>Zatvori</Button>
                         </DialogActions>
                     </Dialog>
                 )}

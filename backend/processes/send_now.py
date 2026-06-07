@@ -6,6 +6,7 @@ from .models import ProcessRun, ProcessTemplate, ProcessTriggerRun
 from .trigger_utils import trigger_already_executed
 from .utils import binding_subject_snapshot, execute_template_actions
 
+
 def send_now_for_binding(binding, *, user=None):
     open_run = (
         ProcessRun.objects.filter(

@@ -863,7 +863,9 @@ export default class TemplateStructureEditorDialog extends Component<
                                         onChange={(e) =>
                                             this.setState((prev) => ({
                                                 ...prev,
-                                                gridStep: Number(e.target.value),
+                                                gridStep: Number(
+                                                    e.target.value,
+                                                ),
                                             }))
                                         }
                                     >
@@ -959,7 +961,9 @@ export default class TemplateStructureEditorDialog extends Component<
                                             }}
                                             onChange={(e) => {
                                                 const id = editingPh.id;
-                                                const v = Number(e.target.value);
+                                                const v = Number(
+                                                    e.target.value,
+                                                );
                                                 if (Number.isNaN(v)) return;
                                                 this.setState((prev) => ({
                                                     placeholders:

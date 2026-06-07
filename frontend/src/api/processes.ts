@@ -227,10 +227,9 @@ export function riskAssessmentActMergedPdfUrl(actId: number): string {
 export async function downloadRiskAssessmentActMergedPdf(
     actId: number,
 ): Promise<Blob> {
-    const { data } = await api.get<Blob>(
-        riskAssessmentActMergedPdfUrl(actId),
-        { responseType: "blob" },
-    );
+    const { data } = await api.get<Blob>(riskAssessmentActMergedPdfUrl(actId), {
+        responseType: "blob",
+    });
     return data;
 }
 
@@ -358,8 +357,7 @@ export async function getEmployees(params?: {
     const search = new URLSearchParams();
     if (params?.client_company_id != null)
         search.set("client_company_id", String(params.client_company_id));
-    if (params?.search?.trim())
-        search.set("search", params.search.trim());
+    if (params?.search?.trim()) search.set("search", params.search.trim());
     if (params?.risk_level_id != null)
         search.set("risk_level_id", String(params.risk_level_id));
     const qs = search.toString();
@@ -777,17 +775,22 @@ export async function deleteCompanyDocument(id: number): Promise<void> {
     await api.delete(`/api/partners/company-documents/${id}/`);
 }
 
-export interface AprLookupResult {
+export interface RegistryLookupResult {
     name?: string;
     registration_number?: string;
     address?: string;
     activity_code?: string;
+    status?: string;
+    legal_form?: string;
+    data_cut_off_date?: string;
 }
 
-export async function aprLookup(taxId: string): Promise<AprLookupResult> {
-    const { data } = await api.post<AprLookupResult>(
-        "/api/partners/apr-lookup/",
-        { tax_id: taxId },
+export async function registryLookup(
+    registrationNumber: string,
+): Promise<RegistryLookupResult> {
+    const { data } = await api.post<RegistryLookupResult>(
+        "/api/partners/registry-lookup/",
+        { registration_number: registrationNumber },
     );
     return data;
 }

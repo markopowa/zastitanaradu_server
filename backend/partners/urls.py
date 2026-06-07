@@ -2,7 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    APRLookupView,
+    CompanyRegistryLookupView,
     ClientCompanyViewSet,
     CompanyDocumentViewSet,
     ComplianceFindingTypeViewSet,
@@ -28,7 +28,8 @@ router.register(
     basename="compliance-finding-types",
 )
 router.register("job-roles", JobRoleViewSet, basename="job-roles")
-router.register("contact-persons", ContactPersonViewSet, basename="contact-persons")
+router.register("contact-persons", ContactPersonViewSet,
+                basename="contact-persons")
 router.register(
     "company-documents",
     CompanyDocumentViewSet,
@@ -41,6 +42,10 @@ router.register(
 )
 
 urlpatterns = [
-    path("apr-lookup/", APRLookupView.as_view(), name="apr-lookup"),
+    path(
+        "registry-lookup/",
+        CompanyRegistryLookupView.as_view(),
+        name="registry-lookup",
+    ),
     path("", include(router.urls)),
 ]

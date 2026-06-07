@@ -19,7 +19,13 @@ import { AddProcessBindingDialog } from "./AddProcessBindingDialog";
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import { PermissionGate } from "./PermissionGate";
 import RowActionsMenu from "./RowActionsMenu";
-import { bindingTermDateError, displayDateToIso, formatDateDisplay, isoDateToFormDisplay, isScheduledOverdue } from "../utils/date";
+import {
+    bindingTermDateError,
+    displayDateToIso,
+    formatDateDisplay,
+    isoDateToFormDisplay,
+    isScheduledOverdue,
+} from "../utils/date";
 import { notifyError, notifySuccess, StatusBadge } from "../design";
 
 import type {
@@ -105,9 +111,7 @@ export class EntityProcessBindingsPanel extends Component<
                             size="small"
                             variant="contained"
                             startIcon={<AddIcon />}
-                            onClick={() =>
-                                this.setState({ dialogOpen: true })
-                            }
+                            onClick={() => this.setState({ dialogOpen: true })}
                         >
                             Dodaj obavezu
                         </Button>
@@ -221,20 +225,22 @@ export class EntityProcessBindingsPanel extends Component<
                                             r.status === "SENT") &&
                                         isScheduledOverdue(r.scheduled_for);
                                     return (
-                                    <TableRow key={r.id}>
-                                        <TableCell>
-                                            {r.process_type_name}
-                                        </TableCell>
-                                        <TableCell>
-                                            {formatDateDisplay(r.valid_until)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <StatusBadge
-                                                status={r.status}
-                                                isOverdue={isOverdue}
-                                            />
-                                        </TableCell>
-                                    </TableRow>
+                                        <TableRow key={r.id}>
+                                            <TableCell>
+                                                {r.process_type_name}
+                                            </TableCell>
+                                            <TableCell>
+                                                {formatDateDisplay(
+                                                    r.valid_until,
+                                                )}
+                                            </TableCell>
+                                            <TableCell>
+                                                <StatusBadge
+                                                    status={r.status}
+                                                    isOverdue={isOverdue}
+                                                />
+                                            </TableCell>
+                                        </TableRow>
                                     );
                                 })
                             )}

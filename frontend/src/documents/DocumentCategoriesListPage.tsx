@@ -21,7 +21,12 @@ import DeleteIcon from "@mui/icons-material/Delete";
 
 import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
-import { ConfirmDialog, ErrorState, FormActions, TableStateRow } from "../design";
+import {
+    ConfirmDialog,
+    ErrorState,
+    FormActions,
+    TableStateRow,
+} from "../design";
 import {
     fetchDocumentCategories,
     createDocumentCategory,

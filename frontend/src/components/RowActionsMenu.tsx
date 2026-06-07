@@ -87,9 +87,7 @@ export default function RowActionsMenu({ actions }: RowActionsMenuProps) {
                             </Tooltip>
                         );
                     }
-                    return (
-                        <span key={i}>{item}</span>
-                    );
+                    return <span key={i}>{item}</span>;
                 })}
             </Menu>
         </>

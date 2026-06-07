@@ -28,7 +28,12 @@ import DeleteIcon from "@mui/icons-material/Delete";
 
 import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
-import { ConfirmDialog, ErrorState, FormActions, TableStateRow } from "../design";
+import {
+    ConfirmDialog,
+    ErrorState,
+    FormActions,
+    TableStateRow,
+} from "../design";
 import {
     loadRoles,
     loadPermissions,
@@ -291,9 +296,13 @@ class RolesListPage extends Component<RolesListPageProps, RolesListPageState> {
                                         <TableCell>{role.name}</TableCell>
                                         <TableCell>
                                             {Array.isArray(role.permissions)
-                                                ? (role.permissions as Permission[])
+                                                ? (
+                                                      role.permissions as Permission[]
+                                                  )
                                                       .map((p) =>
-                                                          this.permissionLabel(p),
+                                                          this.permissionLabel(
+                                                              p,
+                                                          ),
                                                       )
                                                       .join(", ") || "—"
                                                 : "—"}

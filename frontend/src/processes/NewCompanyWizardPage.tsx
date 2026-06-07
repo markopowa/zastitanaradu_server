@@ -15,13 +15,14 @@ import {
     StepLabel,
     Stepper,
     TextField,
+    Tooltip,
     Typography,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { enqueueSnackbar } from "notistack";
 
 import {
-    aprLookup,
+    registryLookup,
     createClientCompany,
     createJobRole,
     getRiskLevels,
@@ -71,7 +72,7 @@ interface State {
     website: string;
     notes: string;
     activity_code: string;
-    aprImporting: boolean;
+    registryImporting: boolean;
     saving: boolean;
     stepError: string | null;
     riskActDateValue: string;
@@ -98,7 +99,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
         website: "",
         notes: "",
         activity_code: "",
-        aprImporting: false,
+        registryImporting: false,
         saving: false,
         stepError: null,
         riskActDateValue: "",
@@ -119,7 +120,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
             { label: "Nova firma" },
         ]);
         getRiskLevels()
-            .then((items) => this.setState((prev) => ({ ...prev, riskLevels: items })))
+            .then((items) =>
+                this.setState((prev) => ({ ...prev, riskLevels: items })),
+            )
             .catch(() => undefined);
     }
 
@@ -127,29 +130,35 @@ class NewCompanyWizardPage extends Component<Props, State> {
         this.props.setBreadcrumbs([]);
     }
 
-    handleAprImport = (): void => {
-        const { tax_id } = this.state;
-        if (!tax_id.trim()) return;
-        this.setState((prev) => ({ ...prev, aprImporting: true }));
-        aprLookup(tax_id.trim())
+    handleRegistryImport = (): void => {
+        const { registration_number } = this.state;
+        if (!registration_number.trim()) return;
+        this.setState((prev) => ({ ...prev, registryImporting: true }));
+        registryLookup(registration_number.trim())
             .then((data) => {
                 this.setState((prev) => ({
                     ...prev,
-                    aprImporting: false,
+                    registryImporting: false,
                     name: data.name ?? prev.name,
                     registration_number:
                         data.registration_number ?? prev.registration_number,
                     address: data.address ?? prev.address,
                     activity_code: data.activity_code ?? prev.activity_code,
                 }));
-                enqueueSnackbar("Podaci preuzeti iz APR-a.", {
+                const cutOff = data.data_cut_off_date
+                    ? ` (podaci od ${data.data_cut_off_date})`
+                    : "";
+                enqueueSnackbar(`Podaci preuzeti iz registra${cutOff}.`, {
                     variant: "success",
                 });
             })
             .catch(() => {
-                this.setState((prev) => ({ ...prev, aprImporting: false }));
+                this.setState((prev) => ({
+                    ...prev,
+                    registryImporting: false,
+                }));
                 enqueueSnackbar(
-                    "APR pretraga trenutno nije dostupna. Unesite podatke ručno.",
+                    "Firma nije pronađena u registru ili snapshot nije učitan. Unesite podatke ručno.",
                     { variant: "warning" },
                 );
             });
@@ -251,7 +260,11 @@ class NewCompanyWizardPage extends Component<Props, State> {
             this.state;
         if (companyId == null) return false;
         if (!roleName.trim() || !roleRiskLevelId) return true;
-        this.setState((prev) => ({ ...prev, savingRole: true, stepError: null }));
+        this.setState((prev) => ({
+            ...prev,
+            savingRole: true,
+            stepError: null,
+        }));
         try {
             await createJobRole({
                 client_company: companyId,
@@ -362,7 +375,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
             website,
             notes,
             activity_code,
-            aprImporting,
+            registryImporting,
             saving,
             stepError,
             riskActDateValue,
@@ -393,39 +406,48 @@ class NewCompanyWizardPage extends Component<Props, State> {
                             }))
                         }
                     />
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                        <TextField
-                            label="PIB"
-                            required
-                            fullWidth
-                            value={tax_id}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    tax_id: e.target.value,
-                                }))
-                            }
-                        />
-                        <Button
-                            variant="outlined"
-                            disabled={aprImporting || !tax_id.trim()}
-                            onClick={this.handleAprImport}
-                            sx={{ mt: 1, flexShrink: 0 }}
-                        >
-                            {aprImporting ? "Tražim..." : "Uvezi iz APR-a"}
-                        </Button>
-                    </Box>
                     <TextField
-                        label="Matični broj"
+                        label="PIB"
+                        required
                         fullWidth
-                        value={registration_number}
+                        value={tax_id}
                         onChange={(e) =>
                             this.setState((prev) => ({
                                 ...prev,
-                                registration_number: e.target.value,
+                                tax_id: e.target.value,
                             }))
                         }
                     />
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                        <TextField
+                            label="Matični broj"
+                            fullWidth
+                            value={registration_number}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    registration_number: e.target.value,
+                                }))
+                            }
+                        />
+                        <Tooltip title="Podaci iz javnog registra (open data). Ažurira se mesečno. Nema punu adresu — samo opština. PIB unesite ručno.">
+                            <span>
+                                <Button
+                                    variant="outlined"
+                                    disabled={
+                                        registryImporting ||
+                                        !registration_number.trim()
+                                    }
+                                    onClick={this.handleRegistryImport}
+                                    sx={{ mt: 1, flexShrink: 0 }}
+                                >
+                                    {registryImporting
+                                        ? "Tražim..."
+                                        : "Uvezi iz registra"}
+                                </Button>
+                            </span>
+                        </Tooltip>
+                    </Box>
                     <TextField
                         label="Adresa"
                         fullWidth
@@ -790,6 +812,7 @@ const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
     setBreadcrumbs: (items) => dispatch(setBreadcrumbs(items)),
 });
 
-export default connect(null, mapDispatchToProps)(
-    withNavigation(NewCompanyWizardPage),
-);
+export default connect(
+    null,
+    mapDispatchToProps,
+)(withNavigation(NewCompanyWizardPage));

@@ -1,9 +1,6 @@
 import { Tab, Tabs } from "@mui/material";
 
-import {
-    COMPANY_TABS,
-    type CompanyTabKey,
-} from "../utils/companyTabs";
+import { COMPANY_TABS, type CompanyTabKey } from "../utils/companyTabs";
 
 interface CompanyTabBarProps {
     activeTab: CompanyTabKey;

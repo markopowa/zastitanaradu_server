@@ -82,7 +82,8 @@ class ProcessTriggerRunAdmin(admin.ModelAdmin):
         "email_sent",
     )
     list_filter = ("trigger",)
-    raw_id_fields = ("process_run", "process_template", "executed_by", "document_file")
+    raw_id_fields = ("process_run", "process_template",
+                     "executed_by", "document_file")
 
 
 @admin.register(TaskAssignment)

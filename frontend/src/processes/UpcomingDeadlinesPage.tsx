@@ -65,8 +65,7 @@ class UpcomingDeadlinesPageInner extends Component<Props, State> {
 
     load = (): void => {
         const { client_company_id, within_days } = this.state;
-        const params: { client_company_id?: number; within_days?: number } =
-            {};
+        const params: { client_company_id?: number; within_days?: number } = {};
         if (client_company_id) {
             params.client_company_id = Number(client_company_id);
         }
@@ -109,7 +108,9 @@ class UpcomingDeadlinesPageInner extends Component<Props, State> {
         if (row.days_until_deadline == null) return "—";
         if (row.is_overdue) {
             const overdueDays = Math.abs(row.days_until_deadline);
-            return overdueDays === 1 ? "1 dan kasni" : `${overdueDays} dana kasni`;
+            return overdueDays === 1
+                ? "1 dan kasni"
+                : `${overdueDays} dana kasni`;
         }
         if (row.days_until_deadline === 0) return "Danas";
         if (row.days_until_deadline === 1) return "1 dan";

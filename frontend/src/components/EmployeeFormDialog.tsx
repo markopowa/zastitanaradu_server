@@ -101,8 +101,7 @@ export class EmployeeFormDialog extends Component<
                 org_unit: initial.org_unit ?? "",
                 position: initial.position ?? "",
                 occupation: initial.occupation ?? "",
-                high_risk_position_name:
-                    initial.high_risk_position_name ?? "",
+                high_risk_position_name: initial.high_risk_position_name ?? "",
                 job_role:
                     initial.job_role != null ? String(initial.job_role) : "",
                 risk_level_override:
@@ -124,7 +123,9 @@ export class EmployeeFormDialog extends Component<
             saving: false,
             error: null,
         });
-        void getRiskLevels().then((riskLevels) => this.setState({ riskLevels }));
+        void getRiskLevels().then((riskLevels) =>
+            this.setState({ riskLevels }),
+        );
         const companyId = base.client_company_id;
         if (companyId) {
             this.loadJobRoles(companyId);
@@ -236,9 +237,7 @@ export class EmployeeFormDialog extends Component<
             .then((saved) => {
                 this.setState({ saving: false });
                 enqueueSnackbar(
-                    mode === "edit"
-                        ? "Zaposleni sačuvan."
-                        : "Zaposleni dodat.",
+                    mode === "edit" ? "Zaposleni sačuvan." : "Zaposleni dodat.",
                     { variant: "success" },
                 );
                 onSaved(saved);
@@ -284,9 +283,7 @@ export class EmployeeFormDialog extends Component<
             error,
         } = this.state;
 
-        const selectedJobRole = jobRoles.find(
-            (r) => String(r.id) === job_role,
-        );
+        const selectedJobRole = jobRoles.find((r) => String(r.id) === job_role);
         const inheritedRisk = selectedJobRole?.risk_level_detail ?? null;
         const companyLocked = lockedClientCompanyId != null;
 
@@ -530,8 +527,8 @@ export class EmployeeFormDialog extends Component<
                         color="text.secondary"
                         sx={{ display: "block", mt: 0.5, mb: 1 }}
                     >
-                        Popuni samo ako se rizik za ovog zaposlenog razlikuje
-                        od rizika radnog mesta.
+                        Popuni samo ako se rizik za ovog zaposlenog razlikuje od
+                        rizika radnog mesta.
                     </Typography>
                 </DialogContent>
                 <FormActions

@@ -116,7 +116,8 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
 
         placeholders = request.data.get("placeholders")
         if placeholders is None:
-            generation_config = getattr(instance, "generation_config", None) or {}
+            generation_config = getattr(
+                instance, "generation_config", None) or {}
             placeholders = generation_config.get("placeholders") or []
 
         if not isinstance(placeholders, list):

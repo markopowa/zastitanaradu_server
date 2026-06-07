@@ -228,12 +228,8 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
 
     render() {
         const { item, bindings, runs, loading, error } = this.state;
-        const {
-            editDialogOpen,
-            sendDialogOpen,
-            sendProcessTypeId,
-            sending,
-        } = this.state;
+        const { editDialogOpen, sendDialogOpen, sendProcessTypeId, sending } =
+            this.state;
         const { navigate, clientCompanies, processTypes } = this.props;
 
         if (loading) {
@@ -289,9 +285,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                                 flexWrap: "wrap",
                             }}
                         >
-                            <Typography variant="h6">
-                                {employeeName}
-                            </Typography>
+                            <Typography variant="h6">{employeeName}</Typography>
                             <RiskBadge
                                 riskLevel={
                                     item.effective_risk_level ??

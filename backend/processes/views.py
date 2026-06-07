@@ -276,7 +276,8 @@ class ProcessBindingViewSet(viewsets.ModelViewSet):
         first_doc = run.documents.select_related("document_file").first()
         if first_doc and first_doc.document_file.file:
             doc_url = first_doc.document_file.file.url
-        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        subject = run.subject_snapshot.get(
+            "name") or run.subject_snapshot.get("kind") or ""
         scheduled_trigger = run.trigger_runs.filter(
             trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED
         ).first()
@@ -367,7 +368,8 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
             status=ProcessRun.STATUS_PENDING,
         )
         user = getattr(self.request, "user", None)
-        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        subject = run.subject_snapshot.get(
+            "name") or run.subject_snapshot.get("kind") or ""
         log_activity(
             ActivityLog.EVENT_RUN_CREATED,
             f"Ručno kreirana aktivnost '{run.process_type.name}' za {subject}",
@@ -390,7 +392,8 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         user = getattr(request, "user", None)
         apply_process_run_completion(
             run, serializer.validated_data, user=user)
-        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        subject = run.subject_snapshot.get(
+            "name") or run.subject_snapshot.get("kind") or ""
         log_activity(
             ActivityLog.EVENT_RUN_COMPLETED,
             f"Završena aktivnost '{run.process_type.name}' za {subject}, važi do {format_date_display(run.valid_until)}",
@@ -448,7 +451,8 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
             log_activity(
                 ActivityLog.EVENT_DOCUMENT_ATTACHED,
                 f"Dodat prilog '{doc_file.title}' na aktivnost '{run.process_type.name}' ({subject})",
-                user=user if getattr(user, "is_authenticated", False) else None,
+                user=user if getattr(
+                    user, "is_authenticated", False) else None,
                 process_run=run,
                 process_binding=run.process_binding,
             )
@@ -474,7 +478,8 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
             document_file=doc_file,
             usage_kind=usage_kind,
         )
-        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        subject = run.subject_snapshot.get(
+            "name") or run.subject_snapshot.get("kind") or ""
         user = getattr(request, "user", None)
         log_activity(
             ActivityLog.EVENT_DOCUMENT_ATTACHED,
@@ -672,7 +677,8 @@ class EmployeeSendNowView(APIView):
         first_doc = run.documents.select_related("document_file").first()
         if first_doc and first_doc.document_file.file:
             doc_url = first_doc.document_file.file.url
-        subject = run.subject_snapshot.get("name") or run.subject_snapshot.get("kind") or ""
+        subject = run.subject_snapshot.get(
+            "name") or run.subject_snapshot.get("kind") or ""
         scheduled_trigger = run.trigger_runs.filter(
             trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED
         ).first()

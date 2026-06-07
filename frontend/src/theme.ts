@@ -64,39 +64,41 @@ const commonComponents: ThemeOptions["components"] = {
                     padding: "6px 12px",
                     fontSize: "0.8125rem",
                 },
-                "&.MuiButton-containedPrimary, &.MuiButton-contained.MuiButton-colorPrimary": {
-                    color: theme.palette.primary.contrastText,
-                    backgroundColor: theme.palette.primary.main,
-                    backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-                    boxShadow:
-                        theme.palette.mode === "light"
-                            ? `0 4px 14px ${alpha(theme.palette.primary.dark, 0.28)}`
-                            : `0 4px 14px ${alpha(theme.palette.primary.dark, 0.45)}`,
-                    "&:hover": {
+                "&.MuiButton-containedPrimary, &.MuiButton-contained.MuiButton-colorPrimary":
+                    {
                         color: theme.palette.primary.contrastText,
-                        backgroundColor: theme.palette.primary.dark,
-                        backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${alpha(theme.palette.primary.main, 0.92)})`,
+                        backgroundColor: theme.palette.primary.main,
+                        backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                        boxShadow:
+                            theme.palette.mode === "light"
+                                ? `0 4px 14px ${alpha(theme.palette.primary.dark, 0.28)}`
+                                : `0 4px 14px ${alpha(theme.palette.primary.dark, 0.45)}`,
+                        "&:hover": {
+                            color: theme.palette.primary.contrastText,
+                            backgroundColor: theme.palette.primary.dark,
+                            backgroundImage: `linear-gradient(135deg, ${theme.palette.primary.dark}, ${alpha(theme.palette.primary.main, 0.92)})`,
+                        },
+                        "& .MuiButton-startIcon, & .MuiButton-endIcon": {
+                            color: "inherit",
+                        },
                     },
-                    "& .MuiButton-startIcon, & .MuiButton-endIcon": {
-                        color: "inherit",
-                    },
-                },
-                "&.MuiButton-containedSecondary, &.MuiButton-contained.MuiButton-colorSecondary": {
-                    color: theme.palette.secondary.contrastText,
-                    backgroundColor: theme.palette.secondary.main,
-                    backgroundImage: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
-                    boxShadow:
-                        theme.palette.mode === "light"
-                            ? `0 3px 10px ${alpha(theme.palette.secondary.dark, 0.22)}`
-                            : `0 3px 10px ${alpha(CH_DARK_0C2B4E, 0.5)}`,
-                    "&:hover": {
+                "&.MuiButton-containedSecondary, &.MuiButton-contained.MuiButton-colorSecondary":
+                    {
                         color: theme.palette.secondary.contrastText,
-                        backgroundColor: theme.palette.secondary.dark,
+                        backgroundColor: theme.palette.secondary.main,
+                        backgroundImage: `linear-gradient(135deg, ${theme.palette.secondary.main}, ${theme.palette.secondary.dark})`,
+                        boxShadow:
+                            theme.palette.mode === "light"
+                                ? `0 3px 10px ${alpha(theme.palette.secondary.dark, 0.22)}`
+                                : `0 3px 10px ${alpha(CH_DARK_0C2B4E, 0.5)}`,
+                        "&:hover": {
+                            color: theme.palette.secondary.contrastText,
+                            backgroundColor: theme.palette.secondary.dark,
+                        },
+                        "& .MuiButton-startIcon, & .MuiButton-endIcon": {
+                            color: "inherit",
+                        },
                     },
-                    "& .MuiButton-startIcon, & .MuiButton-endIcon": {
-                        color: "inherit",
-                    },
-                },
                 "&.MuiButton-outlinedPrimary":
                     theme.palette.mode === "dark"
                         ? {

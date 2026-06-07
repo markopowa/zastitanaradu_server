@@ -131,7 +131,10 @@ class ProcessBindingsListPageInner extends Component<
     };
 
     handleDeactivate = (bindingId: number): void => {
-        this.setState((prev) => ({ ...prev, deactivatingBindingId: bindingId }));
+        this.setState((prev) => ({
+            ...prev,
+            deactivatingBindingId: bindingId,
+        }));
         void this.props
             .saveBinding?.({
                 id: bindingId,
@@ -341,7 +344,8 @@ class ProcessBindingsListPageInner extends Component<
 
         const subjectLabel = (b: ProcessBinding) => {
             if (b.employee) {
-                const name = `${b.employee_first_name ?? ""} ${b.employee_last_name ?? ""}`.trim();
+                const name =
+                    `${b.employee_first_name ?? ""} ${b.employee_last_name ?? ""}`.trim();
                 return name || "—";
             }
             if (b.equipment_item) return b.equipment_item_name || "—";
@@ -446,7 +450,9 @@ class ProcessBindingsListPageInner extends Component<
                                             onClick={(e) => e.stopPropagation()}
                                         >
                                             {row.has_open_run ? (
-                                                formatDateDisplay(row.next_run_at)
+                                                formatDateDisplay(
+                                                    row.next_run_at,
+                                                )
                                             ) : (
                                                 <PermissionGate permission="processes.change_processbinding">
                                                     <DateTextFieldWithPicker

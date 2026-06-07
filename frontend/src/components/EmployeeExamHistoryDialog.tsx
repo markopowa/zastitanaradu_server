@@ -40,8 +40,7 @@ export class EmployeeExamHistoryDialog extends Component<
     componentDidUpdate(prevProps: EmployeeExamHistoryDialogProps): void {
         if (
             this.props.open &&
-            (!prevProps.open ||
-                prevProps.employeeId !== this.props.employeeId)
+            (!prevProps.open || prevProps.employeeId !== this.props.employeeId)
         ) {
             this.load();
         }
@@ -69,9 +68,7 @@ export class EmployeeExamHistoryDialog extends Component<
 
         return (
             <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-                <DialogTitle>
-                    Istorija pregleda — {employeeName}
-                </DialogTitle>
+                <DialogTitle>Istorija pregleda — {employeeName}</DialogTitle>
                 <DialogContent>
                     {loading ? (
                         <LoadingState />

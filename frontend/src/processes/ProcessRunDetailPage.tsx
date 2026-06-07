@@ -230,7 +230,8 @@ class ProcessRunDetailPageInner extends Component<
         const file = e.target.files?.[0] ?? null;
         this.setState((prev) => ({
             uploadFile: file,
-            uploadTitle: file && !prev.uploadTitle.trim() ? file.name : prev.uploadTitle,
+            uploadTitle:
+                file && !prev.uploadTitle.trim() ? file.name : prev.uploadTitle,
         }));
         e.target.value = "";
     };
@@ -307,7 +308,9 @@ class ProcessRunDetailPageInner extends Component<
                     showCompleteForm: false,
                     completing: false,
                 });
-                enqueueSnackbar("Aktivnost je završena.", { variant: "success" });
+                enqueueSnackbar("Aktivnost je završena.", {
+                    variant: "success",
+                });
             })
             .catch((err: { response?: { data?: { detail?: string } } }) => {
                 this.setState({ completing: false });
@@ -319,8 +322,12 @@ class ProcessRunDetailPageInner extends Component<
     };
 
     renderDocumentsSection(documents: ProcessRunDocument[]): React.ReactNode {
-        const systemDocs = documents.filter((d) => d.usage_kind === "INVITATION");
-        const otherDocs = documents.filter((d) => d.usage_kind !== "INVITATION");
+        const systemDocs = documents.filter(
+            (d) => d.usage_kind === "INVITATION",
+        );
+        const otherDocs = documents.filter(
+            (d) => d.usage_kind !== "INVITATION",
+        );
 
         const renderList = (items: ProcessRunDocument[], deletable: boolean) =>
             items.length === 0 ? (
@@ -432,12 +439,15 @@ class ProcessRunDetailPageInner extends Component<
         }
 
         if (error || !run) {
-            return <Alert severity="error">{error ?? "Aktivnost nije pronađena."}</Alert>;
+            return (
+                <Alert severity="error">
+                    {error ?? "Aktivnost nije pronađena."}
+                </Alert>
+            );
         }
 
         const result = run.result_data as Record<string, string> | undefined;
-        const canComplete =
-            run.status === "PENDING" || run.status === "SENT";
+        const canComplete = run.status === "PENDING" || run.status === "SENT";
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -446,7 +456,9 @@ class ProcessRunDetailPageInner extends Component<
                         <ArrowBackIcon />
                     </IconButton>
                     <Box sx={{ flex: 1 }}>
-                        <Typography variant="h6">{run.process_type_name}</Typography>
+                        <Typography variant="h6">
+                            {run.process_type_name}
+                        </Typography>
                         <Typography variant="body2" color="text.secondary">
                             {subjectLabel(run.subject_snapshot)}
                         </Typography>
@@ -466,26 +478,44 @@ class ProcessRunDetailPageInner extends Component<
                         }}
                     >
                         <Box>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
                                 Zakazano
                             </Typography>
-                            <Typography>{formatDateDisplay(run.scheduled_for)}</Typography>
+                            <Typography>
+                                {formatDateDisplay(run.scheduled_for)}
+                            </Typography>
                         </Box>
                         <Box>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
                                 Važi do
                             </Typography>
-                            <Typography>{formatDateDisplay(run.valid_until)}</Typography>
+                            <Typography>
+                                {formatDateDisplay(run.valid_until)}
+                            </Typography>
                         </Box>
                         <Box>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
                                 Izvršeno
                             </Typography>
-                            <Typography>{formatDateDisplay(run.performed_at)}</Typography>
+                            <Typography>
+                                {formatDateDisplay(run.performed_at)}
+                            </Typography>
                         </Box>
                         {run.notes ? (
                             <Box sx={{ gridColumn: { sm: "1 / -1" } }}>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                >
                                     Beleške pri završetku
                                 </Typography>
                                 <Typography sx={{ whiteSpace: "pre-wrap" }}>
@@ -495,7 +525,10 @@ class ProcessRunDetailPageInner extends Component<
                         ) : null}
                         {result ? (
                             <Box sx={{ gridColumn: { sm: "1 / -1" } }}>
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                >
                                     Rezultat pregleda
                                 </Typography>
                                 {result.report_number ? (
@@ -505,7 +538,8 @@ class ProcessRunDetailPageInner extends Component<
                                 ) : null}
                                 {result.fitness_assessment ? (
                                     <Typography>
-                                        Ocena sposobnosti: {result.fitness_assessment}
+                                        Ocena sposobnosti:{" "}
+                                        {result.fitness_assessment}
                                     </Typography>
                                 ) : null}
                                 {result.measures_taken ? (
@@ -528,7 +562,9 @@ class ProcessRunDetailPageInner extends Component<
                                 <TableHead>
                                     <TableRow>
                                         <TableCell>Okidač</TableCell>
-                                        <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                        <TableCell
+                                            sx={{ whiteSpace: "nowrap" }}
+                                        >
                                             Datum i vreme
                                         </TableCell>
                                         <TableCell>Izvršio</TableCell>
@@ -551,12 +587,16 @@ class ProcessRunDetailPageInner extends Component<
                                                     {triggerLabel(tr.trigger)}
                                                 </Typography>
                                             </TableCell>
-                                            <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                            <TableCell
+                                                sx={{ whiteSpace: "nowrap" }}
+                                            >
                                                 {formatDateTimeDisplay(
                                                     tr.executed_at,
                                                 )}
                                             </TableCell>
-                                            <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                            <TableCell
+                                                sx={{ whiteSpace: "nowrap" }}
+                                            >
                                                 {triggerExecutorLabel(tr)}
                                             </TableCell>
                                             <TableCell>
@@ -605,9 +645,13 @@ class ProcessRunDetailPageInner extends Component<
                     </Typography>
                     {this.renderDocumentsSection(documents)}
                     <Divider sx={{ my: 2 }} />
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-                        Dodajte zvanične beleške, skenirane nalaze ili druge priloge
-                        vezane za ovu aktivnost.
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 1.5 }}
+                    >
+                        Dodajte zvanične beleške, skenirane nalaze ili druge
+                        priloge vezane za ovu aktivnost.
                     </Typography>
                     <input
                         ref={this.fileInputRef}
@@ -615,7 +659,14 @@ class ProcessRunDetailPageInner extends Component<
                         hidden
                         onChange={this.handleFileChange}
                     />
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 1,
+                            alignItems: "center",
+                        }}
+                    >
                         <Button
                             variant="outlined"
                             startIcon={<UploadFileIcon />}
@@ -650,13 +701,21 @@ class ProcessRunDetailPageInner extends Component<
                         Beleške
                     </Typography>
                     {notes.length === 0 ? (
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ mb: 2 }}
+                        >
                             Nema beleški.
                         </Typography>
                     ) : (
                         <List dense disablePadding sx={{ mb: 2 }}>
                             {notes.map((n) => (
-                                <ListItem key={n.id} alignItems="flex-start" sx={{ px: 0 }}>
+                                <ListItem
+                                    key={n.id}
+                                    alignItems="flex-start"
+                                    sx={{ px: 0 }}
+                                >
                                     <ListItemText
                                         primary={n.body}
                                         secondary={`${n.author_username ?? "Sistem"} · ${formatDateTimeDisplay(n.created_at)}`}
@@ -698,7 +757,9 @@ class ProcessRunDetailPageInner extends Component<
                                 mb: showCompleteForm ? 2 : 0,
                             }}
                         >
-                            <Typography variant="subtitle1">Završetak</Typography>
+                            <Typography variant="subtitle1">
+                                Završetak
+                            </Typography>
                             {!showCompleteForm ? (
                                 <Button
                                     variant="contained"
@@ -722,7 +783,13 @@ class ProcessRunDetailPageInner extends Component<
                             ) : null}
                         </Box>
                         {showCompleteForm ? (
-                            <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: 1.5,
+                                }}
+                            >
                                 <DateTextFieldWithPicker
                                     label="Važi do (dd.mm.yyyy)"
                                     value={complete_valid_until}
@@ -736,7 +803,9 @@ class ProcessRunDetailPageInner extends Component<
                                         complete_valid_until,
                                     )}
                                     onChange={(v) =>
-                                        this.setState({ complete_valid_until: v })
+                                        this.setState({
+                                            complete_valid_until: v,
+                                        })
                                     }
                                 />
                                 <DateTextFieldWithPicker
@@ -744,7 +813,9 @@ class ProcessRunDetailPageInner extends Component<
                                     value={complete_performed_at}
                                     allowPast
                                     onChange={(v) =>
-                                        this.setState({ complete_performed_at: v })
+                                        this.setState({
+                                            complete_performed_at: v,
+                                        })
                                     }
                                 />
                                 <TextField
@@ -753,7 +824,8 @@ class ProcessRunDetailPageInner extends Component<
                                     value={complete_report_number}
                                     onChange={(e) =>
                                         this.setState({
-                                            complete_report_number: e.target.value,
+                                            complete_report_number:
+                                                e.target.value,
                                         })
                                     }
                                 />
@@ -763,7 +835,8 @@ class ProcessRunDetailPageInner extends Component<
                                     value={complete_fitness_assessment}
                                     onChange={(e) =>
                                         this.setState({
-                                            complete_fitness_assessment: e.target.value,
+                                            complete_fitness_assessment:
+                                                e.target.value,
                                         })
                                     }
                                 />
@@ -774,7 +847,8 @@ class ProcessRunDetailPageInner extends Component<
                                     value={complete_measures_taken}
                                     onChange={(e) =>
                                         this.setState({
-                                            complete_measures_taken: e.target.value,
+                                            complete_measures_taken:
+                                                e.target.value,
                                         })
                                     }
                                 />
@@ -784,13 +858,23 @@ class ProcessRunDetailPageInner extends Component<
                                     multiline
                                     value={complete_notes}
                                     onChange={(e) =>
-                                        this.setState({ complete_notes: e.target.value })
+                                        this.setState({
+                                            complete_notes: e.target.value,
+                                        })
                                     }
                                 />
-                                <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        gap: 1,
+                                        justifyContent: "flex-end",
+                                    }}
+                                >
                                     <Button
                                         onClick={() =>
-                                            this.setState({ showCompleteForm: false })
+                                            this.setState({
+                                                showCompleteForm: false,
+                                            })
                                         }
                                     >
                                         Odustani
@@ -801,8 +885,7 @@ class ProcessRunDetailPageInner extends Component<
                                         disabled={
                                             !!validUntilDateError(
                                                 complete_valid_until,
-                                            ) ||
-                                            completing
+                                            ) || completing
                                         }
                                         onClick={this.handleComplete}
                                         sx={BTN_SX}

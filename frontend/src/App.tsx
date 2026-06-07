@@ -18,9 +18,7 @@ const DocumentCategoriesListPage = lazy(
 const DocumentTemplatesListPage = lazy(
     () => import("./documents/DocumentTemplatesListPage"),
 );
-const DashboardPage = lazy(
-    () => import("./processes/DashboardPage"),
-);
+const DashboardPage = lazy(() => import("./processes/DashboardPage"));
 const ClientCompaniesListPage = lazy(
     () => import("./processes/ClientCompaniesListPage"),
 );
@@ -52,9 +50,7 @@ const ProcessBindingsListPage = lazy(
 const ProcessRunsListPage = lazy(
     () => import("./processes/ProcessRunsListPage"),
 );
-const RiskLevelsListPage = lazy(
-    () => import("./processes/RiskLevelsListPage"),
-);
+const RiskLevelsListPage = lazy(() => import("./processes/RiskLevelsListPage"));
 const ProcessRunDetailPage = lazy(
     () => import("./processes/ProcessRunDetailPage"),
 );
@@ -87,10 +83,7 @@ class App extends Component {
                         element={<ProtectedRoute element={<AppLayout />} />}
                     >
                         <Route index element={<RedirectComponent />} />
-                        <Route
-                            path="dashboard"
-                            element={<DashboardPage />}
-                        />
+                        <Route path="dashboard" element={<DashboardPage />} />
                         <Route
                             path="client-companies"
                             element={<ClientCompaniesListPage />}

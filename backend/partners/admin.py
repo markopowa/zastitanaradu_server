@@ -18,7 +18,8 @@ from .models import (
 
 @admin.register(RiskLevel)
 class RiskLevelAdmin(admin.ModelAdmin):
-    list_display = ("code", "label", "score", "is_acceptable", "is_high_risk", "order")
+    list_display = ("code", "label", "score",
+                    "is_acceptable", "is_high_risk", "order")
     search_fields = ("code", "label")
     list_filter = ("is_acceptable", "is_high_risk")
 

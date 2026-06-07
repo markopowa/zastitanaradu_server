@@ -521,7 +521,41 @@ EOF
     systemctl start pznr-run-process-reminders.timer
     systemctl enable pznr-process-ai-document-queue.timer
     systemctl start pznr-process-ai-document-queue.timer
-    echo "Task runner: pznr-run-due-processes.timer (daily 06:00 — ON_LEAD checks), pznr-run-process-reminders.timer (daily 07:00), pznr-process-ai-document-queue.timer (every 5 min). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_process_reminders.log, $LOG_DIR/process_ai_document_queue.log"
+    SVC4="/etc/systemd/system/pznr-sync-company-registry.service"
+    TMR4="/etc/systemd/system/pznr-sync-company-registry.timer"
+    cat > "$SVC4" << EOF
+[Unit]
+Description=PZNR sync open-data company registry snapshot
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=$APP_DIR
+ExecStart=/usr/bin/docker compose exec -T backend python manage.py sync_company_registry
+StandardOutput=append:$LOG_DIR/sync_company_registry.log
+StandardError=append:$LOG_DIR/sync_company_registry.log
+User=root
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    cat > "$TMR4" << EOF
+[Unit]
+Description=Sync company registry monthly (7th day 03:00)
+Requires=pznr-sync-company-registry.service
+
+[Timer]
+OnCalendar=*-*-07 03:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+EOF
+    systemctl daemon-reload
+    systemctl enable pznr-sync-company-registry.timer
+    systemctl start pznr-sync-company-registry.timer
+    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-process-reminders.timer (daily 07:00), pznr-process-ai-document-queue.timer (every 5 min), pznr-sync-company-registry.timer (monthly 7th 03:00). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_process_reminders.log, $LOG_DIR/process_ai_document_queue.log, $LOG_DIR/sync_company_registry.log"
 }
 
 runAll() {

@@ -61,6 +61,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Možeš da se uloguješ kao **superuser** (bez toga generisanje dokumenata neće raditi)
 - [ ] Test fajl uputa postoji: `files_for_test\Uput_za_periodični_lekarski_pregled.pdf`
 - [ ] Test mejl adresa `markovuckovic1992@gmail.com` je verifikovana u AWS SES (već jeste)
+- [ ] Registar firmi učitan: `python manage.py sync_company_registry` *(jednom, pa mesečno cron)*
 
 ---
 
@@ -87,7 +88,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] **Firme → Dodaj firmu** otvara čarobnjak (7 koraka), ne dijalog
 
 **Provera čarobnjaka:**
-- [ ] Korak 1: PIB + **Uvezi iz APR-a** + Naziv → **Sledeći** kreira firmu
+- [ ] Korak 1: matični broj + **Uvezi iz registra** (open data snapshot) + PIB ručno + Naziv → **Sledeći** kreira firmu
 - [ ] Koraci 2–7: **Preskoči korak** radi; **Završi** vodi na firmu sa tabom **Usklađenost** (`?tab=compliance`)
 
 ---
@@ -97,10 +98,10 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 *(Ako si već prošao čarobnjak u 1b, preskoči na 2a; inače uradi korak 1 čarobnjaka.)*
 
 - [ ] **Firme → Dodaj firmu**
-- [ ] PIB: `123456789` *(obavezno — unesi prvo)*
-- [ ] Klikni **Uvezi iz APR-a** pored PIB polja *(očekivano: upozorenje da APR nije dostupan — ručni unos i dalje radi)*
-- [ ] Naziv: `Test firma 07 d.o.o.` *(obavezno)*
-- [ ] Matični broj: `12345678`
+- [ ] Matični broj: npr. `07049820` *(iz APR open data — ili bilo koji validan MB)*
+- [ ] Klikni **Uvezi iz registra** pored matičnog broja → popuni naziv, opštinu (adresa), šifru delatnosti
+- [ ] PIB: `123456789` *(obavezno — ručno, nije u open data)*
+- [ ] Naziv: dopuni/izmeni ako treba *(obavezno)*
 - [ ] Šifra delatnosti: `4321`
 - [ ] Adresa: `Bulevar testiranja 14, Beograd`
 - [ ] Telefon: `+381 11 123 4567`
@@ -208,14 +209,14 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Nema dugmeta „Promeni fajl“ — samo Obriši pa ponovo Priloži.
 - [ ] Brojač se ažurira posle uploada/brisanja.
 
-### 2e. Izmena firme i APR
+### 2e. Izmena firme i registar
 
 - [ ] Klikni **Izmeni podatke**
-- [ ] Pored PIB polja klikni **Uvezi iz APR-a** *(očekivano: upozorenje, polja ostaju ručno uneta)*
+- [ ] Unesi matični broj i klikni **Uvezi iz registra**
 - [ ] Sačuvaj bez greške
 
 **Provera:**
-- [ ] Dugme **Uvezi iz APR-a** postoji u edit formi.
+- [ ] Dugme **Uvezi iz registra** postoji u edit formi.
 - [ ] Ručni unos i čuvanje i dalje rade.
 
 ---

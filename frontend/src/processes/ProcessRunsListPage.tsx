@@ -238,7 +238,8 @@ class ProcessRunsListPageInner extends Component<
                                                 }
                                             >
                                                 <TableCell>
-                                                    {row.subject_snapshot?.name ??
+                                                    {row.subject_snapshot
+                                                        ?.name ??
                                                         row.subject_snapshot
                                                             ?.kind ??
                                                         "—"}

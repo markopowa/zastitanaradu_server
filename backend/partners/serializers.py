@@ -33,7 +33,8 @@ class RiskLevelSerializer(serializers.ModelSerializer):
 
 
 class JobRoleSerializer(serializers.ModelSerializer):
-    risk_level_detail = RiskLevelSerializer(source="risk_level", read_only=True)
+    risk_level_detail = RiskLevelSerializer(
+        source="risk_level", read_only=True)
     employee_count = serializers.IntegerField(
         source="employees.count", read_only=True)
 
@@ -261,7 +262,8 @@ class RiskAssessmentSectionSerializer(serializers.ModelSerializer):
         read_only=True,
     )
     current_file = serializers.SerializerMethodField()
-    revisions = RiskAssessmentSectionRevisionSerializer(many=True, read_only=True)
+    revisions = RiskAssessmentSectionRevisionSerializer(
+        many=True, read_only=True)
 
     class Meta:
         model = RiskAssessmentSection

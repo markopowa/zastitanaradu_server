@@ -70,9 +70,7 @@ interface State {
 }
 
 function uploadErrorMessage(
-    err:
-        | { message?: string }
-        | { response?: { data?: { detail?: string } } },
+    err: { message?: string } | { response?: { data?: { detail?: string } } },
 ): string {
     return (
         (err as { response?: { data?: { detail?: string } } }).response?.data
@@ -146,11 +144,7 @@ export class ComplianceFindingsPanel extends Component<Props, State> {
     };
 
     saveFinding = (): void => {
-        const {
-            dialogTypeId,
-            dialogFile,
-            dialogIssuedDate,
-        } = this.state;
+        const { dialogTypeId, dialogFile, dialogIssuedDate } = this.state;
         const { clientCompanyId } = this.props;
         if (dialogTypeId == null || dialogFile == null) return;
         if (!dialogIssuedDate.trim()) {
@@ -249,7 +243,13 @@ export class ComplianceFindingsPanel extends Component<Props, State> {
         if (loading) {
             return (
                 <Paper sx={{ p: 3 }}>
-                    <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            py: 3,
+                        }}
+                    >
                         <CircularProgress />
                     </Box>
                 </Paper>
@@ -270,9 +270,7 @@ export class ComplianceFindingsPanel extends Component<Props, State> {
         }
 
         const canSave =
-            dialogFile != null &&
-            dialogIssuedDate.trim().length > 0 &&
-            !saving;
+            dialogFile != null && dialogIssuedDate.trim().length > 0 && !saving;
 
         return (
             <Paper sx={{ p: 3 }}>
@@ -402,17 +400,14 @@ export class ComplianceFindingsPanel extends Component<Props, State> {
                             fullWidth
                             sx={{ mt: 1 }}
                         >
-                            {dialogFile
-                                ? dialogFile.name
-                                : "Izaberi fajl..."}
+                            {dialogFile ? dialogFile.name : "Izaberi fajl..."}
                             <input
                                 type="file"
                                 hidden
                                 accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
                                 onChange={(e) =>
                                     this.setState({
-                                        dialogFile:
-                                            e.target.files?.[0] ?? null,
+                                        dialogFile: e.target.files?.[0] ?? null,
                                     })
                                 }
                             />
@@ -465,9 +460,7 @@ export class ComplianceFindingsPanel extends Component<Props, State> {
                             />
                         </DialogContent>
                         <DialogActions>
-                            <Button onClick={this.closePreview}>
-                                Zatvori
-                            </Button>
+                            <Button onClick={this.closePreview}>Zatvori</Button>
                         </DialogActions>
                     </Dialog>
                 )}

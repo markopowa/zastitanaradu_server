@@ -418,3 +418,55 @@ class EquipmentItem(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class CompanyRegistrySnapshot(models.Model):
+    cut_off_date = models.DateField()
+    downloaded_at = models.DateTimeField(auto_now_add=True)
+    source_url = models.URLField(max_length=512)
+    file_path = models.CharField(max_length=512, blank=True)
+    company_count = models.PositiveIntegerField(default=0)
+    is_current = models.BooleanField(default=False, db_index=True)
+
+    class Meta:
+        verbose_name = "Company registry snapshot"
+        verbose_name_plural = "Company registry snapshots"
+        ordering = ("-cut_off_date", "-downloaded_at")
+
+    def __str__(self) -> str:
+        return f"Registry {self.cut_off_date} ({self.company_count})"
+
+
+class CompanyRegistryEntry(models.Model):
+    snapshot = models.ForeignKey(
+        CompanyRegistrySnapshot,
+        on_delete=models.CASCADE,
+        related_name="entries",
+    )
+    registration_number = models.CharField(max_length=32, db_index=True)
+    name = models.CharField(max_length=512)
+    municipality_code = models.CharField(max_length=16, blank=True)
+    municipality_name = models.CharField(max_length=255, blank=True)
+    status_name = models.CharField(max_length=128, blank=True)
+    founded_date = models.DateField(null=True, blank=True)
+    legal_form_name = models.CharField(max_length=255, blank=True)
+    activity_code = models.CharField(max_length=32, blank=True)
+
+    class Meta:
+        verbose_name = "Company registry entry"
+        verbose_name_plural = "Company registry entries"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("snapshot", "registration_number"),
+                name="uniq_registry_entry_per_snapshot",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=("snapshot", "registration_number"),
+                name="registry_entry_snapshot_mb_idx",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.registration_number} {self.name}"

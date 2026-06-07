@@ -56,7 +56,10 @@ const EVENT_COLORS: Record<
     scheduled: "info",
 };
 
-const EVENT_TYPE_OPTIONS: { value: ActivityLogEventType | ""; label: string }[] = [
+const EVENT_TYPE_OPTIONS: {
+    value: ActivityLogEventType | "";
+    label: string;
+}[] = [
     { value: "", label: "Svi događaji" },
     { value: "run_created", label: "Aktivnost kreirana" },
     { value: "run_sent", label: "Poslat poziv/email" },
@@ -194,7 +197,12 @@ class DashboardPage extends Component<Props, State> {
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Typography
                         variant="h6"
-                        sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1 }}
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                            flex: 1,
+                        }}
                     >
                         <DashboardIcon /> Kontrolna tabla
                     </Typography>
@@ -241,12 +249,17 @@ class DashboardPage extends Component<Props, State> {
                                 onChange={(e) =>
                                     this.handleFilterChange(
                                         "eventType",
-                                        e.target.value as ActivityLogEventType | "",
+                                        e.target.value as
+                                            | ActivityLogEventType
+                                            | "",
                                     )
                                 }
                             >
                                 {EVENT_TYPE_OPTIONS.map((opt) => (
-                                    <MenuItem key={opt.value || "all"} value={opt.value}>
+                                    <MenuItem
+                                        key={opt.value || "all"}
+                                        value={opt.value}
+                                    >
                                         {opt.label}
                                     </MenuItem>
                                 ))}
@@ -309,7 +322,10 @@ class DashboardPage extends Component<Props, State> {
                                     if (v === "" || v === "system") {
                                         this.handleFilterChange("userId", v);
                                     } else {
-                                        this.handleFilterChange("userId", Number(v));
+                                        this.handleFilterChange(
+                                            "userId",
+                                            Number(v),
+                                        );
                                     }
                                 }}
                             >
@@ -327,13 +343,17 @@ class DashboardPage extends Component<Props, State> {
                             label="Od (dd.mm.yyyy)"
                             value={filters.dateFrom}
                             allowPast
-                            onChange={(v) => this.handleFilterChange("dateFrom", v)}
+                            onChange={(v) =>
+                                this.handleFilterChange("dateFrom", v)
+                            }
                         />
                         <DateTextFieldWithPicker
                             label="Do (dd.mm.yyyy)"
                             value={filters.dateTo}
                             allowPast
-                            onChange={(v) => this.handleFilterChange("dateTo", v)}
+                            onChange={(v) =>
+                                this.handleFilterChange("dateTo", v)
+                            }
                         />
 
                         <TextField
@@ -342,7 +362,10 @@ class DashboardPage extends Component<Props, State> {
                             type="number"
                             value={filters.processRunId}
                             onChange={(e) =>
-                                this.handleFilterChange("processRunId", e.target.value)
+                                this.handleFilterChange(
+                                    "processRunId",
+                                    e.target.value,
+                                )
                             }
                         />
 
@@ -351,16 +374,34 @@ class DashboardPage extends Component<Props, State> {
                             label="Pretraga u opisu"
                             value={filters.searchQ}
                             onChange={(e) =>
-                                this.handleFilterChange("searchQ", e.target.value)
+                                this.handleFilterChange(
+                                    "searchQ",
+                                    e.target.value,
+                                )
                             }
                             sx={{ gridColumn: { md: "span 2" } }}
                         />
                     </Box>
-                    <Box sx={{ display: "flex", gap: 1, mt: 2, flexWrap: "wrap" }}>
-                        <Button variant="contained" size="small" onClick={this.handleApply}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            gap: 1,
+                            mt: 2,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={this.handleApply}
+                        >
                             Primeni filtere
                         </Button>
-                        <Button variant="outlined" size="small" onClick={this.handleReset}>
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={this.handleReset}
+                        >
                             Poništi
                         </Button>
                     </Box>
@@ -369,7 +410,13 @@ class DashboardPage extends Component<Props, State> {
                 {error && <Alert severity="error">{error}</Alert>}
 
                 {loading ? (
-                    <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            py: 4,
+                        }}
+                    >
                         <CircularProgress />
                     </Box>
                 ) : (
@@ -377,7 +424,9 @@ class DashboardPage extends Component<Props, State> {
                         <Table size="small">
                             <TableHead>
                                 <TableRow>
-                                    <TableCell sx={{ whiteSpace: "nowrap" }}>Vreme</TableCell>
+                                    <TableCell sx={{ whiteSpace: "nowrap" }}>
+                                        Vreme
+                                    </TableCell>
                                     <TableCell>Događaj</TableCell>
                                     <TableCell>Korisnik</TableCell>
                                     <TableCell>ID aktivnosti</TableCell>
@@ -394,24 +443,35 @@ class DashboardPage extends Component<Props, State> {
                                 ) : (
                                     items.map((log) => (
                                         <TableRow key={log.id}>
-                                            <TableCell sx={{ whiteSpace: "nowrap" }}>
-                                                {formatDateTimeDisplay(log.timestamp)}
+                                            <TableCell
+                                                sx={{ whiteSpace: "nowrap" }}
+                                            >
+                                                {formatDateTimeDisplay(
+                                                    log.timestamp,
+                                                )}
                                             </TableCell>
                                             <TableCell>
                                                 <Chip
-                                                    label={log.event_type_display}
+                                                    label={
+                                                        log.event_type_display
+                                                    }
                                                     size="small"
                                                     color={
-                                                        EVENT_COLORS[log.event_type] ??
-                                                        "default"
+                                                        EVENT_COLORS[
+                                                            log.event_type
+                                                        ] ?? "default"
                                                     }
                                                 />
                                             </TableCell>
-                                            <TableCell>{log.username}</TableCell>
+                                            <TableCell>
+                                                {log.username}
+                                            </TableCell>
                                             <TableCell>
                                                 {log.process_run_id ?? "—"}
                                             </TableCell>
-                                            <TableCell>{log.description}</TableCell>
+                                            <TableCell>
+                                                {log.description}
+                                            </TableCell>
                                         </TableRow>
                                     ))
                                 )}

@@ -12,7 +12,8 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .apr import fetch_company_from_apr
+from .company_registry import lookup_company_by_registration_number
+from .models import CompanyRegistrySnapshot
 from .compliance_findings import (
     compliance_finding_row,
     compute_valid_until,
@@ -440,25 +441,34 @@ class RiskAssessmentActViewSet(viewsets.ModelViewSet):
         return response
 
 
-class APRLookupView(APIView):
+class CompanyRegistryLookupView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
-        if not getattr(settings, "APR_INTEGRATION_ENABLED", False):
+        registration_number = (
+            request.data.get("registration_number")
+            or request.data.get("tax_id")
+            or ""
+        ).strip()
+        if not registration_number:
             return Response(
-                {"detail": "APR integracija nije omogućena."},
-                status=status.HTTP_501_NOT_IMPLEMENTED,
-            )
-        tax_id = (request.data.get("tax_id") or "").strip()
-        if not tax_id:
-            return Response(
-                {"detail": "PIB je obavezan."},
+                {"detail": "Matični broj je obavezan."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        data = fetch_company_from_apr(tax_id)
+        if not CompanyRegistrySnapshot.objects.filter(is_current=True).exists():
+            return Response(
+                {
+                    "detail": (
+                        "Registar firmi nije učitan. "
+                        "Pokrenite: python manage.py sync_company_registry"
+                    ),
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        data = lookup_company_by_registration_number(registration_number)
         if data is None:
             return Response(
-                {"detail": "Firma nije pronađena u APR-u."},
+                {"detail": "Firma nije pronađena u registru."},
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(data)

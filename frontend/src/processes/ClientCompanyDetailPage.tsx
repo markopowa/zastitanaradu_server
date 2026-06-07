@@ -24,7 +24,6 @@ import {
     InputLabel,
     Select,
     MenuItem,
-    Chip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
@@ -41,7 +40,7 @@ import {
     isoDateToFormDisplay,
 } from "../utils/date";
 import {
-    aprLookup,
+    registryLookup,
     createEquipmentItem,
     createJobRole,
     deleteJobRole,
@@ -61,6 +60,7 @@ import { PermissionGate } from "../components/PermissionGate";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
+import { CompanyComplianceOverview } from "../components/CompanyComplianceOverview";
 import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
 import { ComplianceFindingsPanel } from "../components/ComplianceFindingsPanel";
@@ -171,7 +171,7 @@ class ClientCompanyDetailPageInner extends Component<
         editWebsite: "",
         editNotes: "",
         editActivity_code: "",
-        aprImporting: false,
+        registryImporting: false,
         riskLevels: [],
         jobRoles: [],
         roleDialogOpen: false,
@@ -316,9 +316,7 @@ class ClientCompanyDetailPageInner extends Component<
             roleError: null,
             editingRoleId: role.id,
             role_name: role.name,
-            role_risk_level: role.risk_level
-                ? String(role.risk_level)
-                : "",
+            role_risk_level: role.risk_level ? String(role.risk_level) : "",
             role_description: role.description ?? "",
         }));
     };
@@ -371,12 +369,8 @@ class ClientCompanyDetailPageInner extends Component<
 
     saveRole = (): void => {
         const companyId = Number(this.props.id);
-        const {
-            editingRoleId,
-            role_name,
-            role_risk_level,
-            role_description,
-        } = this.state;
+        const { editingRoleId, role_name, role_risk_level, role_description } =
+            this.state;
         if (!role_name.trim()) return;
         const payload: Partial<JobRole> = {
             name: role_name.trim(),
@@ -452,15 +446,15 @@ class ClientCompanyDetailPageInner extends Component<
         }));
     };
 
-    handleAprImport = (): void => {
-        const { editTaxId } = this.state;
-        if (!editTaxId.trim()) return;
-        this.setState((prev) => ({ ...prev, aprImporting: true }));
-        aprLookup(editTaxId.trim())
+    handleRegistryImport = (): void => {
+        const { editRegistration_number } = this.state;
+        if (!editRegistration_number.trim()) return;
+        this.setState((prev) => ({ ...prev, registryImporting: true }));
+        registryLookup(editRegistration_number.trim())
             .then((data) => {
                 this.setState((prev) => ({
                     ...prev,
-                    aprImporting: false,
+                    registryImporting: false,
                     editName: data.name ?? prev.editName,
                     editRegistration_number:
                         data.registration_number ??
@@ -469,14 +463,20 @@ class ClientCompanyDetailPageInner extends Component<
                     editActivity_code:
                         data.activity_code ?? prev.editActivity_code,
                 }));
-                enqueueSnackbar("Podaci preuzeti iz APR-a.", {
+                const cutOff = data.data_cut_off_date
+                    ? ` (podaci od ${data.data_cut_off_date})`
+                    : "";
+                enqueueSnackbar(`Podaci preuzeti iz registra${cutOff}.`, {
                     variant: "success",
                 });
             })
             .catch(() => {
-                this.setState((prev) => ({ ...prev, aprImporting: false }));
+                this.setState((prev) => ({
+                    ...prev,
+                    registryImporting: false,
+                }));
                 enqueueSnackbar(
-                    "APR pretraga trenutno nije dostupna. Unesite podatke ručno.",
+                    "Firma nije pronađena u registru ili snapshot nije učitan. Unesite podatke ručno.",
                     { variant: "warning" },
                 );
             });
@@ -568,17 +568,19 @@ class ClientCompanyDetailPageInner extends Component<
             getProcessRuns({ client_company_id: id }),
             getJobRoles({ client_company_id: id }),
             getRiskLevels(),
-        ]).then(([employees, equipment, bindings, runs, jobRoles, riskLevels]) => {
-            this.setState((prev) => ({
-                ...prev,
-                employees,
-                equipment,
-                bindings,
-                runs,
-                jobRoles,
-                riskLevels,
-            }));
-        });
+        ]).then(
+            ([employees, equipment, bindings, runs, jobRoles, riskLevels]) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    employees,
+                    equipment,
+                    bindings,
+                    runs,
+                    jobRoles,
+                    riskLevels,
+                }));
+            },
+        );
     };
 
     handleBindingStartDateChange = (
@@ -772,7 +774,7 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
-            aprImporting,
+            registryImporting,
             jobRoles,
             riskLevels,
             empDialogOpen,
@@ -825,62 +827,57 @@ class ClientCompanyDetailPageInner extends Component<
                     onChange={this.handleTabChange}
                 />
                 {activeTab === "identity" && (
-                <Paper sx={{ p: 3 }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            justifyContent: "space-between",
-                            gap: 2,
-                            mb: editing ? 2 : 0,
-                        }}
-                    >
-                        {!editing && (
-                            <Typography variant="h6">{item.name}</Typography>
-                        )}
-                        {!editing && (
-                            <PermissionGate permission="partners.change_clientcompany">
-                                <Button
-                                    variant="outlined"
-                                    onClick={this.startEdit}
-                                >
-                                    Izmeni podatke
-                                </Button>
-                            </PermissionGate>
-                        )}
-                    </Box>
-                    {editing ? (
+                    <Paper sx={{ p: 3 }}>
                         <Box
                             sx={{
                                 display: "flex",
-                                flexDirection: "column",
-                                gap: 1,
-                                maxWidth: 560,
+                                alignItems: "flex-start",
+                                justifyContent: "space-between",
+                                gap: 2,
+                                mb: editing ? 2 : 0,
                             }}
                         >
-                            {saveError && (
-                                <Alert severity="error">{saveError}</Alert>
+                            {!editing && (
+                                <Typography variant="h6">
+                                    {item.name}
+                                </Typography>
                             )}
-                            <TextField
-                                margin="dense"
-                                label="Naziv"
-                                fullWidth
-                                required
-                                value={editName}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editName: e.target.value,
-                                    }))
-                                }
-                            />
+                            {!editing && (
+                                <PermissionGate permission="partners.change_clientcompany">
+                                    <Button
+                                        variant="outlined"
+                                        onClick={this.startEdit}
+                                    >
+                                        Izmeni podatke
+                                    </Button>
+                                </PermissionGate>
+                            )}
+                        </Box>
+                        {editing ? (
                             <Box
                                 sx={{
                                     display: "flex",
+                                    flexDirection: "column",
                                     gap: 1,
-                                    alignItems: "flex-start",
+                                    maxWidth: 560,
                                 }}
                             >
+                                {saveError && (
+                                    <Alert severity="error">{saveError}</Alert>
+                                )}
+                                <TextField
+                                    margin="dense"
+                                    label="Naziv"
+                                    fullWidth
+                                    required
+                                    value={editName}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editName: e.target.value,
+                                        }))
+                                    }
+                                />
                                 <TextField
                                     margin="dense"
                                     label="PIB"
@@ -894,588 +891,639 @@ class ClientCompanyDetailPageInner extends Component<
                                         }))
                                     }
                                 />
-                                <Button
-                                    variant="outlined"
-                                    disabled={
-                                        aprImporting || !editTaxId.trim()
-                                    }
-                                    onClick={this.handleAprImport}
-                                    sx={{ mt: 1, flexShrink: 0 }}
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        gap: 1,
+                                        alignItems: "flex-start",
+                                    }}
                                 >
-                                    {aprImporting
-                                        ? "Tražim..."
-                                        : "Uvezi iz APR-a"}
-                                </Button>
-                            </Box>
-                            <TextField
-                                margin="dense"
-                                label="Matični broj"
-                                fullWidth
-                                value={editRegistration_number}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editRegistration_number: e.target.value,
-                                    }))
-                                }
-                            />
-                            <TextField
-                                margin="dense"
-                                label="Adresa"
-                                fullWidth
-                                value={editAddress}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editAddress: e.target.value,
-                                    }))
-                                }
-                            />
-                            <TextField
-                                margin="dense"
-                                label="Telefon"
-                                fullWidth
-                                value={editPhone}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editPhone: e.target.value,
-                                    }))
-                                }
-                            />
-                            <TextField
-                                margin="dense"
-                                label="Email"
-                                fullWidth
-                                type="email"
-                                value={editEmail}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editEmail: e.target.value,
-                                    }))
-                                }
-                            />
-                            <TextField
-                                margin="dense"
-                                label="Web sajt"
-                                fullWidth
-                                value={editWebsite}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editWebsite: e.target.value,
-                                    }))
-                                }
-                            />
-                            <Tooltip title="Šifra delatnosti">
+                                    <TextField
+                                        margin="dense"
+                                        label="Matični broj"
+                                        fullWidth
+                                        value={editRegistration_number}
+                                        onChange={(e) =>
+                                            this.setState((prev) => ({
+                                                ...prev,
+                                                editRegistration_number:
+                                                    e.target.value,
+                                            }))
+                                        }
+                                    />
+                                    <Tooltip title="Podaci iz javnog registra (open data). Ažurira se mesečno. Nema punu adresu — samo opština. PIB unesite ručno.">
+                                        <span>
+                                            <Button
+                                                variant="outlined"
+                                                disabled={
+                                                    registryImporting ||
+                                                    !editRegistration_number.trim()
+                                                }
+                                                onClick={
+                                                    this.handleRegistryImport
+                                                }
+                                                sx={{ mt: 1, flexShrink: 0 }}
+                                            >
+                                                {registryImporting
+                                                    ? "Tražim..."
+                                                    : "Uvezi iz registra"}
+                                            </Button>
+                                        </span>
+                                    </Tooltip>
+                                </Box>
                                 <TextField
                                     margin="dense"
-                                    label="Šifra delatnosti"
+                                    label="Adresa"
                                     fullWidth
-                                    value={editActivity_code}
+                                    value={editAddress}
                                     onChange={(e) =>
                                         this.setState((prev) => ({
                                             ...prev,
-                                            editActivity_code: e.target.value,
+                                            editAddress: e.target.value,
                                         }))
                                     }
                                 />
-                            </Tooltip>
-                            <TextField
-                                margin="dense"
-                                label="Beleške"
-                                fullWidth
-                                multiline
-                                minRows={2}
-                                value={editNotes}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editNotes: e.target.value,
-                                    }))
-                                }
-                            />
-                            <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                                <Button
-                                    variant="contained"
-                                    disabled={
-                                        saving ||
-                                        !editName.trim() ||
-                                        !editTaxId.trim()
+                                <TextField
+                                    margin="dense"
+                                    label="Telefon"
+                                    fullWidth
+                                    value={editPhone}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editPhone: e.target.value,
+                                        }))
                                     }
-                                    onClick={this.saveCompany}
-                                >
-                                    {saving ? "Čuvam..." : "Sačuvaj"}
-                                </Button>
-                                <Button
-                                    disabled={saving}
-                                    onClick={this.cancelEdit}
-                                >
-                                    Otkaži
-                                </Button>
+                                />
+                                <TextField
+                                    margin="dense"
+                                    label="Email"
+                                    fullWidth
+                                    type="email"
+                                    value={editEmail}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editEmail: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <TextField
+                                    margin="dense"
+                                    label="Web sajt"
+                                    fullWidth
+                                    value={editWebsite}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editWebsite: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <Tooltip title="Šifra delatnosti">
+                                    <TextField
+                                        margin="dense"
+                                        label="Šifra delatnosti"
+                                        fullWidth
+                                        value={editActivity_code}
+                                        onChange={(e) =>
+                                            this.setState((prev) => ({
+                                                ...prev,
+                                                editActivity_code:
+                                                    e.target.value,
+                                            }))
+                                        }
+                                    />
+                                </Tooltip>
+                                <TextField
+                                    margin="dense"
+                                    label="Beleške"
+                                    fullWidth
+                                    multiline
+                                    minRows={2}
+                                    value={editNotes}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editNotes: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                                    <Button
+                                        variant="contained"
+                                        disabled={
+                                            saving ||
+                                            !editName.trim() ||
+                                            !editTaxId.trim()
+                                        }
+                                        onClick={this.saveCompany}
+                                    >
+                                        {saving ? "Čuvam..." : "Sačuvaj"}
+                                    </Button>
+                                    <Button
+                                        disabled={saving}
+                                        onClick={this.cancelEdit}
+                                    >
+                                        Otkaži
+                                    </Button>
+                                </Box>
                             </Box>
-                        </Box>
-                    ) : (
-                        <Box
-                            component="dl"
-                            sx={{
-                                m: 0,
-                                "& dd": { ml: 2 },
-                                "& dt": { fontWeight: 600, mt: 1 },
-                            }}
-                        >
-                            <dt>PIB</dt>
-                            <dd>{item.tax_id}</dd>
-                            {item.registration_number && (
-                                <>
-                                    <dt>Matični broj</dt>
-                                    <dd>{item.registration_number}</dd>
-                                </>
-                            )}
-                            {item.address && (
-                                <>
-                                    <dt>Adresa</dt>
-                                    <dd>{item.address}</dd>
-                                </>
-                            )}
-                            {item.email && (
-                                <>
-                                    <dt>Email</dt>
-                                    <dd>{item.email}</dd>
-                                </>
-                            )}
-                            {item.phone && (
-                                <>
-                                    <dt>Telefon</dt>
-                                    <dd>{item.phone}</dd>
-                                </>
-                            )}
-                            {item.website && (
-                                <>
-                                    <dt>Web</dt>
-                                    <dd>{item.website}</dd>
-                                </>
-                            )}
-                            {item.activity_code && (
-                                <>
-                                    <dt>Šifra delatnosti</dt>
-                                    <dd>{item.activity_code}</dd>
-                                </>
-                            )}
-                            {item.notes && (
-                                <>
-                                    <dt>Beleške</dt>
-                                    <dd>{item.notes}</dd>
-                                </>
-                            )}
-                        </Box>
-                    )}
-                </Paper>
+                        ) : (
+                            <Box
+                                component="dl"
+                                sx={{
+                                    m: 0,
+                                    "& dd": { ml: 2 },
+                                    "& dt": { fontWeight: 600, mt: 1 },
+                                }}
+                            >
+                                <dt>PIB</dt>
+                                <dd>{item.tax_id}</dd>
+                                {item.registration_number && (
+                                    <>
+                                        <dt>Matični broj</dt>
+                                        <dd>{item.registration_number}</dd>
+                                    </>
+                                )}
+                                {item.address && (
+                                    <>
+                                        <dt>Adresa</dt>
+                                        <dd>{item.address}</dd>
+                                    </>
+                                )}
+                                {item.email && (
+                                    <>
+                                        <dt>Email</dt>
+                                        <dd>{item.email}</dd>
+                                    </>
+                                )}
+                                {item.phone && (
+                                    <>
+                                        <dt>Telefon</dt>
+                                        <dd>{item.phone}</dd>
+                                    </>
+                                )}
+                                {item.website && (
+                                    <>
+                                        <dt>Web</dt>
+                                        <dd>{item.website}</dd>
+                                    </>
+                                )}
+                                {item.activity_code && (
+                                    <>
+                                        <dt>Šifra delatnosti</dt>
+                                        <dd>{item.activity_code}</dd>
+                                    </>
+                                )}
+                                {item.notes && (
+                                    <>
+                                        <dt>Beleške</dt>
+                                        <dd>{item.notes}</dd>
+                                    </>
+                                )}
+                            </Box>
+                        )}
+                    </Paper>
                 )}
 
                 {activeTab === "identity" && (
-                <ContactPersonsPanel clientCompanyId={item.id} />
+                    <ContactPersonsPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "documents" && (
-                <RiskAssessmentActPanel clientCompanyId={item.id} />
+                    <RiskAssessmentActPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "documents" && (
-                <CompanyDocumentsPanel clientCompanyId={item.id} />
+                    <CompanyDocumentsPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "job_roles" && (
-                <SectionCard
-                    title="Radna mesta"
-                    action={
-                        <PermissionGate permission="partners.add_jobrole">
-                            <Button
-                                size="small"
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={this.openRoleDialog}
-                            >
-                                Dodaj radno mesto
-                            </Button>
-                        </PermissionGate>
-                    }
-                >
-                    <Box sx={{ overflow: "auto" }}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Naziv</TableCell>
-                                <TableCell>Nivo rizika</TableCell>
-                                <TableCell>Zaposleni</TableCell>
-                                <TableCell align="right">Akcije</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {jobRoles.length === 0 ? (
-                                <TableStateRow
-                                    colSpan={4}
-                                    state="empty"
-                                    emptyMessage="Nema radnih mesta."
-                                />
-                            ) : (
-                                jobRoles.map((r) => (
-                                    <TableRow key={r.id}>
-                                        <TableCell>{r.name}</TableCell>
-                                        <TableCell>
-                                            <RiskBadge
-                                                riskLevel={r.risk_level_detail}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                            {r.employee_count ?? 0}
-                                        </TableCell>
+                    <SectionCard
+                        title="Radna mesta"
+                        action={
+                            <PermissionGate permission="partners.add_jobrole">
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={this.openRoleDialog}
+                                >
+                                    Dodaj radno mesto
+                                </Button>
+                            </PermissionGate>
+                        }
+                    >
+                        <Box sx={{ overflow: "auto" }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Naziv</TableCell>
+                                        <TableCell>Nivo rizika</TableCell>
+                                        <TableCell>Zaposleni</TableCell>
                                         <TableCell align="right">
-                                            <RowActionsMenu
-                                                actions={[
-                                                    {
-                                                        label: "Izmeni",
-                                                        icon: (
-                                                            <EditIcon fontSize="small" />
-                                                        ),
-                                                        permission:
-                                                            "partners.change_jobrole",
-                                                        onClick: () =>
-                                                            this.openRoleEdit(
-                                                                r,
-                                                            ),
-                                                    },
-                                                    {
-                                                        label: "Obriši",
-                                                        icon: (
-                                                            <DeleteIcon fontSize="small" />
-                                                        ),
-                                                        permission:
-                                                            "partners.delete_jobrole",
-                                                        color: "error",
-                                                        disabled:
-                                                            (r.employee_count ??
-                                                                0) > 0,
-                                                        disabledTitle:
-                                                            "Radno mesto ima zaposlene",
-                                                        onClick: () =>
-                                                            this.openRoleDelete(
-                                                                r,
-                                                            ),
-                                                    },
-                                                ]}
-                                            />
+                                            Akcije
                                         </TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                    </Box>
-                </SectionCard>
+                                </TableHead>
+                                <TableBody>
+                                    {jobRoles.length === 0 ? (
+                                        <TableStateRow
+                                            colSpan={4}
+                                            state="empty"
+                                            emptyMessage="Nema radnih mesta."
+                                        />
+                                    ) : (
+                                        jobRoles.map((r) => (
+                                            <TableRow key={r.id}>
+                                                <TableCell>{r.name}</TableCell>
+                                                <TableCell>
+                                                    <RiskBadge
+                                                        riskLevel={
+                                                            r.risk_level_detail
+                                                        }
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    {r.employee_count ?? 0}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    <RowActionsMenu
+                                                        actions={[
+                                                            {
+                                                                label: "Izmeni",
+                                                                icon: (
+                                                                    <EditIcon fontSize="small" />
+                                                                ),
+                                                                permission:
+                                                                    "partners.change_jobrole",
+                                                                onClick: () =>
+                                                                    this.openRoleEdit(
+                                                                        r,
+                                                                    ),
+                                                            },
+                                                            {
+                                                                label: "Obriši",
+                                                                icon: (
+                                                                    <DeleteIcon fontSize="small" />
+                                                                ),
+                                                                permission:
+                                                                    "partners.delete_jobrole",
+                                                                color: "error",
+                                                                disabled:
+                                                                    (r.employee_count ??
+                                                                        0) > 0,
+                                                                disabledTitle:
+                                                                    "Radno mesto ima zaposlene",
+                                                                onClick: () =>
+                                                                    this.openRoleDelete(
+                                                                        r,
+                                                                    ),
+                                                            },
+                                                        ]}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </Box>
+                    </SectionCard>
                 )}
 
                 {activeTab === "employees" && (
-                <Fragment>
-                <SectionCard
-                    title="Zaposleni"
-                    action={
-                        <PermissionGate permission="partners.add_employee">
-                            <Button
-                                size="small"
-                                variant="contained"
-                                startIcon={<AddIcon />}
-                                onClick={this.openEmpDialog}
-                            >
-                                Dodaj zaposlenog
-                            </Button>
-                        </PermissionGate>
-                    }
-                >
-                    <Box sx={{ overflow: "auto" }}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Ime</TableCell>
-                                <TableCell>Prezime</TableCell>
-                                <TableCell>Email</TableCell>
-                                <TableCell>Rizik</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {employees.length === 0 ? (
-                                <TableStateRow
-                                    colSpan={4}
-                                    state="empty"
-                                    emptyMessage="Nema zaposlenih."
-                                />
-                            ) : (
-                                employees.map((e) => (
-                                    <TableRow
-                                        key={e.id}
-                                        hover
-                                        sx={{ cursor: "pointer" }}
-                                        onClick={() =>
-                                            navigate(
-                                                `/client-companies-employees/${e.id}`,
-                                            )
-                                        }
+                    <Fragment>
+                        <SectionCard
+                            title="Zaposleni"
+                            action={
+                                <PermissionGate permission="partners.add_employee">
+                                    <Button
+                                        size="small"
+                                        variant="contained"
+                                        startIcon={<AddIcon />}
+                                        onClick={this.openEmpDialog}
                                     >
-                                        <TableCell>{e.first_name}</TableCell>
-                                        <TableCell>{e.last_name}</TableCell>
-                                        <TableCell>{e.email ?? "—"}</TableCell>
-                                        <TableCell>
-                                            <RiskBadge
-                                                riskLevel={
-                                                    e.effective_risk_level ??
-                                                    e.risk_level_override_detail ??
-                                                    e.job_role_risk_level
-                                                }
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                    </Box>
-                </SectionCard>
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        mt: 2,
-                    }}
-                >
-                    <Typography variant="subtitle1" fontWeight={600}>
-                        Oprema
-                    </Typography>
-                    <PermissionGate permission="partners.add_equipmentitem">
-                        <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={this.openEqDialog}
+                                        Dodaj zaposlenog
+                                    </Button>
+                                </PermissionGate>
+                            }
                         >
-                            Dodaj opremu
-                        </Button>
-                    </PermissionGate>
-                </Box>
-                <Paper sx={{ overflow: "auto" }}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Naziv</TableCell>
-                                <TableCell>Kategorija</TableCell>
-                                <TableCell>Inventarski broj</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {equipment.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={3} align="center">
-                                        Nema opreme.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                equipment.map((eq) => (
-                                    <TableRow
-                                        key={eq.id}
-                                        hover
-                                        sx={{ cursor: "pointer" }}
-                                        onClick={() =>
-                                            navigate(`/equipment/${eq.id}`)
-                                        }
-                                    >
-                                        <TableCell>{eq.name}</TableCell>
-                                        <TableCell>
-                                            {eq.category ?? "—"}
-                                        </TableCell>
-                                        <TableCell>
-                                            {eq.inventory_number ?? "—"}
-                                        </TableCell>
+                            <Box sx={{ overflow: "auto" }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Ime</TableCell>
+                                            <TableCell>Prezime</TableCell>
+                                            <TableCell>Email</TableCell>
+                                            <TableCell>Rizik</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {employees.length === 0 ? (
+                                            <TableStateRow
+                                                colSpan={4}
+                                                state="empty"
+                                                emptyMessage="Nema zaposlenih."
+                                            />
+                                        ) : (
+                                            employees.map((e) => (
+                                                <TableRow
+                                                    key={e.id}
+                                                    hover
+                                                    sx={{ cursor: "pointer" }}
+                                                    onClick={() =>
+                                                        navigate(
+                                                            `/client-companies-employees/${e.id}`,
+                                                        )
+                                                    }
+                                                >
+                                                    <TableCell>
+                                                        {e.first_name}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {e.last_name}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {e.email ?? "—"}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <RiskBadge
+                                                            riskLevel={
+                                                                e.effective_risk_level ??
+                                                                e.risk_level_override_detail ??
+                                                                e.job_role_risk_level
+                                                            }
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        </SectionCard>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                mt: 2,
+                            }}
+                        >
+                            <Typography variant="subtitle1" fontWeight={600}>
+                                Oprema
+                            </Typography>
+                            <PermissionGate permission="partners.add_equipmentitem">
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={this.openEqDialog}
+                                >
+                                    Dodaj opremu
+                                </Button>
+                            </PermissionGate>
+                        </Box>
+                        <Paper sx={{ overflow: "auto" }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Naziv</TableCell>
+                                        <TableCell>Kategorija</TableCell>
+                                        <TableCell>Inventarski broj</TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </Paper>
-                </Fragment>
+                                </TableHead>
+                                <TableBody>
+                                    {equipment.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={3}
+                                                align="center"
+                                            >
+                                                Nema opreme.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        equipment.map((eq) => (
+                                            <TableRow
+                                                key={eq.id}
+                                                hover
+                                                sx={{ cursor: "pointer" }}
+                                                onClick={() =>
+                                                    navigate(
+                                                        `/equipment/${eq.id}`,
+                                                    )
+                                                }
+                                            >
+                                                <TableCell>{eq.name}</TableCell>
+                                                <TableCell>
+                                                    {eq.category ?? "—"}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {eq.inventory_number ?? "—"}
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </Paper>
+                    </Fragment>
                 )}
 
                 {activeTab === "obligations" && (
-                <Fragment>
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        mt: 2,
-                    }}
-                >
-                    <Typography variant="subtitle1" fontWeight={600}>
-                        Aktivne obaveze
-                    </Typography>
-                    <PermissionGate permission="processes.add_processbinding">
-                        <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    bindingDialogOpen: true,
-                                }))
-                            }
+                    <Fragment>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                mt: 2,
+                            }}
                         >
-                            Dodaj obavezu
-                        </Button>
-                    </PermissionGate>
-                </Box>
-                <Paper sx={{ overflow: "auto" }}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Vrsta obaveze</TableCell>
-                                <TableCell>Subjekt</TableCell>
-                                <TableCell>Termin</TableCell>
-                                <TableCell align="right" />
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {bindings.filter((b) => b.is_active).length ===
-                            0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center">
-                                        Nema aktivnih obaveza.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                bindings
-                                    .filter((b) => b.is_active)
-                                    .map((b) => (
-                                        <TableRow key={b.id}>
-                                            <TableCell>
-                                                {b.process_type_name}
-                                            </TableCell>
-                                            <TableCell>
-                                                {bindingSubjectLabel(
-                                                    b,
-                                                    employees,
-                                                    equipment,
-                                                    item,
-                                                )}
-                                            </TableCell>
-                                            <TableCell sx={{ minWidth: 220 }}>
-                                                {b.has_open_run ? (
-                                                    formatDateDisplay(
-                                                        b.next_run_at,
-                                                    )
-                                                ) : (
-                                                    <PermissionGate permission="processes.change_processbinding">
-                                                        <DateTextFieldWithPicker
-                                                            label="Termin (dd.mm.yyyy)"
-                                                            value={isoDateToFormDisplay(
-                                                                b.next_run_at,
-                                                            )}
-                                                            helperText={
-                                                                this.state
-                                                                    .savingStartDateBindingId ===
-                                                                b.id
-                                                                    ? "Čuvam..."
-                                                                    : undefined
-                                                            }
-                                                            onChange={(v) =>
-                                                                this.handleBindingStartDateChange(
-                                                                    b.id,
-                                                                    v,
-                                                                )
-                                                            }
-                                                        />
-                                                    </PermissionGate>
-                                                )}
-                                            </TableCell>
-                                            <TableCell align="right">
-                                                <RowActionsMenu
-                                                    actions={[
-                                                        {
-                                                            label:
-                                                                this.state
-                                                                    .deactivatingBindingId ===
-                                                                b.id
-                                                                    ? "Deaktiviram..."
-                                                                    : "Deaktiviraj",
-                                                            icon: (
-                                                                <BlockIcon fontSize="small" />
-                                                            ),
-                                                            permission:
-                                                                "processes.change_processbinding",
-                                                            color: "warning",
-                                                            hidden:
-                                                                !b.has_open_run,
-                                                            disabled:
-                                                                this.state
-                                                                    .deactivatingBindingId ===
-                                                                b.id,
-                                                            onClick: () =>
-                                                                this.handleBindingDeactivate(
-                                                                    b.id,
-                                                                ),
-                                                        },
-                                                    ]}
-                                                />
+                            <Typography variant="subtitle1" fontWeight={600}>
+                                Aktivne obaveze
+                            </Typography>
+                            <PermissionGate permission="processes.add_processbinding">
+                                <Button
+                                    size="small"
+                                    variant="contained"
+                                    startIcon={<AddIcon />}
+                                    onClick={() =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            bindingDialogOpen: true,
+                                        }))
+                                    }
+                                >
+                                    Dodaj obavezu
+                                </Button>
+                            </PermissionGate>
+                        </Box>
+                        <Paper sx={{ overflow: "auto" }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Vrsta obaveze</TableCell>
+                                        <TableCell>Subjekt</TableCell>
+                                        <TableCell>Termin</TableCell>
+                                        <TableCell align="right" />
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {bindings.filter((b) => b.is_active)
+                                        .length === 0 ? (
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={4}
+                                                align="center"
+                                            >
+                                                Nema aktivnih obaveza.
                                             </TableCell>
                                         </TableRow>
-                                    ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </Paper>
+                                    ) : (
+                                        bindings
+                                            .filter((b) => b.is_active)
+                                            .map((b) => (
+                                                <TableRow key={b.id}>
+                                                    <TableCell>
+                                                        {b.process_type_name}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {bindingSubjectLabel(
+                                                            b,
+                                                            employees,
+                                                            equipment,
+                                                            item,
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell
+                                                        sx={{ minWidth: 220 }}
+                                                    >
+                                                        {b.has_open_run ? (
+                                                            formatDateDisplay(
+                                                                b.next_run_at,
+                                                            )
+                                                        ) : (
+                                                            <PermissionGate permission="processes.change_processbinding">
+                                                                <DateTextFieldWithPicker
+                                                                    label="Termin (dd.mm.yyyy)"
+                                                                    value={isoDateToFormDisplay(
+                                                                        b.next_run_at,
+                                                                    )}
+                                                                    helperText={
+                                                                        this
+                                                                            .state
+                                                                            .savingStartDateBindingId ===
+                                                                        b.id
+                                                                            ? "Čuvam..."
+                                                                            : undefined
+                                                                    }
+                                                                    onChange={(
+                                                                        v,
+                                                                    ) =>
+                                                                        this.handleBindingStartDateChange(
+                                                                            b.id,
+                                                                            v,
+                                                                        )
+                                                                    }
+                                                                />
+                                                            </PermissionGate>
+                                                        )}
+                                                    </TableCell>
+                                                    <TableCell align="right">
+                                                        <RowActionsMenu
+                                                            actions={[
+                                                                {
+                                                                    label:
+                                                                        this
+                                                                            .state
+                                                                            .deactivatingBindingId ===
+                                                                        b.id
+                                                                            ? "Deaktiviram..."
+                                                                            : "Deaktiviraj",
+                                                                    icon: (
+                                                                        <BlockIcon fontSize="small" />
+                                                                    ),
+                                                                    permission:
+                                                                        "processes.change_processbinding",
+                                                                    color: "warning",
+                                                                    hidden: !b.has_open_run,
+                                                                    disabled:
+                                                                        this
+                                                                            .state
+                                                                            .deactivatingBindingId ===
+                                                                        b.id,
+                                                                    onClick:
+                                                                        () =>
+                                                                            this.handleBindingDeactivate(
+                                                                                b.id,
+                                                                            ),
+                                                                },
+                                                            ]}
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </Paper>
 
-                <Typography variant="subtitle1" fontWeight={600} sx={{ mt: 2 }}>
-                    Istorija izvršenja
-                </Typography>
-                <Paper sx={{ overflow: "auto" }}>
-                    <Table size="small">
-                        <TableHead>
-                            <TableRow>
-                                <TableCell>Tip</TableCell>
-                                <TableCell>Subjekt</TableCell>
-                                <TableCell>Važi do</TableCell>
-                                <TableCell>Status</TableCell>
-                            </TableRow>
-                        </TableHead>
-                        <TableBody>
-                            {runs.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={4} align="center">
-                                        Nema zapisa.
-                                    </TableCell>
-                                </TableRow>
-                            ) : (
-                                runs.slice(0, 20).map((r) => (
-                                    <TableRow key={r.id}>
-                                        <TableCell>
-                                            {r.process_type_name}
-                                        </TableCell>
-                                        <TableCell>
-                                            {r.subject_snapshot?.name ?? "—"}
-                                        </TableCell>
-                                        <TableCell>
-                                            {formatDate(r.valid_until)}
-                                        </TableCell>
-                                        <TableCell>
-                                            <StatusBadge status={r.status} />
-                                        </TableCell>
+                        <Typography
+                            variant="subtitle1"
+                            fontWeight={600}
+                            sx={{ mt: 2 }}
+                        >
+                            Istorija izvršenja
+                        </Typography>
+                        <Paper sx={{ overflow: "auto" }}>
+                            <Table size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell>Tip</TableCell>
+                                        <TableCell>Subjekt</TableCell>
+                                        <TableCell>Važi do</TableCell>
+                                        <TableCell>Status</TableCell>
                                     </TableRow>
-                                ))
-                            )}
-                        </TableBody>
-                    </Table>
-                </Paper>
-                </Fragment>
+                                </TableHead>
+                                <TableBody>
+                                    {runs.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell
+                                                colSpan={4}
+                                                align="center"
+                                            >
+                                                Nema zapisa.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        runs.slice(0, 20).map((r) => (
+                                            <TableRow key={r.id}>
+                                                <TableCell>
+                                                    {r.process_type_name}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {r.subject_snapshot?.name ??
+                                                        "—"}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatDate(r.valid_until)}
+                                                </TableCell>
+                                                <TableCell>
+                                                    <StatusBadge
+                                                        status={r.status}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </Paper>
+                    </Fragment>
                 )}
 
                 {activeTab === "expert_findings" && (
@@ -1483,94 +1531,41 @@ class ClientCompanyDetailPageInner extends Component<
                 )}
 
                 {activeTab === "compliance" && (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <Box
                         sx={{
                             display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
+                            flexDirection: "column",
                             gap: 2,
-                            flexWrap: "wrap",
                         }}
                     >
-                        <Typography variant="subtitle1" fontWeight={600}>
-                            Usklađenost firme
-                        </Typography>
-                        <Button
-                            variant="outlined"
-                            disabled={generatingDoc}
-                            onClick={this.handleGenerateMedicalExamRecord}
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: 2,
+                                flexWrap: "wrap",
+                            }}
                         >
-                            {generatingDoc
-                                ? "Generišem..."
-                                : "Generiši Obrazac 1"}
-                        </Button>
+                            <Typography variant="subtitle1" fontWeight={600}>
+                                Usklađenost firme
+                            </Typography>
+                            <Button
+                                variant="outlined"
+                                disabled={generatingDoc}
+                                onClick={this.handleGenerateMedicalExamRecord}
+                            >
+                                {generatingDoc
+                                    ? "Generišem..."
+                                    : "Generiši Obrazac 1"}
+                            </Button>
+                        </Box>
+                        {docError && <Alert severity="error">{docError}</Alert>}
+                        <CompanyComplianceOverview
+                            companyId={item.id}
+                            onOpenTab={this.handleTabChange}
+                        />
                     </Box>
-                    {docError && <Alert severity="error">{docError}</Alert>}
-                    <Box
-                        sx={{
-                            display: "grid",
-                            gridTemplateColumns: {
-                                xs: "1fr",
-                                sm: "1fr 1fr",
-                            },
-                            gap: 2,
-                        }}
-                    >
-                        <Paper sx={{ p: 2 }}>
-                            <Typography variant="body2" fontWeight={600}>
-                                Akt o proceni rizika
-                            </Typography>
-                            <Chip
-                                size="small"
-                                color="info"
-                                label="Upravljaj u tabu Dokumentacija"
-                                sx={{ mt: 1, cursor: "pointer" }}
-                                onClick={() =>
-                                    this.handleTabChange("documents")
-                                }
-                            />
-                        </Paper>
-                        <Paper sx={{ p: 2 }}>
-                            <Typography variant="body2" fontWeight={600}>
-                                Obavezna dokumentacija
-                            </Typography>
-                            <Chip
-                                size="small"
-                                color="warning"
-                                label="U pripremi"
-                                sx={{ mt: 1 }}
-                            />
-                        </Paper>
-                        <Paper sx={{ p: 2 }}>
-                            <Typography variant="body2" fontWeight={600}>
-                                Stručni nalazi
-                            </Typography>
-                            <Chip
-                                size="small"
-                                color="info"
-                                label="Upravljaj u tabu Stručni nalazi"
-                                sx={{ mt: 1, cursor: "pointer" }}
-                                onClick={() =>
-                                    this.handleTabChange("expert_findings")
-                                }
-                            />
-                        </Paper>
-                        <Paper sx={{ p: 2 }}>
-                            <Typography variant="body2" fontWeight={600}>
-                                Lekarski pregledi
-                            </Typography>
-                            <Chip
-                                size="small"
-                                color={
-                                    employees.length > 0 ? "info" : "default"
-                                }
-                                label={`${employees.length} zaposlenih`}
-                                sx={{ mt: 1 }}
-                            />
-                        </Paper>
-                    </Box>
-                </Box>
                 )}
 
                 <EmployeeFormDialog
@@ -1769,8 +1764,8 @@ class ClientCompanyDetailPageInner extends Component<
                     message={
                         this.state.roleDeleteTarget != null ? (
                             <>
-                                Da li si siguran da želiš da obrišeš radno
-                                mesto „{this.state.roleDeleteTarget.name}"?
+                                Da li si siguran da želiš da obrišeš radno mesto
+                                „{this.state.roleDeleteTarget.name}"?
                             </>
                         ) : (
                             ""

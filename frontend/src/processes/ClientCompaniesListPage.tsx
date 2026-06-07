@@ -70,9 +70,7 @@ class ClientCompaniesListPage extends Component<
                         <Button
                             variant="contained"
                             startIcon={<AddIcon />}
-                            onClick={() =>
-                                navigate("/client-companies/new")
-                            }
+                            onClick={() => navigate("/client-companies/new")}
                         >
                             Dodaj firmu
                         </Button>

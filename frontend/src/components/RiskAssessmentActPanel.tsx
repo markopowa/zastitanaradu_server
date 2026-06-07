@@ -33,7 +33,11 @@ import {
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import { FilePreviewContent } from "./FilePreviewContent";
 import { PermissionGate } from "./PermissionGate";
-import { displayDateToIso, formatDateDisplay, StringToDate } from "../utils/date";
+import {
+    displayDateToIso,
+    formatDateDisplay,
+    StringToDate,
+} from "../utils/date";
 
 import type {
     RiskAssessmentAct,
@@ -323,7 +327,13 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
         if (loading) {
             return (
                 <Paper sx={{ p: 3 }}>
-                    <Box sx={{ display: "flex", justifyContent: "center", py: 3 }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            py: 3,
+                        }}
+                    >
                         <CircularProgress />
                     </Box>
                 </Paper>
@@ -346,7 +356,11 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
         if (act == null) {
             return (
                 <Paper sx={{ p: 3 }}>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 2 }}
+                    >
                         Akt o proceni rizika još nije kreiran.
                     </Typography>
                     <PermissionGate permission="partners.add_riskassessmentact">
@@ -640,17 +654,14 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                             </Typography>
                         )}
                         <Button component="label" variant="outlined" fullWidth>
-                            {editFile
-                                ? editFile.name
-                                : "Izaberi fajl..."}
+                            {editFile ? editFile.name : "Izaberi fajl..."}
                             <input
                                 type="file"
                                 hidden
                                 accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
                                 onChange={(e) =>
                                     this.setState({
-                                        editFile:
-                                            e.target.files?.[0] ?? null,
+                                        editFile: e.target.files?.[0] ?? null,
                                     })
                                 }
                             />

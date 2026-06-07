@@ -15,8 +15,11 @@ export const SERBIAN_MONTH_NAMES = [
     "decembar",
 ] as const;
 
-const formatDateParts = (day: number, monthIndex: number, year: number): string =>
-    `${day}. ${SERBIAN_MONTH_NAMES[monthIndex]} ${year}.`;
+const formatDateParts = (
+    day: number,
+    monthIndex: number,
+    year: number,
+): string => `${day}. ${SERBIAN_MONTH_NAMES[monthIndex]} ${year}.`;
 
 export const DateToString = (value?: Date | null): string => {
     if (!value) return "";
@@ -56,7 +59,11 @@ export const formatDateTimeISO = (value?: string | null): string => {
     if (!value) return "—";
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
-    const datePart = formatDateParts(d.getDate(), d.getMonth(), d.getFullYear());
+    const datePart = formatDateParts(
+        d.getDate(),
+        d.getMonth(),
+        d.getFullYear(),
+    );
     return `${datePart} ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
 };
 
@@ -64,7 +71,11 @@ export const formatDateTimeDisplay = (value?: string | null): string => {
     if (!value) return "—";
     const d = new Date(value);
     if (Number.isNaN(d.getTime())) return value;
-    const datePart = formatDateParts(d.getDate(), d.getMonth(), d.getFullYear());
+    const datePart = formatDateParts(
+        d.getDate(),
+        d.getMonth(),
+        d.getFullYear(),
+    );
     return `${datePart} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 };
 

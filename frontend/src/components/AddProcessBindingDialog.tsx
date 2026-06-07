@@ -62,7 +62,9 @@ export class AddProcessBindingDialog extends Component<
     loadProcessTypes = (): void => {
         const { subjectKind } = this.props;
         getProcessTypes().then((types) => {
-            const filtered = types.filter((t) => t.subject_kind === subjectKind);
+            const filtered = types.filter(
+                (t) => t.subject_kind === subjectKind,
+            );
             const first = filtered[0];
             this.setState({
                 processTypes: filtered,
@@ -78,8 +80,14 @@ export class AddProcessBindingDialog extends Component<
     };
 
     handleSubmit = (): void => {
-        const { subjectKind, clientCompanyId, employeeId, equipmentItemId, onClose, onSuccess } =
-            this.props;
+        const {
+            subjectKind,
+            clientCompanyId,
+            employeeId,
+            equipmentItemId,
+            onClose,
+            onSuccess,
+        } = this.props;
         const { processTypeId, nextRunAt } = this.state;
         if (!processTypeId) return;
 
@@ -138,7 +146,12 @@ export class AddProcessBindingDialog extends Component<
         const termError = bindingTermDateError(nextRunAt);
 
         return (
-            <Dialog open={open} onClose={this.handleClose} maxWidth="sm" fullWidth>
+            <Dialog
+                open={open}
+                onClose={this.handleClose}
+                maxWidth="sm"
+                fullWidth
+            >
                 <DialogTitle>Dodaj obavezu</DialogTitle>
                 <DialogContent>
                     <TextField
