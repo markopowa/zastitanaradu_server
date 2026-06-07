@@ -1,4 +1,5 @@
 import json
+import ssl
 from datetime import date
 from pathlib import Path
 from urllib.error import URLError
@@ -11,6 +12,22 @@ from django.utils import timezone
 from .models import CompanyRegistryEntry, CompanyRegistrySnapshot
 
 BATCH_SIZE = 5000
+
+_REGISTRY_INTERMEDIATE_AIA = (
+    "http://crt.sectigo.com/SSL2BUYEMEARSADomainValidationSecureServerCA.crt"
+)
+
+
+def _build_registry_ssl_context() -> ssl.SSLContext:
+    ctx = ssl.create_default_context()
+    try:
+        with urlopen(_REGISTRY_INTERMEDIATE_AIA, timeout=30) as resp:
+            der_bytes = resp.read()
+        pem = ssl.DER_cert_to_PEM_cert(der_bytes)
+        ctx.load_verify_locations(cadata=pem)
+    except Exception:
+        pass
+    return ctx
 
 
 def registry_snapshot_dir() -> Path:
@@ -27,8 +44,9 @@ def registry_opendata_url() -> str:
 def download_registry_payload(url: str | None = None) -> dict:
     target = url or registry_opendata_url()
     request = Request(target, headers={"Accept": "application/json"})
+    ctx = _build_registry_ssl_context()
     try:
-        with urlopen(request, timeout=300) as response:
+        with urlopen(request, timeout=300, context=ctx) as response:
             raw = response.read()
     except URLError as exc:
         raise RuntimeError(f"Registry download failed: {exc}") from exc
