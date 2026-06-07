@@ -102,6 +102,53 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
             return None
         return f.url
 
+    def validate_generation_config(self, value):
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Must be an object.")
+        if value.get("mode") != "VISUAL":
+            return value
+        placeholders = value.get("placeholders") or []
+        if not isinstance(placeholders, list):
+            raise serializers.ValidationError(
+                {"placeholders": "Must be a list."}
+            )
+        for index, placeholder in enumerate(placeholders):
+            if not isinstance(placeholder, dict):
+                raise serializers.ValidationError(
+                    {"placeholders": f"Item {index} must be an object."}
+                )
+            if "fontSize" in placeholder:
+                font_size = placeholder["fontSize"]
+                if (
+                    not isinstance(font_size, (int, float))
+                    or font_size < 6
+                    or font_size > 48
+                ):
+                    raise serializers.ValidationError(
+                        {
+                            "placeholders": (
+                                f"Item {index}: fontSize must be between 6 and 48."
+                            )
+                        }
+                    )
+            if "widthPct" in placeholder:
+                width_pct = placeholder["widthPct"]
+                if (
+                    not isinstance(width_pct, (int, float))
+                    or width_pct < 2
+                    or width_pct > 100
+                ):
+                    raise serializers.ValidationError(
+                        {
+                            "placeholders": (
+                                f"Item {index}: widthPct must be between 2 and 100."
+                            )
+                        }
+                    )
+        return value
+
 
 class DocumentTemplatePageImageUrlListSerializer(serializers.ListSerializer):
     child = serializers.CharField()

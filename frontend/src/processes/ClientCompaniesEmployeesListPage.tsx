@@ -23,35 +23,34 @@ import {
     DialogContent,
     DialogActions,
     TextField,
-    Tooltip,
 } from "@mui/material";
 import BuildIcon from "@mui/icons-material/Build";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
 import SendIcon from "@mui/icons-material/Send";
+import HistoryIcon from "@mui/icons-material/History";
+import EditIcon from "@mui/icons-material/Edit";
 import { enqueueSnackbar } from "notistack";
 
-import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import { EmployeeExamHistoryDialog } from "../components/EmployeeExamHistoryDialog";
+import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import RowActionsMenu from "../components/RowActionsMenu";
-import {
-    isJmbgComplete,
-    jmbgMatchesDate,
-    jmbgToDateString,
-} from "../utils/jmbg";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
+import { RiskBadge } from "../design";
 import {
-    addEmployee,
+    getEmployee,
+    getRiskLevels,
+    sendNowForEmployee,
+} from "../api/processes";
+import {
     ensureClientCompanies,
     ensureProcessTypes,
     fetchEmployeesList,
 } from "../store/processesSlice";
-import { sendNowForEmployee } from "../api/processes";
 import { setLastPath } from "../store/locationSlice";
-import { StringToDate } from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
-import type { Employee } from "../types/processes";
 import type {
     ClientCompaniesEmployeesListPageDispatchProps,
     ClientCompaniesEmployeesListPageProps,
@@ -62,27 +61,31 @@ class ClientCompaniesEmployeesListPageInner extends Component<
     ClientCompaniesEmployeesListPageProps,
     ClientCompaniesEmployeesListPageState
 > {
+    searchDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+
     state: ClientCompaniesEmployeesListPageState = {
         client_company_id: "",
+        search: "",
+        risk_level_id: "",
+        riskLevels: [],
         dialogOpen: false,
-        first_name: "",
-        last_name: "",
-        father_name: "",
-        national_id: "",
-        date_of_birth: "",
-        place_of_birth: "",
-        email: "",
-        org_unit: "",
-        position: "",
-        occupation: "",
-        high_risk_position_name: "",
-        new_client_company_id: "",
+        editDialogOpen: false,
+        editEmployee: null,
+        historyDialogOpen: false,
+        historyEmployeeId: null,
+        historyEmployeeName: "",
         sendDialogOpen: false,
         sendEmployeeId: null,
         sendEmployeeName: "",
         sendProcessTypeId: "",
         sending: false,
     };
+
+    componentWillUnmount(): void {
+        if (this.searchDebounceTimer) {
+            clearTimeout(this.searchDebounceTimer);
+        }
+    }
 
     openSendDialog = (employeeId: number, name: string): void => {
         const types = this.props.processTypes ?? [];
@@ -144,105 +147,71 @@ class ClientCompaniesEmployeesListPageInner extends Component<
             );
     };
 
-    isFilled = (): boolean => {
-        const {
-            first_name,
-            last_name,
-            email,
-            org_unit,
-            position,
-            new_client_company_id,
-        } = this.state;
-
-        return [
-            first_name,
-            last_name,
-            email,
-            org_unit,
-            position,
-            new_client_company_id,
-        ].every((elem) => elem !== "");
-    };
-
     getEmployeesForClient = (): void => {
-        this.props.loadEmployees(this.state.client_company_id);
+        const { client_company_id, search, risk_level_id } = this.state;
+        this.props.loadEmployees({
+            clientCompanyId: client_company_id,
+            search,
+            risk_level_id,
+        });
     };
 
     componentDidMount(): void {
         this.props.setLastPath("/client-companies-employees");
         this.props.ensureClientCompanies();
         this.props.ensureProcessTypes();
+        getRiskLevels().then((riskLevels) => this.setState({ riskLevels }));
         this.getEmployeesForClient();
     }
 
     openCreate = (): void => {
-        this.setState((prev) => ({
-            dialogOpen: true,
-            first_name: "",
-            last_name: "",
-            father_name: "",
-            national_id: "",
-            date_of_birth: "",
-            place_of_birth: "",
-            email: "",
-            org_unit: "",
-            position: "",
-            occupation: "",
-            high_risk_position_name: "",
-            new_client_company_id: prev.client_company_id,
-        }));
+        this.setState({ dialogOpen: true });
     };
 
-    closeDialog = (): void => {
-        this.setState((prev) => ({ ...prev, dialogOpen: false }));
+    closeCreateDialog = (): void => {
+        this.setState({ dialogOpen: false });
     };
 
-    handleSave = (): void => {
-        const {
-            first_name,
-            last_name,
-            email,
-            org_unit,
-            position,
-            new_client_company_id,
-        } = this.state;
-        if (!first_name.trim() || !new_client_company_id) return;
-        const {
-            father_name,
-            national_id,
-            date_of_birth,
-            place_of_birth,
-            occupation,
-            high_risk_position_name,
-        } = this.state;
-        let dateOfBirthSent: string | undefined;
-        if (date_of_birth.trim()) {
-            const d = StringToDate(date_of_birth);
-            dateOfBirthSent = d
-                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-                : undefined;
-        }
-        const payload: Partial<Employee> = {
-            first_name: first_name.trim(),
-            last_name: last_name.trim(),
-            father_name: father_name.trim() || undefined,
-            national_id: national_id.trim() || undefined,
-            date_of_birth: dateOfBirthSent,
-            place_of_birth: place_of_birth.trim() || undefined,
-            email: email.trim(),
-            org_unit: org_unit.trim(),
-            position: position.trim(),
-            occupation: occupation.trim() || undefined,
-            high_risk_position_name:
-                high_risk_position_name.trim() || undefined,
-            client_company: Number(new_client_company_id),
-        };
-        void this.props
-            .addEmployee(payload)
-            .unwrap()
-            .then(() => {
-                this.setState((prev) => ({ ...prev, dialogOpen: false }));
-            });
+    openEdit = (employeeId: number): void => {
+        getEmployee(employeeId).then((editEmployee) =>
+            this.setState({ editDialogOpen: true, editEmployee }),
+        );
+    };
+
+    closeEditDialog = (): void => {
+        this.setState({ editDialogOpen: false, editEmployee: null });
+    };
+
+    openHistory = (employeeId: number, name: string): void => {
+        this.setState({
+            historyDialogOpen: true,
+            historyEmployeeId: employeeId,
+            historyEmployeeName: name,
+        });
+    };
+
+    closeHistory = (): void => {
+        this.setState({
+            historyDialogOpen: false,
+            historyEmployeeId: null,
+            historyEmployeeName: "",
+        });
+    };
+
+    handleSearchChange = (value: string): void => {
+        this.setState({ search: value }, () => {
+            if (this.searchDebounceTimer) {
+                clearTimeout(this.searchDebounceTimer);
+            }
+            this.searchDebounceTimer = setTimeout(
+                () => this.getEmployeesForClient(),
+                300,
+            );
+        });
+    };
+
+    handleEmployeeSaved = (): void => {
+        this.getEmployeesForClient();
     };
 
     render() {
@@ -255,19 +224,15 @@ class ClientCompaniesEmployeesListPageInner extends Component<
         } = this.props;
         const {
             client_company_id,
+            search,
+            risk_level_id,
+            riskLevels,
             dialogOpen,
-            first_name,
-            last_name,
-            father_name,
-            national_id,
-            date_of_birth,
-            place_of_birth,
-            email,
-            org_unit,
-            position,
-            occupation,
-            high_risk_position_name,
-            new_client_company_id,
+            editDialogOpen,
+            editEmployee,
+            historyDialogOpen,
+            historyEmployeeId,
+            historyEmployeeName,
             sendDialogOpen,
             sendEmployeeName,
             sendProcessTypeId,
@@ -291,18 +256,46 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                         alignItems: "center",
                     }}
                 >
-                    <FormControl size="small" sx={{ minWidth: 220 }}>
-                        <InputLabel>Klijent</InputLabel>
+                    <TextField
+                        size="small"
+                        label="Pretraga"
+                        value={search}
+                        onChange={(e) =>
+                            this.handleSearchChange(e.target.value)
+                        }
+                        sx={{ minWidth: 200 }}
+                    />
+                    <FormControl size="small" sx={{ minWidth: 180 }}>
+                        <InputLabel>Nivo rizika</InputLabel>
                         <Select
-                            value={client_company_id}
-                            label="Klijent"
+                            value={risk_level_id}
+                            label="Nivo rizika"
                             onChange={(e) =>
                                 this.setState(
-                                    (prev) => ({
-                                        ...prev,
+                                    { risk_level_id: e.target.value as string },
+                                    () => this.getEmployeesForClient(),
+                                )
+                            }
+                        >
+                            <MenuItem value="">Svi</MenuItem>
+                            {riskLevels.map((rl) => (
+                                <MenuItem key={rl.id} value={String(rl.id)}>
+                                    {rl.label} (R={rl.score})
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <FormControl size="small" sx={{ minWidth: 220 }}>
+                        <InputLabel>Firma</InputLabel>
+                        <Select
+                            value={client_company_id}
+                            label="Firma"
+                            onChange={(e) =>
+                                this.setState(
+                                    {
                                         client_company_id: e.target
                                             .value as string,
-                                    }),
+                                    },
                                     () => this.getEmployeesForClient(),
                                 )
                             }
@@ -349,13 +342,14 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                         Organizaciona jedinica
                                     </TableCell>
                                     <TableCell>Pozicija</TableCell>
+                                    <TableCell>Rizik</TableCell>
                                     <TableCell align="right" />
                                 </TableRow>
                             </TableHead>
                             <TableBody>
                                 {items.length === 0 ? (
                                     <TableRow>
-                                        <TableCell colSpan={5} align="center">
+                                        <TableCell colSpan={7} align="center">
                                             Nema zaposlenih.
                                         </TableCell>
                                     </TableRow>
@@ -384,6 +378,15 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                             <TableCell>
                                                 {row.position ?? "—"}
                                             </TableCell>
+                                            <TableCell>
+                                                <RiskBadge
+                                                    riskLevel={
+                                                        row.effective_risk_level ??
+                                                        row.risk_level_override_detail ??
+                                                        row.job_role_risk_level
+                                                    }
+                                                />
+                                            </TableCell>
                                             <TableCell
                                                 align="right"
                                                 sx={{ whiteSpace: "nowrap" }}
@@ -400,6 +403,31 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                                 >
                                                     <RowActionsMenu
                                                         actions={[
+                                                            {
+                                                                label: "Istorija pregleda",
+                                                                icon: (
+                                                                    <HistoryIcon fontSize="small" />
+                                                                ),
+                                                                onClick: () => {
+                                                                    this.openHistory(
+                                                                        row.id,
+                                                                        `${row.first_name} ${row.last_name}`.trim(),
+                                                                    );
+                                                                },
+                                                            },
+                                                            {
+                                                                label: "Izmeni",
+                                                                icon: (
+                                                                    <EditIcon fontSize="small" />
+                                                                ),
+                                                                permission:
+                                                                    "partners.change_employee",
+                                                                onClick: () => {
+                                                                    this.openEdit(
+                                                                        row.id,
+                                                                    );
+                                                                },
+                                                            },
                                                             {
                                                                 label: "Pošalji na pregled",
                                                                 icon: (
@@ -428,212 +456,31 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                         </Table>
                     </Paper>
                 )}
-                <Dialog
+
+                <EmployeeFormDialog
                     open={dialogOpen}
-                    onClose={this.closeDialog}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>Nov zaposleni</DialogTitle>
-                    <DialogContent>
-                        <FormControl fullWidth margin="dense">
-                            <InputLabel>Klijent</InputLabel>
-                            <Select
-                                value={new_client_company_id}
-                                label="Klijent"
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        new_client_company_id: e.target
-                                            .value as string,
-                                    }))
-                                }
-                                required
-                            >
-                                {clients.map((c) => (
-                                    <MenuItem key={c.id} value={String(c.id)}>
-                                        {c.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <TextField
-                            margin="dense"
-                            label="Ime"
-                            fullWidth
-                            required
-                            value={first_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    first_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Prezime"
-                            required
-                            fullWidth
-                            value={last_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    last_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Ime oca"
-                            fullWidth
-                            value={father_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    father_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <Tooltip title="Jedinstveni matični broj građanina (13 cifara).">
-                            <TextField
-                                margin="dense"
-                                label="JMBG"
-                                fullWidth
-                                value={national_id}
-                                onChange={(e) => {
-                                    const next = e.target.value;
-                                    this.setState((prev) => {
-                                        const derived = isJmbgComplete(next)
-                                            ? jmbgToDateString(next)
-                                            : null;
-                                        return {
-                                            ...prev,
-                                            national_id: next,
-                                            date_of_birth:
-                                                derived &&
-                                                !prev.date_of_birth.trim()
-                                                    ? derived
-                                                    : prev.date_of_birth,
-                                        };
-                                    });
-                                }}
-                            />
-                        </Tooltip>
-                        <Tooltip title="Datum rođenja zaposlenog za lekarske obrasce.">
-                            <Box>
-                                <DateTextFieldWithPicker
-                                    label="Datum rođenja (dd.mm.yyyy)"
-                                    value={date_of_birth}
-                                    allowPast
-                                    onChange={(v) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            date_of_birth: v,
-                                        }))
-                                    }
-                                    defaultYearsAgo={18}
-                                    minYearsAgo={18}
-                                    minYearsAgoMessage="Zaposleni mora imati najmanje 18 godina. Da li si siguran da želiš da nastaviš sa izabranim datumom?"
-                                />
-                                {!jmbgMatchesDate(
-                                    national_id,
-                                    date_of_birth,
-                                ) && (
-                                    <Alert severity="warning" sx={{ mt: 1 }}>
-                                        JMBG i datum rođenja se ne slažu (JMBG
-                                        kaže {jmbgToDateString(national_id)}).
-                                    </Alert>
-                                )}
-                            </Box>
-                        </Tooltip>
-                        <TextField
-                            margin="dense"
-                            label="Mesto rođenja"
-                            fullWidth
-                            value={place_of_birth}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    place_of_birth: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Email"
-                            required
-                            fullWidth
-                            value={email}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    email: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Organizaciona jedinica"
-                            required
-                            fullWidth
-                            value={org_unit}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    org_unit: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Pozicija"
-                            required
-                            fullWidth
-                            value={position}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    position: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Zanimanje"
-                            fullWidth
-                            value={occupation}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    occupation: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Naziv radnog mesta sa povećanim rizikom"
-                            fullWidth
-                            value={high_risk_position_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    high_risk_position_name: e.target.value,
-                                }))
-                            }
-                        />
-                    </DialogContent>
-                    <DialogActions>
-                        <Button onClick={this.closeDialog}>Odustani</Button>
-                        <Button
-                            onClick={this.handleSave}
-                            variant="contained"
-                            disabled={!this.isFilled()}
-                        >
-                            Sačuvaj
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    mode="create"
+                    clientCompanies={clients}
+                    initialClientCompanyId={client_company_id}
+                    onClose={this.closeCreateDialog}
+                    onSaved={() => this.handleEmployeeSaved()}
+                />
+
+                <EmployeeFormDialog
+                    open={editDialogOpen}
+                    mode="edit"
+                    initial={editEmployee ?? undefined}
+                    clientCompanies={clients}
+                    onClose={this.closeEditDialog}
+                    onSaved={() => this.handleEmployeeSaved()}
+                />
+
+                <EmployeeExamHistoryDialog
+                    open={historyDialogOpen}
+                    employeeId={historyEmployeeId}
+                    employeeName={historyEmployeeName}
+                    onClose={this.closeHistory}
+                />
 
                 <Dialog
                     open={sendDialogOpen}
@@ -651,11 +498,10 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                 value={sendProcessTypeId}
                                 label="Vrsta pregleda"
                                 onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
+                                    this.setState({
                                         sendProcessTypeId: e.target
                                             .value as string,
-                                    }))
+                                    })
                                 }
                             >
                                 {types.map((t) => (
@@ -707,10 +553,9 @@ const mapDispatchToProps = (
     ensureProcessTypes: () => {
         void dispatch(ensureProcessTypes());
     },
-    loadEmployees: (clientCompanyId: string) => {
-        void dispatch(fetchEmployeesList(clientCompanyId));
+    loadEmployees: (params) => {
+        void dispatch(fetchEmployeesList(params));
     },
-    addEmployee: (payload: Partial<Employee>) => dispatch(addEmployee(payload)),
 });
 
 const Connected = connect(

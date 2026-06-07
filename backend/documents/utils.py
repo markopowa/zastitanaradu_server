@@ -2,11 +2,15 @@ import shutil
 import subprocess
 import tempfile
 import unicodedata
+from datetime import date
 from pathlib import Path
 
 import fitz
-from django.conf import settings
 from pdf2image import convert_from_path
+
+from django.conf import settings
+
+from processes.date_format import format_date_display
 
 
 class TemplateUnsupportedError(Exception):
@@ -146,6 +150,51 @@ def invalidate_page_images(template_id: int) -> None:
     pages_dir = Path(settings.MEDIA_ROOT) / "template_pages" / str(template_id)
     if pages_dir.exists():
         shutil.rmtree(pages_dir)
+
+
+def build_preview_context() -> dict:
+    birth_date = date(1990, 1, 10)
+    return {
+        "employee": {
+            "first_name": "Marko",
+            "last_name": "Marković",
+            "org_unit": "Proizvodnja",
+            "position": "Operater mašine",
+            "email": "marko.markovic@example.rs",
+            "father_name": "Petar",
+            "national_id": "0101990710123",
+            "date_of_birth": format_date_display(birth_date),
+            "place_of_birth": "Beograd",
+            "occupation": "Mašinovođa",
+            "high_risk_position_name": "Rad na visini",
+        },
+        "client": {
+            "name": "Demo DOO",
+            "tax_id": "123456789",
+            "address": "Bulevar kralja Aleksandra 1, Beograd",
+            "phone": "+381 11 123 4567",
+            "email": "info@demo.rs",
+            "website": "https://demo.rs",
+            "registration_number": "12345678",
+            "activity_code": "6201",
+            "risk_assessment_act_name": "Akt o proceni rizika 2024",
+            "risk_assessment_act_date": format_date_display(date(2024, 3, 15)),
+        },
+        "equipment": {
+            "name": "Kompresor ABC-500",
+            "category": "Pneumatska oprema",
+            "inventory_number": "INV-0042",
+            "location": "Hala 2",
+        },
+        "scheduled_for": format_date_display(date(2026, 6, 1)),
+        "performed_at": format_date_display(date(2026, 6, 7)),
+        "valid_until": format_date_display(date(2027, 6, 7)),
+        "process_type_name": "Periodični lekarski pregled",
+        "instruction_number": "UP-00123",
+        "last_exam_date": format_date_display(date(2025, 6, 7)),
+        "year_of_birth": "1990",
+        "date_of_birth": format_date_display(birth_date),
+    }
 
 
 def fill_pdf_at_coordinates(

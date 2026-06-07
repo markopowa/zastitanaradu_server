@@ -42,6 +42,7 @@ from .serializers import (
     ProcessTypeSerializer,
     SendNowResponseSerializer,
     TaskAssignmentSerializer,
+    UpcomingDeadlineSerializer,
 )
 from .tasks import (
     OPEN_RUN_STATUSES,
@@ -528,6 +529,93 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
             )
         prd.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _run_client_company(run: ProcessRun):
+    binding = run.process_binding
+    if binding.client_company_id:
+        return binding.client_company
+    if binding.employee_id and binding.employee.client_company_id:
+        return binding.employee.client_company
+    if binding.equipment_item_id and binding.equipment_item.client_company_id:
+        return binding.equipment_item.client_company
+    return None
+
+
+class UpcomingDeadlinesView(APIView):
+    permission_classes = [permissions.DjangoModelPermissions]
+    queryset = ProcessRun.objects.all()
+
+    def get(self, request):
+        today = date.today()
+        within_raw = request.query_params.get("within_days", "30")
+        try:
+            within_days = int(within_raw)
+        except (TypeError, ValueError):
+            within_days = 30
+        within_days = max(1, min(365, within_days))
+        cutoff = today + timedelta(days=within_days)
+
+        qs = (
+            ProcessRun.objects.filter(
+                status__in=(ProcessRun.STATUS_PENDING, ProcessRun.STATUS_SENT),
+                scheduled_for__isnull=False,
+                scheduled_for__lte=cutoff,
+            )
+            .select_related(
+                "process_type",
+                "process_binding",
+                "process_binding__client_company",
+                "process_binding__employee",
+                "process_binding__employee__client_company",
+                "process_binding__equipment_item",
+                "process_binding__equipment_item__client_company",
+            )
+            .order_by("scheduled_for", "id")
+        )
+
+        client_company_id = request.query_params.get("client_company_id")
+        if client_company_id is not None and client_company_id != "":
+            qs = qs.filter(
+                Q(process_binding__client_company_id=client_company_id)
+                | Q(
+                    process_binding__employee__client_company_id=(
+                        client_company_id
+                    )
+                )
+                | Q(
+                    process_binding__equipment_item__client_company_id=(
+                        client_company_id
+                    )
+                )
+            )
+
+        rows = []
+        for run in qs:
+            scheduled = run.scheduled_for
+            days_until = (scheduled - today).days if scheduled else None
+            is_overdue = bool(scheduled and scheduled < today)
+            snapshot = run.subject_snapshot or {}
+            client = _run_client_company(run)
+            rows.append(
+                {
+                    "run_id": run.id,
+                    "process_type_id": run.process_type_id,
+                    "process_type_name": run.process_type.name,
+                    "subject_kind": run.process_type.subject_kind,
+                    "subject_name": snapshot.get("name") or "",
+                    "client_company_id": client.id if client else None,
+                    "client_company_name": client.name if client else "",
+                    "scheduled_for": scheduled,
+                    "valid_until": run.valid_until,
+                    "status": run.status,
+                    "is_overdue": is_overdue,
+                    "days_until_deadline": days_until,
+                }
+            )
+
+        serializer = UpcomingDeadlineSerializer(rows, many=True)
+        return Response(serializer.data)
 
 
 class EmployeeSendNowView(APIView):

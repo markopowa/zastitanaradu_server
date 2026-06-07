@@ -114,6 +114,26 @@ export const bindingTermDateError = (value: string): string | undefined => {
     return undefined;
 };
 
+export const isoDateToLocalDate = (value?: string | null): Date | null => {
+    if (!value) return null;
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+    if (!match) return null;
+    return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+};
+
+export const isScheduledOverdue = (scheduledFor?: string | null): boolean => {
+    const d = isoDateToLocalDate(scheduledFor);
+    if (!d) return false;
+    return d.getTime() < todayLocalDate().getTime();
+};
+
+export const daysUntilIsoDate = (value?: string | null): number | null => {
+    const d = isoDateToLocalDate(value);
+    if (!d) return null;
+    const diffMs = d.getTime() - todayLocalDate().getTime();
+    return Math.round(diffMs / (24 * 60 * 60 * 1000));
+};
+
 export const validUntilDateError = (value: string): string | undefined => {
     const trimmed = value.trim();
     if (!trimmed) return undefined;

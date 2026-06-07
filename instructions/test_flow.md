@@ -116,13 +116,27 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Klikni **Dodaj radno mesto**
 - [ ] Naziv radnog mesta: `Električar na visini`
 - [ ] Nivo rizika: izaberi `POVECAN` / `Povećan` / najveći nivo rizika koji postoji u listi
+- [ ] Opis: `Rad na visini i elektro instalacije`
 - [ ] Sačuvaj
+- [ ] Klikni ⋮ na redu → **Izmeni** → promeni opis → Sačuvaj
 
 **Provera:**
 - [ ] Sekcija **Radna mesta** je u kartici sa naslovom i dugmetom desno.
-- [ ] Radno mesto se vidi u tabeli.
-- [ ] Nivo rizika se prikazuje kao obojeni badge, ne kao običan tekst.
-- [ ] Visok rizik je crven.
+- [ ] Radno mesto se vidi u tabeli sa kolonama Naziv / Nivo rizika / Zaposleni / Akcije.
+- [ ] Nivo rizika se prikazuje kao obojeni badge sa tekstom `Naziv (R=skor)`.
+- [ ] Kod povećanog rizika vidi se dodatni chip **Povećan rizik**.
+- [ ] **Obriši** je onemogućeno dok radno mesto ima zaposlene.
+
+### 2b2. Šifarnik nivoa rizika
+
+- [ ] U meniju: **Nivoi rizika** (grupa Podešavanja)
+- [ ] Proveri da lista prikazuje postojeće nivoe (NIZAK, UMEREN, …)
+- [ ] Klikni **Dodaj nivo** → Šifra `TEST`, Naziv `Testni`, Skor `1` → Sačuvaj
+- [ ] Klikni ⋮ → **Obriši** na testnom nivou → potvrdi
+
+**Provera:**
+- [ ] Stranica `/risk-levels` radi bez greške.
+- [ ] Brisanje nivoa koji se koristi na radnom mestu prikazuje poruku da se ne može obrisati.
 
 ### 2c. Kontakt-lica
 
@@ -188,11 +202,22 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Sačuvaj
 
 **Provera:**
+- [ ] Forma ima tri sekcije: **Lični podaci**, **Zaposlenje**, **Radno mesto i rizik**.
 - [ ] Vrati se na stranicu firme — vidiš Marka Petrovića u listi zaposlenih.
 - [ ] Sekcija **Zaposleni** je u kartici sa naslovom i dugmetom desno.
 - [ ] U listi zaposlenih postoji kolona **Rizik**.
 - [ ] Markov rizik se prikazuje kao obojeni badge.
 - [ ] Klik na red vodi na detalj zaposlenog.
+
+### 3a. Lista zaposlenih — pretraga i akcije
+
+- [ ] **Zaposleni** u meniju → u **Pretraga** ukucaj `Marko`
+- [ ] Klikni ⋮ → **Istorija pregleda**
+- [ ] Otvori detalj zaposlenog → **Izmeni** → promeni poziciju → Sačuvaj
+
+**Provera:**
+- [ ] Pretraga filtrira po imenu.
+- [ ] **Istorija pregleda** i **Izmeni** rade bez greške.
 
 ---
 
@@ -221,6 +246,19 @@ Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje)
 - [ ] Sačuvaj mapiranje
 
 **Provera:** Šablon se vidi u listi šablona.
+
+### 4a. Vizuelni editor polja
+
+- [ ] Na šablonu klikni ⋮ → **Uredi polja**
+- [ ] Klikni na stranicu dokumenta → izaberi polje (npr. Ime zaposlenog)
+- [ ] U panelu podesi **Veličina fonta** na `12`
+- [ ] Uključi **Poravnanje** (snap)
+- [ ] Klikni **Pregled rezultata** — PDF se prikazuje u dijalogu
+- [ ] **Sačuvaj polja**
+
+**Provera:**
+- [ ] Marker se pomera i snap radi.
+- [ ] Preview generiše PDF bez greške.
 
 ---
 
@@ -293,6 +331,17 @@ Datum: {{ scheduled_for }}.
 - [ ] Naslov: `Pregled nije evidentiran - {{ name }}`
 
 **Provera:** Minimum 3 šablona (6a–6c) za Periodični lekarski pregled.
+
+### 6e. Predstojeći rokovi
+
+- [ ] **Procesi i Obaveze → Predstojeći rokovi**
+- [ ] Filter **Firma**: izaberi test firmu (ili Svi)
+- [ ] Proveri da se lista učitava sortirano po roku
+- [ ] Klikni na red → otvara detalj aktivnosti
+
+**Provera:**
+- [ ] Statusi su badge-ovi (Poslat, Na čekanju, …).
+- [ ] Kasni aktivnosti imaju oznaku **Kasni**.
 
 ---
 

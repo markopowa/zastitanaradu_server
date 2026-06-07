@@ -2,6 +2,7 @@ import logging
 from pathlib import Path
 
 from django.conf import settings
+from django.http import HttpResponse
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -22,6 +23,8 @@ from .serializers import (
     TemplateFieldDefinitionSerializer,
 )
 from .utils import (
+    build_preview_context,
+    fill_pdf_at_coordinates,
     generate_page_images,
     invalidate_page_images,
 )
@@ -100,6 +103,40 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             f"{settings.MEDIA_URL}{p}") for p in rel_paths]
         out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
         return Response(out.data)
+
+    @action(detail=True, methods=["post"], url_path="preview")
+    def preview(self, request, *args, **kwargs):
+        instance: DocumentTemplate = self.get_object()
+        file_field = getattr(instance, "template_file", None)
+        if not file_field:
+            return Response(
+                {"detail": "Template has no file."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        placeholders = request.data.get("placeholders")
+        if placeholders is None:
+            generation_config = getattr(instance, "generation_config", None) or {}
+            placeholders = generation_config.get("placeholders") or []
+
+        if not isinstance(placeholders, list):
+            return Response(
+                {"detail": "placeholders must be a list."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            path = Path(file_field.path)
+            pdf_bytes = fill_pdf_at_coordinates(
+                path, placeholders, build_preview_context())
+        except Exception as exc:
+            logger.error("Template preview failed: %s", exc, exc_info=True)
+            return Response(
+                {"detail": f"Failed to generate preview: {exc}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+        return HttpResponse(pdf_bytes, content_type="application/pdf")
 
     @action(detail=False, methods=["post"], url_path="from-document")
     def from_document(self, request, *args, **kwargs):

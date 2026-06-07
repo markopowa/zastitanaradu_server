@@ -49,8 +49,14 @@ const ProcessBindingsListPage = lazy(
 const ProcessRunsListPage = lazy(
     () => import("./processes/ProcessRunsListPage"),
 );
+const RiskLevelsListPage = lazy(
+    () => import("./processes/RiskLevelsListPage"),
+);
 const ProcessRunDetailPage = lazy(
     () => import("./processes/ProcessRunDetailPage"),
+);
+const UpcomingDeadlinesPage = lazy(
+    () => import("./processes/UpcomingDeadlinesPage"),
 );
 
 const routeFallback = (
@@ -107,6 +113,10 @@ class App extends Component {
                             element={<EquipmentDetailPage />}
                         />
                         <Route
+                            path="risk-levels"
+                            element={<RiskLevelsListPage />}
+                        />
+                        <Route
                             path="processes/types"
                             element={<ProcessTypesListPage />}
                         />
@@ -121,6 +131,10 @@ class App extends Component {
                         <Route
                             path="processes/runs"
                             element={<ProcessRunsListPage />}
+                        />
+                        <Route
+                            path="processes/upcoming"
+                            element={<UpcomingDeadlinesPage />}
                         />
                         <Route
                             path="processes/runs/:id"

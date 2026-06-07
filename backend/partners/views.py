@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
 
 from rest_framework import permissions, status, viewsets
@@ -33,6 +34,15 @@ class RiskLevelViewSet(viewsets.ModelViewSet):
     queryset = RiskLevel.objects.all().order_by("order", "score")
     serializer_class = RiskLevelSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+
+    def destroy(self, request, *args, **kwargs):
+        try:
+            return super().destroy(request, *args, **kwargs)
+        except ProtectedError:
+            return Response(
+                {"detail": "Nivo rizika se koristi i ne moze se obrisati."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class JobRoleViewSet(viewsets.ModelViewSet):
@@ -100,7 +110,11 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset = Employee.objects.select_related(
-        "client_company").all().order_by("id")
+        "client_company",
+        "job_role",
+        "job_role__risk_level",
+        "risk_level_override",
+    ).all().order_by("last_name", "first_name")
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
@@ -109,6 +123,20 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         client_company_id = self.request.query_params.get("client_company_id")
         if client_company_id is not None and client_company_id != "":
             queryset = queryset.filter(client_company_id=client_company_id)
+        search = (self.request.query_params.get("search") or "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(email__icontains=search)
+                | Q(national_id__icontains=search)
+            )
+        risk_level_id = self.request.query_params.get("risk_level_id")
+        if risk_level_id is not None and risk_level_id != "":
+            queryset = queryset.filter(
+                Q(risk_level_override_id=risk_level_id)
+                | Q(job_role__risk_level_id=risk_level_id)
+            )
         return queryset
 
 

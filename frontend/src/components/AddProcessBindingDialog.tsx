@@ -16,7 +16,14 @@ import { enqueueSnackbar } from "notistack";
 
 import { createProcessBinding, getProcessTypes } from "../api/processes";
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
-import { bindingTermDateError, displayDateToIso } from "../utils/date";
+import { subjectKindLabel } from "../design/labels";
+import {
+    addMonths,
+    bindingTermDateError,
+    DateToString,
+    displayDateToIso,
+    todayLocalDate,
+} from "../utils/date";
 
 import type { ProcessType } from "../types/processes";
 import type {
@@ -24,11 +31,12 @@ import type {
     AddProcessBindingDialogState,
 } from "../types/processPages";
 
-const SUBJECT_KIND_LABELS: Record<ProcessType["subject_kind"], string> = {
-    EMPLOYEE: "Zaposleni",
-    EQUIPMENT: "Oprema",
-    CLIENT_COMPANY: "Klijent",
-};
+function suggestedNextRunAt(processType: ProcessType | undefined): string {
+    if (!processType?.default_period_months) return "";
+    return DateToString(
+        addMonths(todayLocalDate(), processType.default_period_months),
+    );
+}
 
 export class AddProcessBindingDialog extends Component<
     AddProcessBindingDialogProps,
@@ -59,7 +67,7 @@ export class AddProcessBindingDialog extends Component<
             this.setState({
                 processTypes: filtered,
                 processTypeId: first ? String(first.id) : "",
-                nextRunAt: "",
+                nextRunAt: suggestedNextRunAt(first),
             });
         });
     };
@@ -135,7 +143,7 @@ export class AddProcessBindingDialog extends Component<
                 <DialogContent>
                     <TextField
                         margin="dense"
-                        label={SUBJECT_KIND_LABELS[subjectKind]}
+                        label={subjectKindLabel(subjectKind)}
                         fullWidth
                         value={subjectLabel}
                         slotProps={{ input: { readOnly: true } }}
@@ -145,9 +153,15 @@ export class AddProcessBindingDialog extends Component<
                         <Select
                             value={processTypeId}
                             label="Vrsta obaveze"
-                            onChange={(e) =>
-                                this.setState({ processTypeId: e.target.value })
-                            }
+                            onChange={(e) => {
+                                const selectedType = processTypes.find(
+                                    (t) => String(t.id) === e.target.value,
+                                );
+                                this.setState({
+                                    processTypeId: e.target.value,
+                                    nextRunAt: suggestedNextRunAt(selectedType),
+                                });
+                            }}
                         >
                             {processTypes.map((t) => (
                                 <MenuItem key={t.id} value={String(t.id)}>

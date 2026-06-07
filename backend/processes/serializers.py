@@ -379,6 +379,21 @@ class TaskAssignmentSerializer(serializers.ModelSerializer):
         )
 
 
+class UpcomingDeadlineSerializer(serializers.Serializer):
+    run_id = serializers.IntegerField()
+    process_type_id = serializers.IntegerField()
+    process_type_name = serializers.CharField()
+    subject_kind = serializers.CharField()
+    subject_name = serializers.CharField()
+    client_company_id = serializers.IntegerField(allow_null=True)
+    client_company_name = serializers.CharField(allow_blank=True)
+    scheduled_for = serializers.DateField(allow_null=True)
+    valid_until = serializers.DateField(allow_null=True)
+    status = serializers.CharField()
+    is_overdue = serializers.BooleanField()
+    days_until_deadline = serializers.IntegerField(allow_null=True)
+
+
 class ActivityLogSerializer(serializers.ModelSerializer):
     username = serializers.SerializerMethodField()
     event_type_display = serializers.CharField(source="get_event_type_display", read_only=True)

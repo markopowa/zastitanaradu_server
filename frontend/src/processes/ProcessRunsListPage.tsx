@@ -25,7 +25,7 @@ import {
     fetchRuns,
 } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
-import { formatDateDisplay } from "../utils/date";
+import { formatDateDisplay, isScheduledOverdue } from "../utils/date";
 import { withNavigation } from "../hocs/withNavigation";
 import { ErrorState, StatusBadge, TableStateRow } from "../design";
 
@@ -221,6 +221,12 @@ class ProcessRunsListPageInner extends Component<
                                             row.trigger_runs?.some((tr) =>
                                                 tr.email_error?.trim(),
                                             );
+                                        const isOverdue =
+                                            (row.status === "PENDING" ||
+                                                row.status === "SENT") &&
+                                            isScheduledOverdue(
+                                                row.scheduled_for,
+                                            );
                                         return (
                                             <TableRow
                                                 key={row.id}
@@ -252,18 +258,11 @@ class ProcessRunsListPageInner extends Component<
                                                 <TableCell>
                                                     <StatusBadge
                                                         status={row.status}
+                                                        isOverdue={isOverdue}
                                                         hasEmailError={
                                                             hasEmailError
                                                         }
                                                     />
-                                                    {hasEmailError ? (
-                                                        <Typography
-                                                            variant="body2"
-                                                            color="error"
-                                                        >
-                                                            Mejl nije poslat
-                                                        </Typography>
-                                                    ) : null}
                                                 </TableCell>
                                                 <TableCell
                                                     align="right"

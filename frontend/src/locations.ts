@@ -11,10 +11,12 @@ export const paths = {
     clientCompanyDetail: (id: number) => `/client-companies/${id}`,
     equipment: "/equipment",
     equipmentDetail: (id: number) => `/equipment/${id}`,
+    riskLevels: "/risk-levels",
     processTypes: "/processes/types",
     processTemplates: "/processes/templates",
     processBindings: "/processes/bindings",
     processRuns: "/processes/runs",
+    processUpcoming: "/processes/upcoming",
     processRunDetail: (id: number) => `/processes/runs/${id}`,
 } as const;
 
@@ -28,10 +30,12 @@ const pathToTitle: Record<string, string> = {
     [paths.dashboard]: "Kontrolna tabla",
     [paths.clientCompanies]: "Klijenti",
     [paths.equipment]: "Oprema",
+    [paths.riskLevels]: "Nivoi rizika",
     [paths.processTypes]: "Vrste obaveza",
     [paths.processTemplates]: "Šablon obaveze",
     [paths.processBindings]: "Obaveze",
     [paths.processRuns]: "Aktivnosti",
+    [paths.processUpcoming]: "Predstojeći rokovi",
 };
 
 export function getPageTitle(pathname: string): string {

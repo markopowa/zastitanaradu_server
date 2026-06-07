@@ -9,6 +9,7 @@ from .views import (
     ProcessTemplateViewSet,
     ProcessTypeViewSet,
     TaskAssignmentViewSet,
+    UpcomingDeadlinesView,
 )
 
 app_name = "processes"
@@ -25,6 +26,8 @@ router.register("task-assignments", TaskAssignmentViewSet,
 urlpatterns = [
     path("dashboard/activity-log", ActivityLogView.as_view(),
          name="dashboard-activity-log"),
+    path("dashboard/upcoming-deadlines", UpcomingDeadlinesView.as_view(),
+         name="dashboard-upcoming-deadlines"),
     path("employees/<int:pk>/send-now/", EmployeeSendNowView.as_view(),
          name="employee-send-now"),
     path("", include(router.urls)),

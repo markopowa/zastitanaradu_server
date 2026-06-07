@@ -123,6 +123,7 @@ export interface VisualPlaceholder {
     widthPct: number;
     heightPct: number;
     fixedText?: string;
+    fontSize?: number;
 }
 
 export interface TemplateFieldDefinition {
@@ -162,6 +163,18 @@ export async function saveVisualPlaceholders(
                 placeholders,
             },
         },
+    );
+    return data;
+}
+
+export async function previewTemplate(
+    id: number,
+    placeholders: VisualPlaceholder[],
+): Promise<Blob> {
+    const { data } = await api.post<Blob>(
+        `/api/documents/templates/${id}/preview/`,
+        { placeholders },
+        { responseType: "blob" },
     );
     return data;
 }

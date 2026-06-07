@@ -28,21 +28,24 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
 import BlockIcon from "@mui/icons-material/Block";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
 import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
-import { bindingTermDateError, displayDateToIso, formatDateDisplay, isoDateToFormDisplay, StringToDate } from "../utils/date";
 import {
-    isJmbgComplete,
-    jmbgMatchesDate,
-    jmbgToDateString,
-} from "../utils/jmbg";
+    bindingTermDateError,
+    displayDateToIso,
+    formatDateDisplay,
+    isoDateToFormDisplay,
+    StringToDate,
+} from "../utils/date";
 import {
     aprLookup,
     clearClientCompanyRiskAssessmentAct,
-    createEmployee,
     createEquipmentItem,
     createJobRole,
+    deleteJobRole,
     generateMedicalExamRecord,
     getClientCompany,
     getEmployees,
@@ -52,18 +55,26 @@ import {
     getProcessRuns,
     getRiskLevels,
     updateClientCompany,
+    updateJobRole,
     updateProcessBinding,
     uploadClientCompanyRiskAssessmentAct,
 } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
+import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
 import { FilePreviewContent } from "../components/FilePreviewContent";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
-import { RiskBadge, SectionCard, StatusBadge, TableStateRow } from "../design";
+import {
+    ConfirmDialog,
+    RiskBadge,
+    SectionCard,
+    StatusBadge,
+    TableStateRow,
+} from "../design";
 
 import type {
     ClientCompanyDetailPageProps,
@@ -74,10 +85,38 @@ import type {
     Employee,
     EmployeeSummary,
     EquipmentItem,
+    JobRole,
     ProcessBinding,
 } from "../types/processes";
 
 const formatDate = (v?: string | null) => formatDateDisplay(v);
+
+function jobRoleSaveError(
+    err:
+        | { message?: string }
+        | { response?: { data?: { detail?: string; name?: string[] } } },
+): string {
+    const data = (err as { response?: { data?: Record<string, unknown> } })
+        .response?.data;
+    if (data != null) {
+        const nameErr = data.name;
+        if (Array.isArray(nameErr) && nameErr.length > 0) {
+            return "Radno mesto sa tim nazivom već postoji.";
+        }
+        const detail = data.detail;
+        if (typeof detail === "string") {
+            const lower = detail.toLowerCase();
+            if (lower.includes("unique") || lower.includes("naziv")) {
+                return "Radno mesto sa tim nazivom već postoji.";
+            }
+            return detail;
+        }
+    }
+    return (
+        (err as { message?: string }).message ??
+        "Greška pri čuvanju radnog mesta."
+    );
+}
 
 function bindingSubjectLabel(
     b: ProcessBinding,
@@ -135,26 +174,15 @@ class ClientCompanyDetailPageInner extends Component<
         riskLevels: [],
         jobRoles: [],
         roleDialogOpen: false,
+        editingRoleId: null,
         role_name: "",
         role_risk_level: "",
+        role_description: "",
         savingRole: false,
         roleError: null,
+        roleDeleteTarget: null,
+        deletingRole: false,
         empDialogOpen: false,
-        emp_first_name: "",
-        emp_last_name: "",
-        emp_father_name: "",
-        emp_national_id: "",
-        emp_date_of_birth: "",
-        emp_place_of_birth: "",
-        emp_email: "",
-        emp_org_unit: "",
-        emp_position: "",
-        emp_occupation: "",
-        emp_high_risk_position_name: "",
-        emp_job_role: "",
-        emp_risk_level_override: "",
-        savingEmployee: false,
-        employeeError: null,
         eqDialogOpen: false,
         eq_name: "",
         eq_category: "",
@@ -169,123 +197,32 @@ class ClientCompanyDetailPageInner extends Component<
     };
 
     openEmpDialog = (): void => {
-        this.setState((prev) => ({
-            ...prev,
-            empDialogOpen: true,
-            employeeError: null,
-            emp_first_name: "",
-            emp_last_name: "",
-            emp_father_name: "",
-            emp_national_id: "",
-            emp_date_of_birth: "",
-            emp_place_of_birth: "",
-            emp_email: "",
-            emp_org_unit: "",
-            emp_position: "",
-            emp_occupation: "",
-            emp_high_risk_position_name: "",
-            emp_job_role: "",
-            emp_risk_level_override: "",
-        }));
+        this.setState({ empDialogOpen: true });
     };
 
     closeEmpDialog = (): void => {
-        this.setState((prev) => ({ ...prev, empDialogOpen: false }));
+        this.setState({ empDialogOpen: false });
     };
 
-    saveEmployee = (): void => {
+    handleEmployeeSaved = (created: Employee): void => {
         const id = Number(this.props.id);
-        const {
-            emp_first_name,
-            emp_last_name,
-            emp_father_name,
-            emp_national_id,
-            emp_date_of_birth,
-            emp_place_of_birth,
-            emp_email,
-            emp_org_unit,
-            emp_position,
-            emp_occupation,
-            emp_high_risk_position_name,
-            emp_job_role,
-            emp_risk_level_override,
-        } = this.state;
-        if (
-            !emp_first_name.trim() ||
-            !emp_last_name.trim() ||
-            !emp_email.trim() ||
-            !emp_org_unit.trim() ||
-            !emp_position.trim()
-        )
-            return;
-        let dateOfBirthSent: string | undefined;
-        if (emp_date_of_birth.trim()) {
-            const d = StringToDate(emp_date_of_birth);
-            dateOfBirthSent = d
-                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-                : undefined;
-        }
-        const payload: Partial<Employee> = {
-            first_name: emp_first_name.trim(),
-            last_name: emp_last_name.trim(),
-            father_name: emp_father_name.trim() || undefined,
-            national_id: emp_national_id.trim() || undefined,
-            date_of_birth: dateOfBirthSent,
-            place_of_birth: emp_place_of_birth.trim() || undefined,
-            email: emp_email.trim(),
-            org_unit: emp_org_unit.trim(),
-            position: emp_position.trim(),
-            occupation: emp_occupation.trim() || undefined,
-            high_risk_position_name:
-                emp_high_risk_position_name.trim() || undefined,
-            job_role: emp_job_role ? Number(emp_job_role) : null,
-            risk_level_override: emp_risk_level_override
-                ? Number(emp_risk_level_override)
-                : null,
-            client_company: id,
+        const summary: EmployeeSummary = {
+            id: created.id,
+            client_company: created.client_company ?? id,
+            first_name: created.first_name,
+            last_name: created.last_name,
+            email: created.email,
+            org_unit: created.org_unit,
+            position: created.position,
+            job_role_risk_level: created.job_role_risk_level,
+            risk_level_override: created.risk_level_override,
+            risk_level_override_detail: created.risk_level_override_detail,
+            effective_risk_level: created.effective_risk_level,
         };
         this.setState((prev) => ({
             ...prev,
-            savingEmployee: true,
-            employeeError: null,
+            employees: [...prev.employees, summary],
         }));
-        createEmployee(payload)
-            .then((created) => {
-                const summary: EmployeeSummary = {
-                    id: created.id,
-                    client_company: created.client_company ?? id,
-                    first_name: created.first_name,
-                    last_name: created.last_name,
-                    email: created.email,
-                    org_unit: created.org_unit,
-                    position: created.position,
-                };
-                this.setState((prev) => ({
-                    ...prev,
-                    employees: [...prev.employees, summary],
-                    savingEmployee: false,
-                    empDialogOpen: false,
-                }));
-                enqueueSnackbar("Zaposleni dodat.", { variant: "success" });
-            })
-            .catch(
-                (
-                    err:
-                        | { message?: string }
-                        | { response?: { data?: { detail?: string } } },
-                ) => {
-                    const msg =
-                        (err as { response?: { data?: { detail?: string } } })
-                            .response?.data?.detail ??
-                        (err as { message?: string }).message ??
-                        "Greška pri čuvanju zaposlenog.";
-                    this.setState((prev) => ({
-                        ...prev,
-                        savingEmployee: false,
-                        employeeError: msg,
-                    }));
-                },
-            );
     };
 
     openEqDialog = (): void => {
@@ -364,8 +301,24 @@ class ClientCompanyDetailPageInner extends Component<
             ...prev,
             roleDialogOpen: true,
             roleError: null,
+            editingRoleId: null,
             role_name: "",
             role_risk_level: "",
+            role_description: "",
+        }));
+    };
+
+    openRoleEdit = (role: JobRole): void => {
+        this.setState((prev) => ({
+            ...prev,
+            roleDialogOpen: true,
+            roleError: null,
+            editingRoleId: role.id,
+            role_name: role.name,
+            role_risk_level: role.risk_level
+                ? String(role.risk_level)
+                : "",
+            role_description: role.description ?? "",
         }));
     };
 
@@ -373,28 +326,30 @@ class ClientCompanyDetailPageInner extends Component<
         this.setState((prev) => ({ ...prev, roleDialogOpen: false }));
     };
 
-    saveRole = (): void => {
-        const id = Number(this.props.id);
-        const { role_name, role_risk_level } = this.state;
-        if (!role_name.trim()) return;
-        this.setState((prev) => ({
-            ...prev,
-            savingRole: true,
-            roleError: null,
-        }));
-        createJobRole({
-            client_company: id,
-            name: role_name.trim(),
-            risk_level: role_risk_level ? Number(role_risk_level) : null,
-        })
-            .then((created) => {
+    openRoleDelete = (role: JobRole): void => {
+        this.setState({ roleDeleteTarget: role });
+    };
+
+    closeRoleDelete = (): void => {
+        this.setState({ roleDeleteTarget: null, deletingRole: false });
+    };
+
+    confirmRoleDelete = (): void => {
+        const { roleDeleteTarget } = this.state;
+        if (roleDeleteTarget == null) return;
+        this.setState({ deletingRole: true });
+        deleteJobRole(roleDeleteTarget.id)
+            .then(() => {
                 this.setState((prev) => ({
-                    ...prev,
-                    jobRoles: [...prev.jobRoles, created],
-                    savingRole: false,
-                    roleDialogOpen: false,
+                    jobRoles: prev.jobRoles.filter(
+                        (r) => r.id !== roleDeleteTarget.id,
+                    ),
+                    roleDeleteTarget: null,
+                    deletingRole: false,
                 }));
-                enqueueSnackbar("Radno mesto dodato.", { variant: "success" });
+                enqueueSnackbar("Radno mesto obrisano.", {
+                    variant: "success",
+                });
             })
             .catch(
                 (
@@ -406,14 +361,67 @@ class ClientCompanyDetailPageInner extends Component<
                         (err as { response?: { data?: { detail?: string } } })
                             .response?.data?.detail ??
                         (err as { message?: string }).message ??
-                        "Greška pri čuvanju radnog mesta.";
-                    this.setState((prev) => ({
-                        ...prev,
-                        savingRole: false,
-                        roleError: msg,
-                    }));
+                        "Greška pri brisanju radnog mesta.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                    this.setState({ deletingRole: false });
                 },
             );
+    };
+
+    saveRole = (): void => {
+        const companyId = Number(this.props.id);
+        const {
+            editingRoleId,
+            role_name,
+            role_risk_level,
+            role_description,
+        } = this.state;
+        if (!role_name.trim()) return;
+        const payload: Partial<JobRole> = {
+            name: role_name.trim(),
+            description: role_description.trim() || undefined,
+            risk_level: role_risk_level ? Number(role_risk_level) : null,
+        };
+        this.setState((prev) => ({
+            ...prev,
+            savingRole: true,
+            roleError: null,
+        }));
+        const request =
+            editingRoleId != null
+                ? updateJobRole(editingRoleId, payload)
+                : createJobRole({
+                      ...payload,
+                      client_company: companyId,
+                  });
+        request
+            .then((saved) => {
+                this.setState((prev) => ({
+                    jobRoles:
+                        editingRoleId != null
+                            ? prev.jobRoles.map((r) =>
+                                  r.id === saved.id ? saved : r,
+                              )
+                            : [...prev.jobRoles, saved],
+                    savingRole: false,
+                    roleDialogOpen: false,
+                }));
+                enqueueSnackbar(
+                    editingRoleId != null
+                        ? "Radno mesto sačuvano."
+                        : "Radno mesto dodato.",
+                    { variant: "success" },
+                );
+            })
+            .catch((err) => {
+                const msg = jobRoleSaveError(err);
+                enqueueSnackbar(msg, { variant: "error" });
+                this.setState((prev) => ({
+                    ...prev,
+                    savingRole: false,
+                    roleError: msg,
+                }));
+            });
     };
 
     startEdit = (): void => {
@@ -856,22 +864,7 @@ class ClientCompanyDetailPageInner extends Component<
             riskActPreviewOpen,
             jobRoles,
             riskLevels,
-            emp_job_role,
-            emp_risk_level_override,
             empDialogOpen,
-            emp_first_name,
-            emp_last_name,
-            emp_father_name,
-            emp_national_id,
-            emp_date_of_birth,
-            emp_place_of_birth,
-            emp_email,
-            emp_org_unit,
-            emp_position,
-            emp_occupation,
-            emp_high_risk_position_name,
-            savingEmployee,
-            employeeError,
             eqDialogOpen,
             eq_name,
             eq_category,
@@ -882,11 +875,6 @@ class ClientCompanyDetailPageInner extends Component<
             equipmentError,
         } = this.state;
         const { navigate } = this.props;
-
-        const selectedJobRole = jobRoles.find(
-            (r) => String(r.id) === emp_job_role,
-        );
-        const inheritedRisk = selectedJobRole?.risk_level_detail ?? null;
 
         if (loading) {
             return (
@@ -1344,13 +1332,14 @@ class ClientCompanyDetailPageInner extends Component<
                             <TableRow>
                                 <TableCell>Naziv</TableCell>
                                 <TableCell>Nivo rizika</TableCell>
-                                <TableCell>Broj zaposlenih</TableCell>
+                                <TableCell>Zaposleni</TableCell>
+                                <TableCell align="right">Akcije</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {jobRoles.length === 0 ? (
                                 <TableStateRow
-                                    colSpan={3}
+                                    colSpan={4}
                                     state="empty"
                                     emptyMessage="Nema radnih mesta."
                                 />
@@ -1365,6 +1354,42 @@ class ClientCompanyDetailPageInner extends Component<
                                         </TableCell>
                                         <TableCell>
                                             {r.employee_count ?? 0}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <RowActionsMenu
+                                                actions={[
+                                                    {
+                                                        label: "Izmeni",
+                                                        icon: (
+                                                            <EditIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "partners.change_jobrole",
+                                                        onClick: () =>
+                                                            this.openRoleEdit(
+                                                                r,
+                                                            ),
+                                                    },
+                                                    {
+                                                        label: "Obriši",
+                                                        icon: (
+                                                            <DeleteIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "partners.delete_jobrole",
+                                                        color: "error",
+                                                        disabled:
+                                                            (r.employee_count ??
+                                                                0) > 0,
+                                                        disabledTitle:
+                                                            "Radno mesto ima zaposlene",
+                                                        onClick: () =>
+                                                            this.openRoleDelete(
+                                                                r,
+                                                            ),
+                                                    },
+                                                ]}
+                                            />
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -1669,270 +1694,14 @@ class ClientCompanyDetailPageInner extends Component<
                     </Table>
                 </Paper>
 
-                <Dialog
+                <EmployeeFormDialog
                     open={empDialogOpen}
+                    mode="create"
+                    clientCompanies={[item]}
+                    lockedClientCompanyId={item.id}
                     onClose={this.closeEmpDialog}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>Nov zaposleni</DialogTitle>
-                    <DialogContent>
-                        {employeeError && (
-                            <Alert severity="error" sx={{ mb: 1 }}>
-                                {employeeError}
-                            </Alert>
-                        )}
-                        <TextField
-                            margin="dense"
-                            label="Ime"
-                            fullWidth
-                            required
-                            value={emp_first_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_first_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Prezime"
-                            fullWidth
-                            required
-                            value={emp_last_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_last_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Ime oca"
-                            fullWidth
-                            value={emp_father_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_father_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <Tooltip title="Jedinstveni matični broj građanina (13 cifara).">
-                            <TextField
-                                margin="dense"
-                                label="JMBG"
-                                fullWidth
-                                value={emp_national_id}
-                                onChange={(e) => {
-                                    const next = e.target.value;
-                                    this.setState((prev) => {
-                                        const derived = isJmbgComplete(next)
-                                            ? jmbgToDateString(next)
-                                            : null;
-                                        return {
-                                            ...prev,
-                                            emp_national_id: next,
-                                            emp_date_of_birth:
-                                                derived &&
-                                                !prev.emp_date_of_birth.trim()
-                                                    ? derived
-                                                    : prev.emp_date_of_birth,
-                                        };
-                                    });
-                                }}
-                            />
-                        </Tooltip>
-                        <Box>
-                            <DateTextFieldWithPicker
-                                label="Datum rođenja (dd.mm.yyyy)"
-                                value={emp_date_of_birth}
-                                allowPast
-                                onChange={(v) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        emp_date_of_birth: v,
-                                    }))
-                                }
-                                defaultYearsAgo={18}
-                                minYearsAgo={18}
-                                minYearsAgoMessage="Zaposleni mora imati najmanje 18 godina. Da li si siguran da želiš da nastaviš sa izabranim datumom?"
-                            />
-                            {!jmbgMatchesDate(
-                                emp_national_id,
-                                emp_date_of_birth,
-                            ) && (
-                                <Alert severity="warning" sx={{ mt: 1 }}>
-                                    JMBG i datum rođenja se ne slažu (JMBG kaže{" "}
-                                    {jmbgToDateString(emp_national_id)}).
-                                </Alert>
-                            )}
-                        </Box>
-                        <TextField
-                            margin="dense"
-                            label="Mesto rođenja"
-                            fullWidth
-                            value={emp_place_of_birth}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_place_of_birth: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Email"
-                            fullWidth
-                            required
-                            value={emp_email}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_email: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Organizaciona jedinica"
-                            fullWidth
-                            required
-                            value={emp_org_unit}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_org_unit: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Pozicija"
-                            fullWidth
-                            required
-                            value={emp_position}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_position: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Zanimanje"
-                            fullWidth
-                            value={emp_occupation}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_occupation: e.target.value,
-                                }))
-                            }
-                        />
-                        <TextField
-                            margin="dense"
-                            label="Naziv radnog mesta sa povećanim rizikom"
-                            fullWidth
-                            value={emp_high_risk_position_name}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    emp_high_risk_position_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <FormControl margin="dense" fullWidth size="small">
-                            <InputLabel>Radno mesto</InputLabel>
-                            <Select
-                                label="Radno mesto"
-                                value={emp_job_role}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        emp_job_role: String(e.target.value),
-                                    }))
-                                }
-                            >
-                                <MenuItem value="">
-                                    <em>—</em>
-                                </MenuItem>
-                                {jobRoles.map((r) => (
-                                    <MenuItem key={r.id} value={String(r.id)}>
-                                        {r.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        {inheritedRisk && (
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ display: "block", mt: 0.5 }}
-                            >
-                                Nivo rizika se nasleđuje iz radnog mesta:{" "}
-                                {inheritedRisk.label} (R={inheritedRisk.score})
-                            </Typography>
-                        )}
-                        <FormControl margin="dense" fullWidth size="small">
-                            <InputLabel>Rizik — izuzetak</InputLabel>
-                            <Select
-                                label="Rizik — izuzetak"
-                                value={emp_risk_level_override}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        emp_risk_level_override: String(
-                                            e.target.value,
-                                        ),
-                                    }))
-                                }
-                            >
-                                <MenuItem value="">
-                                    <em>Nasleđeno iz radnog mesta</em>
-                                </MenuItem>
-                                {riskLevels.map((rl) => (
-                                    <MenuItem key={rl.id} value={String(rl.id)}>
-                                        {rl.label} (R={rl.score})
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <Typography
-                            variant="caption"
-                            color="text.secondary"
-                            sx={{ display: "block", mt: 0.5 }}
-                        >
-                            Popuni samo ako se rizik za ovog zaposlenog razlikuje
-                            od rizika radnog mesta.
-                        </Typography>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={this.closeEmpDialog}
-                            disabled={savingEmployee}
-                        >
-                            Odustani
-                        </Button>
-                        <Button
-                            onClick={this.saveEmployee}
-                            variant="contained"
-                            disabled={
-                                savingEmployee ||
-                                !emp_first_name.trim() ||
-                                !emp_last_name.trim() ||
-                                !emp_email.trim() ||
-                                !emp_org_unit.trim() ||
-                                !emp_position.trim()
-                            }
-                        >
-                            {savingEmployee ? "Čuvam..." : "Sačuvaj"}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    onSaved={this.handleEmployeeSaved}
+                />
 
                 <Dialog
                     open={eqDialogOpen}
@@ -2069,7 +1838,11 @@ class ClientCompanyDetailPageInner extends Component<
                     maxWidth="sm"
                     fullWidth
                 >
-                    <DialogTitle>Novo radno mesto</DialogTitle>
+                    <DialogTitle>
+                        {this.state.editingRoleId != null
+                            ? "Izmena radnog mesta"
+                            : "Novo radno mesto"}
+                    </DialogTitle>
                     <DialogContent>
                         {this.state.roleError && (
                             <Alert severity="error" sx={{ mb: 1 }}>
@@ -2111,6 +1884,20 @@ class ClientCompanyDetailPageInner extends Component<
                                 ))}
                             </Select>
                         </FormControl>
+                        <TextField
+                            margin="dense"
+                            label="Opis"
+                            fullWidth
+                            multiline
+                            minRows={2}
+                            value={this.state.role_description}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    role_description: e.target.value,
+                                }))
+                            }
+                        />
                     </DialogContent>
                     <DialogActions>
                         <Button
@@ -2131,6 +1918,24 @@ class ClientCompanyDetailPageInner extends Component<
                         </Button>
                     </DialogActions>
                 </Dialog>
+
+                <ConfirmDialog
+                    open={this.state.roleDeleteTarget != null}
+                    title="Obriši radno mesto"
+                    message={
+                        this.state.roleDeleteTarget != null ? (
+                            <>
+                                Da li si siguran da želiš da obrišeš radno
+                                mesto „{this.state.roleDeleteTarget.name}"?
+                            </>
+                        ) : (
+                            ""
+                        )
+                    }
+                    loading={this.state.deletingRole}
+                    onConfirm={this.confirmRoleDelete}
+                    onClose={this.closeRoleDelete}
+                />
 
                 <AddProcessBindingDialog
                     open={this.state.bindingDialogOpen}

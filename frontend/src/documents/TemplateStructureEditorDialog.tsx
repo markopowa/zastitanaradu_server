@@ -17,6 +17,8 @@ import {
     InputLabel,
     Select,
     TextField,
+    Switch,
+    FormControlLabel,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { enqueueSnackbar } from "notistack";
@@ -24,8 +26,10 @@ import type { DocumentTemplate, VisualPlaceholder } from "../api/documents";
 import {
     getDocumentTemplatePages,
     getTemplateFieldDefinitions,
+    previewTemplate,
     saveVisualPlaceholders,
 } from "../api/documents";
+import { ConfirmDialog } from "../design";
 
 interface TemplateField {
     key: string;
@@ -128,6 +132,8 @@ function fieldsForContext(
 const MARKER_W = 12;
 const MARKER_H = 2.2;
 
+const GRID_STEP_OPTIONS = [0.5, 1, 2, 5];
+
 interface Props {
     open: boolean;
     template: DocumentTemplate;
@@ -158,6 +164,14 @@ interface State {
     dragState: DragSnapshot | null;
     fieldSearch: string;
     fieldGroups: FieldGroups | null;
+    snapEnabled: boolean;
+    gridStep: number;
+    previewOpen: boolean;
+    previewUrl: string | null;
+    previewError: string | null;
+    previewLoading: boolean;
+    fieldCatalogLoadFailed: boolean;
+    confirmRemovePhId: string | null;
 }
 
 export default class TemplateStructureEditorDialog extends Component<
@@ -183,6 +197,14 @@ export default class TemplateStructureEditorDialog extends Component<
         dragState: null,
         fieldSearch: "",
         fieldGroups: null,
+        snapEnabled: true,
+        gridStep: 1,
+        previewOpen: false,
+        previewUrl: null,
+        previewError: null,
+        previewLoading: false,
+        fieldCatalogLoadFailed: false,
+        confirmRemovePhId: null,
     };
 
     componentDidMount(): void {
@@ -207,7 +229,12 @@ export default class TemplateStructureEditorDialog extends Component<
                 }
                 this.setState((prev) => ({ ...prev, fieldGroups: groups }));
             })
-            .catch(() => undefined);
+            .catch(() =>
+                this.setState((prev) => ({
+                    ...prev,
+                    fieldCatalogLoadFailed: true,
+                })),
+            );
     };
 
     componentDidUpdate(prevProps: Props): void {
@@ -226,7 +253,16 @@ export default class TemplateStructureEditorDialog extends Component<
             window.removeEventListener("mousemove", this.dragMoveHandler);
             window.removeEventListener("mouseup", this.dragUpHandler);
         }
+        if (this.state.previewUrl) {
+            URL.revokeObjectURL(this.state.previewUrl);
+        }
     }
+
+    private snapPct = (value: number): number => {
+        const { snapEnabled, gridStep } = this.state;
+        if (!snapEnabled || gridStep <= 0) return value;
+        return Math.round(value / gridStep) * gridStep;
+    };
 
     private loadEditorData = (): void => {
         const { template } = this.props;
@@ -277,8 +313,12 @@ export default class TemplateStructureEditorDialog extends Component<
         }
         const dxPct = (dx / d.containerWidth) * 100;
         const dyPct = (dy / d.containerHeight) * 100;
-        const newX = Math.max(0, Math.min(100 - MARKER_W, d.startXPct + dxPct));
-        const newY = Math.max(0, Math.min(100 - MARKER_H, d.startYPct + dyPct));
+        const newX = this.snapPct(
+            Math.max(0, Math.min(100 - MARKER_W, d.startXPct + dxPct)),
+        );
+        const newY = this.snapPct(
+            Math.max(0, Math.min(100 - MARKER_H, d.startYPct + dyPct)),
+        );
         this.setState((prev) => ({
             placeholders: prev.placeholders.map((p) =>
                 p.id === d.phId ? { ...p, xPct: newX, yPct: newY } : p,
@@ -373,6 +413,7 @@ export default class TemplateStructureEditorDialog extends Component<
                     yPct: prev.menuAnchor.yPct,
                     widthPct: MARKER_W,
                     heightPct: MARKER_H,
+                    fontSize: 10,
                     ...(fieldKey === FIXED_TEXT_KEY ? { fixedText: "" } : {}),
                 };
                 return {
@@ -386,12 +427,70 @@ export default class TemplateStructureEditorDialog extends Component<
         });
     };
 
-    private handleRemovePlaceholder = (phId: string): void => {
+    private requestRemovePlaceholder = (phId: string): void => {
         this.setState((prev) => ({
-            placeholders: prev.placeholders.filter((p) => p.id !== phId),
+            ...prev,
+            confirmRemovePhId: phId,
             menuAnchor: null,
             editingPhId: null,
         }));
+    };
+
+    private confirmRemovePlaceholder = (): void => {
+        const { confirmRemovePhId } = this.state;
+        if (!confirmRemovePhId) return;
+        this.setState((prev) => ({
+            placeholders: prev.placeholders.filter(
+                (p) => p.id !== confirmRemovePhId,
+            ),
+            confirmRemovePhId: null,
+            editingPhId:
+                prev.editingPhId === confirmRemovePhId
+                    ? null
+                    : prev.editingPhId,
+        }));
+    };
+
+    private handlePreview = async (): Promise<void> => {
+        const err = this.validatePlaceholders();
+        if (err) {
+            enqueueSnackbar(err, { variant: "error" });
+            return;
+        }
+        const { template } = this.props;
+        const { placeholders, previewUrl } = this.state;
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        this.setState({
+            previewLoading: true,
+            previewError: null,
+            previewOpen: true,
+            previewUrl: null,
+        });
+        try {
+            const blob = await previewTemplate(template.id, placeholders);
+            const url = URL.createObjectURL(blob);
+            this.setState({ previewUrl: url, previewLoading: false });
+        } catch {
+            this.setState({
+                previewError: "Greška pri generisanju pregleda.",
+                previewLoading: false,
+            });
+        }
+    };
+
+    private closePreview = (): void => {
+        const { previewUrl } = this.state;
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+        }
+        this.setState({
+            previewOpen: false,
+            previewUrl: null,
+            previewError: null,
+            previewLoading: false,
+        });
     };
 
     private handleMarkerMouseDown = (
@@ -486,6 +585,14 @@ export default class TemplateStructureEditorDialog extends Component<
             editingPhId,
             dragState,
             fieldSearch,
+            snapEnabled,
+            gridStep,
+            previewOpen,
+            previewUrl,
+            previewError,
+            previewLoading,
+            fieldCatalogLoadFailed,
+            confirmRemovePhId,
         } = this.state;
 
         const availableFields = fieldsForContext(
@@ -545,6 +652,12 @@ export default class TemplateStructureEditorDialog extends Component<
                     {error && (
                         <Alert severity="error" sx={{ mb: 2, width: "100%" }}>
                             {error}
+                        </Alert>
+                    )}
+                    {fieldCatalogLoadFailed && (
+                        <Alert severity="info" sx={{ mb: 2, width: "100%" }}>
+                            Katalog polja nije učitan — koriste se podrazumevana
+                            polja.
                         </Alert>
                     )}
 
@@ -661,7 +774,9 @@ export default class TemplateStructureEditorDialog extends Component<
                                                     >
                                                         <Typography
                                                             sx={{
-                                                                fontSize: 10,
+                                                                fontSize:
+                                                                    ph.fontSize ??
+                                                                    10,
                                                                 fontWeight: 600,
                                                                 color: "#1b5e20",
                                                                 lineHeight: 1.2,
@@ -718,6 +833,47 @@ export default class TemplateStructureEditorDialog extends Component<
                                 <Typography variant="subtitle2" gutterBottom>
                                     Polja ({placeholders.length})
                                 </Typography>
+                                <FormControlLabel
+                                    control={
+                                        <Switch
+                                            size="small"
+                                            checked={snapEnabled}
+                                            onChange={(e) =>
+                                                this.setState((prev) => ({
+                                                    ...prev,
+                                                    snapEnabled:
+                                                        e.target.checked,
+                                                }))
+                                            }
+                                        />
+                                    }
+                                    label="Poravnanje"
+                                    sx={{ mb: 1, ml: 0 }}
+                                />
+                                <FormControl
+                                    fullWidth
+                                    size="small"
+                                    sx={{ mb: 2 }}
+                                    disabled={!snapEnabled}
+                                >
+                                    <InputLabel>Korak mreže (%)</InputLabel>
+                                    <Select
+                                        value={gridStep}
+                                        label="Korak mreže (%)"
+                                        onChange={(e) =>
+                                            this.setState((prev) => ({
+                                                ...prev,
+                                                gridStep: Number(e.target.value),
+                                            }))
+                                        }
+                                    >
+                                        {GRID_STEP_OPTIONS.map((s) => (
+                                            <MenuItem key={s} value={s}>
+                                                {s}
+                                            </MenuItem>
+                                        ))}
+                                    </Select>
+                                </FormControl>
                                 {editingPh && (
                                     <Box
                                         sx={{
@@ -785,8 +941,41 @@ export default class TemplateStructureEditorDialog extends Component<
                                                     }));
                                                 }}
                                                 placeholder="Unesite fiksni tekst..."
+                                                sx={{ mb: 1.5 }}
                                             />
                                         )}
+                                        <TextField
+                                            fullWidth
+                                            size="small"
+                                            type="number"
+                                            label="Veličina fonta"
+                                            value={editingPh.fontSize ?? 10}
+                                            slotProps={{
+                                                htmlInput: {
+                                                    min: 6,
+                                                    max: 48,
+                                                    step: 1,
+                                                },
+                                            }}
+                                            onChange={(e) => {
+                                                const id = editingPh.id;
+                                                const v = Number(e.target.value);
+                                                if (Number.isNaN(v)) return;
+                                                this.setState((prev) => ({
+                                                    placeholders:
+                                                        prev.placeholders.map(
+                                                            (p) =>
+                                                                p.id === id
+                                                                    ? {
+                                                                          ...p,
+                                                                          fontSize:
+                                                                              v,
+                                                                      }
+                                                                    : p,
+                                                        ),
+                                                }));
+                                            }}
+                                        />
                                     </Box>
                                 )}
                                 {placeholders.length === 0 && (
@@ -869,7 +1058,7 @@ export default class TemplateStructureEditorDialog extends Component<
                                                     color="error"
                                                     onClick={(e) => {
                                                         e.stopPropagation();
-                                                        this.handleRemovePlaceholder(
+                                                        this.requestRemovePlaceholder(
                                                             ph.id,
                                                         );
                                                     }}
@@ -890,6 +1079,12 @@ export default class TemplateStructureEditorDialog extends Component<
                 <DialogActions>
                     <Button onClick={onClose} disabled={saving}>
                         Odustani
+                    </Button>
+                    <Button
+                        onClick={() => void this.handlePreview()}
+                        disabled={saving || loading || previewLoading}
+                    >
+                        Pregled rezultata
                     </Button>
                     <Button
                         onClick={() => void this.handleSave()}
@@ -944,7 +1139,7 @@ export default class TemplateStructureEditorDialog extends Component<
                         <MenuItem
                             key="remove"
                             onClick={() =>
-                                this.handleRemovePlaceholder(editingPh.id)
+                                this.requestRemovePlaceholder(editingPh.id)
                             }
                             sx={{ color: "error.main", fontSize: 13 }}
                         >
@@ -971,6 +1166,61 @@ export default class TemplateStructureEditorDialog extends Component<
                         </MenuItem>
                     ))}
                 </Menu>
+
+                <Dialog
+                    open={previewOpen}
+                    onClose={this.closePreview}
+                    maxWidth="lg"
+                    fullWidth
+                >
+                    <DialogTitle>Pregled rezultata</DialogTitle>
+                    <DialogContent dividers>
+                        {previewLoading && (
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    py: 6,
+                                }}
+                            >
+                                <CircularProgress />
+                            </Box>
+                        )}
+                        {previewError && (
+                            <Alert severity="error">{previewError}</Alert>
+                        )}
+                        {!previewLoading && previewUrl && (
+                            <Box sx={{ height: "70vh" }}>
+                                <iframe
+                                    src={previewUrl}
+                                    title="Pregled PDF"
+                                    style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        border: "none",
+                                    }}
+                                />
+                            </Box>
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={this.closePreview}>Zatvori</Button>
+                    </DialogActions>
+                </Dialog>
+
+                <ConfirmDialog
+                    open={confirmRemovePhId != null}
+                    title="Ukloni polje?"
+                    message="Da li sigurno želiš da ukloniš ovo polje?"
+                    confirmLabel="Ukloni"
+                    onConfirm={this.confirmRemovePlaceholder}
+                    onClose={() =>
+                        this.setState((prev) => ({
+                            ...prev,
+                            confirmRemovePhId: null,
+                        }))
+                    }
+                />
             </Dialog>
         );
     }

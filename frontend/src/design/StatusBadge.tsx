@@ -1,4 +1,4 @@
-import { Chip } from "@mui/material";
+import { Box, Chip } from "@mui/material";
 
 import { runStatusColor, runStatusLabel } from "./labels";
 import type { StatusBadgeProps } from "../types/design";
@@ -18,11 +18,44 @@ export function StatusBadge({
               : runStatusColor(status);
 
     return (
-        <Chip
-            label={runStatusLabel(status)}
-            color={color}
-            variant="outlined"
-            size={size}
-        />
+        <Box
+            sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 0.5,
+                alignItems: "center",
+            }}
+        >
+            <Chip
+                label={runStatusLabel(status)}
+                color={color}
+                variant="outlined"
+                size={size}
+            />
+            {isOverdue ? (
+                <Chip
+                    label="Kasni"
+                    color="error"
+                    variant="outlined"
+                    size={size}
+                />
+            ) : null}
+            {isExpiringSoon && !isOverdue ? (
+                <Chip
+                    label="Ističe uskoro"
+                    color="warning"
+                    variant="outlined"
+                    size={size}
+                />
+            ) : null}
+            {hasEmailError ? (
+                <Chip
+                    label="Mejl nije poslat"
+                    color="error"
+                    variant="outlined"
+                    size={size}
+                />
+            ) : null}
+        </Box>
     );
 }

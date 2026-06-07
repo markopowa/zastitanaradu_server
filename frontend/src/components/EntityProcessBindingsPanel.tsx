@@ -19,7 +19,7 @@ import { AddProcessBindingDialog } from "./AddProcessBindingDialog";
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import { PermissionGate } from "./PermissionGate";
 import RowActionsMenu from "./RowActionsMenu";
-import { bindingTermDateError, displayDateToIso, formatDateDisplay, isoDateToFormDisplay } from "../utils/date";
+import { bindingTermDateError, displayDateToIso, formatDateDisplay, isoDateToFormDisplay, isScheduledOverdue } from "../utils/date";
 import { notifyError, notifySuccess, StatusBadge } from "../design";
 
 import type {
@@ -215,7 +215,12 @@ export class EntityProcessBindingsPanel extends Component<
                                     </TableCell>
                                 </TableRow>
                             ) : (
-                                runs.slice(0, 20).map((r) => (
+                                runs.slice(0, 20).map((r) => {
+                                    const isOverdue =
+                                        (r.status === "PENDING" ||
+                                            r.status === "SENT") &&
+                                        isScheduledOverdue(r.scheduled_for);
+                                    return (
                                     <TableRow key={r.id}>
                                         <TableCell>
                                             {r.process_type_name}
@@ -224,10 +229,14 @@ export class EntityProcessBindingsPanel extends Component<
                                             {formatDateDisplay(r.valid_until)}
                                         </TableCell>
                                         <TableCell>
-                                            <StatusBadge status={r.status} />
+                                            <StatusBadge
+                                                status={r.status}
+                                                isOverdue={isOverdue}
+                                            />
                                         </TableCell>
                                     </TableRow>
-                                ))
+                                    );
+                                })
                             )}
                         </TableBody>
                     </Table>

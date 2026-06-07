@@ -267,26 +267,15 @@ export interface ClientCompanyDetailPageState {
     riskLevels: RiskLevel[];
     jobRoles: JobRole[];
     roleDialogOpen: boolean;
+    editingRoleId: number | null;
     role_name: string;
     role_risk_level: string;
+    role_description: string;
     savingRole: boolean;
     roleError: string | null;
+    roleDeleteTarget: JobRole | null;
+    deletingRole: boolean;
     empDialogOpen: boolean;
-    emp_first_name: string;
-    emp_last_name: string;
-    emp_father_name: string;
-    emp_national_id: string;
-    emp_date_of_birth: string;
-    emp_place_of_birth: string;
-    emp_email: string;
-    emp_org_unit: string;
-    emp_position: string;
-    emp_occupation: string;
-    emp_high_risk_position_name: string;
-    emp_job_role: string;
-    emp_risk_level_override: string;
-    savingEmployee: boolean;
-    employeeError: string | null;
     eqDialogOpen: boolean;
     eq_name: string;
     eq_category: string;
@@ -298,6 +287,24 @@ export interface ClientCompanyDetailPageState {
     bindingDialogOpen: boolean;
     savingStartDateBindingId: number | null;
     deactivatingBindingId: number | null;
+}
+
+export interface RiskLevelsListPageState {
+    items: RiskLevel[];
+    loading: boolean;
+    error: string | null;
+    dialogOpen: boolean;
+    editingId: number | null;
+    f_code: string;
+    f_label: string;
+    f_score: string;
+    f_is_acceptable: boolean;
+    f_is_high_risk: boolean;
+    f_order: string;
+    saving: boolean;
+    formError: string | null;
+    deleteTarget: RiskLevel | null;
+    deleting: boolean;
 }
 
 export interface ClientCompaniesEmployeesListPageStateProps {
@@ -312,8 +319,11 @@ export interface ClientCompaniesEmployeesListPageDispatchProps {
     setLastPath: (path: string) => void;
     ensureClientCompanies: () => void;
     ensureProcessTypes: () => void;
-    loadEmployees: (clientCompanyId: string) => void;
-    addEmployee: (payload: Partial<Employee>) => AsyncThunkDispatchResult;
+    loadEmployees: (params: {
+        clientCompanyId: string;
+        search?: string;
+        risk_level_id?: string;
+    }) => void;
 }
 
 export type ClientCompaniesEmployeesListPageProps =
@@ -323,7 +333,63 @@ export type ClientCompaniesEmployeesListPageProps =
 
 export interface ClientCompaniesEmployeesListPageState {
     client_company_id: string;
+    search: string;
+    risk_level_id: string;
+    riskLevels: RiskLevel[];
     dialogOpen: boolean;
+    editDialogOpen: boolean;
+    editEmployee: Employee | null;
+    historyDialogOpen: boolean;
+    historyEmployeeId: number | null;
+    historyEmployeeName: string;
+    sendDialogOpen: boolean;
+    sendEmployeeId: number | null;
+    sendEmployeeName: string;
+    sendProcessTypeId: string;
+    sending: boolean;
+}
+
+export interface ClientCompanyEmployeesDetailPageStateProps {
+    clientCompanies: ClientCompany[];
+    processTypes: ProcessType[];
+}
+
+export interface ClientCompanyEmployeesDetailPageDispatchProps {
+    setLastPath: (path: string) => void;
+    ensureClientCompanies: () => void;
+    ensureProcessTypes: () => void;
+}
+
+export type ClientCompanyEmployeesDetailPageProps =
+    ClientCompanyEmployeesDetailPageStateProps &
+        ClientCompanyEmployeesDetailPageDispatchProps &
+        WithNavigationProps & { id: string };
+
+export interface ClientCompanyEmployeesDetailPageState {
+    item: Employee | null;
+    bindings: ProcessBinding[];
+    runs: ProcessRun[];
+    loading: boolean;
+    error: string | null;
+    editDialogOpen: boolean;
+    sendDialogOpen: boolean;
+    sendProcessTypeId: string;
+    sending: boolean;
+}
+
+export interface EmployeeFormDialogProps {
+    open: boolean;
+    mode: "create" | "edit";
+    initial?: Employee;
+    clientCompanies: ClientCompany[];
+    lockedClientCompanyId?: number;
+    initialClientCompanyId?: string;
+    onClose: () => void;
+    onSaved: (employee: Employee) => void;
+}
+
+export interface EmployeeFormDialogState {
+    client_company_id: string;
     first_name: string;
     last_name: string;
     father_name: string;
@@ -335,25 +401,22 @@ export interface ClientCompaniesEmployeesListPageState {
     position: string;
     occupation: string;
     high_risk_position_name: string;
-    new_client_company_id: string;
-    sendDialogOpen: boolean;
-    sendEmployeeId: number | null;
-    sendEmployeeName: string;
-    sendProcessTypeId: string;
-    sending: boolean;
+    job_role: string;
+    risk_level_override: string;
+    jobRoles: JobRole[];
+    riskLevels: RiskLevel[];
+    saving: boolean;
+    error: string | null;
 }
 
-export interface ClientCompanyEmployeesDetailPageDispatchProps {
-    setLastPath: (path: string) => void;
+export interface EmployeeExamHistoryDialogProps {
+    open: boolean;
+    employeeId: number | null;
+    employeeName: string;
+    onClose: () => void;
 }
 
-export type ClientCompanyEmployeesDetailPageProps =
-    ClientCompanyEmployeesDetailPageDispatchProps &
-        WithNavigationProps & { id: string };
-
-export interface ClientCompanyEmployeesDetailPageState {
-    item: Employee | null;
-    bindings: ProcessBinding[];
+export interface EmployeeExamHistoryDialogState {
     runs: ProcessRun[];
     loading: boolean;
     error: string | null;

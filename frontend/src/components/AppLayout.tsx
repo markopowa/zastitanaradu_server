@@ -25,6 +25,7 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import FolderIcon from "@mui/icons-material/Folder";
 import CategoryIcon from "@mui/icons-material/Category";
 import SchoolIcon from "@mui/icons-material/School";
+import ReportProblemIcon from "@mui/icons-material/ReportProblem";
 import EventIcon from "@mui/icons-material/Event";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import LogoutIcon from "@mui/icons-material/Logout";
@@ -73,6 +74,13 @@ const STATIC_NAV_ITEMS: NavItem[] = [
         permissionPrefix: "processes.view_processrun",
     },
     {
+        path: "/processes/upcoming",
+        label: "Predstojeći rokovi",
+        icon: <EventIcon />,
+        group: "overview",
+        permissionPrefix: "processes.view_processrun",
+    },
+    {
         path: "/client-companies",
         label: "Klijenti",
         icon: <BusinessIcon />,
@@ -92,6 +100,13 @@ const STATIC_NAV_ITEMS: NavItem[] = [
         icon: <BuildIcon />,
         group: "clients",
         permissionPrefix: "partners.view_equipmentitem",
+    },
+    {
+        path: "/risk-levels",
+        label: "Nivoi rizika",
+        icon: <ReportProblemIcon />,
+        group: "settings",
+        permissionPrefix: "partners.view_risklevel",
     },
     {
         path: "/processes/types",

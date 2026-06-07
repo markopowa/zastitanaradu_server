@@ -109,8 +109,18 @@ function equipmentParamsKey(clientCompanyId: string): string {
     return clientCompanyId || "_all";
 }
 
-function employeesParamsKey(clientCompanyId: string): string {
-    return clientCompanyId || "_all";
+export interface FetchEmployeesListParams {
+    clientCompanyId: string;
+    search?: string;
+    risk_level_id?: string;
+}
+
+function employeesParamsKey(params: FetchEmployeesListParams): string {
+    return JSON.stringify({
+        c: params.clientCompanyId || "_all",
+        s: params.search?.trim() || "",
+        r: params.risk_level_id || "",
+    });
 }
 
 
@@ -334,14 +344,20 @@ export const addEquipmentItem = createAsyncThunk(
 
 export const fetchEmployeesList = createAsyncThunk(
     "processes/fetchEmployeesList",
-    async (clientCompanyId: string) => {
-        const params =
-            clientCompanyId !== ""
-                ? { client_company_id: Number(clientCompanyId) }
-                : undefined;
-        const items = await getEmployees(params);
+    async (args: FetchEmployeesListParams) => {
+        const apiParams: Parameters<typeof getEmployees>[0] = {};
+        if (args.clientCompanyId !== "") {
+            apiParams.client_company_id = Number(args.clientCompanyId);
+        }
+        if (args.search?.trim()) {
+            apiParams.search = args.search.trim();
+        }
+        if (args.risk_level_id) {
+            apiParams.risk_level_id = Number(args.risk_level_id);
+        }
+        const items = await getEmployees(apiParams);
         return {
-            paramsKey: employeesParamsKey(clientCompanyId),
+            paramsKey: employeesParamsKey(args),
             items: Array.isArray(items) ? items : [],
         };
     },
@@ -584,13 +600,20 @@ const processesSlice = createSlice({
                     email: row.email,
                     org_unit: row.org_unit,
                     position: row.position,
+                    job_role_risk_level: row.job_role_risk_level,
+                    risk_level_override: row.risk_level_override,
+                    risk_level_override_detail: row.risk_level_override_detail,
+                    effective_risk_level: row.effective_risk_level,
                 };
                 const key = state.employeesParamsKey;
                 const cid =
                     row.client_company != null
                         ? String(row.client_company)
                         : "";
-                if (key === "_all" || key === cid) {
+                const matchesCompany =
+                    key.includes(`"c":"_all"`) ||
+                    key.includes(`"c":"${cid}"`);
+                if (matchesCompany) {
                     state.employeesItems = [...state.employeesItems, summary];
                 }
             })

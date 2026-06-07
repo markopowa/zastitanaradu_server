@@ -37,6 +37,7 @@ import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import { subjectKindLabel } from "../design/labels";
 import {
     addProcessBinding,
     ensureClientCompanies,
@@ -46,20 +47,30 @@ import {
 } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
 import {
+    addMonths,
     bindingTermDateError,
+    DateToString,
     displayDateToIso,
     formatDateDisplay,
     isoDateToFormDisplay,
+    todayLocalDate,
 } from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
-import type { ProcessBinding } from "../types/processes";
+import type { ProcessBinding, ProcessType } from "../types/processes";
 import type {
     ProcessBindingsListPageDispatchProps,
     ProcessBindingsListPageProps,
     ProcessBindingsListPageState,
     ProcessBindingsListPageStateProps,
 } from "../types/processPages";
+
+function suggestedNextRunAt(processType: ProcessType | undefined): string {
+    if (!processType?.default_period_months) return "";
+    return DateToString(
+        addMonths(todayLocalDate(), processType.default_period_months),
+    );
+}
 
 class ProcessBindingsListPageInner extends Component<
     ProcessBindingsListPageProps,
@@ -184,7 +195,7 @@ class ProcessBindingsListPageInner extends Component<
             new_equipment: "",
             new_client_company: "",
             new_process_type: firstType ? String(firstType.id) : "",
-            new_next_run_at: "",
+            new_next_run_at: suggestedNextRunAt(firstType),
         }));
         getEmployees().then((e) =>
             this.setState((prev) => ({ ...prev, employees: e })),
@@ -549,6 +560,8 @@ class ProcessBindingsListPageInner extends Component<
                                         new_employee: "",
                                         new_equipment: "",
                                         new_client_company: "",
+                                        new_next_run_at:
+                                            suggestedNextRunAt(selectedType),
                                     }));
                                 }}
                             >
@@ -609,10 +622,12 @@ class ProcessBindingsListPageInner extends Component<
                         )}
                         {new_subject_kind === "CLIENT_COMPANY" && (
                             <FormControl fullWidth margin="dense">
-                                <InputLabel>Klijent</InputLabel>
+                                <InputLabel>
+                                    {subjectKindLabel("CLIENT_COMPANY")}
+                                </InputLabel>
                                 <Select
                                     value={new_client_company}
-                                    label="Klijent"
+                                    label={subjectKindLabel("CLIENT_COMPANY")}
                                     onChange={(e) =>
                                         this.setState((prev) => ({
                                             ...prev,

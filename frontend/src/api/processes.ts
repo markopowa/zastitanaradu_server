@@ -17,6 +17,7 @@ import type {
     ProcessTemplate,
     ProcessType,
     RiskLevel,
+    UpcomingDeadline,
 } from "../types/processes";
 
 type ListResponse<T> = T[] | { results?: T[] };
@@ -169,6 +170,31 @@ export async function getRiskLevels(): Promise<RiskLevel[]> {
     return asList(data);
 }
 
+export async function createRiskLevel(
+    payload: Partial<RiskLevel>,
+): Promise<RiskLevel> {
+    const { data } = await api.post<RiskLevel>(
+        "/api/partners/risk-levels/",
+        payload,
+    );
+    return data;
+}
+
+export async function updateRiskLevel(
+    id: number,
+    payload: Partial<RiskLevel>,
+): Promise<RiskLevel> {
+    const { data } = await api.patch<RiskLevel>(
+        `/api/partners/risk-levels/${id}/`,
+        payload,
+    );
+    return data;
+}
+
+export async function deleteRiskLevel(id: number): Promise<void> {
+    await api.delete(`/api/partners/risk-levels/${id}/`);
+}
+
 export async function getJobRoles(params?: {
     client_company_id?: number;
 }): Promise<JobRole[]> {
@@ -210,10 +236,16 @@ export async function deleteJobRole(id: number): Promise<void> {
 
 export async function getEmployees(params?: {
     client_company_id?: number;
+    search?: string;
+    risk_level_id?: number;
 }): Promise<EmployeeSummary[]> {
     const search = new URLSearchParams();
     if (params?.client_company_id != null)
         search.set("client_company_id", String(params.client_company_id));
+    if (params?.search?.trim())
+        search.set("search", params.search.trim());
+    if (params?.risk_level_id != null)
+        search.set("risk_level_id", String(params.risk_level_id));
     const qs = search.toString();
     const url = qs
         ? `/api/partners/employees/?${qs}`
@@ -232,6 +264,17 @@ export async function createEmployee(
 ): Promise<Employee> {
     const { data } = await api.post<Employee>(
         "/api/partners/employees/",
+        payload,
+    );
+    return data;
+}
+
+export async function updateEmployee(
+    id: number,
+    payload: Partial<Employee>,
+): Promise<Employee> {
+    const { data } = await api.patch<Employee>(
+        `/api/partners/employees/${id}/`,
         payload,
     );
     return data;
@@ -510,6 +553,25 @@ export async function removeDocumentFromRun(
     docId: number,
 ): Promise<void> {
     await api.delete(`/api/processes/runs/${runId}/documents/${docId}/`);
+}
+
+export async function getUpcomingDeadlines(params?: {
+    client_company_id?: number;
+    within_days?: number;
+}): Promise<UpcomingDeadline[]> {
+    const search = new URLSearchParams();
+    if (params?.client_company_id != null) {
+        search.set("client_company_id", String(params.client_company_id));
+    }
+    if (params?.within_days != null) {
+        search.set("within_days", String(params.within_days));
+    }
+    const qs = search.toString();
+    const url = qs
+        ? `/api/processes/dashboard/upcoming-deadlines?${qs}`
+        : "/api/processes/dashboard/upcoming-deadlines";
+    const { data } = await api.get<ListResponse<UpcomingDeadline>>(url);
+    return asList(data);
 }
 
 export async function generateMedicalExamRecord(

@@ -112,6 +112,7 @@ export interface EmployeeSummary {
     org_unit?: string;
     position?: string;
     job_role_risk_level?: RiskLevel | null;
+    risk_level_override?: number | null;
     risk_level_override_detail?: RiskLevel | null;
     effective_risk_level?: RiskLevel | null;
 }
@@ -256,4 +257,19 @@ export interface TaskAssignment {
     description?: string;
     due_date?: string | null;
     status: "TODO" | "IN_PROGRESS" | "DONE";
+}
+
+export interface UpcomingDeadline {
+    run_id: number;
+    process_type_id: number;
+    process_type_name: string;
+    subject_kind: "EMPLOYEE" | "EQUIPMENT" | "CLIENT_COMPANY";
+    subject_name: string;
+    client_company_id: number | null;
+    client_company_name: string;
+    scheduled_for: string | null;
+    valid_until: string | null;
+    status: "PENDING" | "SENT";
+    is_overdue: boolean;
+    days_until_deadline: number | null;
 }

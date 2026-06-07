@@ -15,5 +15,9 @@ export function riskColor(
 }
 
 export function riskText(riskLevel?: RiskLevelLike | null): string {
-    return riskLevel?.label ?? "—";
+    if (riskLevel == null) return "—";
+    if (riskLevel.score != null) {
+        return `${riskLevel.label} (R=${riskLevel.score})`;
+    }
+    return riskLevel.label;
 }
