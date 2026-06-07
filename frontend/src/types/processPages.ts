@@ -227,6 +227,7 @@ export interface ClientCompaniesListPageState {
     website: string;
     notes: string;
     activity_code: string;
+    aprImporting: boolean;
 }
 
 export interface ClientCompanyDetailPageDispatchProps {
@@ -258,6 +259,7 @@ export interface ClientCompanyDetailPageState {
     editWebsite: string;
     editNotes: string;
     editActivity_code: string;
+    aprImporting: boolean;
     riskActDateValue: string;
     savingRiskActDate: boolean;
     riskActUploading: boolean;

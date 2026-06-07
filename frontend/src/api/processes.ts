@@ -3,6 +3,9 @@ import type {
     ActivityLog,
     ActivityLogEventType,
     ClientCompany,
+    CompanyDocument,
+    CompanyDocumentKind,
+    ContactPerson,
     Employee,
     EmployeeSummary,
     EquipmentItem,
@@ -526,4 +529,87 @@ export async function generateMedicalExamRecord(
     link.click();
     link.remove();
     window.URL.revokeObjectURL(url);
+}
+
+export async function getContactPersons(params: {
+    client_company_id: number;
+}): Promise<ContactPerson[]> {
+    const search = new URLSearchParams();
+    search.set("client_company_id", String(params.client_company_id));
+    const { data } = await api.get<ListResponse<ContactPerson>>(
+        `/api/partners/contact-persons/?${search.toString()}`,
+    );
+    return asList(data);
+}
+
+export async function createContactPerson(
+    payload: Partial<ContactPerson>,
+): Promise<ContactPerson> {
+    const { data } = await api.post<ContactPerson>(
+        "/api/partners/contact-persons/",
+        payload,
+    );
+    return data;
+}
+
+export async function updateContactPerson(
+    id: number,
+    payload: Partial<ContactPerson>,
+): Promise<ContactPerson> {
+    const { data } = await api.patch<ContactPerson>(
+        `/api/partners/contact-persons/${id}/`,
+        payload,
+    );
+    return data;
+}
+
+export async function deleteContactPerson(id: number): Promise<void> {
+    await api.delete(`/api/partners/contact-persons/${id}/`);
+}
+
+export async function getCompanyDocuments(params: {
+    client_company_id: number;
+}): Promise<CompanyDocument[]> {
+    const search = new URLSearchParams();
+    search.set("client_company_id", String(params.client_company_id));
+    const { data } = await api.get<ListResponse<CompanyDocument>>(
+        `/api/partners/company-documents/?${search.toString()}`,
+    );
+    return asList(data);
+}
+
+export async function uploadCompanyDocument(
+    clientCompanyId: number,
+    kind: CompanyDocumentKind,
+    file: File,
+): Promise<CompanyDocument> {
+    const form = new FormData();
+    form.append("client_company", String(clientCompanyId));
+    form.append("kind", kind);
+    form.append("file", file);
+    const { data } = await api.post<CompanyDocument>(
+        "/api/partners/company-documents/",
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
+export async function deleteCompanyDocument(id: number): Promise<void> {
+    await api.delete(`/api/partners/company-documents/${id}/`);
+}
+
+export interface AprLookupResult {
+    name?: string;
+    registration_number?: string;
+    address?: string;
+    activity_code?: string;
+}
+
+export async function aprLookup(taxId: string): Promise<AprLookupResult> {
+    const { data } = await api.post<AprLookupResult>(
+        "/api/partners/apr-lookup/",
+        { tax_id: taxId },
+    );
+    return data;
 }

@@ -1,14 +1,27 @@
+from django.conf import settings
 from django.http import HttpResponse
 
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .apr import fetch_company_from_apr
 from .medical_exam_record import generate_medical_exam_record
-from .models import ClientCompany, Employee, EquipmentItem, JobRole, RiskLevel
+from .models import (
+    ClientCompany,
+    CompanyDocument,
+    ContactPerson,
+    Employee,
+    EquipmentItem,
+    JobRole,
+    RiskLevel,
+)
 from .serializers import (
     ClientCompanySerializer,
+    CompanyDocumentSerializer,
+    ContactPersonSerializer,
     EmployeeSerializer,
     EquipmentItemSerializer,
     JobRoleSerializer,
@@ -111,3 +124,95 @@ class EquipmentItemViewSet(viewsets.ModelViewSet):
         if client_company_id is not None and client_company_id != "":
             queryset = queryset.filter(client_company_id=client_company_id)
         return queryset
+
+
+class ContactPersonViewSet(viewsets.ModelViewSet):
+    queryset = ContactPerson.objects.select_related("client_company").all()
+    serializer_class = ContactPersonSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        client_company_id = self.request.query_params.get("client_company_id")
+        if client_company_id is not None and client_company_id != "":
+            queryset = queryset.filter(client_company_id=client_company_id)
+        return queryset
+
+
+class CompanyDocumentViewSet(viewsets.ModelViewSet):
+    queryset = CompanyDocument.objects.select_related("client_company").all()
+    serializer_class = CompanyDocumentSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+    parser_classes = [MultiPartParser, FormParser]
+    http_method_names = ["get", "post", "delete", "head", "options"]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        client_company_id = self.request.query_params.get("client_company_id")
+        if client_company_id is not None and client_company_id != "":
+            queryset = queryset.filter(client_company_id=client_company_id)
+        return queryset
+
+    def create(self, request, *args, **kwargs):
+        client_company_id = request.data.get("client_company")
+        kind = request.data.get("kind")
+        file_obj = request.FILES.get("file")
+        if not client_company_id or not kind or file_obj is None:
+            return Response(
+                {"detail": "Obavezno: client_company, kind, file."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        existing = CompanyDocument.objects.filter(
+            client_company_id=client_company_id,
+            kind=kind,
+        ).first()
+        if existing is not None:
+            return Response(
+                {
+                    "detail": (
+                        "Slot za ovaj tip već postoji. Prvo obriši postojeći."
+                    ),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        obj = CompanyDocument.objects.create(
+            client_company_id=client_company_id,
+            kind=kind,
+            file=file_obj,
+            uploaded_by=(
+                request.user if request.user.is_authenticated else None
+            ),
+        )
+        return Response(
+            self.get_serializer(obj).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    def perform_destroy(self, instance):
+        if instance.file:
+            instance.file.delete(save=False)
+        instance.delete()
+
+
+class APRLookupView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        if not getattr(settings, "APR_INTEGRATION_ENABLED", False):
+            return Response(
+                {"detail": "APR integracija nije omogućena."},
+                status=status.HTTP_501_NOT_IMPLEMENTED,
+            )
+        tax_id = (request.data.get("tax_id") or "").strip()
+        if not tax_id:
+            return Response(
+                {"detail": "PIB je obavezan."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        data = fetch_company_from_apr(tax_id)
+        if data is None:
+            return Response(
+                {"detail": "Firma nije pronađena u APR-u."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(data)

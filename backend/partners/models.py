@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 
 
@@ -151,6 +152,86 @@ class Employee(models.Model):
         if self.job_role_id:
             return self.job_role.risk_level
         return None
+
+
+class ContactPerson(models.Model):
+    ROLE_DIRECTOR = "DIRECTOR"
+    ROLE_SAFETY_OFFICER = "SAFETY_OFFICER"
+    ROLE_CONTACT = "CONTACT"
+    ROLE_OTHER = "OTHER"
+    ROLE_CHOICES = (
+        (ROLE_DIRECTOR, "Direktor"),
+        (ROLE_SAFETY_OFFICER, "Lice za BZNR"),
+        (ROLE_CONTACT, "Lice za kontakt"),
+        (ROLE_OTHER, "Ostalo"),
+    )
+
+    client_company = models.ForeignKey(
+        "ClientCompany",
+        on_delete=models.CASCADE,
+        related_name="contact_persons",
+    )
+    full_name = models.CharField(max_length=255)
+    role = models.CharField(
+        max_length=32,
+        choices=ROLE_CHOICES,
+        default=ROLE_CONTACT,
+    )
+    phone = models.CharField(max_length=50, blank=True)
+    email = models.EmailField(blank=True)
+    is_primary = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = "Kontakt-lice"
+        verbose_name_plural = "Kontakt-lica"
+        ordering = ("-is_primary", "full_name")
+
+    def __str__(self) -> str:
+        return self.full_name
+
+
+class CompanyDocument(models.Model):
+    KIND_CONTRACT = "CONTRACT"
+    KIND_DECISION = "DECISION"
+    KIND_RULEBOOK_OSH = "RULEBOOK_OSH"
+    KIND_RULEBOOK_PPE = "RULEBOOK_PPE"
+    KIND_TRAINING_EMPLOYEES = "TRAINING_EMPLOYEES"
+    KIND_TRAINING_MANAGERS = "TRAINING_MANAGERS"
+    KIND_TRAINING_PPE = "TRAINING_PPE"
+    KIND_CHOICES = (
+        (KIND_CONTRACT, "Ugovor"),
+        (KIND_DECISION, "Odluka o imenovanju lica za BZNR"),
+        (KIND_RULEBOOK_OSH, "Pravilnik o BZNR"),
+        (KIND_RULEBOOK_PPE, "Pravilnik o LZO"),
+        (KIND_TRAINING_EMPLOYEES, "Program obuke za zaposlene"),
+        (KIND_TRAINING_MANAGERS, "Program obuke za rukovodioce"),
+        (KIND_TRAINING_PPE, "Program obuke za LZO"),
+    )
+
+    client_company = models.ForeignKey(
+        "ClientCompany",
+        on_delete=models.CASCADE,
+        related_name="company_documents",
+    )
+    kind = models.CharField(max_length=32, choices=KIND_CHOICES)
+    file = models.FileField(upload_to="company_documents/")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="uploaded_company_documents",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Dokument firme"
+        verbose_name_plural = "Dokumenti firme"
+        ordering = ("client_company", "kind")
+        unique_together = ("client_company", "kind")
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} ({self.client_company_id})"
 
 
 class EquipmentItem(models.Model):

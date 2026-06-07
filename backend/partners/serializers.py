@@ -2,7 +2,15 @@ import os
 
 from rest_framework import serializers
 
-from .models import ClientCompany, Employee, EquipmentItem, JobRole, RiskLevel
+from .models import (
+    ClientCompany,
+    CompanyDocument,
+    ContactPerson,
+    Employee,
+    EquipmentItem,
+    JobRole,
+    RiskLevel,
+)
 
 
 class RiskLevelSerializer(serializers.ModelSerializer):
@@ -104,6 +112,54 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "risk_level_override_detail",
             "effective_risk_level",
         )
+
+
+class ContactPersonSerializer(serializers.ModelSerializer):
+    role_display = serializers.CharField(
+        source="get_role_display",
+        read_only=True,
+    )
+
+    class Meta:
+        model = ContactPerson
+        fields = (
+            "id",
+            "client_company",
+            "full_name",
+            "role",
+            "role_display",
+            "phone",
+            "email",
+            "is_primary",
+        )
+
+
+class CompanyDocumentSerializer(serializers.ModelSerializer):
+    kind_display = serializers.CharField(
+        source="get_kind_display",
+        read_only=True,
+    )
+    file_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CompanyDocument
+        fields = (
+            "id",
+            "client_company",
+            "kind",
+            "kind_display",
+            "file",
+            "file_name",
+            "uploaded_at",
+        )
+        read_only_fields = ("file", "uploaded_at")
+
+    def get_file_name(self, obj):
+        if not obj.file:
+            return ""
+        base = os.path.basename(obj.file.name)
+        name, _ = os.path.splitext(base)
+        return name
 
 
 class EquipmentItemSerializer(serializers.ModelSerializer):

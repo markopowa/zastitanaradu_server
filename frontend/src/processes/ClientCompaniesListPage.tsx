@@ -26,6 +26,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
 import { enqueueSnackbar } from "notistack";
 
+import { aprLookup } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
 import {
@@ -58,6 +59,7 @@ class ClientCompaniesListPage extends Component<
         website: "",
         notes: "",
         activity_code: "",
+        aprImporting: false,
     };
 
     componentDidMount(): void {
@@ -78,7 +80,36 @@ class ClientCompaniesListPage extends Component<
             website: "",
             notes: "",
             activity_code: "",
+            aprImporting: false,
         }));
+    };
+
+    handleAprImport = (): void => {
+        const { tax_id } = this.state;
+        if (!tax_id.trim()) return;
+        this.setState((prev) => ({ ...prev, aprImporting: true }));
+        aprLookup(tax_id.trim())
+            .then((data) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    aprImporting: false,
+                    name: data.name ?? prev.name,
+                    registration_number:
+                        data.registration_number ?? prev.registration_number,
+                    address: data.address ?? prev.address,
+                    activity_code: data.activity_code ?? prev.activity_code,
+                }));
+                enqueueSnackbar("Podaci preuzeti iz APR-a.", {
+                    variant: "success",
+                });
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, aprImporting: false }));
+                enqueueSnackbar(
+                    "APR pretraga trenutno nije dostupna. Unesite podatke ručno.",
+                    { variant: "warning" },
+                );
+            });
     };
 
     closeDialog = (): void => {
@@ -148,6 +179,7 @@ class ClientCompaniesListPage extends Component<
             website,
             notes,
             activity_code,
+            aprImporting,
         } = this.state;
         const { navigate } = this.props;
 
@@ -260,19 +292,37 @@ class ClientCompaniesListPage extends Component<
                                 }))
                             }
                         />
-                        <TextField
-                            margin="dense"
-                            label="PIB"
-                            fullWidth
-                            required
-                            value={tax_id}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    tax_id: e.target.value,
-                                }))
-                            }
-                        />
+                        <Box
+                            sx={{
+                                display: "flex",
+                                gap: 1,
+                                alignItems: "flex-start",
+                            }}
+                        >
+                            <TextField
+                                margin="dense"
+                                label="PIB"
+                                fullWidth
+                                required
+                                value={tax_id}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        tax_id: e.target.value,
+                                    }))
+                                }
+                            />
+                            <Button
+                                variant="outlined"
+                                disabled={aprImporting || !tax_id.trim()}
+                                onClick={this.handleAprImport}
+                                sx={{ mt: 1, flexShrink: 0 }}
+                            >
+                                {aprImporting
+                                    ? "Tražim..."
+                                    : "Uvezi iz APR-a"}
+                            </Button>
+                        </Box>
                         <TextField
                             margin="dense"
                             label="Matični broj"

@@ -161,3 +161,7 @@ LOGGING = {
 
 DOCUMENT_CONVERTIBLE_SUFFIXES = frozenset(
     {".docx", ".doc", ".odt", ".rtf", ".xlsx", ".pptx"})
+
+APR_INTEGRATION_ENABLED = os.environ.get(
+    "APR_INTEGRATION_ENABLED", ""
+).lower() in ("1", "true", "yes")

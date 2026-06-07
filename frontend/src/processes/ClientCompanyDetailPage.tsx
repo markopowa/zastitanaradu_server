@@ -1,4 +1,4 @@
-import React, { Component, type ReactElement } from "react";
+import { Component, type ReactElement } from "react";
 import { useParams } from "react-router-dom";
 import { connect } from "react-redux";
 
@@ -37,8 +37,8 @@ import {
     jmbgMatchesDate,
     jmbgToDateString,
 } from "../utils/jmbg";
-import { api } from "../api/client";
 import {
+    aprLookup,
     clearClientCompanyRiskAssessmentAct,
     createEmployee,
     createEquipmentItem,
@@ -57,6 +57,9 @@ import {
 } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
+import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
+import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
+import { FilePreviewContent } from "../components/FilePreviewContent";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
@@ -124,6 +127,7 @@ class ClientCompanyDetailPageInner extends Component<
         editWebsite: "",
         editNotes: "",
         editActivity_code: "",
+        aprImporting: false,
         riskActDateValue: "",
         savingRiskActDate: false,
         riskActUploading: false,
@@ -437,6 +441,36 @@ class ClientCompanyDetailPageInner extends Component<
             editing: false,
             saveError: null,
         }));
+    };
+
+    handleAprImport = (): void => {
+        const { editTaxId } = this.state;
+        if (!editTaxId.trim()) return;
+        this.setState((prev) => ({ ...prev, aprImporting: true }));
+        aprLookup(editTaxId.trim())
+            .then((data) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    aprImporting: false,
+                    editName: data.name ?? prev.editName,
+                    editRegistration_number:
+                        data.registration_number ??
+                        prev.editRegistration_number,
+                    editAddress: data.address ?? prev.editAddress,
+                    editActivity_code:
+                        data.activity_code ?? prev.editActivity_code,
+                }));
+                enqueueSnackbar("Podaci preuzeti iz APR-a.", {
+                    variant: "success",
+                });
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, aprImporting: false }));
+                enqueueSnackbar(
+                    "APR pretraga trenutno nije dostupna. Unesite podatke ručno.",
+                    { variant: "warning" },
+                );
+            });
     };
 
     saveCompany = (): void => {
@@ -815,6 +849,7 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
+            aprImporting,
             riskActDateValue,
             savingRiskActDate,
             riskActUploading,
@@ -934,19 +969,39 @@ class ClientCompanyDetailPageInner extends Component<
                                     }))
                                 }
                             />
-                            <TextField
-                                margin="dense"
-                                label="PIB"
-                                fullWidth
-                                required
-                                value={editTaxId}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        editTaxId: e.target.value,
-                                    }))
-                                }
-                            />
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    gap: 1,
+                                    alignItems: "flex-start",
+                                }}
+                            >
+                                <TextField
+                                    margin="dense"
+                                    label="PIB"
+                                    fullWidth
+                                    required
+                                    value={editTaxId}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editTaxId: e.target.value,
+                                        }))
+                                    }
+                                />
+                                <Button
+                                    variant="outlined"
+                                    disabled={
+                                        aprImporting || !editTaxId.trim()
+                                    }
+                                    onClick={this.handleAprImport}
+                                    sx={{ mt: 1, flexShrink: 0 }}
+                                >
+                                    {aprImporting
+                                        ? "Tražim..."
+                                        : "Uvezi iz APR-a"}
+                                </Button>
+                            </Box>
                             <TextField
                                 margin="dense"
                                 label="Matični broj"
@@ -1113,6 +1168,8 @@ class ClientCompanyDetailPageInner extends Component<
                     )}
                 </Paper>
 
+                <ContactPersonsPanel clientCompanyId={item.id} />
+
                 <Box
                     sx={{
                         display: "flex",
@@ -1263,6 +1320,8 @@ class ClientCompanyDetailPageInner extends Component<
                         </Box>
                     )}
                 </Paper>
+
+                <CompanyDocumentsPanel clientCompanyId={item.id} />
 
                 <SectionCard
                     title="Radna mesta"
@@ -1981,8 +2040,12 @@ class ClientCompanyDetailPageInner extends Component<
                                 "Akt o proceni rizika"}
                         </DialogTitle>
                         <DialogContent>
-                            <RiskActPreviewContent
+                            <FilePreviewContent
                                 url={item.risk_assessment_act_file}
+                                label={
+                                    item.risk_assessment_act_name ||
+                                    "Akt o proceni rizika"
+                                }
                             />
                         </DialogContent>
                         <DialogActions>
@@ -2085,112 +2148,6 @@ class ClientCompanyDetailPageInner extends Component<
             </Box>
         );
     }
-}
-
-function RiskActPreviewContent({ url }: { url: string }): ReactElement {
-    const lower = url.toLowerCase().split("?")[0];
-    const ext = lower.substring(lower.lastIndexOf(".") + 1);
-    const isImage = [
-        "png",
-        "jpg",
-        "jpeg",
-        "gif",
-        "webp",
-        "bmp",
-        "svg",
-    ].includes(ext);
-    const isPdf = ext === "pdf";
-
-    const [blobUrl, setBlobUrl] = React.useState<string | null>(null);
-    const [fetchError, setFetchError] = React.useState(false);
-
-    React.useEffect(() => {
-        if (!isImage && !isPdf) return;
-        let revoked = false;
-        api.get<Blob>(url, { responseType: "blob" })
-            .then((res) => {
-                if (revoked) return;
-                const objectUrl = URL.createObjectURL(res.data);
-                setBlobUrl(objectUrl);
-            })
-            .catch(() => setFetchError(true));
-        return () => {
-            revoked = true;
-            setBlobUrl((prev) => {
-                if (prev) URL.revokeObjectURL(prev);
-                return null;
-            });
-        };
-    }, [url, isImage, isPdf]);
-
-    if (fetchError) {
-        return (
-            <Box sx={{ textAlign: "center", py: 4 }}>
-                <Typography variant="body2" color="error" sx={{ mb: 2 }}>
-                    Greška pri učitavanju fajla.
-                </Typography>
-            </Box>
-        );
-    }
-
-    if (isImage) {
-        if (!blobUrl)
-            return (
-                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                    <CircularProgress />
-                </Box>
-            );
-        return (
-            <Box
-                sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    maxHeight: "70vh",
-                }}
-            >
-                <img
-                    src={blobUrl}
-                    alt="Akt o proceni rizika"
-                    style={{ maxWidth: "100%", maxHeight: "70vh" }}
-                />
-            </Box>
-        );
-    }
-
-    if (isPdf) {
-        if (!blobUrl)
-            return (
-                <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                    <CircularProgress />
-                </Box>
-            );
-        return (
-            <Box sx={{ height: "70vh" }}>
-                <iframe
-                    src={blobUrl}
-                    title="Akt o proceni rizika"
-                    style={{ width: "100%", height: "100%", border: "none" }}
-                />
-            </Box>
-        );
-    }
-
-    return (
-        <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-                Pregled ovog tipa fajla (.{ext || "?"}) nije podržan u
-                pretraživaču. Klikni dole da skineš ili otvoriš fajl.
-            </Typography>
-            <Button
-                variant="contained"
-                href={url}
-                target="_blank"
-                rel="noreferrer"
-            >
-                Otvori / preuzmi fajl
-            </Button>
-        </Box>
-    );
 }
 
 const mapDispatchToProps = {

@@ -81,8 +81,9 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 ## 2. Unesi firmu
 
 - [ ] **Klijenti → Dodaj firmu**
+- [ ] PIB: `123456789` *(obavezno — unesi prvo)*
+- [ ] Klikni **Uvezi iz APR-a** pored PIB polja *(očekivano: upozorenje da APR nije dostupan — ručni unos i dalje radi)*
 - [ ] Naziv: `Test firma 07 d.o.o.` *(obavezno)*
-- [ ] PIB: `123456789` *(obavezno)*
 - [ ] Matični broj: `12345678`
 - [ ] Šifra delatnosti: `4321`
 - [ ] Adresa: `Bulevar testiranja 14, Beograd`
@@ -93,6 +94,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Sačuvaj
 
 **Provera:** Firma se otvori — vidiš stranicu sa njenim imenom.
+- [ ] U dijalogu **Novi klijent** pored PIB postoji dugme **Uvezi iz APR-a**.
 
 ### 2a. Priloži Akt o proceni rizika
 
@@ -121,6 +123,48 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Radno mesto se vidi u tabeli.
 - [ ] Nivo rizika se prikazuje kao obojeni badge, ne kao običan tekst.
 - [ ] Visok rizik je crven.
+
+### 2c. Kontakt-lica
+
+- [ ] Na stranici firme nađi sekciju **Kontakt-lica**
+- [ ] Klikni **Dodaj kontakt-lice**
+- [ ] Ime i prezime: `Petar Petrović`
+- [ ] Uloga: `Direktor`
+- [ ] Telefon: `060 111 2222`
+- [ ] Email: `markovuckovic1992@gmail.com`
+- [ ] Primarni kontakt: uključi
+- [ ] Sačuvaj
+- [ ] Klikni ⋮ na redu → **Izmeni** → promeni telefon na `060 999 8888` → Sačuvaj
+- [ ] Klikni ⋮ → **Obriši** → potvrdi
+
+**Provera:**
+- [ ] Prazna lista prikazuje **Nema kontakt-lica.**
+- [ ] Dodavanje/izmena/brisanje rade bez greške.
+- [ ] Primarni kontakt ima oznaku ★ u listi.
+
+### 2d. Obavezna dokumentacija
+
+- [ ] Na stranici firme nađi sekciju **Obavezna dokumentacija**
+- [ ] Proveri brojač **0 / 7 priloženo** (ili više ako već ima fajlova)
+- [ ] Kod slota **Ugovor** klikni **Priloži** i izaberi `files_for_test\Uput_za_periodični_lekarski_pregled.pdf`
+- [ ] Klikni **Pregled** — PDF se otvara u dijalogu
+- [ ] Klikni **Obriši** → potvrdi → slot se vraća na **nema** i **Priloži**
+
+**Provera:**
+- [ ] Svih 7 slotova je uvek vidljivo (Ugovor, Odluka, 3 pravilnika, 3 programa obuke).
+- [ ] Status **ima** / **nema** je jasno označen.
+- [ ] Nema dugmeta „Promeni fajl“ — samo Obriši pa ponovo Priloži.
+- [ ] Brojač se ažurira posle uploada/brisanja.
+
+### 2e. Izmena firme i APR
+
+- [ ] Klikni **Izmeni podatke**
+- [ ] Pored PIB polja klikni **Uvezi iz APR-a** *(očekivano: upozorenje, polja ostaju ručno uneta)*
+- [ ] Sačuvaj bez greške
+
+**Provera:**
+- [ ] Dugme **Uvezi iz APR-a** postoji u edit formi.
+- [ ] Ručni unos i čuvanje i dalje rade.
 
 ---
 

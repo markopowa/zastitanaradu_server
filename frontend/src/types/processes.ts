@@ -23,6 +23,42 @@ export interface ClientCompany {
     risk_assessment_act_date?: string | null;
 }
 
+export type ContactPersonRole =
+    | "DIRECTOR"
+    | "SAFETY_OFFICER"
+    | "CONTACT"
+    | "OTHER";
+
+export interface ContactPerson {
+    id: number;
+    client_company: number;
+    full_name: string;
+    role: ContactPersonRole;
+    role_display?: string;
+    phone?: string;
+    email?: string;
+    is_primary: boolean;
+}
+
+export type CompanyDocumentKind =
+    | "CONTRACT"
+    | "DECISION"
+    | "RULEBOOK_OSH"
+    | "RULEBOOK_PPE"
+    | "TRAINING_EMPLOYEES"
+    | "TRAINING_MANAGERS"
+    | "TRAINING_PPE";
+
+export interface CompanyDocument {
+    id: number;
+    client_company: number;
+    kind: CompanyDocumentKind;
+    kind_display?: string;
+    file?: string | null;
+    file_name?: string;
+    uploaded_at?: string;
+}
+
 export interface RiskLevel {
     id: number;
     code: string;

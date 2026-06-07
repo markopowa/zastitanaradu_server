@@ -1,6 +1,14 @@
 from django.contrib import admin
 
-from .models import ClientCompany, Employee, EquipmentItem, JobRole, RiskLevel
+from .models import (
+    ClientCompany,
+    CompanyDocument,
+    ContactPerson,
+    Employee,
+    EquipmentItem,
+    JobRole,
+    RiskLevel,
+)
 
 
 @admin.register(RiskLevel)
@@ -45,6 +53,26 @@ class EmployeeAdmin(admin.ModelAdmin):
         "high_risk_position_name",
     )
     list_filter = ("client_company", "job_role")
+
+
+@admin.register(ContactPerson)
+class ContactPersonAdmin(admin.ModelAdmin):
+    list_display = (
+        "full_name",
+        "role",
+        "client_company",
+        "phone",
+        "email",
+        "is_primary",
+    )
+    search_fields = ("full_name", "phone", "email")
+    list_filter = ("role", "client_company", "is_primary")
+
+
+@admin.register(CompanyDocument)
+class CompanyDocumentAdmin(admin.ModelAdmin):
+    list_display = ("client_company", "kind", "uploaded_at")
+    list_filter = ("kind", "client_company")
 
 
 @admin.register(EquipmentItem)
