@@ -6,7 +6,6 @@ import {
     Paper,
     Typography,
     CircularProgress,
-    Alert,
     Button,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -17,6 +16,7 @@ import {
     getProcessRuns,
 } from "../api/processes";
 import { EntityProcessBindingsPanel } from "../components/EntityProcessBindingsPanel";
+import { ErrorState } from "../design";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
 import { formatDateDisplay } from "../utils/date";
@@ -42,21 +42,29 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         Promise.all([
             getProcessBindings({ employee_id: id }),
             getProcessRuns({ employee_id: id }),
-        ]).then(([bindings, runs]) => {
-            this.setState((prev) => ({ ...prev, bindings, runs }));
-        });
+        ])
+            .then(([bindings, runs]) => {
+                this.setState((prev) => ({ ...prev, bindings, runs }));
+            })
+            .catch(() => {
+                this.setState((prev) => ({
+                    ...prev,
+                    error: "Greška pri učitavanju obaveza.",
+                }));
+            });
     };
 
     loadById = (id: number): void => {
         getEmployee(id)
-            .then((item) =>
+            .then((item) => {
                 this.setState((prev) => ({
                     ...prev,
                     item,
                     loading: false,
                     error: null,
-                })),
-            )
+                }));
+                this.loadProcessData(id);
+            })
             .catch(() =>
                 this.setState((prev) => ({
                     ...prev,
@@ -64,7 +72,6 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                     error: "Greška pri učitavanju.",
                 })),
             );
-        this.loadProcessData(id);
     };
 
     private applyRouteId(mode: "mount" | "update"): void {
@@ -118,9 +125,9 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         if (error || !item) {
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <Alert severity="error">
-                        {error ?? "Zaposleni nisu pronađeni."}
-                    </Alert>
+                    <ErrorState
+                        message={error ?? "Zaposleni nisu pronađeni."}
+                    />
                     <Button
                         startIcon={<ArrowBackIcon />}
                         onClick={() => navigate("/client-companies-employees")}

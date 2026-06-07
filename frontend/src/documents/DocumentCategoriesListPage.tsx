@@ -13,9 +13,7 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions,
     TextField,
-    Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -23,6 +21,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 
 import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
+import { ConfirmDialog, ErrorState, FormActions, TableStateRow } from "../design";
 import {
     fetchDocumentCategories,
     createDocumentCategory,
@@ -122,7 +121,7 @@ class DocumentCategoriesListPage extends Component<
     };
 
     render() {
-        const { categories, error } = this.props;
+        const { categories, loading, error } = this.props;
         const list = Array.isArray(categories) ? categories : [];
         const { dialogOpen, editingId, name, description, deleteConfirmId } =
             this.state;
@@ -130,9 +129,10 @@ class DocumentCategoriesListPage extends Component<
         return (
             <Box>
                 {error && (
-                    <Typography color="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Typography>
+                    <ErrorState
+                        message={error}
+                        onRetry={this.props.fetchDocumentCategories}
+                    />
                 )}
                 <Box
                     sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}
@@ -157,43 +157,60 @@ class DocumentCategoriesListPage extends Component<
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {list.map((cat) => (
-                                <TableRow key={cat.id}>
-                                    <TableCell>{cat.name}</TableCell>
-                                    <TableCell>
-                                        {cat.description ?? "—"}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <RowActionsMenu
-                                            actions={[
-                                                {
-                                                    label: "Izmeni",
-                                                    icon: (
-                                                        <EditIcon fontSize="small" />
-                                                    ),
-                                                    permission:
-                                                        "documents.change_documentcategory",
-                                                    onClick: () =>
-                                                        this.openEdit(cat),
-                                                },
-                                                {
-                                                    label: "Obriši",
-                                                    icon: (
-                                                        <DeleteIcon fontSize="small" />
-                                                    ),
-                                                    permission:
-                                                        "documents.delete_documentcategory",
-                                                    color: "error",
-                                                    onClick: () =>
-                                                        this.confirmDelete(
-                                                            Number(cat.id),
+                            {loading ? (
+                                <TableStateRow colSpan={3} state="loading" />
+                            ) : error ? (
+                                <TableStateRow
+                                    colSpan={3}
+                                    state="error"
+                                    errorMessage={error}
+                                    onRetry={this.props.fetchDocumentCategories}
+                                />
+                            ) : list.length === 0 ? (
+                                <TableStateRow
+                                    colSpan={3}
+                                    state="empty"
+                                    emptyMessage="Nema kategorija."
+                                />
+                            ) : (
+                                list.map((cat) => (
+                                    <TableRow key={cat.id}>
+                                        <TableCell>{cat.name}</TableCell>
+                                        <TableCell>
+                                            {cat.description ?? "—"}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <RowActionsMenu
+                                                actions={[
+                                                    {
+                                                        label: "Izmeni",
+                                                        icon: (
+                                                            <EditIcon fontSize="small" />
                                                         ),
-                                                },
-                                            ]}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                                        permission:
+                                                            "documents.change_documentcategory",
+                                                        onClick: () =>
+                                                            this.openEdit(cat),
+                                                    },
+                                                    {
+                                                        label: "Obriši",
+                                                        icon: (
+                                                            <DeleteIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "documents.delete_documentcategory",
+                                                        color: "error",
+                                                        onClick: () =>
+                                                            this.confirmDelete(
+                                                                Number(cat.id),
+                                                            ),
+                                                    },
+                                                ]}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </Paper>
@@ -238,34 +255,21 @@ class DocumentCategoriesListPage extends Component<
                             }
                         />
                     </DialogContent>
-                    <DialogActions>
-                        <Button onClick={this.closeDialog}>Odustani</Button>
-                        <Button
-                            onClick={this.handleSave}
-                            variant="contained"
-                            disabled={!name.trim()}
-                        >
-                            {editingId != null ? "Sačuvaj" : "Dodaj"}
-                        </Button>
-                    </DialogActions>
+                    <FormActions
+                        onCancel={this.closeDialog}
+                        onSave={this.handleSave}
+                        disabled={!name.trim()}
+                    />
                 </Dialog>
 
-                <Dialog
+                <ConfirmDialog
                     open={deleteConfirmId != null}
+                    title="Obriši kategoriju?"
+                    message="Da li sigurno želiš da obrišeš ovu kategoriju?"
+                    confirmLabel="Obriši"
+                    onConfirm={this.doDelete}
                     onClose={this.cancelDelete}
-                >
-                    <DialogTitle>Obriši kategoriju?</DialogTitle>
-                    <DialogActions>
-                        <Button onClick={this.cancelDelete}>Ne</Button>
-                        <Button
-                            onClick={this.doDelete}
-                            color="error"
-                            variant="contained"
-                        >
-                            Da, obriši
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                />
             </Box>
         );
     }
@@ -275,6 +279,7 @@ const mapStateToProps = (
     state: RootState,
 ): DocumentCategoriesListPageStateProps => ({
     categories: state.documents.categories,
+    loading: state.documents.loading,
     error: state.documents.error,
 });
 

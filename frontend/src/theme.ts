@@ -25,6 +25,7 @@ const LIGHT_TEXT_SECONDARY = CH_LIGHT_9AA6B2;
 const LIGHT_DIVIDER = alpha(CH_LIGHT_BCCCDC, 0.65);
 
 const LIGHT_SUCCESS = "#22C55E";
+const LIGHT_INFO = "#38BDF8";
 const LIGHT_WARNING = "#F59E0B";
 const LIGHT_ERROR = "#EF4444";
 
@@ -45,6 +46,7 @@ const DARK_TEXT_SECONDARY = alpha(CH_DARK_F4F4F4, 0.62);
 const DARK_DIVIDER = alpha(CH_DARK_F4F4F4, 0.14);
 
 const DARK_SUCCESS = "#34D399";
+const DARK_INFO = "#60A5FA";
 const DARK_WARNING = "#FBBF24";
 const DARK_ERROR = "#F87171";
 
@@ -329,6 +331,9 @@ export const lightThemeOptions: ThemeOptions = {
         success: {
             main: LIGHT_SUCCESS,
         },
+        info: {
+            main: LIGHT_INFO,
+        },
         warning: {
             main: LIGHT_WARNING,
         },
@@ -369,6 +374,9 @@ export const darkThemeOptions: ThemeOptions = {
         },
         success: {
             main: DARK_SUCCESS,
+        },
+        info: {
+            main: DARK_INFO,
         },
         warning: {
             main: DARK_WARNING,

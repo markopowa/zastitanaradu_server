@@ -13,7 +13,6 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions,
     TextField,
     FormControl,
     InputLabel,
@@ -22,7 +21,6 @@ import {
     MenuItem,
     Checkbox,
     ListItemText,
-    Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -30,6 +28,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 
 import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
+import { ConfirmDialog, ErrorState, FormActions, TableStateRow } from "../design";
 import {
     loadRoles,
     loadPermissions,
@@ -217,7 +216,7 @@ class RolesListPage extends Component<RolesListPageProps, RolesListPageState> {
         PERMISSION_LABELS[p.codename] ?? p.name ?? p.codename;
 
     render() {
-        const { roles, permissions, adminError } = this.props;
+        const { roles, permissions, adminLoading, adminError } = this.props;
         const list = Array.isArray(roles) ? roles : [];
 
         const relevantPermissionIds = new Set(permissions.map((p) => p.id));
@@ -237,9 +236,13 @@ class RolesListPage extends Component<RolesListPageProps, RolesListPageState> {
         return (
             <Box>
                 {adminError && (
-                    <Typography color="error" sx={{ mb: 2 }}>
-                        {adminError}
-                    </Typography>
+                    <ErrorState
+                        message={adminError}
+                        onRetry={() => {
+                            this.props.loadRoles();
+                            this.props.loadPermissions();
+                        }}
+                    />
                 )}
                 <Box
                     sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}
@@ -264,49 +267,69 @@ class RolesListPage extends Component<RolesListPageProps, RolesListPageState> {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {visibleRoles.map((role) => (
-                                <TableRow key={role.id}>
-                                    <TableCell>{role.name}</TableCell>
-                                    <TableCell>
-                                        {Array.isArray(role.permissions)
-                                            ? (role.permissions as Permission[])
-                                                  .map((p) =>
-                                                      this.permissionLabel(p),
-                                                  )
-                                                  .join(", ") || "—"
-                                            : "—"}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <RowActionsMenu
-                                            actions={[
-                                                {
-                                                    label: "Izmeni",
-                                                    icon: (
-                                                        <EditIcon fontSize="small" />
-                                                    ),
-                                                    permission:
-                                                        "auth.change_group",
-                                                    onClick: () =>
-                                                        this.openEdit(role),
-                                                },
-                                                {
-                                                    label: "Obriši",
-                                                    icon: (
-                                                        <DeleteIcon fontSize="small" />
-                                                    ),
-                                                    permission:
-                                                        "auth.delete_group",
-                                                    color: "error",
-                                                    onClick: () =>
-                                                        this.confirmDelete(
-                                                            role.id,
+                            {adminLoading ? (
+                                <TableStateRow colSpan={3} state="loading" />
+                            ) : adminError ? (
+                                <TableStateRow
+                                    colSpan={3}
+                                    state="error"
+                                    errorMessage={adminError}
+                                    onRetry={() => {
+                                        this.props.loadRoles();
+                                        this.props.loadPermissions();
+                                    }}
+                                />
+                            ) : visibleRoles.length === 0 ? (
+                                <TableStateRow
+                                    colSpan={3}
+                                    state="empty"
+                                    emptyMessage="Nema rola."
+                                />
+                            ) : (
+                                visibleRoles.map((role) => (
+                                    <TableRow key={role.id}>
+                                        <TableCell>{role.name}</TableCell>
+                                        <TableCell>
+                                            {Array.isArray(role.permissions)
+                                                ? (role.permissions as Permission[])
+                                                      .map((p) =>
+                                                          this.permissionLabel(p),
+                                                      )
+                                                      .join(", ") || "—"
+                                                : "—"}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <RowActionsMenu
+                                                actions={[
+                                                    {
+                                                        label: "Izmeni",
+                                                        icon: (
+                                                            <EditIcon fontSize="small" />
                                                         ),
-                                                },
-                                            ]}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                                                        permission:
+                                                            "auth.change_group",
+                                                        onClick: () =>
+                                                            this.openEdit(role),
+                                                    },
+                                                    {
+                                                        label: "Obriši",
+                                                        icon: (
+                                                            <DeleteIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "auth.delete_group",
+                                                        color: "error",
+                                                        onClick: () =>
+                                                            this.confirmDelete(
+                                                                role.id,
+                                                            ),
+                                                    },
+                                                ]}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </Paper>
@@ -375,30 +398,21 @@ class RolesListPage extends Component<RolesListPageProps, RolesListPageState> {
                             </Select>
                         </FormControl>
                     </DialogContent>
-                    <DialogActions>
-                        <Button onClick={this.closeDialog}>Odustani</Button>
-                        <Button onClick={this.handleSave} variant="contained">
-                            {editingId != null ? "Sačuvaj" : "Dodaj"}
-                        </Button>
-                    </DialogActions>
+                    <FormActions
+                        onCancel={this.closeDialog}
+                        onSave={this.handleSave}
+                        disabled={!name.trim()}
+                    />
                 </Dialog>
 
-                <Dialog
+                <ConfirmDialog
                     open={deleteConfirmId != null}
+                    title="Obriši rolu?"
+                    message="Da li sigurno želiš da obrišeš ovu rolu?"
+                    confirmLabel="Obriši"
+                    onConfirm={this.doDelete}
                     onClose={this.cancelDelete}
-                >
-                    <DialogTitle>Obriši rolu?</DialogTitle>
-                    <DialogActions>
-                        <Button onClick={this.cancelDelete}>Ne</Button>
-                        <Button
-                            onClick={this.doDelete}
-                            color="error"
-                            variant="contained"
-                        >
-                            Da, obriši
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                />
             </Box>
         );
     }
@@ -407,6 +421,7 @@ class RolesListPage extends Component<RolesListPageProps, RolesListPageState> {
 const mapStateToProps = (state: RootState): RolesListPageStateProps => ({
     roles: state.auth.roles,
     permissions: state.auth.permissions,
+    adminLoading: state.auth.adminLoading,
     adminError: state.auth.adminError,
 });
 

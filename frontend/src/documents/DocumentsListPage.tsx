@@ -13,7 +13,6 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions,
     TextField,
     FormControl,
     InputLabel,
@@ -29,6 +28,7 @@ import DownloadIcon from "@mui/icons-material/Download";
 import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import { ErrorState, FormActions, TableStateRow } from "../design";
 import {
     fetchDocuments,
     fetchDocumentCategories,
@@ -173,7 +173,7 @@ class DocumentsListPage extends Component<
     };
 
     render() {
-        const { documents, categories, error } = this.props;
+        const { documents, categories, loading, error } = this.props;
         const list = Array.isArray(documents) ? documents : [];
         const {
             dialogOpen,
@@ -191,9 +191,13 @@ class DocumentsListPage extends Component<
         return (
             <Box>
                 {error && (
-                    <Typography color="error" sx={{ mb: 2 }}>
-                        {error}
-                    </Typography>
+                    <ErrorState
+                        message={error}
+                        onRetry={() => {
+                            this.props.fetchDocuments();
+                            this.props.fetchDocumentCategories();
+                        }}
+                    />
                 )}
                 <Box
                     sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}
@@ -220,52 +224,72 @@ class DocumentsListPage extends Component<
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {list.map((doc) => (
-                                <TableRow key={doc.id}>
-                                    <TableCell>{doc.title}</TableCell>
-                                    <TableCell>
-                                        {typeof doc.category === "object"
-                                            ? (doc.category?.name ?? "—")
-                                            : "—"}
-                                    </TableCell>
-                                    <TableCell>
-                                        {formatDateTimeISO(doc.uploaded_at)}
-                                    </TableCell>
-                                    <TableCell>
-                                        {doc.file ? (
-                                            <Button
-                                                component="a"
-                                                href={doc.file}
-                                                download
-                                                target="_blank"
-                                                rel="noopener"
-                                                size="small"
-                                                startIcon={<DownloadIcon />}
-                                            >
-                                                Preuzmi
-                                            </Button>
-                                        ) : (
-                                            "—"
-                                        )}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <RowActionsMenu
-                                            actions={[
-                                                {
-                                                    label: "Izmeni",
-                                                    icon: (
-                                                        <EditIcon fontSize="small" />
-                                                    ),
-                                                    permission:
-                                                        "documents.change_documentfile",
-                                                    onClick: () =>
-                                                        this.openEdit(doc),
-                                                },
-                                            ]}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {loading ? (
+                                <TableStateRow colSpan={5} state="loading" />
+                            ) : error ? (
+                                <TableStateRow
+                                    colSpan={5}
+                                    state="error"
+                                    errorMessage={error}
+                                    onRetry={() => {
+                                        this.props.fetchDocuments();
+                                        this.props.fetchDocumentCategories();
+                                    }}
+                                />
+                            ) : list.length === 0 ? (
+                                <TableStateRow
+                                    colSpan={5}
+                                    state="empty"
+                                    emptyMessage="Nema dokumenata."
+                                />
+                            ) : (
+                                list.map((doc) => (
+                                    <TableRow key={doc.id}>
+                                        <TableCell>{doc.title}</TableCell>
+                                        <TableCell>
+                                            {typeof doc.category === "object"
+                                                ? (doc.category?.name ?? "—")
+                                                : "—"}
+                                        </TableCell>
+                                        <TableCell>
+                                            {formatDateTimeISO(doc.uploaded_at)}
+                                        </TableCell>
+                                        <TableCell>
+                                            {doc.file ? (
+                                                <Button
+                                                    component="a"
+                                                    href={doc.file}
+                                                    download
+                                                    target="_blank"
+                                                    rel="noopener"
+                                                    size="small"
+                                                    startIcon={<DownloadIcon />}
+                                                >
+                                                    Preuzmi
+                                                </Button>
+                                            ) : (
+                                                "—"
+                                            )}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <RowActionsMenu
+                                                actions={[
+                                                    {
+                                                        label: "Izmeni",
+                                                        icon: (
+                                                            <EditIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "documents.change_documentfile",
+                                                        onClick: () =>
+                                                            this.openEdit(doc),
+                                                    },
+                                                ]}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </Paper>
@@ -466,20 +490,15 @@ class DocumentsListPage extends Component<
                             }
                         />
                     </DialogContent>
-                    <DialogActions>
-                        <Button onClick={this.closeDialog}>Odustani</Button>
-                        <Button
-                            onClick={this.handleSave}
-                            variant="contained"
-                            disabled={
-                                !title.trim() ||
-                                (editingDoc == null &&
-                                    (category_id === "" || file == null))
-                            }
-                        >
-                            {editingDoc != null ? "Sačuvaj" : "Dodaj"}
-                        </Button>
-                    </DialogActions>
+                    <FormActions
+                        onCancel={this.closeDialog}
+                        onSave={this.handleSave}
+                        disabled={
+                            !title.trim() ||
+                            (editingDoc == null &&
+                                (category_id === "" || file == null))
+                        }
+                    />
                 </Dialog>
             </Box>
         );
@@ -489,6 +508,7 @@ class DocumentsListPage extends Component<
 const mapStateToProps = (state: RootState): DocumentsListPageStateProps => ({
     documents: state.documents.documents,
     categories: state.documents.categories,
+    loading: state.documents.loading,
     error: state.documents.error,
 });
 

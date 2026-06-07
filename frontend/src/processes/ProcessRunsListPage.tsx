@@ -2,7 +2,6 @@ import { Component } from "react";
 import { connect } from "react-redux";
 
 import {
-    Alert,
     Box,
     Button,
     FormControl,
@@ -16,7 +15,6 @@ import {
     TableHead,
     TableRow,
     Typography,
-    CircularProgress,
 } from "@mui/material";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
@@ -29,6 +27,7 @@ import {
 import { setLastPath } from "../store/locationSlice";
 import { formatDateDisplay } from "../utils/date";
 import { withNavigation } from "../hocs/withNavigation";
+import { ErrorState, StatusBadge, TableStateRow } from "../design";
 
 import type { AppDispatch, RootState } from "../store";
 import type {
@@ -37,18 +36,6 @@ import type {
     ProcessRunsListPageState,
     ProcessRunsListPageStateProps,
 } from "../types/processPages";
-
-const STATUS_LABELS: Record<string, string> = {
-    PENDING: "Na čekanju",
-    SENT: "Poslat",
-    COMPLETED: "Završeno",
-    CANCELLED: "Otkazano",
-    FAILED: "Neuspešno",
-};
-
-function statusLabel(s: string): string {
-    return STATUS_LABELS[s] ?? s;
-}
 
 function parseRunsListSearch(
     search: string,
@@ -199,17 +186,15 @@ class ProcessRunsListPageInner extends Component<
                         </Select>
                     </FormControl>
                 </Box>
-                {error && <Alert severity="error">{error}</Alert>}
+                {error && <ErrorState message={error} onRetry={this.load} />}
                 {loading ? (
-                    <Box
-                        sx={{
-                            display: "flex",
-                            justifyContent: "center",
-                            py: 4,
-                        }}
-                    >
-                        <CircularProgress />
-                    </Box>
+                    <Paper sx={{ overflow: "auto" }}>
+                        <Table size="small">
+                            <TableBody>
+                                <TableStateRow colSpan={6} state="loading" />
+                            </TableBody>
+                        </Table>
+                    </Paper>
                 ) : (
                     <Paper sx={{ overflow: "auto" }}>
                         <Table size="small">
@@ -225,11 +210,11 @@ class ProcessRunsListPageInner extends Component<
                             </TableHead>
                             <TableBody>
                                 {items.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={6} align="center">
-                                            Nema aktivnosti.
-                                        </TableCell>
-                                    </TableRow>
+                                    <TableStateRow
+                                        colSpan={6}
+                                        state="empty"
+                                        emptyMessage="Nema aktivnosti."
+                                    />
                                 ) : (
                                     items.map((row) => {
                                         const hasEmailError =
@@ -265,9 +250,12 @@ class ProcessRunsListPageInner extends Component<
                                                     )}
                                                 </TableCell>
                                                 <TableCell>
-                                                    <Typography variant="body2">
-                                                        {statusLabel(row.status)}
-                                                    </Typography>
+                                                    <StatusBadge
+                                                        status={row.status}
+                                                        hasEmailError={
+                                                            hasEmailError
+                                                        }
+                                                    />
                                                     {hasEmailError ? (
                                                         <Typography
                                                             variant="body2"

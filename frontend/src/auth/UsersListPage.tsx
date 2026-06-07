@@ -11,7 +11,6 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions,
     TextField,
     FormControlLabel,
     Checkbox,
@@ -22,7 +21,6 @@ import {
     MenuItem,
     ListItemText,
     Stack,
-    Typography,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -33,6 +31,7 @@ import {
     ScrollableTablePaper,
     tableCellEllipsis,
 } from "../components/ScrollableTablePaper";
+import { ErrorState, FormActions, TableStateRow } from "../design";
 import {
     loadUsers,
     loadRoles,
@@ -156,7 +155,7 @@ class UsersListPage extends Component<UsersListPageProps, UsersListPageState> {
     };
 
     render() {
-        const { users, roles, adminError } = this.props;
+        const { users, roles, adminLoading, adminError } = this.props;
         const list = Array.isArray(users) ? users : [];
         const {
             dialogOpen,
@@ -174,7 +173,13 @@ class UsersListPage extends Component<UsersListPageProps, UsersListPageState> {
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {adminError && (
-                    <Typography color="error">{adminError}</Typography>
+                    <ErrorState
+                        message={adminError}
+                        onRetry={() => {
+                            this.props.loadUsers();
+                            this.props.loadRoles();
+                        }}
+                    />
                 )}
                 <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                     <PermissionGate permission="auth.add_user">
@@ -215,41 +220,61 @@ class UsersListPage extends Component<UsersListPageProps, UsersListPageState> {
                             </TableRow>
                         </TableHead>
                         <TableBody>
-                            {list.map((user) => (
-                                <TableRow key={user.id}>
-                                    <TableCell sx={tableCellEllipsis}>
-                                        {user.username}
-                                    </TableCell>
-                                    <TableCell sx={tableCellEllipsis}>
-                                        {user.first_name ?? ""}
-                                    </TableCell>
-                                    <TableCell sx={tableCellEllipsis}>
-                                        {user.last_name ?? ""}
-                                    </TableCell>
-                                    <TableCell sx={tableCellEllipsis}>
-                                        {user.email ?? ""}
-                                    </TableCell>
-                                    <TableCell>
-                                        {user.is_active ? "Da" : "Ne"}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                        <RowActionsMenu
-                                            actions={[
-                                                {
-                                                    label: "Izmeni",
-                                                    icon: (
-                                                        <EditIcon fontSize="small" />
-                                                    ),
-                                                    permission:
-                                                        "auth.change_user",
-                                                    onClick: () =>
-                                                        this.openEdit(user),
-                                                },
-                                            ]}
-                                        />
-                                    </TableCell>
-                                </TableRow>
-                            ))}
+                            {adminLoading ? (
+                                <TableStateRow colSpan={6} state="loading" />
+                            ) : adminError ? (
+                                <TableStateRow
+                                    colSpan={6}
+                                    state="error"
+                                    errorMessage={adminError}
+                                    onRetry={() => {
+                                        this.props.loadUsers();
+                                        this.props.loadRoles();
+                                    }}
+                                />
+                            ) : list.length === 0 ? (
+                                <TableStateRow
+                                    colSpan={6}
+                                    state="empty"
+                                    emptyMessage="Nema korisnika."
+                                />
+                            ) : (
+                                list.map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell sx={tableCellEllipsis}>
+                                            {user.username}
+                                        </TableCell>
+                                        <TableCell sx={tableCellEllipsis}>
+                                            {user.first_name ?? ""}
+                                        </TableCell>
+                                        <TableCell sx={tableCellEllipsis}>
+                                            {user.last_name ?? ""}
+                                        </TableCell>
+                                        <TableCell sx={tableCellEllipsis}>
+                                            {user.email ?? ""}
+                                        </TableCell>
+                                        <TableCell>
+                                            {user.is_active ? "Da" : "Ne"}
+                                        </TableCell>
+                                        <TableCell align="right">
+                                            <RowActionsMenu
+                                                actions={[
+                                                    {
+                                                        label: "Izmeni",
+                                                        icon: (
+                                                            <EditIcon fontSize="small" />
+                                                        ),
+                                                        permission:
+                                                            "auth.change_user",
+                                                        onClick: () =>
+                                                            this.openEdit(user),
+                                                    },
+                                                ]}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            )}
                         </TableBody>
                     </Table>
                 </ScrollableTablePaper>
@@ -382,19 +407,14 @@ class UsersListPage extends Component<UsersListPageProps, UsersListPageState> {
                             </FormControl>
                         </Stack>
                     </DialogContent>
-                    <DialogActions>
-                        <Button onClick={this.closeDialog}>Odustani</Button>
-                        <Button
-                            onClick={this.handleSave}
-                            variant="contained"
-                            disabled={
-                                !username.trim() ||
-                                (editingUser == null && !password.trim())
-                            }
-                        >
-                            {editingUser != null ? "Sačuvaj" : "Dodaj"}
-                        </Button>
-                    </DialogActions>
+                    <FormActions
+                        onCancel={this.closeDialog}
+                        onSave={this.handleSave}
+                        disabled={
+                            !username.trim() ||
+                            (editingUser == null && !password.trim())
+                        }
+                    />
                 </Dialog>
             </Box>
         );
@@ -404,6 +424,7 @@ class UsersListPage extends Component<UsersListPageProps, UsersListPageState> {
 const mapStateToProps = (state: RootState): UsersListPageStateProps => ({
     users: state.auth.users,
     roles: state.auth.roles,
+    adminLoading: state.auth.adminLoading,
     adminError: state.auth.adminError,
 });
 

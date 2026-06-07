@@ -13,7 +13,6 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import BlockIcon from "@mui/icons-material/Block";
-import { enqueueSnackbar } from "notistack";
 
 import { updateProcessBinding } from "../api/processes";
 import { AddProcessBindingDialog } from "./AddProcessBindingDialog";
@@ -21,19 +20,12 @@ import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import { PermissionGate } from "./PermissionGate";
 import RowActionsMenu from "./RowActionsMenu";
 import { bindingTermDateError, displayDateToIso, formatDateDisplay, isoDateToFormDisplay } from "../utils/date";
+import { notifyError, notifySuccess, StatusBadge } from "../design";
 
 import type {
     EntityProcessBindingsPanelProps,
     EntityProcessBindingsPanelState,
 } from "../types/processPages";
-
-const STATUS_LABELS: Record<string, string> = {
-    PENDING: "Na čekanju",
-    SENT: "Poslato",
-    COMPLETED: "Završeno",
-    CANCELLED: "Otkazano",
-    FAILED: "Neuspešno",
-};
 
 export class EntityProcessBindingsPanel extends Component<
     EntityProcessBindingsPanelProps,
@@ -50,32 +42,19 @@ export class EntityProcessBindingsPanel extends Component<
         updateProcessBinding(bindingId, { is_active: false })
             .then(() => {
                 this.setState({ deactivatingBindingId: null });
-                enqueueSnackbar("Obaveza je deaktivirana.", {
-                    variant: "success",
-                });
+                notifySuccess("Obaveza je deaktivirana.");
                 this.props.onRefresh();
             })
-            .catch(
-                (
-                    err:
-                        | { message?: string }
-                        | { response?: { data?: { detail?: string } } },
-                ) => {
-                    this.setState({ deactivatingBindingId: null });
-                    const msg =
-                        (err as { response?: { data?: { detail?: string } } })
-                            .response?.data?.detail ??
-                        (err as { message?: string }).message ??
-                        "Greška pri deaktivaciji obaveze.";
-                    enqueueSnackbar(msg, { variant: "error" });
-                },
-            );
+            .catch((err: unknown) => {
+                this.setState({ deactivatingBindingId: null });
+                notifyError(err, "Greška pri deaktivaciji obaveze.");
+            });
     };
 
     handleStartDateChange = (bindingId: number, displayDate: string): void => {
         const termError = bindingTermDateError(displayDate);
         if (termError) {
-            enqueueSnackbar(termError, { variant: "error" });
+            notifyError(termError, "Greška pri čuvanju termina.");
             return;
         }
         const nextRunAtISO = displayDateToIso(displayDate);
@@ -84,26 +63,13 @@ export class EntityProcessBindingsPanel extends Component<
         updateProcessBinding(bindingId, { next_run_at: nextRunAtISO })
             .then(() => {
                 this.setState({ savingStartDateBindingId: null });
-                enqueueSnackbar("Termin je sačuvan.", {
-                    variant: "success",
-                });
+                notifySuccess("Termin je sačuvan.");
                 this.props.onRefresh();
             })
-            .catch(
-                (
-                    err:
-                        | { message?: string }
-                        | { response?: { data?: { detail?: string } } },
-                ) => {
-                    this.setState({ savingStartDateBindingId: null });
-                    const msg =
-                        (err as { response?: { data?: { detail?: string } } })
-                            .response?.data?.detail ??
-                        (err as { message?: string }).message ??
-                        "Greška pri čuvanju termina.";
-                    enqueueSnackbar(msg, { variant: "error" });
-                },
-            );
+            .catch((err: unknown) => {
+                this.setState({ savingStartDateBindingId: null });
+                notifyError(err, "Greška pri čuvanju termina.");
+            });
     };
 
     render() {
@@ -258,8 +224,7 @@ export class EntityProcessBindingsPanel extends Component<
                                             {formatDateDisplay(r.valid_until)}
                                         </TableCell>
                                         <TableCell>
-                                            {STATUS_LABELS[r.status] ??
-                                                r.status}
+                                            <StatusBadge status={r.status} />
                                         </TableCell>
                                     </TableRow>
                                 ))

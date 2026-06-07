@@ -31,6 +31,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { enqueueSnackbar } from "notistack";
 
 import RowActionsMenu from "../components/RowActionsMenu";
+import { ConfirmDialog, subjectKindLabel } from "../design";
 import {
     ScrollableTablePaper,
     tableCellEllipsis,
@@ -52,11 +53,7 @@ import type {
     ProcessTypesListPageStateProps,
 } from "../types/processPages";
 
-const SUBJECT_OPTIONS = [
-    { value: "EMPLOYEE", label: "Zaposleni" },
-    { value: "EQUIPMENT", label: "Oprema" },
-    { value: "CLIENT_COMPANY", label: "Firma" },
-];
+const SUBJECT_OPTIONS = ["EMPLOYEE", "EQUIPMENT", "CLIENT_COMPANY"] as const;
 
 class ProcessTypesListPageInner extends Component<
     ProcessTypesListPageProps,
@@ -289,11 +286,7 @@ class ProcessTypesListPageInner extends Component<
                                             {row.name}
                                         </TableCell>
                                         <TableCell sx={tableCellEllipsis}>
-                                            {SUBJECT_OPTIONS.find(
-                                                (s) =>
-                                                    s.value ===
-                                                    row.subject_kind,
-                                            )?.label ?? row.subject_kind}
+                                            {subjectKindLabel(row.subject_kind)}
                                         </TableCell>
                                         <TableCell>
                                             {row.default_period_months ?? "—"}
@@ -397,8 +390,8 @@ class ProcessTypesListPageInner extends Component<
                                 }
                             >
                                 {SUBJECT_OPTIONS.map((o) => (
-                                    <MenuItem key={o.value} value={o.value}>
-                                        {o.label}
+                                    <MenuItem key={o} value={o}>
+                                        {subjectKindLabel(o)}
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -479,22 +472,14 @@ class ProcessTypesListPageInner extends Component<
                     </DialogActions>
                 </Dialog>
 
-                <Dialog
+                <ConfirmDialog
                     open={deleteConfirmId != null}
+                    title="Obriši vrstu obaveze?"
+                    message="Da li sigurno želiš da obrišeš ovu vrstu obaveze?"
+                    confirmLabel="Obriši"
+                    onConfirm={this.doDelete}
                     onClose={this.cancelDelete}
-                >
-                    <DialogTitle>Obriši vrstu obaveze?</DialogTitle>
-                    <DialogActions>
-                        <Button onClick={this.cancelDelete}>Ne</Button>
-                        <Button
-                            onClick={this.doDelete}
-                            color="error"
-                            variant="contained"
-                        >
-                            Da, obriši
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                />
             </Box>
         );
     }

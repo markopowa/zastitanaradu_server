@@ -75,6 +75,9 @@ export interface EmployeeSummary {
     email?: string;
     org_unit?: string;
     position?: string;
+    job_role_risk_level?: RiskLevel | null;
+    risk_level_override_detail?: RiskLevel | null;
+    effective_risk_level?: RiskLevel | null;
 }
 
 export interface EquipmentItem {

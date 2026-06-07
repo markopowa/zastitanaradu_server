@@ -34,6 +34,12 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - Pozicija: `Električar`
 - Zanimanje: `Električar`
 - Naziv radnog mesta sa povećanim rizikom: `Električar na visini`
+- Radno mesto: `Električar na visini`
+- Rizik — izuzetak: ostavi `Nasleđeno iz radnog mesta`
+
+**Radno mesto i rizik:**
+- Naziv radnog mesta: `Električar na visini`
+- Nivo rizika: izaberi `POVECAN` / `Povećan` / najveći nivo rizika koji postoji u padajućoj listi
 
 **Kategorije / nazivi:**
 - Kategorija dokumenata: `Lekarski pregledi`
@@ -64,7 +70,11 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Naziv: `Lekarski pregledi`
 - [ ] Sačuvaj
 
-**Provera:** Kategorija se vidi u listi.
+**Provera:**
+- [ ] Kategorija se vidi u listi.
+- [ ] Ako je lista bila prazna pre dodavanja, prikazuje se standardni prazan red, ne ružan prazan ekran.
+- [ ] Ako otvoriš izmenu kategorije, primarno dugme je **Sačuvaj**, a odustajanje je **Odustani**.
+- [ ] Ako klikneš **Obriši**, otvara se potvrda sa dugmadima **Odustani** i **Obriši**.
 
 ---
 
@@ -98,6 +108,22 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 
 ---
 
+## 2b. Dodaj radno mesto i proveri badge rizika
+
+- [ ] Na stranici firme nađi sekciju **Radna mesta**
+- [ ] Klikni **Dodaj radno mesto**
+- [ ] Naziv radnog mesta: `Električar na visini`
+- [ ] Nivo rizika: izaberi `POVECAN` / `Povećan` / najveći nivo rizika koji postoji u listi
+- [ ] Sačuvaj
+
+**Provera:**
+- [ ] Sekcija **Radna mesta** je u kartici sa naslovom i dugmetom desno.
+- [ ] Radno mesto se vidi u tabeli.
+- [ ] Nivo rizika se prikazuje kao obojeni badge, ne kao običan tekst.
+- [ ] Visok rizik je crven.
+
+---
+
 ## 3. Unesi zaposlenog
 
 - [ ] Na stranici firme klikni **Dodaj zaposlenog**
@@ -112,9 +138,17 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Pozicija: `Električar` *(obavezno)*
 - [ ] Zanimanje: `Električar`
 - [ ] Naziv radnog mesta sa povećanim rizikom: `Električar na visini`
+- [ ] Radno mesto: `Električar na visini`
+- [ ] Proveri da se ispod polja prikaže poruka da se nivo rizika nasleđuje iz radnog mesta
+- [ ] Rizik — izuzetak: ostavi `Nasleđeno iz radnog mesta`
 - [ ] Sačuvaj
 
-**Provera:** Vrati se na stranicu firme — vidiš Marka Petrovića u listi zaposlenih. Klik na red vodi na detalj zaposlenog.
+**Provera:**
+- [ ] Vrati se na stranicu firme — vidiš Marka Petrovića u listi zaposlenih.
+- [ ] Sekcija **Zaposleni** je u kartici sa naslovom i dugmetom desno.
+- [ ] U listi zaposlenih postoji kolona **Rizik**.
+- [ ] Markov rizik se prikazuje kao obojeni badge.
+- [ ] Klik na red vodi na detalj zaposlenog.
 
 ---
 
@@ -161,6 +195,8 @@ Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje)
 - [ ] Sačuvaj
 
 **Provera:** Vrsta obaveze `Periodični lekarski pregled` se vidi u listi sa automatski generisanim kodom.
+- [ ] Subjekt se prikazuje kao **Zaposleni**, **Oprema** ili **Firma**, ne kao sirova vrednost iz baze.
+- [ ] Ako klikneš **Obriši**, otvara se standardna potvrda sa **Odustani** i **Obriši**.
 
 ---
 
@@ -256,6 +292,7 @@ Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po zavr
 - [ ] Snackbar **"Uput je poslat na mejl"** (zelen) ili "Uput je generisan, ali mejl nije poslat" (žut)
 - [ ] Stranica se prebaci na **Procesi i Obaveze → Aktivnosti**
 - [ ] Nova aktivnost za Marka u statusu **"Poslat"** (ne "Na čekanju") — sa današnjim datumom
+- [ ] Status **Poslat** se prikazuje kao plavi/info badge, ne kao običan tekst
 - [ ] Otvori aktivnost → tab **Dokumenti** → uput je prikačen
 - [ ] (Ako je mejl prošao) proveri inbox `markovuckovic1992@gmail.com` — mejl je stigao **sa uputom kao prilogom**
 
@@ -274,6 +311,7 @@ Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po zavr
 ### Šta proveri u aktivnosti
 
 - [ ] Status: **Poslat**
+- [ ] Status je prikazan kroz badge
 - [ ] `Poslao: <tvoje korisničko ime>` i timestamp slanja vidljivi
 - [ ] `email_error` polje prazno (ako je mejl prošao)
 - [ ] Tab Dokumenti → jedan dokument `Uput - periodični lekarski pregled – Run #X`

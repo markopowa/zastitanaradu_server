@@ -38,6 +38,7 @@ export interface DocumentTemplatesListPageState {
 export interface DocumentsListPageStateProps {
     documents: DocumentFile[];
     categories: DocumentCategory[];
+    loading: boolean;
     error?: string;
 }
 
@@ -83,6 +84,7 @@ export interface DocumentsListPageState {
 
 export interface DocumentCategoriesListPageStateProps {
     categories: DocumentCategory[];
+    loading: boolean;
     error?: string;
 }
 

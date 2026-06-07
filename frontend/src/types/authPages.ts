@@ -20,6 +20,7 @@ export interface LoginPageState {
 export interface UsersListPageStateProps {
     users: AuthUser[];
     roles: Role[];
+    adminLoading: boolean;
     adminError?: string;
 }
 
@@ -67,6 +68,7 @@ export interface UsersListPageState {
 export interface RolesListPageStateProps {
     roles: Role[];
     permissions: Permission[];
+    adminLoading: boolean;
     adminError?: string;
 }
 

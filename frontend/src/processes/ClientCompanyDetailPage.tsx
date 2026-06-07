@@ -60,6 +60,7 @@ import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
+import { RiskBadge, SectionCard, StatusBadge, TableStateRow } from "../design";
 
 import type {
     ClientCompanyDetailPageProps,
@@ -74,13 +75,6 @@ import type {
 } from "../types/processes";
 
 const formatDate = (v?: string | null) => formatDateDisplay(v);
-
-const STATUS_LABELS: Record<string, string> = {
-    PENDING: "Na čekanju",
-    COMPLETED: "Završeno",
-    CANCELLED: "Otkazano",
-    FAILED: "Neuspešno",
-};
 
 function bindingSubjectLabel(
     b: ProcessBinding,
@@ -1270,29 +1264,22 @@ class ClientCompanyDetailPageInner extends Component<
                     )}
                 </Paper>
 
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        mt: 2,
-                    }}
+                <SectionCard
+                    title="Radna mesta"
+                    action={
+                        <PermissionGate permission="partners.add_jobrole">
+                            <Button
+                                size="small"
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={this.openRoleDialog}
+                            >
+                                Dodaj radno mesto
+                            </Button>
+                        </PermissionGate>
+                    }
                 >
-                    <Typography variant="subtitle1" fontWeight={600}>
-                        Radna mesta
-                    </Typography>
-                    <PermissionGate permission="partners.add_jobrole">
-                        <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={this.openRoleDialog}
-                        >
-                            Dodaj radno mesto
-                        </Button>
-                    </PermissionGate>
-                </Box>
-                <Paper sx={{ overflow: "auto" }}>
+                    <Box sx={{ overflow: "auto" }}>
                     <Table size="small">
                         <TableHead>
                             <TableRow>
@@ -1303,19 +1290,19 @@ class ClientCompanyDetailPageInner extends Component<
                         </TableHead>
                         <TableBody>
                             {jobRoles.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={3} align="center">
-                                        Nema radnih mesta.
-                                    </TableCell>
-                                </TableRow>
+                                <TableStateRow
+                                    colSpan={3}
+                                    state="empty"
+                                    emptyMessage="Nema radnih mesta."
+                                />
                             ) : (
                                 jobRoles.map((r) => (
                                     <TableRow key={r.id}>
                                         <TableCell>{r.name}</TableCell>
                                         <TableCell>
-                                            {r.risk_level_detail
-                                                ? `${r.risk_level_detail.label} (R=${r.risk_level_detail.score})`
-                                                : "—"}
+                                            <RiskBadge
+                                                riskLevel={r.risk_level_detail}
+                                            />
                                         </TableCell>
                                         <TableCell>
                                             {r.employee_count ?? 0}
@@ -1325,46 +1312,41 @@ class ClientCompanyDetailPageInner extends Component<
                             )}
                         </TableBody>
                     </Table>
-                </Paper>
+                    </Box>
+                </SectionCard>
 
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        mt: 2,
-                    }}
+                <SectionCard
+                    title="Zaposleni"
+                    action={
+                        <PermissionGate permission="partners.add_employee">
+                            <Button
+                                size="small"
+                                variant="contained"
+                                startIcon={<AddIcon />}
+                                onClick={this.openEmpDialog}
+                            >
+                                Dodaj zaposlenog
+                            </Button>
+                        </PermissionGate>
+                    }
                 >
-                    <Typography variant="subtitle1" fontWeight={600}>
-                        Zaposleni
-                    </Typography>
-                    <PermissionGate permission="partners.add_employee">
-                        <Button
-                            size="small"
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={this.openEmpDialog}
-                        >
-                            Dodaj zaposlenog
-                        </Button>
-                    </PermissionGate>
-                </Box>
-                <Paper sx={{ overflow: "auto" }}>
+                    <Box sx={{ overflow: "auto" }}>
                     <Table size="small">
                         <TableHead>
                             <TableRow>
                                 <TableCell>Ime</TableCell>
                                 <TableCell>Prezime</TableCell>
                                 <TableCell>Email</TableCell>
+                                <TableCell>Rizik</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {employees.length === 0 ? (
-                                <TableRow>
-                                    <TableCell colSpan={3} align="center">
-                                        Nema zaposlenih.
-                                    </TableCell>
-                                </TableRow>
+                                <TableStateRow
+                                    colSpan={4}
+                                    state="empty"
+                                    emptyMessage="Nema zaposlenih."
+                                />
                             ) : (
                                 employees.map((e) => (
                                     <TableRow
@@ -1380,12 +1362,22 @@ class ClientCompanyDetailPageInner extends Component<
                                         <TableCell>{e.first_name}</TableCell>
                                         <TableCell>{e.last_name}</TableCell>
                                         <TableCell>{e.email ?? "—"}</TableCell>
+                                        <TableCell>
+                                            <RiskBadge
+                                                riskLevel={
+                                                    e.effective_risk_level ??
+                                                    e.risk_level_override_detail ??
+                                                    e.job_role_risk_level
+                                                }
+                                            />
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
                         </TableBody>
                     </Table>
-                </Paper>
+                    </Box>
+                </SectionCard>
 
                 <Box
                     sx={{
@@ -1608,7 +1600,9 @@ class ClientCompanyDetailPageInner extends Component<
                                         <TableCell>
                                             {formatDate(r.valid_until)}
                                         </TableCell>
-                                        <TableCell>{STATUS_LABELS[r.status] ?? r.status}</TableCell>
+                                        <TableCell>
+                                            <StatusBadge status={r.status} />
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}

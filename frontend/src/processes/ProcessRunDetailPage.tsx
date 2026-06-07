@@ -29,6 +29,7 @@ import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import { withNavigation } from "../hocs/withNavigation";
+import { StatusBadge, triggerLabel } from "../design";
 import {
     completeProcessRun,
     getProcessRun,
@@ -61,21 +62,6 @@ import type {
     ProcessRunDetailPageState,
 } from "../types/processPages";
 
-const STATUS_LABELS: Record<string, string> = {
-    PENDING: "Na čekanju",
-    SENT: "Poslat",
-    COMPLETED: "Završeno",
-    CANCELLED: "Otkazano",
-    FAILED: "Neuspešno",
-};
-
-const TRIGGER_LABELS: Record<string, string> = {
-    ON_LEAD: "Obaveštenje pre termina",
-    ON_SCHEDULED: "Na dan termina",
-    ON_COMPLETED: "Po završetku",
-    ON_OVERDUE: "Kašnjenje",
-};
-
 const USAGE_KIND_LABELS: Record<string, string> = {
     INVITATION: "Uput / poziv",
     REPORT: "Prilog",
@@ -88,16 +74,8 @@ function subjectLabel(snapshot?: SubjectSnapshot): string {
     return snapshot?.name ?? snapshot?.kind ?? "—";
 }
 
-function statusLabel(status: string): string {
-    return STATUS_LABELS[status] ?? status;
-}
-
 function usageKindLabel(kind: string): string {
     return USAGE_KIND_LABELS[kind] ?? kind;
-}
-
-function triggerLabel(trigger: string): string {
-    return TRIGGER_LABELS[trigger] ?? trigger;
 }
 
 function triggerRunsChronological(
@@ -136,9 +114,7 @@ function renderTriggerEmailStatus(tr: ProcessTriggerRun): ReactNode {
         );
     }
     if (tr.email_sent) {
-        return (
-            <Chip label="Poslat" color="success" size="small" variant="outlined" />
-        );
+        return <StatusBadge status="SENT" />;
     }
     if (tr.template_send_email === false) {
         return (
@@ -467,7 +443,7 @@ class ProcessRunDetailPageInner extends Component<
                             {subjectLabel(run.subject_snapshot)}
                         </Typography>
                     </Box>
-                    <Chip label={statusLabel(run.status)} size="small" />
+                    <StatusBadge status={run.status} />
                 </Box>
 
                 <Paper sx={{ p: 2 }}>

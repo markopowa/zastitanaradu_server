@@ -7,7 +7,6 @@ import {
     Paper,
     Typography,
     CircularProgress,
-    Alert,
     Button,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
@@ -18,6 +17,7 @@ import {
     getProcessRuns,
 } from "../api/processes";
 import { EntityProcessBindingsPanel } from "../components/EntityProcessBindingsPanel";
+import { ErrorState } from "../design";
 import { withNavigation } from "../hocs/withNavigation";
 import { setLastPath } from "../store/locationSlice";
 
@@ -42,9 +42,16 @@ class EquipmentDetailPageInner extends Component<
         Promise.all([
             getProcessBindings({ equipment_item_id: id }),
             getProcessRuns({ equipment_item_id: id }),
-        ]).then(([bindings, runs]) => {
-            this.setState((prev) => ({ ...prev, bindings, runs }));
-        });
+        ])
+            .then(([bindings, runs]) => {
+                this.setState((prev) => ({ ...prev, bindings, runs }));
+            })
+            .catch(() => {
+                this.setState((prev) => ({
+                    ...prev,
+                    error: "Greška pri učitavanju obaveza.",
+                }));
+            });
     };
 
     private applyRouteId(mode: "mount" | "update"): void {
@@ -72,14 +79,15 @@ class EquipmentDetailPageInner extends Component<
             this.setState((prev) => ({ ...prev, loading: true }));
         }
         getEquipmentItem(id)
-            .then((item) =>
+            .then((item) => {
                 this.setState((prev) => ({
                     ...prev,
                     item,
                     loading: false,
                     error: null,
-                })),
-            )
+                }));
+                this.loadProcessData(id);
+            })
             .catch(() =>
                 this.setState((prev) => ({
                     ...prev,
@@ -87,7 +95,6 @@ class EquipmentDetailPageInner extends Component<
                     error: "Greška pri učitavanju.",
                 })),
             );
-        this.loadProcessData(id);
     }
 
     componentDidMount(): void {
@@ -114,9 +121,7 @@ class EquipmentDetailPageInner extends Component<
         if (error || !item) {
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <Alert severity="error">
-                        {error ?? "Oprema nije pronađena."}
-                    </Alert>
+                    <ErrorState message={error ?? "Oprema nije pronađena."} />
                     <Button
                         startIcon={<ArrowBackIcon />}
                         onClick={() => navigate("/equipment")}
