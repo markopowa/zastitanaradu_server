@@ -127,6 +127,7 @@ export interface ProcessRunsListPageState {
 
 export interface ProcessRunDetailPageDispatchProps {
     setLastPath?: (path: string) => void;
+    setBreadcrumbs?: (items: { label: string; path?: string }[]) => void;
 }
 
 export type ProcessRunDetailPageProps = ProcessRunDetailPageDispatchProps &
@@ -204,10 +205,8 @@ export interface ClientCompaniesListPageStateProps {
 
 export interface ClientCompaniesListPageDispatchProps {
     setLastPath: (path: string) => void;
+    setBreadcrumbs: (items: { label: string; path?: string }[]) => void;
     ensureClientCompanies: () => void;
-    addClientCompany: (
-        payload: Partial<ClientCompany>,
-    ) => AsyncThunkDispatchResult;
 }
 
 export type ClientCompaniesListPageOwnProps = WithNavigationProps;
@@ -216,22 +215,11 @@ export type ClientCompaniesListPageProps = ClientCompaniesListPageStateProps &
     ClientCompaniesListPageDispatchProps &
     ClientCompaniesListPageOwnProps;
 
-export interface ClientCompaniesListPageState {
-    dialogOpen: boolean;
-    name: string;
-    tax_id: string;
-    registration_number: string;
-    address: string;
-    phone: string;
-    email: string;
-    website: string;
-    notes: string;
-    activity_code: string;
-    aprImporting: boolean;
-}
+export type ClientCompaniesListPageState = Record<string, never>;
 
 export interface ClientCompanyDetailPageDispatchProps {
     setLastPath: (path: string) => void;
+    setBreadcrumbs: (items: { label: string; path?: string }[]) => void;
 }
 
 export type ClientCompanyDetailPageProps =
@@ -356,6 +344,7 @@ export interface ClientCompanyEmployeesDetailPageStateProps {
 
 export interface ClientCompanyEmployeesDetailPageDispatchProps {
     setLastPath: (path: string) => void;
+    setBreadcrumbs: (items: { label: string; path?: string }[]) => void;
     ensureClientCompanies: () => void;
     ensureProcessTypes: () => void;
 }

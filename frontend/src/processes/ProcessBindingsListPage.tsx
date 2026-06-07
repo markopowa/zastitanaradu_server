@@ -354,10 +354,10 @@ class ProcessBindingsListPageInner extends Component<
                 <Typography variant="h6">Obaveze</Typography>
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                     <FormControl size="small" sx={{ minWidth: 200 }}>
-                        <InputLabel>Klijent</InputLabel>
+                        <InputLabel>Firma</InputLabel>
                         <Select
                             value={client_company_id}
-                            label="Klijent"
+                            label="Firma"
                             onChange={(e) =>
                                 this.setState(
                                     (prev) => ({

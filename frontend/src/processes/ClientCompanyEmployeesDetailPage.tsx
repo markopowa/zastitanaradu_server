@@ -37,7 +37,7 @@ import {
     ensureClientCompanies,
     ensureProcessTypes,
 } from "../store/processesSlice";
-import { setLastPath } from "../store/locationSlice";
+import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
 import { formatDateDisplay } from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
@@ -88,6 +88,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                     loading: false,
                     error: null,
                 }));
+                this.updateBreadcrumbs(item);
                 this.loadProcessData(id);
             })
             .catch(() =>
@@ -126,6 +127,29 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         this.loadById(id);
     }
 
+    private updateBreadcrumbs(employee: Employee): void {
+        const companyName = employee.client_company_name ?? "Firma";
+        const companyId = employee.client_company;
+        this.props.setBreadcrumbs([
+            { label: "Firme", path: "/client-companies" },
+            ...(companyId != null
+                ? [
+                      {
+                          label: companyName,
+                          path: `/client-companies/${companyId}`,
+                      },
+                  ]
+                : []),
+            {
+                label: "Zaposleni",
+                path: "/client-companies-employees",
+            },
+            {
+                label: `${employee.first_name} ${employee.last_name}`,
+            },
+        ]);
+    }
+
     componentDidMount(): void {
         this.props.ensureClientCompanies();
         this.props.ensureProcessTypes();
@@ -136,6 +160,10 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         if (prevProps.id !== this.props.id) {
             this.applyRouteId("update");
         }
+    }
+
+    componentWillUnmount(): void {
+        this.props.setBreadcrumbs([]);
     }
 
     openEdit = (): void => {
@@ -421,6 +449,7 @@ const mapDispatchToProps = (
     dispatch: AppDispatch,
 ): ClientCompanyEmployeesDetailPageDispatchProps => ({
     setLastPath: (path: string) => dispatch(setLastPath(path)),
+    setBreadcrumbs: (items) => dispatch(setBreadcrumbs(items)),
     ensureClientCompanies: () => {
         void dispatch(ensureClientCompanies());
     },

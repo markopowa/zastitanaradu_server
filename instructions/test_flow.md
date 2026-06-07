@@ -78,9 +78,25 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 
 ---
 
+## 1b. Navigacija i radni prostor firme
+
+- [ ] U sidebaru grupa se zove **Firme** (ne Klijenti); stavka **Firme** vodi na listu
+- [ ] Grupe **Operativa** (Obaveze, Aktivnosti) i **Podešavanja** (Vrste obaveza, Šabloni obaveza, Nivoi rizika) su razdvojene
+- [ ] Nema dinamičke grupe po vrsti obaveze u meniju
+- [ ] Na listi firmi breadcrumbs: `Firme`
+- [ ] **Firme → Dodaj firmu** otvara čarobnjak (7 koraka), ne dijalog
+
+**Provera čarobnjaka:**
+- [ ] Korak 1: PIB + **Uvezi iz APR-a** + Naziv → **Sledeći** kreira firmu
+- [ ] Koraci 2–7: **Preskoči korak** radi; **Završi** vodi na firmu sa tabom **Usklađenost** (`?tab=compliance`)
+
+---
+
 ## 2. Unesi firmu
 
-- [ ] **Klijenti → Dodaj firmu**
+*(Ako si već prošao čarobnjak u 1b, preskoči na 2a; inače uradi korak 1 čarobnjaka.)*
+
+- [ ] **Firme → Dodaj firmu**
 - [ ] PIB: `123456789` *(obavezno — unesi prvo)*
 - [ ] Klikni **Uvezi iz APR-a** pored PIB polja *(očekivano: upozorenje da APR nije dostupan — ručni unos i dalje radi)*
 - [ ] Naziv: `Test firma 07 d.o.o.` *(obavezno)*
@@ -91,14 +107,16 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Email: `markovuckovic1992@gmail.com`
 - [ ] Website: `https://test-firma-07.rs`
 - [ ] Napomene: `Test unos — slobodno obrisati`
-- [ ] Sačuvaj
+- [ ] **Sledeći** / **Završi** (čarobnjak) ili sačuvaj na koraku 1
 
-**Provera:** Firma se otvori — vidiš stranicu sa njenim imenom.
-- [ ] U dijalogu **Novi klijent** pored PIB postoji dugme **Uvezi iz APR-a**.
+**Provera:** Firma se otvori — vidiš tab traku i breadcrumbs `Firme / <naziv>`.
+- [ ] Tabovi: Lična karta, Dokumentacija, Radna mesta i rizik, Zaposleni, Obaveze/Aktivnosti, Stručni nalazi, Usklađenost
+- [ ] URL `?tab=employees` (ili drugi tab) zadržava tab posle refresh-a
 
 ### 2a. Priloži Akt o proceni rizika
 
-- [ ] Na stranici firme nađi sekciju **"Akt o proceni rizika"**
+- [ ] Otvori tab **Dokumentacija**
+- [ ] Nađi sekciju **"Akt o proceni rizika"**
 - [ ] U polju **"Datum donošenja (dd.mm.yyyy)"** unesi `15.01.2025.` i klikni **"Sačuvaj datum"**
 - [ ] Klikni **"Priloži fajl"** i izaberi `files_for_test\Uput_za_periodični_lekarski_pregled.pdf` (ili bilo koji test PDF/sliku)
 - [ ] Klikni **"Pregled"** — otvori se popup sa PDF pregledom direktno u browseru (ne download)
@@ -112,7 +130,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 
 ## 2b. Dodaj radno mesto i proveri badge rizika
 
-- [ ] Na stranici firme nađi sekciju **Radna mesta**
+- [ ] Otvori tab **Radna mesta i rizik**
 - [ ] Klikni **Dodaj radno mesto**
 - [ ] Naziv radnog mesta: `Električar na visini`
 - [ ] Nivo rizika: izaberi `POVECAN` / `Povećan` / najveći nivo rizika koji postoji u listi
@@ -129,7 +147,7 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 
 ### 2b2. Šifarnik nivoa rizika
 
-- [ ] U meniju: **Nivoi rizika** (grupa Podešavanja)
+- [ ] U meniju: **Podešavanja → Nivoi rizika**
 - [ ] Proveri da lista prikazuje postojeće nivoe (NIZAK, UMEREN, …)
 - [ ] Klikni **Dodaj nivo** → Šifra `TEST`, Naziv `Testni`, Skor `1` → Sačuvaj
 - [ ] Klikni ⋮ → **Obriši** na testnom nivou → potvrdi
@@ -264,7 +282,7 @@ Sada otvori **mapiranje polja** (treba da iskoči ili klikni dugme za mapiranje)
 
 ## 5. Napravi vrstu obaveze
 
-- [ ] **Procesi i Obaveze → Vrste obaveza → Dodaj**
+- [ ] **Podešavanja → Vrste obaveza → Dodaj**
 - [ ] Naziv: `Periodični lekarski pregled`
 - [ ] Subjekt: `Zaposleni`
 - [ ] Period (meseci): `12`
@@ -288,7 +306,7 @@ Potrebna su **tri šablona** (četvrti opciono):
 
 ### 6a. N dana pre termina — interno (opciono za test mejla)
 
-- [ ] **Procesi i Obaveze → Šablon obaveze → Dodaj**
+- [ ] **Podešavanja → Šabloni obaveza → Dodaj**
 - [ ] Vrsta obaveze: `Periodični lekarski pregled`
 - [ ] Okidač: **N dana pre termina**
 - [ ] Generiši dokument: **NE**
@@ -300,7 +318,7 @@ Potrebna su **tri šablona** (četvrti opciono):
 
 ### 6b. Dan termina — uput zaposlenom
 
-- [ ] **Procesi i Obaveze → Šablon obaveze → Dodaj**
+- [ ] **Podešavanja → Šabloni obaveza → Dodaj**
 - [ ] Vrsta obaveze: `Periodični lekarski pregled`
 - [ ] Okidač: **Na zakazani datum**
 - [ ] Generiši dokument: **DA** ✅
@@ -334,7 +352,7 @@ Datum: {{ scheduled_for }}.
 
 ### 6e. Predstojeći rokovi
 
-- [ ] **Procesi i Obaveze → Predstojeći rokovi**
+- [ ] **Pregled → Predstojeći rokovi**
 - [ ] Filter **Firma**: izaberi test firmu (ili Svi)
 - [ ] Proveri da se lista učitava sortirano po roku
 - [ ] Klikni na red → otvara detalj aktivnosti
@@ -349,7 +367,7 @@ Datum: {{ scheduled_for }}.
 
 Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po završetku pregleda.
 
-- [ ] **Procesi i Obaveze → Obaveze** → **Dodaj**
+- [ ] **Operativa → Obaveze** → **Dodaj**
 - [ ] Vrsta obaveze: `Periodični lekarski pregled`
 
   > Subjekt tip (Zaposleni) se automatski preuzima iz vrste obaveze — polje nije vidljivo.
@@ -374,7 +392,7 @@ Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po zavr
 
 ### Način A — sa liste zaposlenih
 
-- [ ] **Klijenti → Zaposleni**
+- [ ] **Firme → Zaposleni**
 - [ ] Pronađi Marka u listi (filter po firmi `Test firma 07` ako treba)
 - [ ] U koloni desno klikni dugme **"Pošalji na pregled"**
 - [ ] Otvori se dijalog "Pošalji na pregled — Marko Petrović"
@@ -383,7 +401,7 @@ Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po zavr
 
 **Provera:**
 - [ ] Snackbar **"Uput je poslat na mejl"** (zelen) ili "Uput je generisan, ali mejl nije poslat" (žut)
-- [ ] Stranica se prebaci na **Procesi i Obaveze → Aktivnosti**
+- [ ] Stranica se prebaci na **Operativa → Aktivnosti**
 - [ ] Nova aktivnost za Marka u statusu **"Poslat"** (ne "Na čekanju") — sa današnjim datumom
 - [ ] Status **Poslat** se prikazuje kao plavi/info badge, ne kao običan tekst
 - [ ] Otvori aktivnost → tab **Dokumenti** → uput je prikačen
@@ -391,7 +409,7 @@ Prvi raspored se pravi ručno jednom. Svi naredni se kreiraju automatski po zavr
 
 ### Način B — sa liste Obaveze
 
-- [ ] **Procesi i Obaveze → Obaveze**
+- [ ] **Operativa → Obaveze**
 - [ ] U redu Markovog rasporeda klikni **"Pošalji sad"**
 
 **Provera:** isto kao Način A — nova aktivnost u statusu "Poslat", dokument prikačen, mejl sa prilogom.
@@ -459,7 +477,7 @@ python manage.py run_process_reminders --date 2026-06-20
 
 > 🎯 Posle koraka **8b** (ne posle samo 8).
 
-- [ ] **Procesi i Obaveze → Aktivnosti** — aktivnost Marka **Na čekanju** (ili Poslat ako je mejl prošao)
+- [ ] **Operativa → Aktivnosti** — aktivnost Marka **Na čekanju** (ili Poslat ako je mejl prošao)
 - [ ] Klikni red da otvoriš aktivnost
 - [ ] Klikni tab **"Dokumenti"**
 - [ ] Postoji dokument naziva `Uput - periodični lekarski pregled – Run #1`
@@ -512,7 +530,7 @@ python manage.py send_test_email markovuckovic1992@gmail.com
 
 ## 11. Završi pregled i proveri ciklus
 
-- [ ] **Procesi i Obaveze → Aktivnosti** → otvori Markovu aktivnost → klikni **"Završi"**
+- [ ] **Operativa → Aktivnosti** → otvori Markovu aktivnost → klikni **"Završi"**
 - [ ] Datum pregleda: **današnji datum**
 - [ ] Važi do: **današnji datum + 12 meseci** (npr. `21.05.2027`)
 - [ ] Broj izveštaja: `IZV-2026-001`
@@ -522,7 +540,7 @@ python manage.py send_test_email markovuckovic1992@gmail.com
 
 **Provera:**
 - [ ] Aktivnost je u statusu **"Završeno"**
-- [ ] Chaining je proradio — **Procesi i Obaveze → Obaveze** → postoji novi raspored za Marka za `Periodični lekarski pregled` (automatski kreiran)
+- [ ] Chaining je proradio — **Podešavanja → Obaveze** → postoji novi raspored za Marka za `Periodični lekarski pregled` (automatski kreiran)
 - [ ] Termin sledećeg = `valid_until + 12 * 30 dana`
 - [ ] Raspored nikad ne treba brisati niti ponovo kreirati — ponavlja se sam svake godine
 
@@ -530,7 +548,7 @@ python manage.py send_test_email markovuckovic1992@gmail.com
 
 ## 12. Generiši medicinsku evidenciju
 
-- [ ] **Klijenti** → otvori `Test firma 07 d.o.o.`
+- [ ] **Firme** → otvori `Test firma 07 d.o.o.`
 - [ ] Klikni **"Generiši Obrazac 1"**
 - [ ] DOCX fajl se automatski skida
 

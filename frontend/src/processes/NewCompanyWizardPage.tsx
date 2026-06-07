@@ -1,0 +1,795 @@
+import { Component } from "react";
+import { connect } from "react-redux";
+
+import {
+    Alert,
+    Box,
+    Button,
+    CircularProgress,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Paper,
+    Select,
+    Step,
+    StepLabel,
+    Stepper,
+    TextField,
+    Typography,
+} from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import { enqueueSnackbar } from "notistack";
+
+import {
+    aprLookup,
+    createClientCompany,
+    createJobRole,
+    getRiskLevels,
+    updateClientCompany,
+    uploadClientCompanyRiskAssessmentAct,
+} from "../api/processes";
+import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
+import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
+import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import { PermissionGate } from "../components/PermissionGate";
+import { withNavigation } from "../hocs/withNavigation";
+import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
+import { displayDateToIso } from "../utils/date";
+import { companyTabUrl } from "../utils/companyTabs";
+import { EmptyState } from "../design";
+
+import type { AppDispatch } from "../store";
+import type { WithNavigationProps } from "../hocs/withNavigation";
+import type { ClientCompany, RiskLevel } from "../types/processes";
+
+const WIZARD_STEPS = [
+    "Lična karta",
+    "Akt o proceni rizika",
+    "Obavezna dokumentacija",
+    "Radna mesta i rizik",
+    "Zaposleni",
+    "Lekarski pregledi",
+    "Stručni nalazi",
+] as const;
+
+interface DispatchProps {
+    setLastPath: (path: string) => void;
+    setBreadcrumbs: (items: { label: string; path?: string }[]) => void;
+}
+
+type Props = DispatchProps & WithNavigationProps;
+
+interface State {
+    activeStep: number;
+    companyId: number | null;
+    name: string;
+    tax_id: string;
+    registration_number: string;
+    address: string;
+    phone: string;
+    email: string;
+    website: string;
+    notes: string;
+    activity_code: string;
+    aprImporting: boolean;
+    saving: boolean;
+    stepError: string | null;
+    riskActDateValue: string;
+    riskActUploading: boolean;
+    riskLevels: RiskLevel[];
+    roleName: string;
+    roleRiskLevelId: string;
+    roleDescription: string;
+    savingRole: boolean;
+    empDialogOpen: boolean;
+    bindingDialogOpen: boolean;
+}
+
+class NewCompanyWizardPage extends Component<Props, State> {
+    state: State = {
+        activeStep: 0,
+        companyId: null,
+        name: "",
+        tax_id: "",
+        registration_number: "",
+        address: "",
+        phone: "",
+        email: "",
+        website: "",
+        notes: "",
+        activity_code: "",
+        aprImporting: false,
+        saving: false,
+        stepError: null,
+        riskActDateValue: "",
+        riskActUploading: false,
+        riskLevels: [],
+        roleName: "",
+        roleRiskLevelId: "",
+        roleDescription: "",
+        savingRole: false,
+        empDialogOpen: false,
+        bindingDialogOpen: false,
+    };
+
+    componentDidMount(): void {
+        this.props.setLastPath("/client-companies/new");
+        this.props.setBreadcrumbs([
+            { label: "Firme", path: "/client-companies" },
+            { label: "Nova firma" },
+        ]);
+        getRiskLevels()
+            .then((items) => this.setState((prev) => ({ ...prev, riskLevels: items })))
+            .catch(() => undefined);
+    }
+
+    componentWillUnmount(): void {
+        this.props.setBreadcrumbs([]);
+    }
+
+    handleAprImport = (): void => {
+        const { tax_id } = this.state;
+        if (!tax_id.trim()) return;
+        this.setState((prev) => ({ ...prev, aprImporting: true }));
+        aprLookup(tax_id.trim())
+            .then((data) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    aprImporting: false,
+                    name: data.name ?? prev.name,
+                    registration_number:
+                        data.registration_number ?? prev.registration_number,
+                    address: data.address ?? prev.address,
+                    activity_code: data.activity_code ?? prev.activity_code,
+                }));
+                enqueueSnackbar("Podaci preuzeti iz APR-a.", {
+                    variant: "success",
+                });
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, aprImporting: false }));
+                enqueueSnackbar(
+                    "APR pretraga trenutno nije dostupna. Unesite podatke ručno.",
+                    { variant: "warning" },
+                );
+            });
+    };
+
+    saveStep1 = (): Promise<number | null> => {
+        const {
+            companyId,
+            name,
+            tax_id,
+            registration_number,
+            address,
+            phone,
+            email,
+            website,
+            notes,
+            activity_code,
+        } = this.state;
+        if (companyId != null) return Promise.resolve(companyId);
+        if (!name.trim() || !tax_id.trim()) {
+            this.setState((prev) => ({
+                ...prev,
+                stepError: "Naziv i PIB su obavezni.",
+            }));
+            return Promise.resolve(null);
+        }
+        this.setState((prev) => ({ ...prev, saving: true, stepError: null }));
+        return createClientCompany({
+            name: name.trim(),
+            tax_id: tax_id.trim(),
+            registration_number: registration_number.trim() || undefined,
+            address: address.trim() || undefined,
+            phone: phone.trim() || undefined,
+            email: email.trim() || undefined,
+            website: website.trim() || undefined,
+            notes: notes.trim() || undefined,
+            activity_code: activity_code.trim() || undefined,
+        })
+            .then((created) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    saving: false,
+                    companyId: created.id,
+                }));
+                enqueueSnackbar("Firma je kreirana.", { variant: "success" });
+                return created.id;
+            })
+            .catch(() => {
+                this.setState((prev) => ({
+                    ...prev,
+                    saving: false,
+                    stepError: "Greška pri kreiranju firme.",
+                }));
+                return null;
+            });
+    };
+
+    saveRiskActStep = async (): Promise<boolean> => {
+        const { companyId, riskActDateValue } = this.state;
+        if (companyId == null) return false;
+        const iso = displayDateToIso(riskActDateValue);
+        if (!iso) return true;
+        this.setState((prev) => ({ ...prev, saving: true, stepError: null }));
+        try {
+            await updateClientCompany(companyId, {
+                risk_assessment_act_date: iso,
+            });
+            this.setState((prev) => ({ ...prev, saving: false }));
+            return true;
+        } catch {
+            this.setState((prev) => ({
+                ...prev,
+                saving: false,
+                stepError: "Greška pri čuvanju datuma akta.",
+            }));
+            return false;
+        }
+    };
+
+    handleRiskActUpload = (file: File | null): void => {
+        const { companyId } = this.state;
+        if (!file || companyId == null) return;
+        this.setState((prev) => ({ ...prev, riskActUploading: true }));
+        uploadClientCompanyRiskAssessmentAct(companyId, file)
+            .then(() => {
+                this.setState((prev) => ({ ...prev, riskActUploading: false }));
+                enqueueSnackbar("Akt je otpremljen.", { variant: "success" });
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, riskActUploading: false }));
+                enqueueSnackbar("Greška pri otpremanju akta.", {
+                    variant: "error",
+                });
+            });
+    };
+
+    saveRoleStep = async (): Promise<boolean> => {
+        const { companyId, roleName, roleRiskLevelId, roleDescription } =
+            this.state;
+        if (companyId == null) return false;
+        if (!roleName.trim() || !roleRiskLevelId) return true;
+        this.setState((prev) => ({ ...prev, savingRole: true, stepError: null }));
+        try {
+            await createJobRole({
+                client_company: companyId,
+                name: roleName.trim(),
+                risk_level: Number(roleRiskLevelId),
+                description: roleDescription.trim() || undefined,
+            });
+            this.setState((prev) => ({
+                ...prev,
+                savingRole: false,
+                roleName: "",
+                roleRiskLevelId: "",
+                roleDescription: "",
+            }));
+            enqueueSnackbar("Radno mesto je dodato.", { variant: "success" });
+            return true;
+        } catch {
+            this.setState((prev) => ({
+                ...prev,
+                savingRole: false,
+                stepError: "Greška pri dodavanju radnog mesta.",
+            }));
+            return false;
+        }
+    };
+
+    handleNext = (): void => {
+        const { activeStep } = this.state;
+        if (activeStep === 0) {
+            void this.saveStep1().then((id) => {
+                if (id != null) {
+                    this.setState((prev) => ({
+                        ...prev,
+                        activeStep: prev.activeStep + 1,
+                    }));
+                }
+            });
+            return;
+        }
+        if (activeStep === 1) {
+            void this.saveRiskActStep().then((ok) => {
+                if (ok) {
+                    this.setState((prev) => ({
+                        ...prev,
+                        activeStep: prev.activeStep + 1,
+                    }));
+                }
+            });
+            return;
+        }
+        if (activeStep === 3) {
+            void this.saveRoleStep().then((ok) => {
+                if (ok) {
+                    this.setState((prev) => ({
+                        ...prev,
+                        activeStep: prev.activeStep + 1,
+                    }));
+                }
+            });
+            return;
+        }
+        this.setState((prev) => ({
+            ...prev,
+            activeStep: Math.min(prev.activeStep + 1, WIZARD_STEPS.length - 1),
+        }));
+    };
+
+    handleBack = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            activeStep: Math.max(prev.activeStep - 1, 0),
+            stepError: null,
+        }));
+    };
+
+    handleSkip = (): void => {
+        this.setState((prev) => ({
+            ...prev,
+            activeStep: Math.min(prev.activeStep + 1, WIZARD_STEPS.length - 1),
+            stepError: null,
+        }));
+    };
+
+    handleFinish = (): void => {
+        const { navigate } = this.props;
+        const id = this.state.companyId;
+        if (id == null) {
+            void this.saveStep1().then((createdId) => {
+                if (createdId != null) {
+                    navigate(companyTabUrl(createdId, "compliance"));
+                }
+            });
+            return;
+        }
+        navigate(companyTabUrl(id, "compliance"));
+    };
+
+    renderStepContent(): React.ReactNode {
+        const {
+            activeStep,
+            companyId,
+            name,
+            tax_id,
+            registration_number,
+            address,
+            phone,
+            email,
+            website,
+            notes,
+            activity_code,
+            aprImporting,
+            saving,
+            stepError,
+            riskActDateValue,
+            riskActUploading,
+            riskLevels,
+            roleName,
+            roleRiskLevelId,
+            roleDescription,
+            savingRole,
+            empDialogOpen,
+            bindingDialogOpen,
+        } = this.state;
+        const { navigate } = this.props;
+
+        if (activeStep === 0) {
+            return (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {stepError && <Alert severity="error">{stepError}</Alert>}
+                    <TextField
+                        label="Naziv"
+                        required
+                        fullWidth
+                        value={name}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                            }))
+                        }
+                    />
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                        <TextField
+                            label="PIB"
+                            required
+                            fullWidth
+                            value={tax_id}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    tax_id: e.target.value,
+                                }))
+                            }
+                        />
+                        <Button
+                            variant="outlined"
+                            disabled={aprImporting || !tax_id.trim()}
+                            onClick={this.handleAprImport}
+                            sx={{ mt: 1, flexShrink: 0 }}
+                        >
+                            {aprImporting ? "Tražim..." : "Uvezi iz APR-a"}
+                        </Button>
+                    </Box>
+                    <TextField
+                        label="Matični broj"
+                        fullWidth
+                        value={registration_number}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                registration_number: e.target.value,
+                            }))
+                        }
+                    />
+                    <TextField
+                        label="Adresa"
+                        fullWidth
+                        value={address}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                address: e.target.value,
+                            }))
+                        }
+                    />
+                    <TextField
+                        label="Telefon"
+                        fullWidth
+                        value={phone}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                phone: e.target.value,
+                            }))
+                        }
+                    />
+                    <TextField
+                        label="Email"
+                        fullWidth
+                        type="email"
+                        value={email}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                email: e.target.value,
+                            }))
+                        }
+                    />
+                    <TextField
+                        label="Web sajt"
+                        fullWidth
+                        value={website}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                website: e.target.value,
+                            }))
+                        }
+                    />
+                    <TextField
+                        label="Šifra delatnosti"
+                        fullWidth
+                        value={activity_code}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                activity_code: e.target.value,
+                            }))
+                        }
+                    />
+                    <TextField
+                        label="Beleške"
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        value={notes}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                notes: e.target.value,
+                            }))
+                        }
+                    />
+                    {saving && (
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                            <CircularProgress size={24} />
+                        </Box>
+                    )}
+                </Box>
+            );
+        }
+
+        if (companyId == null) {
+            return (
+                <Alert severity="warning">
+                    Prvo sačuvajte osnovne podatke firme u koraku 1.
+                </Alert>
+            );
+        }
+
+        if (activeStep === 1) {
+            return (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {stepError && <Alert severity="error">{stepError}</Alert>}
+                    <DateTextFieldWithPicker
+                        label="Datum donošenja akta (dd.mm.yyyy)"
+                        value={riskActDateValue}
+                        allowPast
+                        onChange={(v) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                riskActDateValue: v,
+                            }))
+                        }
+                    />
+                    <PermissionGate permission="partners.change_clientcompany">
+                        <Button
+                            component="label"
+                            variant="outlined"
+                            disabled={riskActUploading}
+                        >
+                            {riskActUploading
+                                ? "Otpremam..."
+                                : "Priloži akt o proceni rizika"}
+                            <input
+                                type="file"
+                                hidden
+                                accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
+                                onChange={(e) =>
+                                    this.handleRiskActUpload(
+                                        e.target.files?.[0] ?? null,
+                                    )
+                                }
+                            />
+                        </Button>
+                    </PermissionGate>
+                </Box>
+            );
+        }
+
+        if (activeStep === 2) {
+            return (
+                <EmptyState
+                    message="Obavezna dokumentacija se dodaje na tabu Dokumentacija u profilu firme."
+                    action={
+                        <Button
+                            variant="outlined"
+                            onClick={() =>
+                                navigate(companyTabUrl(companyId, "documents"))
+                            }
+                        >
+                            Otvori dokumentaciju firme
+                        </Button>
+                    }
+                />
+            );
+        }
+
+        if (activeStep === 3) {
+            return (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {stepError && <Alert severity="error">{stepError}</Alert>}
+                    <TextField
+                        label="Naziv radnog mesta"
+                        fullWidth
+                        value={roleName}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                roleName: e.target.value,
+                            }))
+                        }
+                    />
+                    <FormControl fullWidth>
+                        <InputLabel>Nivo rizika</InputLabel>
+                        <Select
+                            label="Nivo rizika"
+                            value={roleRiskLevelId}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    roleRiskLevelId: e.target.value,
+                                }))
+                            }
+                        >
+                            {riskLevels.map((r) => (
+                                <MenuItem key={r.id} value={String(r.id)}>
+                                    {r.label}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                    <TextField
+                        label="Opis"
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        value={roleDescription}
+                        onChange={(e) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                roleDescription: e.target.value,
+                            }))
+                        }
+                    />
+                    {savingRole && (
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                            <CircularProgress size={24} />
+                        </Box>
+                    )}
+                </Box>
+            );
+        }
+
+        if (activeStep === 4) {
+            const companyStub: ClientCompany = {
+                id: companyId,
+                name: this.state.name,
+                tax_id: this.state.tax_id,
+            };
+            return (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        Dodajte zaposlene za firmu. Možete preskočiti i dodati
+                        kasnije.
+                    </Typography>
+                    <PermissionGate permission="partners.add_employee">
+                        <Button
+                            variant="contained"
+                            onClick={() =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    empDialogOpen: true,
+                                }))
+                            }
+                        >
+                            Dodaj zaposlenog
+                        </Button>
+                    </PermissionGate>
+                    <EmployeeFormDialog
+                        open={empDialogOpen}
+                        mode="create"
+                        clientCompanies={[companyStub]}
+                        lockedClientCompanyId={companyId}
+                        onClose={() =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                empDialogOpen: false,
+                            }))
+                        }
+                        onSaved={() =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                empDialogOpen: false,
+                            }))
+                        }
+                    />
+                </Box>
+            );
+        }
+
+        if (activeStep === 5) {
+            return (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        Opciono kreirajte prvu obavezu (npr. lekarski pregled).
+                    </Typography>
+                    <PermissionGate permission="processes.add_processbinding">
+                        <Button
+                            variant="contained"
+                            onClick={() =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    bindingDialogOpen: true,
+                                }))
+                            }
+                        >
+                            Dodaj obavezu
+                        </Button>
+                    </PermissionGate>
+                    <AddProcessBindingDialog
+                        open={bindingDialogOpen}
+                        onClose={() =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                bindingDialogOpen: false,
+                            }))
+                        }
+                        onSuccess={() =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                bindingDialogOpen: false,
+                            }))
+                        }
+                        subjectKind="CLIENT_COMPANY"
+                        subjectLabel={this.state.name}
+                        clientCompanyId={companyId}
+                    />
+                </Box>
+            );
+        }
+
+        return (
+            <EmptyState message="Modul stručnih nalaza još nije dostupan. Nastavite na završetak čarobnjaka." />
+        );
+    }
+
+    render() {
+        const { activeStep, saving } = this.state;
+        const { navigate } = this.props;
+        const isLast = activeStep === WIZARD_STEPS.length - 1;
+
+        return (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <Button
+                    startIcon={<ArrowBackIcon />}
+                    onClick={() => navigate("/client-companies")}
+                    sx={{ alignSelf: "flex-start" }}
+                >
+                    Nazad na listu
+                </Button>
+                <Typography variant="h6">Nova firma</Typography>
+                <Stepper activeStep={activeStep} alternativeLabel>
+                    {WIZARD_STEPS.map((label) => (
+                        <Step key={label}>
+                            <StepLabel>{label}</StepLabel>
+                        </Step>
+                    ))}
+                </Stepper>
+                <Paper sx={{ p: 3 }}>{this.renderStepContent()}</Paper>
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        gap: 1,
+                        flexWrap: "wrap",
+                    }}
+                >
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                        {activeStep > 0 && (
+                            <Button onClick={this.handleBack}>Nazad</Button>
+                        )}
+                        {activeStep > 0 && !isLast && (
+                            <Button onClick={this.handleSkip}>
+                                Preskoči korak
+                            </Button>
+                        )}
+                    </Box>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+                        {isLast ? (
+                            <Button
+                                variant="contained"
+                                disabled={saving}
+                                onClick={this.handleFinish}
+                            >
+                                Završi
+                            </Button>
+                        ) : (
+                            <Button
+                                variant="contained"
+                                disabled={saving}
+                                onClick={this.handleNext}
+                            >
+                                Sledeći
+                            </Button>
+                        )}
+                    </Box>
+                </Box>
+            </Box>
+        );
+    }
+}
+
+const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({
+    setLastPath: (path) => dispatch(setLastPath(path)),
+    setBreadcrumbs: (items) => dispatch(setBreadcrumbs(items)),
+});
+
+export default connect(null, mapDispatchToProps)(
+    withNavigation(NewCompanyWizardPage),
+);

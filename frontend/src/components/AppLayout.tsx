@@ -37,8 +37,8 @@ import { enqueueSnackbar } from "notistack";
 import type { RootState, AppDispatch } from "../store";
 import { loadMe, logout } from "../store/authSlice";
 import { hasPermissionWithPrefix } from "../utils/permissions";
+import { AppBreadcrumbs } from "./Breadcrumbs";
 import { getPageTitle } from "../locations";
-import type { ProcessType } from "../types/processes";
 import {
     ensureClientCompanies,
     ensureProcessTypes,
@@ -50,10 +50,10 @@ const APP_TITLE = "Zaštita na radu";
 
 type NavGroup =
     | "overview"
-    | "clients"
-    | "activities"
+    | "companies"
+    | "operations"
     | "documents"
-    | "settings"
+    | "settings_admin"
     | "users";
 
 interface NavItem {
@@ -82,59 +82,59 @@ const STATIC_NAV_ITEMS: NavItem[] = [
     },
     {
         path: "/client-companies",
-        label: "Klijenti",
+        label: "Firme",
         icon: <BusinessIcon />,
-        group: "clients",
+        group: "companies",
         permissionPrefix: "partners.view_clientcompany",
     },
     {
         path: "/client-companies-employees",
         label: "Zaposleni",
         icon: <PeopleIcon />,
-        group: "clients",
+        group: "companies",
         permissionPrefix: "partners.view_employee",
     },
     {
         path: "/equipment",
         label: "Oprema",
         icon: <BuildIcon />,
-        group: "clients",
+        group: "companies",
         permissionPrefix: "partners.view_equipmentitem",
-    },
-    {
-        path: "/risk-levels",
-        label: "Nivoi rizika",
-        icon: <ReportProblemIcon />,
-        group: "settings",
-        permissionPrefix: "partners.view_risklevel",
-    },
-    {
-        path: "/processes/types",
-        label: "Vrste obaveza",
-        icon: <SchoolIcon />,
-        group: "settings",
-        permissionPrefix: "processes.view_processtype",
-    },
-    {
-        path: "/processes/templates",
-        label: "Šablon obaveze",
-        icon: <MenuBookIcon />,
-        group: "settings",
-        permissionPrefix: "processes.view_processtemplate",
     },
     {
         path: "/processes/bindings",
         label: "Obaveze",
         icon: <EventIcon />,
-        group: "settings",
+        group: "operations",
         permissionPrefix: "processes.view_processbinding",
     },
     {
         path: "/processes/runs",
         label: "Aktivnosti",
         icon: <EventIcon />,
-        group: "settings",
+        group: "operations",
         permissionPrefix: "processes.view_processrun",
+    },
+    {
+        path: "/processes/types",
+        label: "Vrste obaveza",
+        icon: <SchoolIcon />,
+        group: "settings_admin",
+        permissionPrefix: "processes.view_processtype",
+    },
+    {
+        path: "/processes/templates",
+        label: "Šabloni obaveza",
+        icon: <MenuBookIcon />,
+        group: "settings_admin",
+        permissionPrefix: "processes.view_processtemplate",
+    },
+    {
+        path: "/risk-levels",
+        label: "Nivoi rizika",
+        icon: <ReportProblemIcon />,
+        group: "settings_admin",
+        permissionPrefix: "partners.view_risklevel",
     },
     {
         path: "/documents",
@@ -175,49 +175,33 @@ const STATIC_NAV_ITEMS: NavItem[] = [
 
 const NAV_GROUP_ORDER: NavGroup[] = [
     "overview",
-    "clients",
-    "activities",
+    "companies",
+    "operations",
     "documents",
-    "settings",
+    "settings_admin",
     "users",
 ];
 
 const NAV_GROUP_LABEL: Record<NavGroup, string> = {
     overview: "Pregled",
-    clients: "Klijenti",
-    activities: "Aktivnosti",
+    companies: "Firme",
+    operations: "Operativa",
     documents: "Dokumenti",
-    settings: "Procesi i Obaveze",
+    settings_admin: "Podešavanja",
     users: "Korisnici / Role",
 };
 
 const NAV_GROUP_ICON: Record<NavGroup, ReactNode> = {
     overview: <DashboardIcon />,
-    clients: <BusinessIcon />,
-    activities: <EventIcon />,
+    companies: <BusinessIcon />,
+    operations: <EventIcon />,
     documents: <FolderIcon />,
-    settings: <SchoolIcon />,
+    settings_admin: <SchoolIcon />,
     users: <PeopleIcon />,
 };
 
-function buildNavItems(processTypes: ProcessType[]): NavItem[] {
-    const dynamicActivityItems: NavItem[] = processTypes.map((pt) => ({
-        path: `/processes/runs?process_type_id=${pt.id}`,
-        label: pt.name,
-        icon: <EventIcon />,
-        group: "activities" as NavGroup,
-        permissionPrefix: "processes.view_processrun",
-        showInBottomNav: false,
-    }));
-    return [...STATIC_NAV_ITEMS, ...dynamicActivityItems];
-}
-
-function visibleNavItems(
-    permissions: string[],
-    processTypes: ProcessType[],
-): NavItem[] {
-    const allItems = buildNavItems(processTypes);
-    return allItems.filter((item) => {
+function visibleNavItems(permissions: string[]): NavItem[] {
+    return STATIC_NAV_ITEMS.filter((item) => {
         if (!item.permissionPrefix) return true;
         return hasPermissionWithPrefix(permissions, item.permissionPrefix);
     });
@@ -225,7 +209,7 @@ function visibleNavItems(
 
 interface StateProps {
     user?: AuthUser;
-    processTypes: ProcessType[];
+    breadcrumbs: { label: string; path?: string }[];
 }
 
 interface DispatchProps {
@@ -325,10 +309,10 @@ class AppLayoutInner extends Component<Props, State> {
     }
 
     render() {
-        const { user, pathname, search, processTypes } = this.props;
+        const { user, pathname, search, breadcrumbs } = this.props;
         const { isMobile, anchorEl, mobileOpenGroup } = this.state;
         const permissions = user?.permissions ?? [];
-        const items = visibleNavItems(permissions, processTypes);
+        const items = visibleNavItems(permissions);
         const pageTitle = getPageTitle(pathname);
         const menuOpen = Boolean(anchorEl);
         const currentFull = pathname + search;
@@ -665,6 +649,9 @@ class AppLayoutInner extends Component<Props, State> {
                                     : undefined,
                         }}
                     >
+                        {breadcrumbs.length > 0 && (
+                            <AppBreadcrumbs items={breadcrumbs} />
+                        )}
                         <Outlet />
                     </Box>
 
@@ -775,7 +762,7 @@ class AppLayoutInner extends Component<Props, State> {
 
 const mapStateToProps = (state: RootState): StateProps => ({
     user: state.auth.user,
-    processTypes: state.processes.processTypes,
+    breadcrumbs: state.location.breadcrumbs,
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({

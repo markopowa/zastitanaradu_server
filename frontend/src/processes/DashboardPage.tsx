@@ -277,10 +277,10 @@ class DashboardPage extends Component<Props, State> {
                         </FormControl>
 
                         <FormControl size="small" fullWidth>
-                            <InputLabel>Klijent</InputLabel>
+                            <InputLabel>Firma</InputLabel>
                             <Select
                                 value={filters.clientCompanyId}
-                                label="Klijent"
+                                label="Firma"
                                 onChange={(e) =>
                                     this.handleFilterChange(
                                         "clientCompanyId",

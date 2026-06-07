@@ -165,10 +165,10 @@ class EquipmentListPageInner extends Component<
                     }}
                 >
                     <FormControl size="small" sx={{ minWidth: 220 }}>
-                        <InputLabel>Klijent</InputLabel>
+                        <InputLabel>Firma</InputLabel>
                         <Select
                             value={client_company_id}
-                            label="Klijent"
+                            label="Firma"
                             onChange={(e) =>
                                 this.setState(
                                     (prev) => ({
@@ -270,10 +270,10 @@ class EquipmentListPageInner extends Component<
                     <DialogTitle>Nova oprema</DialogTitle>
                     <DialogContent>
                         <FormControl fullWidth margin="dense">
-                            <InputLabel>Klijent</InputLabel>
+                            <InputLabel>Firma</InputLabel>
                             <Select
                                 value={new_client_company_id}
-                                label="Klijent"
+                                label="Firma"
                                 onChange={(e) =>
                                     this.setState((prev) => ({
                                         ...prev,

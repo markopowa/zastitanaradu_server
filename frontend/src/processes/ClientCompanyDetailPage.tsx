@@ -24,6 +24,7 @@ import {
     InputLabel,
     Select,
     MenuItem,
+    Chip,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
@@ -63,13 +64,20 @@ import { PermissionGate } from "../components/PermissionGate";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
+import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
 import { FilePreviewContent } from "../components/FilePreviewContent";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
-import { setLastPath } from "../store/locationSlice";
+import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
+import {
+    companyTabUrl,
+    parseCompanyTab,
+    type CompanyTabKey,
+} from "../utils/companyTabs";
 import {
     ConfirmDialog,
+    EmptyState,
     RiskBadge,
     SectionCard,
     StatusBadge,
@@ -786,15 +794,29 @@ class ClientCompanyDetailPageInner extends Component<
                     editing: false,
                     saveError: null,
                 }));
+                this.updateBreadcrumbs(item);
                 this.loadExtra(id);
             })
             .catch(() =>
                 this.setState((prev) => ({
                     ...prev,
                     loading: false,
-                    error: "Greška pri učitavanju.",
+                    error: "Greška pri učitavanju podataka firme.",
                 })),
             );
+    };
+
+    private updateBreadcrumbs(company: ClientCompany): void {
+        this.props.setBreadcrumbs([
+            { label: "Firme", path: "/client-companies" },
+            { label: company.name },
+        ]);
+    }
+
+    handleTabChange = (tab: CompanyTabKey): void => {
+        const id = Number(this.props.id);
+        if (!Number.isFinite(id)) return;
+        this.props.navigate(companyTabUrl(id, tab));
     };
 
     private applyRouteId(mode: "mount" | "update"): void {
@@ -832,6 +854,17 @@ class ClientCompanyDetailPageInner extends Component<
         if (prevProps.id !== this.props.id) {
             this.applyRouteId("update");
         }
+        if (
+            this.state.item &&
+            (prevProps.id !== this.props.id ||
+                prevProps.location.search !== this.props.location.search)
+        ) {
+            this.updateBreadcrumbs(this.state.item);
+        }
+    }
+
+    componentWillUnmount(): void {
+        this.props.setBreadcrumbs([]);
     }
 
     render() {
@@ -874,7 +907,8 @@ class ClientCompanyDetailPageInner extends Component<
             savingEquipment,
             equipmentError,
         } = this.state;
-        const { navigate } = this.props;
+        const { navigate, location } = this.props;
+        const activeTab = parseCompanyTab(location.search);
 
         if (loading) {
             return (
@@ -887,7 +921,7 @@ class ClientCompanyDetailPageInner extends Component<
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <Alert severity="error">
-                        {error ?? "Klijent nije pronađen."}
+                        {error ?? "Firma nije pronađena."}
                     </Alert>
                     <Button
                         startIcon={<ArrowBackIcon />}
@@ -908,6 +942,11 @@ class ClientCompanyDetailPageInner extends Component<
                 >
                     Nazad na listu
                 </Button>
+                <CompanyTabBar
+                    activeTab={activeTab}
+                    onChange={this.handleTabChange}
+                />
+                {activeTab === "identity" && (
                 <Paper sx={{ p: 3 }}>
                     <Box
                         sx={{
@@ -1155,27 +1194,13 @@ class ClientCompanyDetailPageInner extends Component<
                         </Box>
                     )}
                 </Paper>
+                )}
 
+                {activeTab === "identity" && (
                 <ContactPersonsPanel clientCompanyId={item.id} />
+                )}
 
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 2,
-                        mt: 1,
-                    }}
-                >
-                    <Button
-                        variant="outlined"
-                        disabled={generatingDoc}
-                        onClick={this.handleGenerateMedicalExamRecord}
-                    >
-                        {generatingDoc ? "Generišem..." : "Generiši Obrazac 1"}
-                    </Button>
-                    {docError && <Alert severity="error">{docError}</Alert>}
-                </Box>
-
+                {activeTab === "documents" && (
                 <Paper sx={{ p: 2 }}>
                     <Typography
                         variant="subtitle1"
@@ -1308,9 +1333,13 @@ class ClientCompanyDetailPageInner extends Component<
                         </Box>
                     )}
                 </Paper>
+                )}
 
+                {activeTab === "documents" && (
                 <CompanyDocumentsPanel clientCompanyId={item.id} />
+                )}
 
+                {activeTab === "job_roles" && (
                 <SectionCard
                     title="Radna mesta"
                     action={
@@ -1398,7 +1427,9 @@ class ClientCompanyDetailPageInner extends Component<
                     </Table>
                     </Box>
                 </SectionCard>
+                )}
 
+                {activeTab === "employees" && (
                 <SectionCard
                     title="Zaposleni"
                     action={
@@ -1462,7 +1493,9 @@ class ClientCompanyDetailPageInner extends Component<
                     </Table>
                     </Box>
                 </SectionCard>
+                )}
 
+                {activeTab === "employees" && (
                 <Box
                     sx={{
                         display: "flex",
@@ -1524,7 +1557,9 @@ class ClientCompanyDetailPageInner extends Component<
                         </TableBody>
                     </Table>
                 </Paper>
+                )}
 
+                {activeTab === "obligations" && (
                 <Box
                     sx={{
                         display: "flex",
@@ -1693,6 +1728,104 @@ class ClientCompanyDetailPageInner extends Component<
                         </TableBody>
                     </Table>
                 </Paper>
+                )}
+
+                {activeTab === "expert_findings" && (
+                    <EmptyState message="Modul stručnih nalaza još nije dostupan." />
+                )}
+
+                {activeTab === "compliance" && (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 2,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <Typography variant="subtitle1" fontWeight={600}>
+                            Usklađenost firme
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            disabled={generatingDoc}
+                            onClick={this.handleGenerateMedicalExamRecord}
+                        >
+                            {generatingDoc
+                                ? "Generišem..."
+                                : "Generiši Obrazac 1"}
+                        </Button>
+                    </Box>
+                    {docError && <Alert severity="error">{docError}</Alert>}
+                    <Box
+                        sx={{
+                            display: "grid",
+                            gridTemplateColumns: {
+                                xs: "1fr",
+                                sm: "1fr 1fr",
+                            },
+                            gap: 2,
+                        }}
+                    >
+                        <Paper sx={{ p: 2 }}>
+                            <Typography variant="body2" fontWeight={600}>
+                                Akt o proceni rizika
+                            </Typography>
+                            <Chip
+                                size="small"
+                                color={
+                                    item.risk_assessment_act_file
+                                        ? "success"
+                                        : "error"
+                                }
+                                label={
+                                    item.risk_assessment_act_file
+                                        ? "Priložen"
+                                        : "Nije priložen"
+                                }
+                                sx={{ mt: 1 }}
+                            />
+                        </Paper>
+                        <Paper sx={{ p: 2 }}>
+                            <Typography variant="body2" fontWeight={600}>
+                                Obavezna dokumentacija
+                            </Typography>
+                            <Chip
+                                size="small"
+                                color="warning"
+                                label="U pripremi"
+                                sx={{ mt: 1 }}
+                            />
+                        </Paper>
+                        <Paper sx={{ p: 2 }}>
+                            <Typography variant="body2" fontWeight={600}>
+                                Stručni nalazi
+                            </Typography>
+                            <Chip
+                                size="small"
+                                color="error"
+                                label="Modul nije dostupan"
+                                sx={{ mt: 1 }}
+                            />
+                        </Paper>
+                        <Paper sx={{ p: 2 }}>
+                            <Typography variant="body2" fontWeight={600}>
+                                Lekarski pregledi
+                            </Typography>
+                            <Chip
+                                size="small"
+                                color={
+                                    employees.length > 0 ? "info" : "default"
+                                }
+                                label={`${employees.length} zaposlenih`}
+                                sx={{ mt: 1 }}
+                            />
+                        </Paper>
+                    </Box>
+                </Box>
+                )}
 
                 <EmployeeFormDialog
                     open={empDialogOpen}
@@ -1957,6 +2090,7 @@ class ClientCompanyDetailPageInner extends Component<
 
 const mapDispatchToProps = {
     setLastPath,
+    setBreadcrumbs,
 };
 
 const Connected = connect(

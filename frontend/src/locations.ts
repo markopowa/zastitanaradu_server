@@ -8,6 +8,7 @@ export const paths = {
     documentTemplates: "/documents/templates",
     dashboard: "/dashboard",
     clientCompanies: "/client-companies",
+    clientCompanyNew: "/client-companies/new",
     clientCompanyDetail: (id: number) => `/client-companies/${id}`,
     equipment: "/equipment",
     equipmentDetail: (id: number) => `/equipment/${id}`,
@@ -28,32 +29,20 @@ const pathToTitle: Record<string, string> = {
     [paths.documentCategories]: "Kategorije dokumenata",
     [paths.documentTemplates]: "Šabloni dokumenata",
     [paths.dashboard]: "Kontrolna tabla",
-    [paths.clientCompanies]: "Klijenti",
+    [paths.clientCompanies]: "Firme",
+    [paths.clientCompanyNew]: "Nova firma",
     [paths.equipment]: "Oprema",
     [paths.riskLevels]: "Nivoi rizika",
     [paths.processTypes]: "Vrste obaveza",
-    [paths.processTemplates]: "Šablon obaveze",
+    [paths.processTemplates]: "Šabloni obaveza",
     [paths.processBindings]: "Obaveze",
     [paths.processRuns]: "Aktivnosti",
     [paths.processUpcoming]: "Predstojeći rokovi",
 };
 
 export function getPageTitle(pathname: string): string {
-    if (pathname.startsWith("/client-companies/")) return "Klijent";
+    if (pathname.startsWith("/client-companies/")) return "Firma";
     if (pathname.startsWith("/equipment/")) return "Oprema";
     if (pathname.startsWith("/processes/runs/")) return "Aktivnost";
     return pathToTitle[pathname] ?? "Zaštita na radu";
-}
-
-export const bottomNavPaths = [
-    paths.dashboard,
-    paths.clientCompanies,
-    paths.profile,
-    paths.documents,
-    paths.roles,
-    paths.users,
-] as const;
-
-export function getNavLabel(path: string): string {
-    return pathToTitle[path] ?? path;
 }

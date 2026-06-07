@@ -39,7 +39,7 @@ import {
     removeDocumentFromRun,
     uploadDocumentToRun,
 } from "../api/processes";
-import { setLastPath } from "../store/locationSlice";
+import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
 import {
     addMonths,
     DateToString,
@@ -178,6 +178,10 @@ class ProcessRunDetailPageInner extends Component<
                         ? formatDateDisplay(run.valid_until)
                         : "",
                 });
+                this.props.setBreadcrumbs?.([
+                    { label: "Aktivnosti", path: "/processes/runs" },
+                    { label: `Aktivnost #${run.id}` },
+                ]);
             })
             .catch(() => {
                 this.setState({
@@ -196,6 +200,10 @@ class ProcessRunDetailPageInner extends Component<
         if (prevProps.id !== this.props.id) {
             this.loadAll();
         }
+    }
+
+    componentWillUnmount(): void {
+        this.props.setBreadcrumbs?.([]);
     }
 
     handleBack = (): void => {
@@ -815,6 +823,7 @@ const mapDispatchToProps = (
     dispatch: AppDispatch,
 ): ProcessRunDetailPageDispatchProps => ({
     setLastPath: (path) => dispatch(setLastPath(path)),
+    setBreadcrumbs: (items) => dispatch(setBreadcrumbs(items)),
 });
 
 const Connected = connect(null, mapDispatchToProps)(ProcessRunDetailPageInner);

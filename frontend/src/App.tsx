@@ -24,6 +24,9 @@ const DashboardPage = lazy(
 const ClientCompaniesListPage = lazy(
     () => import("./processes/ClientCompaniesListPage"),
 );
+const NewCompanyWizardPage = lazy(
+    () => import("./processes/NewCompanyWizardPage"),
+);
 const ClientCompanyDetailPage = lazy(
     () => import("./processes/ClientCompanyDetailPage"),
 );
@@ -91,6 +94,10 @@ class App extends Component {
                         <Route
                             path="client-companies"
                             element={<ClientCompaniesListPage />}
+                        />
+                        <Route
+                            path="client-companies/new"
+                            element={<NewCompanyWizardPage />}
                         />
                         <Route
                             path="client-companies/:id"
