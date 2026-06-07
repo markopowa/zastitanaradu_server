@@ -131,6 +131,23 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 
 ---
 
+## 2a2. Stručni nalazi
+
+> Pre testa: `python manage.py seed_compliance_finding_types` (posle migracije). Za alarme poveži `process_type` u adminu za svaki tip (vidi `instructions/expert_findings.md`).
+
+- [ ] Otvori tab **Stručni nalazi**
+- [ ] Vidi 6 redova (uključujući gromobran i monitoring kao **nedostaje**)
+- [ ] Klikni **Priloži fajl** na jednom tipu → PDF + datum izdavanja `15.01.2025.` → **Sačuvaj**
+- [ ] Proveri kolonu **Važi do** (izdavanje + 36 meseci) i badge **važi**
+- [ ] **Pregled** otvara PDF u dijalogu
+- [ ] **Promeni fajl** zamenjuje nalaz; **Obriši** (uz potvrdu) vraća **nedostaje**
+
+**Provera:**
+- [ ] Svi aktivni tipovi imaju red (prazni slotovi uključeni)
+- [ ] Status badge: važi / ističe uskoro / istekao / nedostaje
+
+---
+
 ## 2b. Dodaj radno mesto i proveri badge rizika
 
 - [ ] Otvori tab **Radna mesta i rizik**

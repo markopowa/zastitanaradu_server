@@ -63,6 +63,7 @@ import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
 import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
+import { ComplianceFindingsPanel } from "../components/ComplianceFindingsPanel";
 import { RiskAssessmentActPanel } from "../components/RiskAssessmentActPanel";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
@@ -74,7 +75,6 @@ import {
 } from "../utils/companyTabs";
 import {
     ConfirmDialog,
-    EmptyState,
     RiskBadge,
     SectionCard,
     StatusBadge,
@@ -1479,7 +1479,7 @@ class ClientCompanyDetailPageInner extends Component<
                 )}
 
                 {activeTab === "expert_findings" && (
-                    <EmptyState message="Modul stručnih nalaza još nije dostupan." />
+                    <ComplianceFindingsPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "compliance" && (
@@ -1548,9 +1548,12 @@ class ClientCompanyDetailPageInner extends Component<
                             </Typography>
                             <Chip
                                 size="small"
-                                color="error"
-                                label="Modul nije dostupan"
-                                sx={{ mt: 1 }}
+                                color="info"
+                                label="Upravljaj u tabu Stručni nalazi"
+                                sx={{ mt: 1, cursor: "pointer" }}
+                                onClick={() =>
+                                    this.handleTabChange("expert_findings")
+                                }
                             />
                         </Paper>
                         <Paper sx={{ p: 2 }}>

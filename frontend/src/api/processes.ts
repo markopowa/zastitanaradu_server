@@ -16,6 +16,8 @@ import type {
     ProcessRunDocument,
     ProcessTemplate,
     ProcessType,
+    CompanyComplianceFindingRow,
+    ComplianceFindingType,
     RiskAssessmentAct,
     RiskAssessmentSectionType,
     RiskLevel,
@@ -230,6 +232,51 @@ export async function downloadRiskAssessmentActMergedPdf(
         { responseType: "blob" },
     );
     return data;
+}
+
+export async function getComplianceFindingTypes(): Promise<
+    ComplianceFindingType[]
+> {
+    const { data } = await api.get<ListResponse<ComplianceFindingType>>(
+        "/api/partners/compliance-finding-types/",
+        { params: { is_active: true } },
+    );
+    return asList(data);
+}
+
+export async function getCompanyComplianceFindings(
+    companyId: number,
+): Promise<CompanyComplianceFindingRow[]> {
+    const { data } = await api.get<CompanyComplianceFindingRow[]>(
+        `/api/partners/client-companies/${companyId}/compliance-findings/`,
+    );
+    return data;
+}
+
+export async function uploadCompanyComplianceFinding(
+    companyId: number,
+    typeId: number,
+    file: File,
+    issuedDate: string,
+): Promise<CompanyComplianceFindingRow> {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("issued_date", issuedDate);
+    const { data } = await api.post<CompanyComplianceFindingRow>(
+        `/api/partners/client-companies/${companyId}/compliance-findings/${typeId}/`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
+export async function deleteCompanyComplianceFinding(
+    companyId: number,
+    typeId: number,
+): Promise<void> {
+    await api.delete(
+        `/api/partners/client-companies/${companyId}/compliance-findings/${typeId}/`,
+    );
 }
 
 export async function getRiskLevels(): Promise<RiskLevel[]> {

@@ -315,6 +315,89 @@ class RiskAssessmentSectionRevision(models.Model):
         return f"{self.section} v{self.version}"
 
 
+class ComplianceFindingType(models.Model):
+    code = models.CharField(max_length=64, unique=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    default_validity_months = models.PositiveIntegerField(default=36)
+    process_type = models.ForeignKey(
+        "processes.ProcessType",
+        on_delete=models.SET_NULL,
+        related_name="compliance_finding_types",
+        null=True,
+        blank=True,
+    )
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Tip stručnog nalaza"
+        verbose_name_plural = "Tipovi stručnih nalaza"
+        ordering = ("order", "name")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class CompanyComplianceFinding(models.Model):
+    STATUS_VALID = "VALID"
+    STATUS_EXPIRING = "EXPIRING"
+    STATUS_EXPIRED = "EXPIRED"
+    STATUS_MISSING = "MISSING"
+
+    EXPIRING_THRESHOLD_DAYS = 30
+
+    client_company = models.ForeignKey(
+        ClientCompany,
+        on_delete=models.CASCADE,
+        related_name="compliance_findings",
+    )
+    finding_type = models.ForeignKey(
+        ComplianceFindingType,
+        on_delete=models.PROTECT,
+        related_name="company_findings",
+    )
+    file = models.FileField(
+        upload_to="compliance_findings/",
+        null=True,
+        blank=True,
+    )
+    issued_date = models.DateField(null=True, blank=True)
+    valid_until = models.DateField(null=True, blank=True)
+    process_binding = models.ForeignKey(
+        "processes.ProcessBinding",
+        on_delete=models.SET_NULL,
+        related_name="compliance_findings",
+        null=True,
+        blank=True,
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Stručni nalaz firme"
+        verbose_name_plural = "Stručni nalazi firme"
+        ordering = ("client_company", "finding_type__order")
+        unique_together = ("client_company", "finding_type")
+
+    def __str__(self) -> str:
+        return f"{self.finding_type} ({self.client_company_id})"
+
+    @property
+    def status(self) -> str:
+        if not self.file or not self.valid_until:
+            return self.STATUS_MISSING
+        from django.utils import timezone
+
+        today = timezone.localdate()
+        if self.valid_until < today:
+            return self.STATUS_EXPIRED
+        days_left = (self.valid_until - today).days
+        if days_left <= self.EXPIRING_THRESHOLD_DAYS:
+            return self.STATUS_EXPIRING
+        return self.STATUS_VALID
+
+
 class EquipmentItem(models.Model):
     client_company = models.ForeignKey(
         ClientCompany,

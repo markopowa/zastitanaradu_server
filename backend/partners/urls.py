@@ -5,6 +5,7 @@ from .views import (
     APRLookupView,
     ClientCompanyViewSet,
     CompanyDocumentViewSet,
+    ComplianceFindingTypeViewSet,
     ContactPersonViewSet,
     EmployeeViewSet,
     EquipmentItemViewSet,
@@ -21,6 +22,11 @@ router.register("client-companies", ClientCompanyViewSet,
 router.register("employees", EmployeeViewSet, basename="employees")
 router.register("equipment", EquipmentItemViewSet, basename="equipment")
 router.register("risk-levels", RiskLevelViewSet, basename="risk-levels")
+router.register(
+    "compliance-finding-types",
+    ComplianceFindingTypeViewSet,
+    basename="compliance-finding-types",
+)
 router.register("job-roles", JobRoleViewSet, basename="job-roles")
 router.register("contact-persons", ContactPersonViewSet, basename="contact-persons")
 router.register(

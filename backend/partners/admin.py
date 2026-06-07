@@ -2,7 +2,9 @@ from django.contrib import admin
 
 from .models import (
     ClientCompany,
+    CompanyComplianceFinding,
     CompanyDocument,
+    ComplianceFindingType,
     ContactPerson,
     Employee,
     EquipmentItem,
@@ -76,6 +78,31 @@ class ContactPersonAdmin(admin.ModelAdmin):
 class CompanyDocumentAdmin(admin.ModelAdmin):
     list_display = ("client_company", "kind", "uploaded_at")
     list_filter = ("kind", "client_company")
+
+
+@admin.register(ComplianceFindingType)
+class ComplianceFindingTypeAdmin(admin.ModelAdmin):
+    list_display = (
+        "order",
+        "code",
+        "name",
+        "default_validity_months",
+        "process_type",
+        "is_active",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("code", "name")
+
+
+@admin.register(CompanyComplianceFinding)
+class CompanyComplianceFindingAdmin(admin.ModelAdmin):
+    list_display = (
+        "client_company",
+        "finding_type",
+        "issued_date",
+        "valid_until",
+    )
+    list_filter = ("finding_type",)
 
 
 @admin.register(RiskAssessmentAct)

@@ -59,6 +59,36 @@ export interface RiskAssessmentAct {
     is_complete: boolean;
 }
 
+export interface ComplianceFindingType {
+    id: number;
+    code: string;
+    name: string;
+    description?: string;
+    default_validity_months: number;
+    process_type: number | null;
+    is_active: boolean;
+    order: number;
+}
+
+export type ComplianceFindingStatus =
+    | "VALID"
+    | "EXPIRING"
+    | "EXPIRED"
+    | "MISSING";
+
+export interface CompanyComplianceFindingRow {
+    finding_type: number;
+    finding_type_name: string;
+    finding_type_code: string;
+    default_validity_months: number;
+    id?: number | null;
+    file?: string | null;
+    file_name?: string;
+    issued_date?: string | null;
+    valid_until?: string | null;
+    status: ComplianceFindingStatus;
+}
+
 export type ContactPersonRole =
     | "DIRECTOR"
     | "SAFETY_OFFICER"

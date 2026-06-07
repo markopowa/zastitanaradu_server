@@ -4,7 +4,9 @@ from rest_framework import serializers
 
 from .models import (
     ClientCompany,
+    CompanyComplianceFinding,
     CompanyDocument,
+    ComplianceFindingType,
     ContactPerson,
     Employee,
     EquipmentItem,
@@ -161,6 +163,68 @@ class CompanyDocumentSerializer(serializers.ModelSerializer):
         if not obj.file:
             return ""
         base = os.path.basename(obj.file.name)
+        name, _ = os.path.splitext(base)
+        return name
+
+
+class ComplianceFindingTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ComplianceFindingType
+        fields = (
+            "id",
+            "code",
+            "name",
+            "description",
+            "default_validity_months",
+            "process_type",
+            "is_active",
+            "order",
+        )
+
+
+class CompanyComplianceFindingSerializer(serializers.ModelSerializer):
+    finding_type_name = serializers.CharField(
+        source="finding_type.name",
+        read_only=True,
+    )
+    finding_type_code = serializers.CharField(
+        source="finding_type.code",
+        read_only=True,
+    )
+    file = serializers.SerializerMethodField()
+    file_name = serializers.SerializerMethodField()
+    status = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = CompanyComplianceFinding
+        fields = (
+            "id",
+            "client_company",
+            "finding_type",
+            "finding_type_name",
+            "finding_type_code",
+            "file",
+            "file_name",
+            "issued_date",
+            "valid_until",
+            "status",
+            "process_binding",
+            "uploaded_at",
+            "updated_at",
+        )
+        read_only_fields = ("valid_until", "process_binding")
+
+    def get_file(self, obj):
+        f = obj.file
+        if not f:
+            return None
+        return f.url
+
+    def get_file_name(self, obj):
+        f = obj.file
+        if not f:
+            return ""
+        base = os.path.basename(f.name)
         name, _ = os.path.splitext(base)
         return name
 

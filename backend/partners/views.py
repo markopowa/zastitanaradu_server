@@ -1,8 +1,10 @@
+from datetime import datetime
 from pathlib import Path
 
 from django.conf import settings
 from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -11,12 +13,20 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .apr import fetch_company_from_apr
+from .compliance_findings import (
+    compliance_finding_row,
+    compute_valid_until,
+    deactivate_compliance_finding_binding,
+    sync_compliance_finding_binding,
+)
 from documents.utils import merge_section_files_to_pdf
 
 from .medical_exam_record import generate_medical_exam_record
 from .models import (
     ClientCompany,
+    CompanyComplianceFinding,
     CompanyDocument,
+    ComplianceFindingType,
     ContactPerson,
     Employee,
     EquipmentItem,
@@ -29,6 +39,7 @@ from .models import (
 from .serializers import (
     ClientCompanySerializer,
     CompanyDocumentSerializer,
+    ComplianceFindingTypeSerializer,
     ContactPersonSerializer,
     EmployeeSerializer,
     EquipmentItemSerializer,
@@ -64,6 +75,19 @@ class JobRoleViewSet(viewsets.ModelViewSet):
         client_company_id = self.request.query_params.get("client_company_id")
         if client_company_id is not None and client_company_id != "":
             queryset = queryset.filter(client_company_id=client_company_id)
+        return queryset
+
+
+class ComplianceFindingTypeViewSet(viewsets.ModelViewSet):
+    queryset = ComplianceFindingType.objects.all().order_by("order", "name")
+    serializer_class = ComplianceFindingTypeSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        is_active = self.request.query_params.get("is_active")
+        if is_active is not None and is_active != "":
+            queryset = queryset.filter(is_active=(is_active.lower() == "true"))
         return queryset
 
 
@@ -114,6 +138,82 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
         company.risk_assessment_act_file = file_obj
         company.save(update_fields=["risk_assessment_act_file"])
         return Response(self.get_serializer(company).data)
+
+    @action(detail=True, methods=["get"], url_path="compliance-findings")
+    def compliance_findings(self, request, pk=None):
+        company = self.get_object()
+        types = ComplianceFindingType.objects.filter(
+            is_active=True,
+        ).order_by("order", "name")
+        existing = {
+            f.finding_type_id: f
+            for f in CompanyComplianceFinding.objects.filter(
+                client_company=company,
+            ).select_related("finding_type")
+        }
+        rows = [
+            compliance_finding_row(t, existing.get(t.id))
+            for t in types
+        ]
+        return Response(rows)
+
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path=r"compliance-findings/(?P<type_id>[0-9]+)",
+        parser_classes=[MultiPartParser, FormParser],
+    )
+    def upload_compliance_finding(self, request, pk=None, type_id=None):
+        company = self.get_object()
+        finding_type = get_object_or_404(ComplianceFindingType, pk=type_id)
+        if request.method == "DELETE":
+            try:
+                finding = CompanyComplianceFinding.objects.get(
+                    client_company=company,
+                    finding_type=finding_type,
+                )
+            except CompanyComplianceFinding.DoesNotExist:
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            deactivate_compliance_finding_binding(finding)
+            if finding.file:
+                finding.file.delete(save=False)
+            finding.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        file_obj = request.FILES.get("file")
+        if file_obj is None:
+            return Response(
+                {"detail": "Nije priložen fajl (polje 'file')."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        issued_raw = request.data.get("issued_date")
+        try:
+            parsed_issued = datetime.strptime(
+                issued_raw,
+                "%Y-%m-%d",
+            ).date()
+        except (TypeError, ValueError):
+            return Response(
+                {"detail": "Nedostaje ili je neispravan datum izdavanja."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        finding, _ = CompanyComplianceFinding.objects.get_or_create(
+            client_company=company,
+            finding_type=finding_type,
+        )
+        if finding.file:
+            finding.file.delete(save=False)
+        finding.file = file_obj
+        finding.issued_date = parsed_issued
+        finding.valid_until = compute_valid_until(
+            parsed_issued,
+            finding_type,
+        )
+        finding.save()
+        sync_compliance_finding_binding(finding)
+        finding.refresh_from_db()
+        return Response(
+            compliance_finding_row(finding_type, finding),
+        )
 
 
 class EmployeeViewSet(viewsets.ModelViewSet):
