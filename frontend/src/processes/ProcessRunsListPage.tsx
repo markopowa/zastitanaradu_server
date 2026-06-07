@@ -28,6 +28,7 @@ import { setLastPath } from "../store/locationSlice";
 import { formatDateDisplay, isScheduledOverdue } from "../utils/date";
 import { withNavigation } from "../hocs/withNavigation";
 import { ErrorState, StatusBadge, TableStateRow } from "../design";
+import { RUN_STATUS_KINDS, runStatusLabel } from "../design/labels";
 
 import type { AppDispatch, RootState } from "../store";
 import type {
@@ -178,11 +179,11 @@ class ProcessRunsListPageInner extends Component<
                             }
                         >
                             <MenuItem value="">Svi</MenuItem>
-                            <MenuItem value="PENDING">Na čekanju</MenuItem>
-                            <MenuItem value="SENT">Poslat</MenuItem>
-                            <MenuItem value="COMPLETED">Završeno</MenuItem>
-                            <MenuItem value="CANCELLED">Otkazano</MenuItem>
-                            <MenuItem value="FAILED">Neuspešno</MenuItem>
+                            {RUN_STATUS_KINDS.map((status) => (
+                                <MenuItem key={status} value={status}>
+                                    {runStatusLabel(status)}
+                                </MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                 </Box>

@@ -53,20 +53,12 @@ import type { AppDispatch, RootState } from "../store";
 import type { ProcessTemplate, ProcessType } from "../types/processes";
 import type { DocumentTemplate } from "../api/documents";
 import type { Role } from "../types/auth";
-
-const TRIGGER_OPTIONS = [
-    { value: "ON_LEAD", label: "N dana pre termina" },
-    { value: "ON_SCHEDULED", label: "Na zakazani datum" },
-    { value: "ON_COMPLETED", label: "Kada se završi pregled" },
-    { value: "ON_OVERDUE", label: "Kada nije završeno na vreme" },
-] as const;
-
-const EMAIL_TO_OPTIONS = [
-    { value: "CLIENT_MAIN_EMAIL", label: "Glavni email klijenta" },
-    { value: "EMPLOYEE_EMAIL", label: "Email zaposlenog" },
-    { value: "INTERNAL_ROLE", label: "Interna uloga" },
-    { value: "CUSTOM", label: "Prilagođena adresa" },
-] as const;
+import {
+    EMAIL_RECIPIENT_KINDS,
+    TRIGGER_KINDS,
+    emailRecipientLabel,
+    triggerLabel,
+} from "../design/labels";
 
 const TEMPLATE_VARIABLES: TemplateVariable[] = [
     { key: "scheduled_for", label: "Datum termina" },
@@ -83,10 +75,6 @@ const TEMPLATE_VARIABLES: TemplateVariable[] = [
     { key: "client.name", label: "Naziv firme" },
     { key: "client.tax_id", label: "PIB" },
 ];
-
-function triggerLabel(trigger: string): string {
-    return TRIGGER_OPTIONS.find((o) => o.value === trigger)?.label ?? trigger;
-}
 
 interface StateProps {
     processTypes: ProcessType[];
@@ -520,9 +508,9 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                 onChange={(e) => this.setState({ form_trigger: e.target.value })}
                                 required
                             >
-                                {TRIGGER_OPTIONS.map((opt) => (
-                                    <MenuItem key={opt.value} value={opt.value}>
-                                        {opt.label}
+                                {TRIGGER_KINDS.map((kind) => (
+                                    <MenuItem key={kind} value={kind}>
+                                        {triggerLabel(kind)}
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -655,9 +643,9 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
                                         onChange={(e) => this.setState({ form_email_to_kind: e.target.value })}
                                         required
                                     >
-                                        {EMAIL_TO_OPTIONS.map((opt) => (
-                                            <MenuItem key={opt.value} value={opt.value}>
-                                                {opt.label}
+                                        {EMAIL_RECIPIENT_KINDS.map((kind) => (
+                                            <MenuItem key={kind} value={kind}>
+                                                {emailRecipientLabel(kind)}
                                             </MenuItem>
                                         ))}
                                     </Select>

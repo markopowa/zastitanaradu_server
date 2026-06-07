@@ -16,6 +16,12 @@ export type TriggerKind =
     | "ON_COMPLETED"
     | "ON_OVERDUE";
 
+export type EmailRecipientKind =
+    | "CLIENT_MAIN_EMAIL"
+    | "EMPLOYEE_EMAIL"
+    | "INTERNAL_ROLE"
+    | "CUSTOM";
+
 export type DesignChipSize = "small" | "medium";
 
 export type RiskBadgeSource = "override" | "job_role";

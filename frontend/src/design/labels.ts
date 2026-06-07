@@ -1,5 +1,10 @@
 import type { ChipProps } from "@mui/material";
-import type { RunStatus, SubjectKind, TriggerKind } from "../types/design";
+import type {
+    EmailRecipientKind,
+    RunStatus,
+    SubjectKind,
+    TriggerKind,
+} from "../types/design";
 
 export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
     PENDING: "Na čekanju",
@@ -30,6 +35,35 @@ export const TRIGGER_LABELS: Record<TriggerKind, string> = {
     ON_OVERDUE: "Kada nije završeno na vreme",
 };
 
+export const TRIGGER_KINDS: TriggerKind[] = [
+    "ON_LEAD",
+    "ON_SCHEDULED",
+    "ON_COMPLETED",
+    "ON_OVERDUE",
+];
+
+export const EMAIL_RECIPIENT_LABELS: Record<EmailRecipientKind, string> = {
+    CLIENT_MAIN_EMAIL: "Glavni email firme",
+    EMPLOYEE_EMAIL: "Email zaposlenog",
+    INTERNAL_ROLE: "Interna uloga",
+    CUSTOM: "Prilagođena adresa",
+};
+
+export const EMAIL_RECIPIENT_KINDS: EmailRecipientKind[] = [
+    "CLIENT_MAIN_EMAIL",
+    "EMPLOYEE_EMAIL",
+    "INTERNAL_ROLE",
+    "CUSTOM",
+];
+
+export const RUN_STATUS_KINDS: RunStatus[] = [
+    "PENDING",
+    "SENT",
+    "COMPLETED",
+    "CANCELLED",
+    "FAILED",
+];
+
 export const BUTTON_LABELS = {
     save: "Sačuvaj",
     cancel: "Odustani",
@@ -55,4 +89,8 @@ export function subjectKindLabel(kind: string): string {
 
 export function triggerLabel(trigger: string): string {
     return TRIGGER_LABELS[trigger as TriggerKind] ?? trigger;
+}
+
+export function emailRecipientLabel(kind: string): string {
+    return EMAIL_RECIPIENT_LABELS[kind as EmailRecipientKind] ?? kind;
 }

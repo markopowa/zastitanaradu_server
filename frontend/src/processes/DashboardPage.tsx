@@ -290,7 +290,7 @@ class DashboardPage extends Component<Props, State> {
                                     )
                                 }
                             >
-                                <MenuItem value="">Svi klijenti</MenuItem>
+                                <MenuItem value="">Sve firme</MenuItem>
                                 {clientCompanies.map((c) => (
                                     <MenuItem key={c.id} value={c.id}>
                                         {c.name}
