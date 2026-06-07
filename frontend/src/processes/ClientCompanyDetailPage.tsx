@@ -1,4 +1,4 @@
-import { Component, type ReactElement } from "react";
+import { Component, Fragment, type ReactElement } from "react";
 import { useParams } from "react-router-dom";
 import { connect } from "react-redux";
 
@@ -39,11 +39,9 @@ import {
     displayDateToIso,
     formatDateDisplay,
     isoDateToFormDisplay,
-    StringToDate,
 } from "../utils/date";
 import {
     aprLookup,
-    clearClientCompanyRiskAssessmentAct,
     createEquipmentItem,
     createJobRole,
     deleteJobRole,
@@ -58,7 +56,6 @@ import {
     updateClientCompany,
     updateJobRole,
     updateProcessBinding,
-    uploadClientCompanyRiskAssessmentAct,
 } from "../api/processes";
 import { PermissionGate } from "../components/PermissionGate";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
@@ -66,7 +63,7 @@ import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
 import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
-import { FilePreviewContent } from "../components/FilePreviewContent";
+import { RiskAssessmentActPanel } from "../components/RiskAssessmentActPanel";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
@@ -175,10 +172,6 @@ class ClientCompanyDetailPageInner extends Component<
         editNotes: "",
         editActivity_code: "",
         aprImporting: false,
-        riskActDateValue: "",
-        savingRiskActDate: false,
-        riskActUploading: false,
-        riskActPreviewOpen: false,
         riskLevels: [],
         jobRoles: [],
         roleDialogOpen: false,
@@ -547,105 +540,6 @@ class ClientCompanyDetailPageInner extends Component<
             );
     };
 
-    handleRiskActUpload = (file: File | null): void => {
-        if (!file) return;
-        const id = Number(this.props.id);
-        this.setState((prev) => ({ ...prev, riskActUploading: true }));
-        uploadClientCompanyRiskAssessmentAct(id, file)
-            .then((item) => {
-                this.setState((prev) => ({
-                    ...prev,
-                    item,
-                    riskActUploading: false,
-                }));
-                enqueueSnackbar("Akt o proceni rizika je sačuvan.", {
-                    variant: "success",
-                });
-            })
-            .catch(() => {
-                this.setState((prev) => ({ ...prev, riskActUploading: false }));
-                enqueueSnackbar("Greška pri otpremanju fajla.", {
-                    variant: "error",
-                });
-            });
-    };
-
-    handleRiskActClear = (): void => {
-        const id = Number(this.props.id);
-        if (
-            !window.confirm(
-                "Da li si siguran da želiš da obrišeš Akt o proceni rizika?",
-            )
-        ) {
-            return;
-        }
-        this.setState((prev) => ({ ...prev, riskActUploading: true }));
-        clearClientCompanyRiskAssessmentAct(id)
-            .then((item) => {
-                this.setState((prev) => ({
-                    ...prev,
-                    item,
-                    riskActUploading: false,
-                }));
-                enqueueSnackbar("Akt o proceni rizika je obrisan.", {
-                    variant: "success",
-                });
-            })
-            .catch(() => {
-                this.setState((prev) => ({ ...prev, riskActUploading: false }));
-                enqueueSnackbar("Greška pri brisanju fajla.", {
-                    variant: "error",
-                });
-            });
-    };
-
-    openRiskActPreview = (): void => {
-        this.setState((prev) => ({ ...prev, riskActPreviewOpen: true }));
-    };
-
-    closeRiskActPreview = (): void => {
-        this.setState((prev) => ({ ...prev, riskActPreviewOpen: false }));
-    };
-
-    saveRiskActDate = (): void => {
-        const id = Number(this.props.id);
-        const { riskActDateValue } = this.state;
-        let dateSent: string | null;
-        if (riskActDateValue.trim()) {
-            const d = StringToDate(riskActDateValue);
-            dateSent = d
-                ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
-                : null;
-        } else {
-            dateSent = null;
-        }
-        this.setState((prev) => ({ ...prev, savingRiskActDate: true }));
-        updateClientCompany(id, { risk_assessment_act_date: dateSent })
-            .then((item) => {
-                this.setState((prev) => ({
-                    ...prev,
-                    item,
-                    riskActDateValue:
-                        ClientCompanyDetailPageInner.dateToDisplay(
-                            item.risk_assessment_act_date,
-                        ),
-                    savingRiskActDate: false,
-                }));
-                enqueueSnackbar("Datum donošenja akta je sačuvan.", {
-                    variant: "success",
-                });
-            })
-            .catch(() => {
-                this.setState((prev) => ({
-                    ...prev,
-                    savingRiskActDate: false,
-                }));
-                enqueueSnackbar("Greška pri čuvanju datuma.", {
-                    variant: "error",
-                });
-            });
-    };
-
     handleGenerateMedicalExamRecord = (): void => {
         const id = Number(this.props.id);
         this.setState((prev) => ({
@@ -771,24 +665,12 @@ class ClientCompanyDetailPageInner extends Component<
             );
     };
 
-    private static dateToDisplay(iso: string | null | undefined): string {
-        if (!iso) return "";
-        const d = new Date(iso);
-        const dd = String(d.getDate()).padStart(2, "0");
-        const mm = String(d.getMonth() + 1).padStart(2, "0");
-        return `${dd}.${mm}.${d.getFullYear()}`;
-    }
-
     loadById = (id: number): void => {
         getClientCompany(id)
             .then((item) => {
                 this.setState((prev) => ({
                     ...prev,
                     item,
-                    riskActDateValue:
-                        ClientCompanyDetailPageInner.dateToDisplay(
-                            item.risk_assessment_act_date,
-                        ),
                     loading: false,
                     error: null,
                     editing: false,
@@ -891,10 +773,6 @@ class ClientCompanyDetailPageInner extends Component<
             editNotes,
             editActivity_code,
             aprImporting,
-            riskActDateValue,
-            savingRiskActDate,
-            riskActUploading,
-            riskActPreviewOpen,
             jobRoles,
             riskLevels,
             empDialogOpen,
@@ -1201,138 +1079,7 @@ class ClientCompanyDetailPageInner extends Component<
                 )}
 
                 {activeTab === "documents" && (
-                <Paper sx={{ p: 2 }}>
-                    <Typography
-                        variant="subtitle1"
-                        fontWeight={600}
-                        gutterBottom
-                    >
-                        Akt o proceni rizika
-                    </Typography>
-                    <PermissionGate permission="partners.change_clientcompany">
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                mb: 2,
-                            }}
-                        >
-                            <Box sx={{ flex: 1 }}>
-                                <DateTextFieldWithPicker
-                                    label="Datum donošenja (dd.mm.yyyy)"
-                                    value={riskActDateValue}
-                                    allowPast
-                                    onChange={(v) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            riskActDateValue: v,
-                                        }))
-                                    }
-                                />
-                            </Box>
-                            <Button
-                                variant="contained"
-                                size="small"
-                                disabled={savingRiskActDate}
-                                onClick={this.saveRiskActDate}
-                                sx={{ mt: 1 }}
-                            >
-                                {savingRiskActDate
-                                    ? "Čuvam..."
-                                    : "Sačuvaj datum"}
-                            </Button>
-                        </Box>
-                    </PermissionGate>
-                    {item.risk_assessment_act_file ? (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                flexWrap: "wrap",
-                            }}
-                        >
-                            <Typography variant="body2">
-                                {item.risk_assessment_act_name ||
-                                    "Akt o proceni rizika"}
-                            </Typography>
-                            <Box sx={{ flex: 1 }} />
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                onClick={this.openRiskActPreview}
-                            >
-                                Pregled
-                            </Button>
-                            <PermissionGate permission="partners.change_clientcompany">
-                                <Button
-                                    size="small"
-                                    component="label"
-                                    variant="outlined"
-                                    disabled={riskActUploading}
-                                >
-                                    Promeni fajl
-                                    <input
-                                        type="file"
-                                        hidden
-                                        accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
-                                        onChange={(e) =>
-                                            this.handleRiskActUpload(
-                                                e.target.files?.[0] ?? null,
-                                            )
-                                        }
-                                    />
-                                </Button>
-                                <Button
-                                    size="small"
-                                    variant="outlined"
-                                    color="error"
-                                    disabled={riskActUploading}
-                                    onClick={this.handleRiskActClear}
-                                >
-                                    Obriši
-                                </Button>
-                            </PermissionGate>
-                        </Box>
-                    ) : (
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                flexWrap: "wrap",
-                            }}
-                        >
-                            <Typography variant="body2" color="text.secondary">
-                                Nije priložen fajl.
-                            </Typography>
-                            <Box sx={{ flex: 1 }} />
-                            <PermissionGate permission="partners.change_clientcompany">
-                                <Button
-                                    size="small"
-                                    component="label"
-                                    variant="contained"
-                                    disabled={riskActUploading}
-                                >
-                                    {riskActUploading
-                                        ? "Otpremam..."
-                                        : "Priloži fajl"}
-                                    <input
-                                        type="file"
-                                        hidden
-                                        accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
-                                        onChange={(e) =>
-                                            this.handleRiskActUpload(
-                                                e.target.files?.[0] ?? null,
-                                            )
-                                        }
-                                    />
-                                </Button>
-                            </PermissionGate>
-                        </Box>
-                    )}
-                </Paper>
+                <RiskAssessmentActPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "documents" && (
@@ -1430,6 +1177,7 @@ class ClientCompanyDetailPageInner extends Component<
                 )}
 
                 {activeTab === "employees" && (
+                <Fragment>
                 <SectionCard
                     title="Zaposleni"
                     action={
@@ -1493,9 +1241,6 @@ class ClientCompanyDetailPageInner extends Component<
                     </Table>
                     </Box>
                 </SectionCard>
-                )}
-
-                {activeTab === "employees" && (
                 <Box
                     sx={{
                         display: "flex",
@@ -1557,9 +1302,11 @@ class ClientCompanyDetailPageInner extends Component<
                         </TableBody>
                     </Table>
                 </Paper>
+                </Fragment>
                 )}
 
                 {activeTab === "obligations" && (
+                <Fragment>
                 <Box
                     sx={{
                         display: "flex",
@@ -1728,6 +1475,7 @@ class ClientCompanyDetailPageInner extends Component<
                         </TableBody>
                     </Table>
                 </Paper>
+                </Fragment>
                 )}
 
                 {activeTab === "expert_findings" && (
@@ -1775,17 +1523,12 @@ class ClientCompanyDetailPageInner extends Component<
                             </Typography>
                             <Chip
                                 size="small"
-                                color={
-                                    item.risk_assessment_act_file
-                                        ? "success"
-                                        : "error"
+                                color="info"
+                                label="Upravljaj u tabu Dokumentacija"
+                                sx={{ mt: 1, cursor: "pointer" }}
+                                onClick={() =>
+                                    this.handleTabChange("documents")
                                 }
-                                label={
-                                    item.risk_assessment_act_file
-                                        ? "Priložen"
-                                        : "Nije priložen"
-                                }
-                                sx={{ mt: 1 }}
                             />
                         </Paper>
                         <Paper sx={{ p: 2 }}>
@@ -1929,41 +1672,6 @@ class ClientCompanyDetailPageInner extends Component<
                         </Button>
                     </DialogActions>
                 </Dialog>
-
-                {item.risk_assessment_act_file && (
-                    <Dialog
-                        open={riskActPreviewOpen}
-                        onClose={this.closeRiskActPreview}
-                        maxWidth="lg"
-                        fullWidth
-                    >
-                        <DialogTitle>
-                            {item.risk_assessment_act_name ||
-                                "Akt o proceni rizika"}
-                        </DialogTitle>
-                        <DialogContent>
-                            <FilePreviewContent
-                                url={item.risk_assessment_act_file}
-                                label={
-                                    item.risk_assessment_act_name ||
-                                    "Akt o proceni rizika"
-                                }
-                            />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button
-                                href={item.risk_assessment_act_file}
-                                target="_blank"
-                                rel="noreferrer"
-                            >
-                                Otvori u novom prozoru
-                            </Button>
-                            <Button onClick={this.closeRiskActPreview}>
-                                Zatvori
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                )}
 
                 <Dialog
                     open={this.state.roleDialogOpen}

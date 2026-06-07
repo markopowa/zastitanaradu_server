@@ -9,6 +9,9 @@ from .models import (
     Employee,
     EquipmentItem,
     JobRole,
+    RiskAssessmentAct,
+    RiskAssessmentSection,
+    RiskAssessmentSectionRevision,
     RiskLevel,
 )
 
@@ -160,6 +163,83 @@ class CompanyDocumentSerializer(serializers.ModelSerializer):
         base = os.path.basename(obj.file.name)
         name, _ = os.path.splitext(base)
         return name
+
+
+class RiskAssessmentSectionRevisionSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+    created_by_username = serializers.CharField(
+        source="created_by.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = RiskAssessmentSectionRevision
+        fields = (
+            "id",
+            "version",
+            "file",
+            "reason",
+            "created_at",
+            "created_by",
+            "created_by_username",
+        )
+
+    def get_file(self, obj):
+        f = obj.file
+        if not f:
+            return None
+        return f.url
+
+
+class RiskAssessmentSectionSerializer(serializers.ModelSerializer):
+    section_type_display = serializers.CharField(
+        source="get_section_type_display",
+        read_only=True,
+    )
+    current_file = serializers.SerializerMethodField()
+    revisions = RiskAssessmentSectionRevisionSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = RiskAssessmentSection
+        fields = (
+            "id",
+            "section_type",
+            "section_type_display",
+            "order",
+            "current_file",
+            "current_version",
+            "updated_at",
+            "revisions",
+        )
+
+    def get_current_file(self, obj):
+        f = obj.current_file
+        if not f:
+            return None
+        return f.url
+
+
+class RiskAssessmentActSerializer(serializers.ModelSerializer):
+    sections = RiskAssessmentSectionSerializer(many=True, read_only=True)
+    is_complete = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RiskAssessmentAct
+        fields = (
+            "id",
+            "client_company",
+            "act_date",
+            "created_at",
+            "updated_at",
+            "sections",
+            "is_complete",
+        )
+
+    def get_is_complete(self, obj):
+        sections = obj.sections.all()
+        if sections.count() < 3:
+            return False
+        return all(s.current_file for s in sections)
 
 
 class EquipmentItemSerializer(serializers.ModelSerializer):

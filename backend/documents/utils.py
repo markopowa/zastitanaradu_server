@@ -245,3 +245,17 @@ def fill_pdf_at_coordinates(
     result = doc.tobytes()
     doc.close()
     return result
+
+
+def merge_section_files_to_pdf(file_paths: list[Path]) -> bytes:
+    result = fitz.open()
+    try:
+        for raw_path in file_paths:
+            path = Path(_path_str(raw_path))
+            pdf_path = convert_document_to_pdf(path)
+            src = fitz.open(_path_str(pdf_path))
+            result.insert_pdf(src)
+            src.close()
+        return result.tobytes()
+    finally:
+        result.close()

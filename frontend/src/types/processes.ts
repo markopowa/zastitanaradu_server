@@ -23,6 +23,42 @@ export interface ClientCompany {
     risk_assessment_act_date?: string | null;
 }
 
+export type RiskAssessmentSectionType =
+    | "INTRO"
+    | "ASSESSMENTS"
+    | "CONCLUSION";
+
+export interface RiskAssessmentSectionRevision {
+    id: number;
+    version: number;
+    file: string | null;
+    reason: string;
+    created_at: string;
+    created_by: number | null;
+    created_by_username?: string;
+}
+
+export interface RiskAssessmentSection {
+    id: number;
+    section_type: RiskAssessmentSectionType;
+    section_type_display: string;
+    order: number;
+    current_file: string | null;
+    current_version: number;
+    updated_at: string;
+    revisions: RiskAssessmentSectionRevision[];
+}
+
+export interface RiskAssessmentAct {
+    id: number;
+    client_company: number;
+    act_date: string | null;
+    created_at: string;
+    updated_at: string;
+    sections: RiskAssessmentSection[];
+    is_complete: boolean;
+}
+
 export type ContactPersonRole =
     | "DIRECTOR"
     | "SAFETY_OFFICER"

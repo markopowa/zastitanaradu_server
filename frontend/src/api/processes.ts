@@ -16,6 +16,8 @@ import type {
     ProcessRunDocument,
     ProcessTemplate,
     ProcessType,
+    RiskAssessmentAct,
+    RiskAssessmentSectionType,
     RiskLevel,
     UpcomingDeadline,
 } from "../types/processes";
@@ -161,6 +163,73 @@ export async function clearClientCompanyRiskAssessmentAct(
 function asList<T>(data: ListResponse<T> | undefined): T[] {
     if (Array.isArray(data)) return data;
     return (data as { results?: T[] })?.results ?? [];
+}
+
+export async function getRiskAssessmentAct(
+    clientCompanyId: number,
+): Promise<RiskAssessmentAct | null> {
+    const { data } = await api.get<ListResponse<RiskAssessmentAct>>(
+        "/api/partners/risk-assessment-acts/",
+        { params: { client_company_id: clientCompanyId } },
+    );
+    const items = asList(data);
+    return items[0] ?? null;
+}
+
+export async function createRiskAssessmentAct(
+    clientCompanyId: number,
+    actDate?: string | null,
+): Promise<RiskAssessmentAct> {
+    const { data } = await api.post<RiskAssessmentAct>(
+        "/api/partners/risk-assessment-acts/",
+        {
+            client_company: clientCompanyId,
+            act_date: actDate ?? null,
+        },
+    );
+    return data;
+}
+
+export async function updateRiskAssessmentActDate(
+    actId: number,
+    actDate: string | null,
+): Promise<RiskAssessmentAct> {
+    const { data } = await api.patch<RiskAssessmentAct>(
+        `/api/partners/risk-assessment-acts/${actId}/`,
+        { act_date: actDate },
+    );
+    return data;
+}
+
+export async function uploadRiskAssessmentSectionRevision(
+    actId: number,
+    sectionType: RiskAssessmentSectionType,
+    file: File,
+    reason: string,
+): Promise<RiskAssessmentAct> {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("reason", reason);
+    const { data } = await api.post<RiskAssessmentAct>(
+        `/api/partners/risk-assessment-acts/${actId}/sections/${sectionType}/revisions/`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
+export function riskAssessmentActMergedPdfUrl(actId: number): string {
+    return `/api/partners/risk-assessment-acts/${actId}/merged-pdf/`;
+}
+
+export async function downloadRiskAssessmentActMergedPdf(
+    actId: number,
+): Promise<Blob> {
+    const { data } = await api.get<Blob>(
+        riskAssessmentActMergedPdfUrl(actId),
+        { responseType: "blob" },
+    );
+    return data;
 }
 
 export async function getRiskLevels(): Promise<RiskLevel[]> {

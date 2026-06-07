@@ -113,18 +113,21 @@ Ne preskači korake. Kvadratić [ ] = uradi to. Posle svakog kvadratića pogleda
 - [ ] Tabovi: Lična karta, Dokumentacija, Radna mesta i rizik, Zaposleni, Obaveze/Aktivnosti, Stručni nalazi, Usklađenost
 - [ ] URL `?tab=employees` (ili drugi tab) zadržava tab posle refresh-a
 
-### 2a. Priloži Akt o proceni rizika
+### 2a. Akt o proceni rizika (3 sekcije + revizije)
 
 - [ ] Otvori tab **Dokumentacija**
-- [ ] Nađi sekciju **"Akt o proceni rizika"**
-- [ ] U polju **"Datum donošenja (dd.mm.yyyy)"** unesi `15.01.2025.` i klikni **"Sačuvaj datum"**
-- [ ] Klikni **"Priloži fajl"** i izaberi `files_for_test\Uput_za_periodični_lekarski_pregled.pdf` (ili bilo koji test PDF/sliku)
-- [ ] Klikni **"Pregled"** — otvori se popup sa PDF pregledom direktno u browseru (ne download)
+- [ ] Klikni **Kreiraj Akt** (ako panel kaže da akt još nije kreiran)
+- [ ] U polju **Datum donošenja** unesi `15.01.2025.` → **Sačuvaj datum**
+- [ ] Za sekciju **Uvod** klikni **Priloži** → izaberi test PDF → **Razlog izmene** (min. 5 znakova, npr. `Inicijalno prilaženje uvoda`) → **Sačuvaj**
+- [ ] Za **Procene po radnom mestu** i **Zaključak** ponovi prilog (isti ili drugi test fajl, svaki put sa razlogom)
+- [ ] Klikni **Pregled** na jednoj sekciji — popup sa PDF/slikom
+- [ ] Klikni **Istorija** — vidi verziju, korisnika, razlog, **Preuzmi**
+- [ ] Klikni **Objedini u PDF** — preuzme se jedan spojeni PDF (Uvod + Procene + Zaključak)
 
 **Provera:**
-- [ ] Datum donošenja se čuva bez ulaska u edit formu
-- [ ] Popup prikazuje sadržaj fajla (PDF se prikazuje, slika se prikazuje, .docx prikazuje poruku sa dugmetom za preuzimanje)
-- [ ] Vidljivi dugmići: **Pregled / Promeni fajl / Obriši**
+- [ ] Status prikazuje **Kompletan (3/3)** kad su sve tri sekcije priložene
+- [ ] **Sačuvaj** u dijalogu izmene je onemogućeno bez fajla ili razloga kraćeg od 5 znakova
+- [ ] Stara verzija ostaje u istoriji posle **Izmeni**
 
 ---
 

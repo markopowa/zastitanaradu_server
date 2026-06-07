@@ -234,6 +234,87 @@ class CompanyDocument(models.Model):
         return f"{self.get_kind_display()} ({self.client_company_id})"
 
 
+class RiskAssessmentAct(models.Model):
+    client_company = models.OneToOneField(
+        ClientCompany,
+        on_delete=models.CASCADE,
+        related_name="risk_assessment_act",
+    )
+    act_date = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Akt o proceni rizika"
+        verbose_name_plural = "Akti o proceni rizika"
+
+    def __str__(self) -> str:
+        return f"Akt — {self.client_company.name}"
+
+
+class RiskAssessmentSection(models.Model):
+    SECTION_INTRO = "INTRO"
+    SECTION_ASSESSMENTS = "ASSESSMENTS"
+    SECTION_CONCLUSION = "CONCLUSION"
+    SECTION_CHOICES = (
+        (SECTION_INTRO, "Uvod"),
+        (SECTION_ASSESSMENTS, "Procene po radnom mestu"),
+        (SECTION_CONCLUSION, "Zaključak"),
+    )
+
+    act = models.ForeignKey(
+        RiskAssessmentAct,
+        on_delete=models.CASCADE,
+        related_name="sections",
+    )
+    section_type = models.CharField(max_length=32, choices=SECTION_CHOICES)
+    order = models.PositiveIntegerField(default=0)
+    current_file = models.FileField(
+        upload_to="risk_assessment_acts/sections/",
+        null=True,
+        blank=True,
+    )
+    current_version = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Sekcija Akta o proceni rizika"
+        verbose_name_plural = "Sekcije Akta o proceni rizika"
+        ordering = ("act", "order")
+        unique_together = ("act", "section_type")
+
+    def __str__(self) -> str:
+        return f"{self.get_section_type_display()} ({self.act_id})"
+
+
+class RiskAssessmentSectionRevision(models.Model):
+    section = models.ForeignKey(
+        RiskAssessmentSection,
+        on_delete=models.CASCADE,
+        related_name="revisions",
+    )
+    version = models.PositiveIntegerField()
+    file = models.FileField(upload_to="risk_assessment_acts/revisions/")
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="risk_assessment_revisions",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Revizija sekcije Akta"
+        verbose_name_plural = "Revizije sekcija Akta"
+        ordering = ("section", "-version")
+        unique_together = ("section", "version")
+
+    def __str__(self) -> str:
+        return f"{self.section} v{self.version}"
+
+
 class EquipmentItem(models.Model):
     client_company = models.ForeignKey(
         ClientCompany,

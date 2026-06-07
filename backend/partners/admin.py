@@ -7,6 +7,9 @@ from .models import (
     Employee,
     EquipmentItem,
     JobRole,
+    RiskAssessmentAct,
+    RiskAssessmentSection,
+    RiskAssessmentSectionRevision,
     RiskLevel,
 )
 
@@ -73,6 +76,21 @@ class ContactPersonAdmin(admin.ModelAdmin):
 class CompanyDocumentAdmin(admin.ModelAdmin):
     list_display = ("client_company", "kind", "uploaded_at")
     list_filter = ("kind", "client_company")
+
+
+@admin.register(RiskAssessmentAct)
+class RiskAssessmentActAdmin(admin.ModelAdmin):
+    list_display = ("client_company", "act_date", "updated_at")
+
+
+@admin.register(RiskAssessmentSection)
+class RiskAssessmentSectionAdmin(admin.ModelAdmin):
+    list_display = ("act", "section_type", "current_version")
+
+
+@admin.register(RiskAssessmentSectionRevision)
+class RiskAssessmentSectionRevisionAdmin(admin.ModelAdmin):
+    list_display = ("section", "version", "created_by", "created_at")
 
 
 @admin.register(EquipmentItem)

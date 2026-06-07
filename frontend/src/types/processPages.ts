@@ -248,10 +248,6 @@ export interface ClientCompanyDetailPageState {
     editNotes: string;
     editActivity_code: string;
     aprImporting: boolean;
-    riskActDateValue: string;
-    savingRiskActDate: boolean;
-    riskActUploading: boolean;
-    riskActPreviewOpen: boolean;
     riskLevels: RiskLevel[];
     jobRoles: JobRole[];
     roleDialogOpen: boolean;

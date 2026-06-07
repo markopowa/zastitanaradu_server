@@ -9,6 +9,7 @@ from .views import (
     EmployeeViewSet,
     EquipmentItemViewSet,
     JobRoleViewSet,
+    RiskAssessmentActViewSet,
     RiskLevelViewSet,
 )
 
@@ -26,6 +27,11 @@ router.register(
     "company-documents",
     CompanyDocumentViewSet,
     basename="company-documents",
+)
+router.register(
+    "risk-assessment-acts",
+    RiskAssessmentActViewSet,
+    basename="risk-assessment-acts",
 )
 
 urlpatterns = [

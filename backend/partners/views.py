@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from django.conf import settings
 from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
@@ -9,6 +11,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .apr import fetch_company_from_apr
+from documents.utils import merge_section_files_to_pdf
+
 from .medical_exam_record import generate_medical_exam_record
 from .models import (
     ClientCompany,
@@ -17,6 +21,9 @@ from .models import (
     Employee,
     EquipmentItem,
     JobRole,
+    RiskAssessmentAct,
+    RiskAssessmentSection,
+    RiskAssessmentSectionRevision,
     RiskLevel,
 )
 from .serializers import (
@@ -26,6 +33,7 @@ from .serializers import (
     EmployeeSerializer,
     EquipmentItemSerializer,
     JobRoleSerializer,
+    RiskAssessmentActSerializer,
     RiskLevelSerializer,
 )
 
@@ -220,6 +228,116 @@ class CompanyDocumentViewSet(viewsets.ModelViewSet):
         if instance.file:
             instance.file.delete(save=False)
         instance.delete()
+
+
+class RiskAssessmentActViewSet(viewsets.ModelViewSet):
+    queryset = RiskAssessmentAct.objects.select_related(
+        "client_company",
+    ).prefetch_related(
+        "sections__revisions",
+        "sections__revisions__created_by",
+    ).all()
+    serializer_class = RiskAssessmentActSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        client_company_id = self.request.query_params.get("client_company_id")
+        if client_company_id is not None and client_company_id != "":
+            queryset = queryset.filter(client_company_id=client_company_id)
+        return queryset
+
+    def perform_create(self, serializer):
+        act = serializer.save()
+        section_defs = (
+            (RiskAssessmentSection.SECTION_INTRO, 0),
+            (RiskAssessmentSection.SECTION_ASSESSMENTS, 1),
+            (RiskAssessmentSection.SECTION_CONCLUSION, 2),
+        )
+        for section_type, order in section_defs:
+            RiskAssessmentSection.objects.get_or_create(
+                act=act,
+                section_type=section_type,
+                defaults={"order": order},
+            )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path=r"sections/(?P<section_type>[^/.]+)/revisions",
+        parser_classes=[MultiPartParser, FormParser],
+    )
+    def upload_section_revision(self, request, pk=None, section_type=None):
+        act = self.get_object()
+        valid_types = {
+            RiskAssessmentSection.SECTION_INTRO,
+            RiskAssessmentSection.SECTION_ASSESSMENTS,
+            RiskAssessmentSection.SECTION_CONCLUSION,
+        }
+        if section_type not in valid_types:
+            return Response(
+                {"detail": "Nepoznat tip sekcije."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        file_obj = request.FILES.get("file")
+        if file_obj is None:
+            return Response(
+                {"detail": "Nije priložen fajl (polje 'file')."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        reason = (request.data.get("reason") or "").strip()
+        if not reason:
+            return Response(
+                {"detail": "Razlog izmene je obavezan."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(reason) < 5:
+            return Response(
+                {"detail": "Razlog izmene mora imati najmanje 5 znakova."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            section = act.sections.get(section_type=section_type)
+        except RiskAssessmentSection.DoesNotExist:
+            return Response(
+                {"detail": "Sekcija nije pronađena."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        version = section.current_version + 1
+        revision = RiskAssessmentSectionRevision.objects.create(
+            section=section,
+            version=version,
+            file=file_obj,
+            reason=reason,
+            created_by=(
+                request.user if request.user.is_authenticated else None
+            ),
+        )
+        section.current_file = revision.file
+        section.current_version = version
+        section.save(update_fields=["current_file", "current_version"])
+        act = self.get_queryset().get(pk=act.pk)
+        return Response(RiskAssessmentActSerializer(act).data)
+
+    @action(detail=True, methods=["get"], url_path="merged-pdf")
+    def merged_pdf(self, request, pk=None):
+        act = self.get_object()
+        paths = []
+        for section in act.sections.order_by("order"):
+            if section.current_file:
+                paths.append(Path(section.current_file.path))
+        if not paths:
+            return Response(
+                {"detail": "Nijedna sekcija nema priložen fajl."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        content = merge_section_files_to_pdf(paths)
+        slug = act.client_company.name.replace(" ", "_")[:40]
+        response = HttpResponse(content, content_type="application/pdf")
+        response["Content-Disposition"] = (
+            f'attachment; filename="akt_{slug}.pdf"'
+        )
+        return response
 
 
 class APRLookupView(APIView):
