@@ -8,7 +8,7 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 
 1. **Firme → Dodaj firmu**.
 2. Korak 1 **„Lična karta"**: u „Matični broj" unesi `20644206` → klikni **„Uvezi"**; pa popuni: „Naziv" `PRIVREDNO DRUŠTVO UKRAS DOO, VELIKI POPOVIĆ`, „PIB" `108277286`, „Šifra delatnosti" `1623`, „Adresa" `Veliki Popović bb`, „Telefon" `035 555 123`, „Email" `markovuckovic1992@gmail.com`, „Beleške" `Test` → **„Sledeći"**.
-3. Korak 2 **„Akt o proceni rizika"**: „Datum donošenja akta (dd.mm.yyyy)" `15.01.2025`; **„Priloži akt o proceni rizika"** → `nova_firma\akt o proceni rizika.pdf` → **„Sledeći"**. *(Pun Akt sa 3 sekcije radiš na tabu — sekcija D.)*
+3. Korak 2 **„Akt o proceni rizika"**: „Datum donošenja akta (dd.mm.yyyy)" `15.01.2025` → **„Sledeći"**. *(Pun Akt sa 3 sekcije se prilaže na tabu — sekcija D.)*
 4. Korak 3 **„Obavezna dokumentacija"**: klikni **„Preskoči korak"** *(dodaješ na tabu — sekcija C)*.
 5. Korak 4 **„Radna mesta i rizik"**: „Naziv radnog mesta" `Viljuškarista`, „Nivo rizika" `Povećan` → **„Sledeći"**.
 6. Korak 5 **„Zaposleni"**: **„Dodaj zaposlenog"** → popuni formu (vidi sekciju F, koraci 2–13) → **„Sledeći"**.
@@ -45,7 +45,7 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 
 ## D. Akt o proceni rizika — 3 sekcije (tab Dokumentacija)
 
-1. U sekciji „Akt o proceni rizika" klikni **„Kreiraj Akt"**.
+1. U sekciji „Akt o proceni rizika" klikni **„Dodaj Akt"**.
 2. „Datum donošenja (dd.mm.yyyy)" `15.01.2025` → **„Sačuvaj datum"**.
 3. Sekcija „Uvod" → **„Priloži"** → „Izaberi fajl…" → `akt_o_proceni_rizika\0.Uvod.docx` → „Razlog izmene" `Inicijalni prilog uvoda` → **„Sačuvaj"**.
 4. Sekcija „Procene" → **„Priloži"** → `akt_o_proceni_rizika\1.Direktor.doc` → „Razlog izmene" `Inicijalni prilog procene` → **„Sačuvaj"**.

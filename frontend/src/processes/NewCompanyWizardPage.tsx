@@ -28,7 +28,6 @@ import {
     createJobRole,
     getRiskLevels,
     updateClientCompany,
-    uploadClientCompanyRiskAssessmentAct,
 } from "../api/processes";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
@@ -77,7 +76,6 @@ interface State {
     saving: boolean;
     stepError: string | null;
     riskActDateValue: string;
-    riskActUploading: boolean;
     riskLevels: RiskLevel[];
     roleName: string;
     roleRiskLevelId: string;
@@ -104,7 +102,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
         saving: false,
         stepError: null,
         riskActDateValue: "",
-        riskActUploading: false,
         riskLevels: [],
         roleName: "",
         roleRiskLevelId: "",
@@ -239,23 +236,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
         }
     };
 
-    handleRiskActUpload = (file: File | null): void => {
-        const { companyId } = this.state;
-        if (!file || companyId == null) return;
-        this.setState((prev) => ({ ...prev, riskActUploading: true }));
-        uploadClientCompanyRiskAssessmentAct(companyId, file)
-            .then(() => {
-                this.setState((prev) => ({ ...prev, riskActUploading: false }));
-                enqueueSnackbar("Akt je otpremljen.", { variant: "success" });
-            })
-            .catch(() => {
-                this.setState((prev) => ({ ...prev, riskActUploading: false }));
-                enqueueSnackbar("Greška pri otpremanju akta.", {
-                    variant: "error",
-                });
-            });
-    };
-
     saveRoleStep = async (): Promise<boolean> => {
         const { companyId, roleName, roleRiskLevelId, roleDescription } =
             this.state;
@@ -380,7 +360,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
             saving,
             stepError,
             riskActDateValue,
-            riskActUploading,
             riskLevels,
             roleName,
             roleRiskLevelId,
@@ -543,27 +522,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
                             }))
                         }
                     />
-                    <PermissionGate permission="partners.change_clientcompany">
-                        <Button
-                            component="label"
-                            variant="outlined"
-                            disabled={riskActUploading}
-                        >
-                            {riskActUploading
-                                ? "Otpremam..."
-                                : "Priloži akt o proceni rizika"}
-                            <input
-                                type="file"
-                                hidden
-                                accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
-                                onChange={(e) =>
-                                    this.handleRiskActUpload(
-                                        e.target.files?.[0] ?? null,
-                                    )
-                                }
-                            />
-                        </Button>
-                    </PermissionGate>
                 </Box>
             );
         }
@@ -650,10 +608,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
             };
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                        Dodajte zaposlene za firmu. Možete preskočiti i dodati
-                        kasnije.
-                    </Typography>
                     <PermissionGate permission="partners.add_employee">
                         <Button
                             variant="contained"
@@ -692,9 +646,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
         if (activeStep === 5) {
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <Typography variant="body2" color="text.secondary">
-                        Opciono kreirajte prvu obavezu (npr. lekarski pregled).
-                    </Typography>
                     <PermissionGate permission="processes.add_processbinding">
                         <Button
                             variant="contained"

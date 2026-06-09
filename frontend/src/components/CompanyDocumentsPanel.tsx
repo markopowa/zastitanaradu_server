@@ -326,7 +326,7 @@ export class CompanyDocumentsPanel extends Component<
                                                                 <input
                                                                     type="file"
                                                                     hidden
-                                                                    accept=".pdf,application/pdf"
+                                                                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                                                     onChange={(
                                                                         e,
                                                                     ) =>

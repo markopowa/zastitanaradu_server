@@ -149,13 +149,13 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                     creating: false,
                     actDateValue: dateToDisplay(act.act_date),
                 });
-                enqueueSnackbar("Akt o proceni rizika je kreiran.", {
+                enqueueSnackbar("Akt o proceni rizika je dodat.", {
                     variant: "success",
                 });
             })
             .catch(() => {
                 this.setState({ creating: false });
-                enqueueSnackbar("Greška pri kreiranju Akta.", {
+                enqueueSnackbar("Greška pri dodavanju Akta.", {
                     variant: "error",
                 });
             });
@@ -361,7 +361,7 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                         color="text.secondary"
                         sx={{ mb: 2 }}
                     >
-                        Akt o proceni rizika još nije kreiran.
+                        Akt o proceni rizika još nije priložen.
                     </Typography>
                     <PermissionGate permission="partners.add_riskassessmentact">
                         <Button
@@ -369,7 +369,7 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                             disabled={creating}
                             onClick={this.handleCreateAct}
                         >
-                            {creating ? "Kreiram..." : "Kreiraj Akt"}
+                            {creating ? "Dodajem..." : "Dodaj Akt"}
                         </Button>
                     </PermissionGate>
                 </Paper>

@@ -19,7 +19,7 @@ import AddIcon from "@mui/icons-material/Add";
 
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
-import { ensureClientCompanies } from "../store/processesSlice";
+import { fetchClientCompanies } from "../store/processesSlice";
 import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
 
 import type { AppDispatch, RootState } from "../store";
@@ -39,7 +39,7 @@ class ClientCompaniesListPage extends Component<
     componentDidMount(): void {
         this.props.setLastPath("/client-companies");
         this.props.setBreadcrumbs([{ label: "Firme" }]);
-        this.props.ensureClientCompanies();
+        this.props.fetchClientCompanies();
     }
 
     componentWillUnmount(): void {
@@ -155,8 +155,8 @@ const mapDispatchToProps = (
 ): ClientCompaniesListPageDispatchProps => ({
     setLastPath: (path: string) => dispatch(setLastPath(path)),
     setBreadcrumbs: (items) => dispatch(setBreadcrumbs(items)),
-    ensureClientCompanies: () => {
-        void dispatch(ensureClientCompanies());
+    fetchClientCompanies: () => {
+        void dispatch(fetchClientCompanies());
     },
 });
 

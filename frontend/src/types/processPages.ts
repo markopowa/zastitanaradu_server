@@ -206,7 +206,7 @@ export interface ClientCompaniesListPageStateProps {
 export interface ClientCompaniesListPageDispatchProps {
     setLastPath: (path: string) => void;
     setBreadcrumbs: (items: { label: string; path?: string }[]) => void;
-    ensureClientCompanies: () => void;
+    fetchClientCompanies: () => void;
 }
 
 export type ClientCompaniesListPageOwnProps = WithNavigationProps;
@@ -271,6 +271,8 @@ export interface ClientCompanyDetailPageState {
     bindingDialogOpen: boolean;
     savingStartDateBindingId: number | null;
     deactivatingBindingId: number | null;
+    companyDeleteOpen: boolean;
+    deletingCompany: boolean;
 }
 
 export interface RiskLevelsListPageState {

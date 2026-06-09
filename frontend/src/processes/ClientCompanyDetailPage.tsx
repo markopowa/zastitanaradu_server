@@ -43,6 +43,7 @@ import {
     registryLookup,
     createEquipmentItem,
     createJobRole,
+    deleteClientCompany,
     deleteJobRole,
     generateMedicalExamRecord,
     getClientCompany,
@@ -196,6 +197,45 @@ class ClientCompanyDetailPageInner extends Component<
         bindingDialogOpen: false,
         savingStartDateBindingId: null,
         deactivatingBindingId: null,
+        companyDeleteOpen: false,
+        deletingCompany: false,
+    };
+
+    openCompanyDelete = (): void => {
+        this.setState({ companyDeleteOpen: true });
+    };
+
+    closeCompanyDelete = (): void => {
+        this.setState({ companyDeleteOpen: false });
+    };
+
+    confirmCompanyDelete = (): void => {
+        const id = Number(this.props.id);
+        if (!Number.isFinite(id)) return;
+        this.setState({ deletingCompany: true });
+        deleteClientCompany(id)
+            .then(() => {
+                enqueueSnackbar("Firma je obrisana.", { variant: "success" });
+                this.props.navigate("/client-companies");
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri brisanju firme.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                    this.setState({
+                        deletingCompany: false,
+                        companyDeleteOpen: false,
+                    });
+                },
+            );
     };
 
     openEmpDialog = (): void => {
@@ -844,14 +884,26 @@ class ClientCompanyDetailPageInner extends Component<
                                 </Typography>
                             )}
                             {!editing && (
-                                <PermissionGate permission="partners.change_clientcompany">
-                                    <Button
-                                        variant="outlined"
-                                        onClick={this.startEdit}
-                                    >
-                                        Izmeni podatke
-                                    </Button>
-                                </PermissionGate>
+                                <Box sx={{ display: "flex", gap: 1 }}>
+                                    <PermissionGate permission="partners.change_clientcompany">
+                                        <Button
+                                            variant="outlined"
+                                            onClick={this.startEdit}
+                                        >
+                                            Izmeni podatke
+                                        </Button>
+                                    </PermissionGate>
+                                    <PermissionGate permission="partners.delete_clientcompany">
+                                        <Button
+                                            variant="outlined"
+                                            color="error"
+                                            startIcon={<DeleteIcon />}
+                                            onClick={this.openCompanyDelete}
+                                        >
+                                            Obriši firmu
+                                        </Button>
+                                    </PermissionGate>
+                                </Box>
                             )}
                         </Box>
                         {editing ? (
@@ -1766,6 +1818,20 @@ class ClientCompanyDetailPageInner extends Component<
                     loading={this.state.deletingRole}
                     onConfirm={this.confirmRoleDelete}
                     onClose={this.closeRoleDelete}
+                />
+
+                <ConfirmDialog
+                    open={this.state.companyDeleteOpen}
+                    title="Obriši firmu"
+                    message={
+                        <>
+                            Da li si siguran da želiš da obrišeš firmu „
+                            {item.name}"? Briše se i sva povezana dokumentacija.
+                        </>
+                    }
+                    loading={this.state.deletingCompany}
+                    onConfirm={this.confirmCompanyDelete}
+                    onClose={this.closeCompanyDelete}
                 />
 
                 <AddProcessBindingDialog

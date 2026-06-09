@@ -112,6 +112,10 @@ export async function updateClientCompany(
     return data;
 }
 
+export async function deleteClientCompany(id: number): Promise<void> {
+    await api.delete(`/api/partners/client-companies/${id}/`);
+}
+
 export interface SendNowResponse {
     process_run: ProcessRun;
     document_url: string;
