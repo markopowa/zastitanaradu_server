@@ -59,6 +59,7 @@ const commonComponents: ThemeOptions["components"] = {
                 fontWeight: 600,
                 minHeight: 40,
                 padding: "0 16px",
+                whiteSpace: "nowrap",
                 "&.MuiButton-sizeSmall": {
                     minHeight: 32,
                     padding: "6px 12px",

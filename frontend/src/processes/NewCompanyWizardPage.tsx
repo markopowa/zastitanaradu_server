@@ -15,9 +15,10 @@ import {
     StepLabel,
     Stepper,
     TextField,
-    Tooltip,
     Typography,
 } from "@mui/material";
+
+import { AppButton } from "../design/AppButton";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { enqueueSnackbar } from "notistack";
 
@@ -418,7 +419,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
                             }))
                         }
                     />
-                    <Box sx={{ display: "flex", gap: 1 }}>
+                    <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
                         <TextField
                             label="Matični broj"
                             fullWidth
@@ -430,23 +431,16 @@ class NewCompanyWizardPage extends Component<Props, State> {
                                 }))
                             }
                         />
-                        <Tooltip title="Podaci iz javnog registra (open data). Ažurira se mesečno. Nema punu adresu — samo opština. PIB unesite ručno.">
-                            <span>
-                                <Button
-                                    variant="outlined"
-                                    disabled={
-                                        registryImporting ||
-                                        !registration_number.trim()
-                                    }
-                                    onClick={this.handleRegistryImport}
-                                    sx={{ mt: 1, flexShrink: 0 }}
-                                >
-                                    {registryImporting
-                                        ? "Tražim..."
-                                        : "Uvezi iz registra"}
-                                </Button>
-                            </span>
-                        </Tooltip>
+                        <AppButton
+                            label="Uvezi"
+                            tooltip="Uvezi iz javnog registra."
+                            loading={registryImporting}
+                            loadingLabel="Tražim…"
+                            variant="outlined"
+                            disabled={!registration_number.trim()}
+                            onClick={this.handleRegistryImport}
+                            sx={{ flexShrink: 0 }}
+                        />
                     </Box>
                     <TextField
                         label="Adresa"

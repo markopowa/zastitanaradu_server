@@ -396,7 +396,7 @@ class ProcessTypesListPageInner extends Component<
                                 ))}
                             </Select>
                         </FormControl>
-                        <Tooltip title="Podrazumevani period između obaveza u mesecima. Prazno = koristi vrednost iz vrste obaveze po potrebi.">
+                        <Tooltip title="Period između obaveza (meseci).">
                             <TextField
                                 margin="dense"
                                 label="Period (meseci)"
@@ -411,7 +411,7 @@ class ProcessTypesListPageInner extends Component<
                                 }
                             />
                         </Tooltip>
-                        <Tooltip title="Koliko dana pre termina da se generiše uput i pošalje mejl.">
+                        <Tooltip title="Dana pre termina za podsetnik.">
                             <TextField
                                 margin="dense"
                                 label="Rok unapred (dana)"
@@ -442,7 +442,7 @@ class ProcessTypesListPageInner extends Component<
                                 <MenuItem value="0">Ne</MenuItem>
                             </Select>
                         </FormControl>
-                        <Tooltip title="Uključiti samo za vrste koje su lekarski pregledi (Obrazac 1).">
+                        <Tooltip title="Ulazi u Obrazac 1.">
                             <FormControlLabel
                                 control={
                                     <Switch

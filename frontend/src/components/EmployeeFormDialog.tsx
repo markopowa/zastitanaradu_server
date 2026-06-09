@@ -337,7 +337,7 @@ export class EmployeeFormDialog extends Component<
                             this.setState({ father_name: e.target.value })
                         }
                     />
-                    <Tooltip title="Jedinstveni matični broj građanina (13 cifara).">
+                    <Tooltip title="JMBG.">
                         <TextField
                             margin="dense"
                             label="JMBG"

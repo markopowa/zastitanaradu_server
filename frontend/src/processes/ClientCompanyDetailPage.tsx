@@ -61,6 +61,7 @@ import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
 import { CompanyComplianceOverview } from "../components/CompanyComplianceOverview";
+import { AppButton } from "../design/AppButton";
 import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
 import { ComplianceFindingsPanel } from "../components/ComplianceFindingsPanel";
@@ -895,7 +896,7 @@ class ClientCompanyDetailPageInner extends Component<
                                     sx={{
                                         display: "flex",
                                         gap: 1,
-                                        alignItems: "flex-start",
+                                        alignItems: "center",
                                     }}
                                 >
                                     <TextField
@@ -911,25 +912,16 @@ class ClientCompanyDetailPageInner extends Component<
                                             }))
                                         }
                                     />
-                                    <Tooltip title="Podaci iz javnog registra (open data). Ažurira se mesečno. Nema punu adresu — samo opština. PIB unesite ručno.">
-                                        <span>
-                                            <Button
-                                                variant="outlined"
-                                                disabled={
-                                                    registryImporting ||
-                                                    !editRegistration_number.trim()
-                                                }
-                                                onClick={
-                                                    this.handleRegistryImport
-                                                }
-                                                sx={{ mt: 1, flexShrink: 0 }}
-                                            >
-                                                {registryImporting
-                                                    ? "Tražim..."
-                                                    : "Uvezi iz registra"}
-                                            </Button>
-                                        </span>
-                                    </Tooltip>
+                                    <AppButton
+                                        label="Uvezi"
+                                        tooltip="Uvezi iz javnog registra."
+                                        loading={registryImporting}
+                                        loadingLabel="Tražim…"
+                                        variant="outlined"
+                                        disabled={!editRegistration_number.trim()}
+                                        onClick={this.handleRegistryImport}
+                                        sx={{ flexShrink: 0 }}
+                                    />
                                 </Box>
                                 <TextField
                                     margin="dense"
