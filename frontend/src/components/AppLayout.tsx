@@ -649,7 +649,7 @@ class AppLayoutInner extends Component<Props, State> {
                                     : undefined,
                         }}
                     >
-                        {breadcrumbs.length > 0 && (
+                        {breadcrumbs.length > 1 && (
                             <AppBreadcrumbs items={breadcrumbs} />
                         )}
                         <Outlet />

@@ -9,13 +9,11 @@ import {
     TableCell,
     TableHead,
     TableRow,
-    Typography,
     CircularProgress,
     Alert,
     IconButton,
     Button,
 } from "@mui/material";
-import BusinessIcon from "@mui/icons-material/Business";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import AddIcon from "@mui/icons-material/Add";
 
@@ -58,13 +56,6 @@ class ClientCompaniesListPage extends Component<
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography
-                    variant="h6"
-                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                >
-                    <BusinessIcon /> Firme
-                </Typography>
-
                 <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
                     <PermissionGate permission="partners.add_clientcompany">
                         <Button
