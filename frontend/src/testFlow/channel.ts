@@ -1,5 +1,3 @@
-import { enqueueSnackbar } from "notistack";
-
 import type {
     TestFillCommand,
     TestFlowMessage,
@@ -90,11 +88,6 @@ export function startTestFillListener(): void {
             handled,
         } satisfies TestFlowMessage);
         resultChannel?.close();
-        if (handled) {
-            enqueueSnackbar(`Test podaci učitani (${msg.section}).`, {
-                variant: "info",
-            });
-        }
     };
 }
 
