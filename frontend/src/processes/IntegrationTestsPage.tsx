@@ -3,19 +3,20 @@ import { connect } from "react-redux";
 import { Navigate } from "react-router-dom";
 
 import {
-    Alert,
     Box,
     Button,
-    Divider,
-    List,
-    ListItem,
-    ListItemText,
+    Chip,
+    IconButton,
+    LinearProgress,
     Paper,
+    Stack,
+    Tooltip,
     Typography,
 } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import CheckIcon from "@mui/icons-material/Check";
 
 import {
     broadcastTestFill,
@@ -114,61 +115,125 @@ class IntegrationTestsPage extends Component<
         broadcastTestFill(section);
     };
 
+    clickedCount = (): number => {
+        return Object.keys(this.state.clickedSections).length;
+    };
+
     renderSectionRow = (section: TestFlowSectionMeta): React.ReactNode => {
         const { clickedSections, lastResults } = this.state;
         const clicked = clickedSections[section.id] === true;
-        const result = lastResults[section.id];
-        let secondary = section.hint;
-        if (result === false) {
-            secondary = "✗ Forma nije primila — proveri tab i otvorenu formu";
-        }
+        const failed = lastResults[section.id] === false;
+
         return (
-            <ListItem
+            <Box
                 key={section.id}
                 sx={{
-                    alignItems: "flex-start",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    py: 1,
+                    px: 2,
+                    borderTop: "1px solid",
+                    borderColor: "divider",
                     bgcolor: clicked ? "success.50" : undefined,
+                    "&:hover": { bgcolor: clicked ? "success.50" : "action.hover" },
                 }}
-                secondaryAction={
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 0.5,
-                            alignItems: "flex-end",
-                        }}
-                    >
-                        <Button
-                            size="small"
-                            variant={clicked ? "contained" : "outlined"}
-                            color={clicked ? "success" : "primary"}
-                            onClick={() => this.handleFill(section.id)}
-                        >
-                            Popuni
-                        </Button>
-                        {section.route && (
-                            <Button
+            >
+                <Chip
+                    label={section.id}
+                    size="small"
+                    variant={clicked ? "filled" : "outlined"}
+                    color={clicked ? "success" : "default"}
+                    sx={{ minWidth: 44, fontWeight: 600, fontSize: "0.7rem" }}
+                />
+                <Tooltip title={section.hint} placement="top-start" enterDelay={400}>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography variant="body2" fontWeight={500} noWrap>
+                            {section.label}
+                        </Typography>
+                        {failed && (
+                            <Typography variant="caption" color="error">
+                                Forma nije primila podatke
+                            </Typography>
+                        )}
+                    </Box>
+                </Tooltip>
+                <Stack direction="row" spacing={0.5} flexShrink={0}>
+                    {section.route && (
+                        <Tooltip title={section.routeLabel ?? "Otvori stranicu"}>
+                            <IconButton
                                 size="small"
-                                variant="text"
-                                startIcon={<OpenInNewIcon fontSize="small" />}
                                 onClick={() =>
                                     this.handleOpenRoute(section.route!)
                                 }
                             >
-                                {section.routeLabel ?? "Otvori"}
-                            </Button>
+                                <OpenInNewIcon fontSize="small" />
+                            </IconButton>
+                        </Tooltip>
+                    )}
+                    <Button
+                        size="small"
+                        variant={clicked ? "contained" : "outlined"}
+                        color={clicked ? "success" : "primary"}
+                        disableElevation
+                        startIcon={clicked ? <CheckIcon /> : undefined}
+                        onClick={() => this.handleFill(section.id)}
+                        sx={{ minWidth: 88 }}
+                    >
+                        Popuni
+                    </Button>
+                </Stack>
+            </Box>
+        );
+    };
+
+    renderPhase = (phase: (typeof TEST_FLOW_PHASES)[number]): React.ReactNode => {
+        const sections = TEST_FLOW_SECTIONS.filter(
+            (s) => s.phaseId === phase.id,
+        );
+        if (sections.length === 0) return null;
+
+        const clickedInPhase = sections.filter(
+            (s) => this.state.clickedSections[s.id],
+        ).length;
+
+        return (
+            <Paper
+                key={phase.id}
+                variant="outlined"
+                sx={{ overflow: "hidden" }}
+            >
+                <Box
+                    sx={{
+                        px: 2,
+                        py: 1.25,
+                        bgcolor: "grey.50",
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                        display: "flex",
+                        alignItems: "baseline",
+                        justifyContent: "space-between",
+                        gap: 1,
+                    }}
+                >
+                    <Box>
+                        <Typography variant="subtitle2">
+                            {phase.title}
+                        </Typography>
+                        {phase.description && (
+                            <Typography variant="caption" color="text.secondary">
+                                {phase.description}
+                            </Typography>
                         )}
                     </Box>
-                }
-            >
-                <ListItemText
-                    primary={section.label}
-                    secondary={secondary}
-                    slotProps={{
-                        secondary: { sx: { whiteSpace: "pre-wrap" } },
-                    }}
-                />
-            </ListItem>
+                    {this.state.sessionActive && (
+                        <Typography variant="caption" color="text.secondary">
+                            {clickedInPhase}/{sections.length}
+                        </Typography>
+                    )}
+                </Box>
+                {sections.map((section) => this.renderSectionRow(section))}
+            </Paper>
         );
     };
 
@@ -177,92 +242,84 @@ class IntegrationTestsPage extends Component<
             return <Navigate to="/dashboard" replace />;
         }
 
-        const { sessionActive, sessionId } = this.state;
+        const { sessionActive } = this.state;
+        const total = TEST_FLOW_SECTIONS.length;
+        const done = this.clickedCount();
+        const progress = total > 0 ? (done / total) * 100 : 0;
 
         return (
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="h6">Integration tests</Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Otvori formu u app tabu, pa klikni Popuni. Dugme postane
-                    zeleno kad ga klikneš.
-                </Typography>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2,
+                    maxWidth: 720,
+                }}
+            >
+                <Box>
+                    <Typography variant="h6" gutterBottom>
+                        Integration tests
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        Otvori formu u app tabu → Popuni. Zeleno = kliknuto.
+                    </Typography>
+                </Box>
 
                 {!sessionActive ? (
-                    <Paper sx={{ p: 2 }}>
+                    <Paper variant="outlined" sx={{ p: 2 }}>
                         <Button
                             variant="contained"
                             startIcon={<PlayArrowIcon />}
                             onClick={this.handleStartSession}
                         >
-                            Pokreni test sesiju
+                            Pokreni sesiju
                         </Button>
                     </Paper>
                 ) : (
-                    <Paper
-                        sx={{
-                            p: 2,
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 2,
-                        }}
-                    >
-                        <Alert severity="info">
-                            Idi gde ti treba u app tabu, otvori formu, pa
-                            Popuni ovde.
-                        </Alert>
-                        <Typography variant="body2">
-                            Session: {sessionId}
-                        </Typography>
-                        <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                    <Paper variant="outlined" sx={{ p: 2 }}>
+                        <Stack
+                            direction="row"
+                            spacing={1}
+                            flexWrap="wrap"
+                            alignItems="center"
+                            sx={{ mb: 1.5 }}
+                        >
                             <Button
-                                variant="outlined"
+                                size="small"
+                                variant="contained"
                                 startIcon={<OpenInNewIcon />}
                                 onClick={this.handleOpenAppTab}
                             >
-                                Otvori app tab
+                                App tab
                             </Button>
                             <Button
+                                size="small"
                                 variant="outlined"
                                 color="error"
                                 startIcon={<StopIcon />}
                                 onClick={this.handleEndSession}
                             >
-                                Završi sesiju
+                                Završi
                             </Button>
-                        </Box>
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ ml: "auto !important" }}
+                            >
+                                {done}/{total} kliknuto
+                            </Typography>
+                        </Stack>
+                        <LinearProgress
+                            variant="determinate"
+                            value={progress}
+                            color="success"
+                            sx={{ height: 6, borderRadius: 1 }}
+                        />
                     </Paper>
                 )}
 
                 {sessionActive &&
-                    TEST_FLOW_PHASES.map((phase) => {
-                        const sections = TEST_FLOW_SECTIONS.filter(
-                            (s) => s.phaseId === phase.id,
-                        );
-                        if (sections.length === 0) return null;
-                        return (
-                            <Paper key={phase.id} sx={{ overflow: "hidden" }}>
-                                <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-                                    <Typography variant="subtitle1">
-                                        {phase.title}
-                                    </Typography>
-                                    {phase.description && (
-                                        <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                        >
-                                            {phase.description}
-                                        </Typography>
-                                    )}
-                                </Box>
-                                <Divider />
-                                <List dense disablePadding>
-                                    {sections.map((section) =>
-                                        this.renderSectionRow(section),
-                                    )}
-                                </List>
-                            </Paper>
-                        );
-                    })}
+                    TEST_FLOW_PHASES.map((phase) => this.renderPhase(phase))}
             </Box>
         );
     }
