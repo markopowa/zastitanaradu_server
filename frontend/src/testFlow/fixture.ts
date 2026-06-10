@@ -39,6 +39,10 @@ export const TEST_FLOW = {
         conclusion: "Inicijalni prilog zakljucka",
         assessmentsRevision: "Dopuna procene",
     },
+    documentCategory: {
+        name: "Lekarski pregledi",
+        description: "",
+    },
     documentTemplate: {
         name: "Uput - periodični lekarski pregled",
         context_type: "EMPLOYEE" as const,

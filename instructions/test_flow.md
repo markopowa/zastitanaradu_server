@@ -8,13 +8,14 @@ Pretpostavka: **prazna baza** (samo superuser). Fajlovi su u `files_for_test\`.
 
 ---
 
-## G. Šablon dokumenta + H, I (podešavanja)
+## G. Kategorija + šablon + H, I (podešavanja)
 
 Potrebno pre lekarskih pregleda.
 
-1. **Dokumenti → Šabloni** → **G → Popuni** → PDF → **Sačuvaj** → **Uredi polja**.
-2. **Vrste obaveza → Dodaj** → **H → Popuni** → **Sačuvaj**.
-3. **Šabloni obaveza** → **I1**, **I2 → Popuni** (dva okidača).
+1. **Dokumenti → Kategorije → Dodaj kategoriju** → **G0 → Popuni** → **Sačuvaj**.
+2. **Dokumenti → Šabloni** → **G → Popuni** → PDF → **Sačuvaj** → **Uredi polja**.
+3. **Vrste obaveza → Dodaj** → **H → Popuni** → **Sačuvaj**.
+4. **Šabloni obaveza** → **I1**, **I2 → Popuni** (dva okidača).
 
 ---
 

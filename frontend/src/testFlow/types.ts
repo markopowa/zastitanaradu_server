@@ -9,6 +9,7 @@ export type TestFlowSection =
     | "F1"
     | "F2"
     | "F3"
+    | "G0"
     | "G"
     | "H"
     | "I1"

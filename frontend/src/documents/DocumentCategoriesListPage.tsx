@@ -43,11 +43,15 @@ import type {
     DocumentCategoriesListPageState,
     DocumentCategoriesListPageStateProps,
 } from "../types/documentPages";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
 
 class DocumentCategoriesListPage extends Component<
     DocumentCategoriesListPageProps,
     DocumentCategoriesListPageState
 > {
+    private testFillCleanup: (() => void) | null = null;
+
     state: DocumentCategoriesListPageState = {
         dialogOpen: false,
         editingId: null,
@@ -59,6 +63,25 @@ class DocumentCategoriesListPage extends Component<
     componentDidMount(): void {
         this.props.fetchDocumentCategories();
         this.props.setLastPath("/documents/categories");
+        this.testFillCleanup = setupTestFill(
+            "G0",
+            () => {
+                const cat = TEST_FLOW.documentCategory;
+                if (!this.state.dialogOpen || this.state.editingId != null) {
+                    return false;
+                }
+                this.setState({
+                    name: cat.name,
+                    description: cat.description,
+                });
+                return true;
+            },
+            () => this.state.dialogOpen && this.state.editingId == null,
+        );
+    }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
     }
 
     openCreate = (): void => {

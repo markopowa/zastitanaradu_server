@@ -35,10 +35,18 @@ export const TEST_FLOW_PHASES: TestFlowPhase[] = [
 
 export const TEST_FLOW_SECTIONS: TestFlowSectionMeta[] = [
     {
+        id: "G0",
+        phaseId: "prep",
+        label: "Kategorija dokumenta",
+        hint: "Dokumenti → Kategorije → Dodaj kategoriju → Popuni → Sačuvaj",
+        route: "/documents/categories",
+        routeLabel: "Kategorije",
+    },
+    {
         id: "G",
         phaseId: "prep",
         label: "Šablon dokumenta (Uput)",
-        hint: "Dodaj šablon, priloži PDF, Sačuvaj",
+        hint: "Posle G0: Dodaj šablon, priloži PDF, Sačuvaj",
         route: "/documents/templates",
         routeLabel: "Šabloni",
     },
