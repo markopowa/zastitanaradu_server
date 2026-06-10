@@ -34,8 +34,17 @@ export type TestFillResult = {
 
 export type TestFlowMessage = TestFillCommand | TestFillResult;
 
+export interface TestFlowPhase {
+    id: string;
+    title: string;
+    description: string;
+}
+
 export interface TestFlowSectionMeta {
     id: TestFlowSection;
     label: string;
     hint: string;
+    phaseId: string;
+    route?: string;
+    routeLabel?: string;
 }

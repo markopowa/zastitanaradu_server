@@ -26,6 +26,8 @@ import {
     registryLookup,
     createClientCompany,
     createJobRole,
+    getEmployees,
+    getProcessTypes,
     getRiskLevels,
 } from "../api/processes";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
@@ -39,7 +41,7 @@ import { EmptyState } from "../design";
 
 import type { AppDispatch } from "../store";
 import type { WithNavigationProps } from "../hocs/withNavigation";
-import type { ClientCompany, RiskLevel } from "../types/processes";
+import type { ClientCompany, EmployeeSummary, RiskLevel } from "../types/processes";
 import { setupTestFill } from "../testFlow/registerTestFill";
 import { TEST_FLOW } from "../testFlow/fixture";
 import { riskLevelIdByLabel } from "../testFlow/helpers";
@@ -81,8 +83,13 @@ interface State {
     roleDescription: string;
     savingRole: boolean;
     addedRoles: { id: number; name: string }[];
+    addedEmployees: EmployeeSummary[];
+    employeesLoading: boolean;
+    hasEmployeeProcessTypes: boolean;
     empDialogOpen: boolean;
     bindingDialogOpen: boolean;
+    bindingEmployeeId: number | null;
+    bindingEmployeeLabel: string;
 }
 
 class NewCompanyWizardPage extends Component<Props, State> {
@@ -109,8 +116,13 @@ class NewCompanyWizardPage extends Component<Props, State> {
         roleDescription: "",
         savingRole: false,
         addedRoles: [],
+        addedEmployees: [],
+        employeesLoading: false,
+        hasEmployeeProcessTypes: false,
         empDialogOpen: false,
         bindingDialogOpen: false,
+        bindingEmployeeId: null,
+        bindingEmployeeLabel: "",
     };
 
     componentDidMount(): void {
@@ -127,9 +139,51 @@ class NewCompanyWizardPage extends Component<Props, State> {
         this.bindTestFillHandlers();
     }
 
-    componentDidUpdate(): void {
+    componentDidUpdate(_prevProps: Props, prevState: State): void {
         this.bindTestFillHandlers();
+        const { activeStep, companyId } = this.state;
+        if (companyId == null) return;
+        if (activeStep === 3 && prevState.activeStep !== 3) {
+            this.loadEmployees();
+        }
+        if (activeStep === 4 && prevState.activeStep !== 4) {
+            this.loadMedicalStepContext();
+        }
     }
+
+    loadEmployees = (): void => {
+        const { companyId } = this.state;
+        if (companyId == null) return;
+        this.setState({ employeesLoading: true });
+        getEmployees({ client_company_id: companyId })
+            .then((items) =>
+                this.setState({
+                    addedEmployees: items,
+                    employeesLoading: false,
+                }),
+            )
+            .catch(() => this.setState({ employeesLoading: false }));
+    };
+
+    loadMedicalStepContext = (): void => {
+        this.loadEmployees();
+        getProcessTypes()
+            .then((types) => {
+                const hasEmployee = types.some(
+                    (t) => t.subject_kind === "EMPLOYEE" && t.is_active,
+                );
+                this.setState({ hasEmployeeProcessTypes: hasEmployee });
+            })
+            .catch(() => undefined);
+    };
+
+    openBindingForEmployee = (emp: EmployeeSummary): void => {
+        this.setState({
+            bindingDialogOpen: true,
+            bindingEmployeeId: emp.id,
+            bindingEmployeeLabel: `${emp.first_name} ${emp.last_name}`,
+        });
+    };
 
     componentWillUnmount(): void {
         this.props.setBreadcrumbs([]);
@@ -349,6 +403,21 @@ class NewCompanyWizardPage extends Component<Props, State> {
             }
             return;
         }
+        if (activeStep === 3) {
+            const { addedEmployees } = this.state;
+            if (addedEmployees.length === 0) {
+                enqueueSnackbar("Dodaj bar jednog zaposlenog pre sledećeg koraka.", {
+                    variant: "warning",
+                });
+                return;
+            }
+            this.setState((prev) => ({
+                ...prev,
+                activeStep: prev.activeStep + 1,
+            }));
+            this.loadMedicalStepContext();
+            return;
+        }
         this.setState((prev) => ({
             ...prev,
             activeStep: Math.min(prev.activeStep + 1, WIZARD_STEPS.length - 1),
@@ -399,8 +468,13 @@ class NewCompanyWizardPage extends Component<Props, State> {
             roleDescription,
             savingRole,
             addedRoles,
+            addedEmployees,
+            employeesLoading,
+            hasEmployeeProcessTypes,
             empDialogOpen,
             bindingDialogOpen,
+            bindingEmployeeId,
+            bindingEmployeeLabel,
         } = this.state;
 
         if (activeStep === 0) {
@@ -632,6 +706,30 @@ class NewCompanyWizardPage extends Component<Props, State> {
             };
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    {employeesLoading && (
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                            <CircularProgress size={24} />
+                        </Box>
+                    )}
+                    {addedEmployees.length > 0 && (
+                        <Box>
+                            <Typography variant="subtitle2" gutterBottom>
+                                Dodati zaposleni
+                            </Typography>
+                            {addedEmployees.map((e) => (
+                                <Typography key={e.id} variant="body2">
+                                    • {e.first_name} {e.last_name}
+                                    {e.position ? ` — ${e.position}` : ""}
+                                </Typography>
+                            ))}
+                        </Box>
+                    )}
+                    {addedEmployees.length === 0 && !employeesLoading && (
+                        <Alert severity="info">
+                            Dodaj bar jednog zaposlenog pre sledećeg koraka
+                            (integration tests: F1).
+                        </Alert>
+                    )}
                     <PermissionGate permission="partners.add_employee">
                         <Button
                             variant="contained"
@@ -656,12 +754,13 @@ class NewCompanyWizardPage extends Component<Props, State> {
                                 empDialogOpen: false,
                             }))
                         }
-                        onSaved={() =>
+                        onSaved={() => {
                             this.setState((prev) => ({
                                 ...prev,
                                 empDialogOpen: false,
-                            }))
-                        }
+                            }));
+                            this.loadEmployees();
+                        }}
                     />
                 </Box>
             );
@@ -670,35 +769,78 @@ class NewCompanyWizardPage extends Component<Props, State> {
         if (activeStep === 4) {
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <PermissionGate permission="processes.add_processbinding">
-                        <Button
-                            variant="contained"
-                            onClick={() =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    bindingDialogOpen: true,
-                                }))
-                            }
+                    {!hasEmployeeProcessTypes && (
+                        <Alert severity="warning">
+                            Nema vrste obaveze za zaposlenog. Podesi G, H, I
+                            u integration tests pre dodavanja obaveze.
+                        </Alert>
+                    )}
+                    {addedEmployees.length === 0 && (
+                        <Alert severity="warning">
+                            Nema zaposlenih. Vrati se na korak Zaposleni.
+                        </Alert>
+                    )}
+                    {addedEmployees.length > 0 && hasEmployeeProcessTypes && (
+                        <Alert severity="info">
+                            Dodaj obavezu za zaposlenog (J1 u integration
+                            tests).
+                        </Alert>
+                    )}
+                    {employeesLoading && (
+                        <Box sx={{ display: "flex", justifyContent: "center" }}>
+                            <CircularProgress size={24} />
+                        </Box>
+                    )}
+                    {addedEmployees.map((emp) => (
+                        <Box
+                            key={emp.id}
+                            sx={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                gap: 1,
+                                flexWrap: "wrap",
+                            }}
                         >
-                            Dodaj obavezu
-                        </Button>
-                    </PermissionGate>
+                            <Typography variant="body2">
+                                {emp.first_name} {emp.last_name}
+                                {emp.position ? ` — ${emp.position}` : ""}
+                            </Typography>
+                            <PermissionGate permission="processes.add_processbinding">
+                                <Button
+                                    variant="outlined"
+                                    size="small"
+                                    disabled={!hasEmployeeProcessTypes}
+                                    onClick={() =>
+                                        this.openBindingForEmployee(emp)
+                                    }
+                                >
+                                    Dodaj obavezu
+                                </Button>
+                            </PermissionGate>
+                        </Box>
+                    ))}
                     <AddProcessBindingDialog
                         open={bindingDialogOpen}
                         onClose={() =>
                             this.setState((prev) => ({
                                 ...prev,
                                 bindingDialogOpen: false,
+                                bindingEmployeeId: null,
+                                bindingEmployeeLabel: "",
                             }))
                         }
                         onSuccess={() =>
                             this.setState((prev) => ({
                                 ...prev,
                                 bindingDialogOpen: false,
+                                bindingEmployeeId: null,
+                                bindingEmployeeLabel: "",
                             }))
                         }
-                        subjectKind="CLIENT_COMPANY"
-                        subjectLabel={this.state.name}
+                        subjectKind="EMPLOYEE"
+                        subjectLabel={bindingEmployeeLabel}
+                        employeeId={bindingEmployeeId ?? undefined}
                         clientCompanyId={companyId}
                     />
                 </Box>
