@@ -110,10 +110,6 @@ class IntegrationTestsPage extends Component<
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Typography variant="h6">Integration tests</Typography>
-                <Typography variant="body2" color="text.secondary">
-                    Popunjava test forme iz instructions/test_flow.md u drugom
-                    tabu. Ne šalje Save — samo polja.
-                </Typography>
 
                 {!sessionActive ? (
                     <Paper sx={{ p: 2 }}>
