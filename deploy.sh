@@ -38,6 +38,7 @@ ENV_FILE="$(realpath "$ENV_FILE")"
 DEPLOY_USER="${SUDO_USER:-$(whoami)}"
 API_BASE_URL="${API_BASE_URL:-https://${DOMAIN}}"
 LOG_DIR="${LOG_DIR:-/var/log/pznr}"
+NGINX_MAX_BODY_SIZE="${NGINX_MAX_BODY_SIZE:-200M}"
 CERTBOT_WEBROOT="${CERTBOT_WEBROOT:-/var/www/certbot}"
 CERTBOT_DNS_MODE="${CERTBOT_DNS_MODE:-webroot}"
 CERTBOT_EMAIL="${CERTBOT_EMAIL:-}"
@@ -67,6 +68,15 @@ ensureNginxProxySecret() {
         fi
     fi
     export PZNR_NGINX_PROXY_SECRET
+}
+
+updateNginxClientMaxBodySize() {
+    [ -f "$NGINX_SITE" ] || return 0
+    if grep -q 'client_max_body_size' "$NGINX_SITE"; then
+        sed -i "s/client_max_body_size [^;]*;/client_max_body_size $NGINX_MAX_BODY_SIZE;/" "$NGINX_SITE"
+    elif grep -q 'listen 443 ssl' "$NGINX_SITE"; then
+        sed -i "/listen 443 ssl;/a\\    client_max_body_size $NGINX_MAX_BODY_SIZE;" "$NGINX_SITE"
+    fi
 }
 
 writeNginxDrop() {
@@ -201,6 +211,7 @@ reloadCodeDependantServices() {
     cd "$APP_DIR"
     echo "Restarting backend..."
     docker compose restart backend
+    updateNginxClientMaxBodySize
     if nginx -t >/dev/null 2>&1; then
         systemctl reload nginx 2>/dev/null || systemctl start nginx 2>/dev/null || true
         echo "Nginx reloaded."
@@ -277,6 +288,7 @@ NGINX_80
     if [ -d "/etc/letsencrypt/live/$DOMAIN" ]; then
         grep -q "listen 443" "$NGINX_SITE" 2>/dev/null || writeNginxSsl
     fi
+    updateNginxClientMaxBodySize
     nginx -t && systemctl reload nginx 2>/dev/null || systemctl start nginx
 }
 
@@ -289,7 +301,7 @@ server {
     error_log $LOG_DIR/nginx-error.log;
     ssl_certificate /etc/letsencrypt/live/$DOMAIN/fullchain.pem;
     ssl_certificate_key /etc/letsencrypt/live/$DOMAIN/privkey.pem;
-    client_max_body_size 50M;
+    client_max_body_size $NGINX_MAX_BODY_SIZE;
     location /media/ {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;

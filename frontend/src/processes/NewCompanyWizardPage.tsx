@@ -52,7 +52,6 @@ const WIZARD_STEPS = [
     "Radna mesta i rizik",
     "Zaposleni",
     "Lekarski pregledi",
-    "Stručni nalazi",
 ] as const;
 
 interface DispatchProps {
@@ -726,8 +725,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
                     )}
                     {addedEmployees.length === 0 && !employeesLoading && (
                         <Alert severity="info">
-                            Dodaj bar jednog zaposlenog pre sledećeg koraka
-                            (integration tests: F1).
+                            Dodaj bar jednog zaposlenog pre sledećeg koraka.
                         </Alert>
                     )}
                     <PermissionGate permission="partners.add_employee">
@@ -771,20 +769,13 @@ class NewCompanyWizardPage extends Component<Props, State> {
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {!hasEmployeeProcessTypes && (
                         <Alert severity="warning">
-                            Nema vrste obaveze za zaposlenog (integration
-                            tests: H). Šablon dokumenta (G) ovde ne pomaže —
-                            mora Periodični lekarski pregled u Vrste obaveza.
+                            Nema aktivne vrste obaveze za zaposlenog. Dodaj je
+                            u Podešavanja → Vrste obaveza.
                         </Alert>
                     )}
                     {addedEmployees.length === 0 && (
                         <Alert severity="warning">
                             Nema zaposlenih. Vrati se na korak Zaposleni.
-                        </Alert>
-                    )}
-                    {addedEmployees.length > 0 && hasEmployeeProcessTypes && (
-                        <Alert severity="info">
-                            Dodaj obavezu za zaposlenog (J1 u integration
-                            tests).
                         </Alert>
                     )}
                     {employeesLoading && (
@@ -848,9 +839,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
             );
         }
 
-        return (
-            <EmptyState message="Modul stručnih nalaza još nije dostupan. Nastavite na završetak čarobnjaka." />
-        );
+        return null;
     }
 
     render() {

@@ -3,7 +3,9 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import CssBaseline from "@mui/material/CssBaseline";
-import { SnackbarProvider } from "notistack";
+import IconButton from "@mui/material/IconButton";
+import CloseIcon from "@mui/icons-material/Close";
+import { SnackbarProvider, closeSnackbar } from "notistack";
 
 import App from "./App.tsx";
 import AuthInitializer from "./components/AuthInitializer";
@@ -25,6 +27,16 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
                             horizontal: "right",
                         }}
                         autoHideDuration={3000}
+                        action={(snackbarId) => (
+                            <IconButton
+                                size="small"
+                                color="inherit"
+                                aria-label="Zatvori"
+                                onClick={() => closeSnackbar(snackbarId)}
+                            >
+                                <CloseIcon fontSize="small" />
+                            </IconButton>
+                        )}
                     >
                         <AuthInitializer>
                             <App />
