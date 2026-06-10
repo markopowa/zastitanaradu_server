@@ -363,14 +363,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
         }));
     };
 
-    handleSkip = (): void => {
-        this.setState((prev) => ({
-            ...prev,
-            activeStep: Math.min(prev.activeStep + 1, WIZARD_STEPS.length - 1),
-            stepError: null,
-        }));
-    };
-
     handleFinish = (): void => {
         const { navigate } = this.props;
         const id = this.state.companyId;
@@ -754,11 +746,12 @@ class NewCompanyWizardPage extends Component<Props, State> {
                 >
                     <Box sx={{ display: "flex", gap: 1 }}>
                         {activeStep > 0 && (
-                            <Button onClick={this.handleBack}>Nazad</Button>
-                        )}
-                        {activeStep > 0 && !isLast && (
-                            <Button onClick={this.handleSkip}>
-                                Preskoči korak
+                            <Button
+                                variant="contained"
+                                disabled={saving}
+                                onClick={this.handleBack}
+                            >
+                                Nazad
                             </Button>
                         )}
                     </Box>
