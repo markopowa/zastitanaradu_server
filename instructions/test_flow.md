@@ -8,7 +8,7 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 
 1. **Firme → Dodaj firmu**.
 2. Korak 1 **„Lična karta"**: u „Matični broj" unesi `20644206` → klikni **„Uvezi"**; pa popuni: „Naziv" `PRIVREDNO DRUŠTVO UKRAS DOO, VELIKI POPOVIĆ`, „PIB" `108277286`, „Šifra delatnosti" `1623`, „Adresa" `Veliki Popović bb`, „Telefon" `035 555 123`, „Email" `markovuckovic1992@gmail.com`, „Beleške" `Test` → **„Sledeći"**.
-3. Korak 2 **„Obavezna dokumentacija"**: klikni **„Preskoči korak"** *(dodaješ na tabu — sekcija C)*.
+3. Korak 2 **„Obavezna dokumentacija"**: priloži dokumente (vidi sekciju C) ili **„Preskoči korak"**.
 4. Korak 3 **„Radna mesta i rizik"**: „Naziv radnog mesta" `Viljuškarista`, „Nivo rizika" `Povećan` → **„Sledeći"**.
 5. Korak 4 **„Zaposleni"**: **„Dodaj zaposlenog"** → popuni formu (vidi sekciju F, koraci 2–13) → **„Sledeći"**.
 6. Korak 5 **„Lekarski pregledi"**: **„Preskoči korak"** *(prvo se konfiguriše vrsta obaveze — sekcija G)*.

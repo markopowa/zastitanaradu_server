@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, type ReactNode } from "react";
 
 import {
     Box,
@@ -72,6 +72,7 @@ const COMPANY_DOCUMENT_KINDS: {
 
 interface CompanyDocumentsPanelProps {
     clientCompanyId: number;
+    embedded?: boolean;
 }
 
 interface CompanyDocumentsPanelState {
@@ -199,180 +200,163 @@ export class CompanyDocumentsPanel extends Component<
         this.setState({ previewDoc: null });
     };
 
+    renderTableBody = (): ReactNode => {
+        const { items, loading, error, uploadingKind, deleting } = this.state;
+        if (loading) {
+            return <LoadingState />;
+        }
+        if (error) {
+            return (
+                <Box sx={{ textAlign: "center", py: 2 }}>
+                    <Typography variant="body2" color="error" sx={{ mb: 1 }}>
+                        Greška pri učitavanju.
+                    </Typography>
+                    <Button size="small" onClick={this.load}>
+                        Pokušaj ponovo
+                    </Button>
+                </Box>
+            );
+        }
+        return (
+            <Box sx={{ overflow: "auto" }}>
+                <Table size="small">
+                    <TableHead>
+                        <TableRow>
+                            <TableCell>Tip</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Fajl</TableCell>
+                            <TableCell align="right">Akcije</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {COMPANY_DOCUMENT_KINDS.map((slot) => {
+                            const doc = this.docByKind(slot.kind);
+                            const hasFile = Boolean(doc?.file);
+                            return (
+                                <TableRow key={slot.kind}>
+                                    <TableCell>{slot.label}</TableCell>
+                                    <TableCell>
+                                        <Chip
+                                            size="small"
+                                            label={hasFile ? "ima" : "nema"}
+                                            color={
+                                                hasFile ? "success" : "default"
+                                            }
+                                            variant={
+                                                hasFile ? "filled" : "outlined"
+                                            }
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        {hasFile
+                                            ? doc?.file_name || "Dokument"
+                                            : "—"}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                        {hasFile ? (
+                                            <Box
+                                                sx={{
+                                                    display: "flex",
+                                                    gap: 0.5,
+                                                    justifyContent: "flex-end",
+                                                }}
+                                            >
+                                                <Button
+                                                    size="small"
+                                                    variant="outlined"
+                                                    onClick={() =>
+                                                        doc &&
+                                                        this.openPreview(doc)
+                                                    }
+                                                >
+                                                    Pregled
+                                                </Button>
+                                                <PermissionGate permission="partners.delete_companydocument">
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="error"
+                                                        disabled={deleting}
+                                                        onClick={() =>
+                                                            doc &&
+                                                            this.confirmDelete(
+                                                                doc.id,
+                                                            )
+                                                        }
+                                                    >
+                                                        Obriši
+                                                    </Button>
+                                                </PermissionGate>
+                                            </Box>
+                                        ) : (
+                                            <PermissionGate permission="partners.add_companydocument">
+                                                <Button
+                                                    size="small"
+                                                    variant="contained"
+                                                    component="label"
+                                                    disabled={
+                                                        uploadingKind ===
+                                                        slot.kind
+                                                    }
+                                                >
+                                                    {uploadingKind === slot.kind
+                                                        ? "Otpremam..."
+                                                        : "Priloži"}
+                                                    <input
+                                                        type="file"
+                                                        hidden
+                                                        accept={slot.accept}
+                                                        onChange={(e) =>
+                                                            this.handleUpload(
+                                                                slot.kind,
+                                                                e.target
+                                                                    .files?.[0] ??
+                                                                    null,
+                                                            )
+                                                        }
+                                                    />
+                                                </Button>
+                                            </PermissionGate>
+                                        )}
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </Box>
+        );
+    };
+
     render() {
-        const {
-            items,
-            loading,
-            error,
-            uploadingKind,
-            deleteId,
-            deleting,
-            previewDoc,
-        } = this.state;
+        const { embedded } = this.props;
+        const { items, deleteId, deleting, previewDoc } = this.state;
         const attachedCount = COMPANY_DOCUMENT_KINDS.filter((s) =>
             items.some((d) => d.kind === s.kind),
         ).length;
+        const countLabel = (
+            <Typography variant="body2" color="text.secondary">
+                {attachedCount} / {COMPANY_DOCUMENT_KINDS.length} priloženo
+            </Typography>
+        );
+
+        const body = this.renderTableBody();
 
         return (
             <>
-                <SectionCard
-                    title="Obavezna dokumentacija"
-                    action={
-                        <Typography variant="body2" color="text.secondary">
-                            {attachedCount} / {COMPANY_DOCUMENT_KINDS.length}{" "}
-                            priloženo
-                        </Typography>
-                    }
-                >
-                    {loading ? (
-                        <LoadingState />
-                    ) : error ? (
-                        <Box sx={{ textAlign: "center", py: 2 }}>
-                            <Typography
-                                variant="body2"
-                                color="error"
-                                sx={{ mb: 1 }}
-                            >
-                                Greška pri učitavanju.
-                            </Typography>
-                            <Button size="small" onClick={this.load}>
-                                Pokušaj ponovo
-                            </Button>
-                        </Box>
-                    ) : (
-                        <Box sx={{ overflow: "auto" }}>
-                            <Table size="small">
-                                <TableHead>
-                                    <TableRow>
-                                        <TableCell>Tip</TableCell>
-                                        <TableCell>Status</TableCell>
-                                        <TableCell>Fajl</TableCell>
-                                        <TableCell align="right">
-                                            Akcije
-                                        </TableCell>
-                                    </TableRow>
-                                </TableHead>
-                                <TableBody>
-                                    {COMPANY_DOCUMENT_KINDS.map((slot) => {
-                                        const doc = this.docByKind(slot.kind);
-                                        const hasFile = Boolean(doc?.file);
-                                        return (
-                                            <TableRow key={slot.kind}>
-                                                <TableCell>
-                                                    {slot.label}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        size="small"
-                                                        label={
-                                                            hasFile
-                                                                ? "ima"
-                                                                : "nema"
-                                                        }
-                                                        color={
-                                                            hasFile
-                                                                ? "success"
-                                                                : "default"
-                                                        }
-                                                        variant={
-                                                            hasFile
-                                                                ? "filled"
-                                                                : "outlined"
-                                                        }
-                                                    />
-                                                </TableCell>
-                                                <TableCell>
-                                                    {hasFile
-                                                        ? doc?.file_name ||
-                                                          "Dokument"
-                                                        : "—"}
-                                                </TableCell>
-                                                <TableCell align="right">
-                                                    {hasFile ? (
-                                                        <Box
-                                                            sx={{
-                                                                display: "flex",
-                                                                gap: 0.5,
-                                                                justifyContent:
-                                                                    "flex-end",
-                                                            }}
-                                                        >
-                                                            <Button
-                                                                size="small"
-                                                                variant="outlined"
-                                                                onClick={() =>
-                                                                    doc &&
-                                                                    this.openPreview(
-                                                                        doc,
-                                                                    )
-                                                                }
-                                                            >
-                                                                Pregled
-                                                            </Button>
-                                                            <PermissionGate permission="partners.delete_companydocument">
-                                                                <Button
-                                                                    size="small"
-                                                                    variant="outlined"
-                                                                    color="error"
-                                                                    disabled={
-                                                                        deleting
-                                                                    }
-                                                                    onClick={() =>
-                                                                        doc &&
-                                                                        this.confirmDelete(
-                                                                            doc.id,
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    Obriši
-                                                                </Button>
-                                                            </PermissionGate>
-                                                        </Box>
-                                                    ) : (
-                                                        <PermissionGate permission="partners.add_companydocument">
-                                                            <Button
-                                                                size="small"
-                                                                variant="contained"
-                                                                component="label"
-                                                                disabled={
-                                                                    uploadingKind ===
-                                                                    slot.kind
-                                                                }
-                                                            >
-                                                                {uploadingKind ===
-                                                                slot.kind
-                                                                    ? "Otpremam..."
-                                                                    : "Priloži"}
-                                                                <input
-                                                                    type="file"
-                                                                    hidden
-                                                                    accept={
-                                                                        slot.accept
-                                                                    }
-                                                                    onChange={(
-                                                                        e,
-                                                                    ) =>
-                                                                        this.handleUpload(
-                                                                            slot.kind,
-                                                                            e
-                                                                                .target
-                                                                                .files?.[0] ??
-                                                                                null,
-                                                                        )
-                                                                    }
-                                                                />
-                                                            </Button>
-                                                        </PermissionGate>
-                                                    )}
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
-                                </TableBody>
-                            </Table>
-                        </Box>
-                    )}
-                </SectionCard>
+                {embedded ? (
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        {countLabel}
+                        {body}
+                    </Box>
+                ) : (
+                    <SectionCard
+                        title="Obavezna dokumentacija"
+                        action={countLabel}
+                    >
+                        {body}
+                    </SectionCard>
+                )}
 
                 <ConfirmDialog
                     open={deleteId != null}

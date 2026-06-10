@@ -29,6 +29,7 @@ import {
     getRiskLevels,
 } from "../api/processes";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
+import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
@@ -550,18 +551,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
 
         if (activeStep === 1) {
             return (
-                <EmptyState
-                    message="Obavezna dokumentacija se dodaje na tabu Dokumentacija u profilu firme."
-                    action={
-                        <Button
-                            variant="outlined"
-                            onClick={() =>
-                                navigate(companyTabUrl(companyId, "documents"))
-                            }
-                        >
-                            Otvori dokumentaciju firme
-                        </Button>
-                    }
+                <CompanyDocumentsPanel
+                    clientCompanyId={companyId}
+                    embedded
                 />
             );
         }
