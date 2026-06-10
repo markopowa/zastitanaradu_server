@@ -10,7 +10,7 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 2. Korak 1 **„Lična karta"**: u „Matični broj" unesi `20644206` → klikni **„Uvezi"**; pa popuni: „Naziv" `PRIVREDNO DRUŠTVO UKRAS DOO, VELIKI POPOVIĆ`, „PIB" `108277286`, „Šifra delatnosti" `1623`, „Adresa" `Veliki Popović bb`, „Telefon" `035 555 123`, „Email" `markovuckovic1992@gmail.com`, „Beleške" `Test` → **„Sledeći"**.
 3. Korak 2 **„Obavezna dokumentacija"**: priloži dokumente (vidi sekciju C) → **„Sledeći"** *(može i prazno)*.
 4. Korak 3 **„Radna mesta i rizik"**: „Naziv radnog mesta" `Viljuškarista`, „Nivo rizika" `Povećan` → **„Sledeći"**.
-5. Korak 4 **„Zaposleni"**: **„Dodaj zaposlenog"** → popuni formu (vidi sekciju F, koraci 2–13) → **„Sledeći"**.
+5. Korak 4 **„Zaposleni"**: **„Dodaj zaposlenog"** → popuni formu (**F1** u integration tests, ili ručno — sekcija F) → **„Sledeći"**.
 6. Korak 5 **„Lekarski pregledi"**: **„Sledeći"** *(prvo se konfiguriše vrsta obaveze — sekcija G)*.
 7. Korak 6 **„Stručni nalazi"**: **„Završi"** *(vodi na tab „Usklađenost" firme)*.
 
@@ -68,16 +68,11 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 
 *(Ako nisi dodao u čarobnjaku.)*
 1. Otvori tab **„Zaposleni"** → **„Dodaj zaposlenog"**.
-2. „Ime" `Marko`.
-3. „Prezime" `Petrović`.
-4. „Ime oca" `Stevan`.
-5. „JMBG" `0102990710123` *(„Datum rođenja (dd.mm.yyyy)" se popuni automatski)*.
-6. „Mesto rođenja" `Niš`.
-7. „Email" `markovuckovic1992@gmail.com`.
-8. „Organizaciona jedinica" `Proizvodnja`.
-9. „Pozicija" `Viljuškarista`.
-10. „Radno mesto" `Viljuškarista`.
-11. **„Sačuvaj"**.
+2. U `/integration-tests` klikni **F1** (Marko, test flow) ili **F2** / **F3** (random ime, tvoj email i JMBG).
+3. **„Sačuvaj"**.
+
+*(Ručno — F1 podaci:)*
+- „Ime" `Marko`, „Prezime" `Petrović`, „Ime oca" `Stevan`, „JMBG" `0102990710123`, „Email" `markovuckovic1992@gmail.com`, „Organizaciona jedinica" `Proizvodnja`, „Pozicija" / „Radno mesto" `Viljuškarista`.
 
 ---
 

@@ -542,10 +542,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
 
         if (activeStep === 1) {
             return (
-                <CompanyDocumentsPanel
-                    clientCompanyId={companyId}
-                    embedded
-                />
+                <CompanyDocumentsPanel clientCompanyId={companyId} embedded />
             );
         }
 

@@ -37,9 +37,19 @@ export const TEST_FLOW_SECTIONS: TestFlowSectionMeta[] = [
         hint: "Tab Radna mesta, otvori izmenu za Viljuškarista",
     },
     {
-        id: "F",
-        label: "F — Zaposleni",
+        id: "F1",
+        label: "F1 — Zaposleni (Marko, test flow)",
         hint: "Otvoren dialog Dodaj zaposlenog",
+    },
+    {
+        id: "F2",
+        label: "F2 — Zaposleni (random)",
+        hint: "Otvoren dialog Dodaj zaposlenog — novi podaci svaki put",
+    },
+    {
+        id: "F3",
+        label: "F3 — Zaposleni (random)",
+        hint: "Otvoren dialog Dodaj zaposlenog — novi podaci svaki put",
     },
     {
         id: "G",

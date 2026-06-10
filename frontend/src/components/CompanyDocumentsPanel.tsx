@@ -345,7 +345,13 @@ export class CompanyDocumentsPanel extends Component<
         return (
             <>
                 {embedded ? (
-                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                        }}
+                    >
                         {countLabel}
                         {body}
                     </Box>

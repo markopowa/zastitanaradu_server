@@ -1,4 +1,5 @@
 import { addMonths, DateToString, todayLocalDate } from "../utils/date";
+import { TEST_EMPLOYEE_PRIMARY } from "./employeeFixture";
 
 export const TEST_FLOW = {
     company: {
@@ -30,17 +31,7 @@ export const TEST_FLOW = {
         email: "markovuckovic1992@gmail.com",
         is_primary: true,
     },
-    employee: {
-        first_name: "Marko",
-        last_name: "Petrović",
-        father_name: "Stevan",
-        national_id: "0102990710123",
-        place_of_birth: "Niš",
-        email: "markovuckovic1992@gmail.com",
-        org_unit: "Proizvodnja",
-        position: "Viljuškarista",
-        job_role_name: "Viljuškarista",
-    },
+    employee: TEST_EMPLOYEE_PRIMARY,
     riskActDate: "15.01.2025",
     riskActRevisionReason: {
         intro: "Inicijalni prilog uvoda",
