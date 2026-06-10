@@ -410,7 +410,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
             empDialogOpen,
             bindingDialogOpen,
         } = this.state;
-        const { navigate } = this.props;
 
         if (activeStep === 0) {
             return (

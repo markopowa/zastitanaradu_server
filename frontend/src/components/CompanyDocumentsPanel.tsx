@@ -201,7 +201,7 @@ export class CompanyDocumentsPanel extends Component<
     };
 
     renderTableBody = (): ReactNode => {
-        const { items, loading, error, uploadingKind, deleting } = this.state;
+        const { loading, error, uploadingKind, deleting } = this.state;
         if (loading) {
             return <LoadingState />;
         }
