@@ -149,7 +149,7 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                 if (!editDialogOpen || editSection == null) {
                     return false;
                 }
-                let reason = reasons.intro;
+                let reason: string = reasons.intro;
                 if (editSection.section_type === "ASSESSMENTS") {
                     reason = editSection.current_file
                         ? reasons.assessmentsRevision
