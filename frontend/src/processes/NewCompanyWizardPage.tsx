@@ -37,7 +37,6 @@ import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
 import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
 import { companyTabUrl } from "../utils/companyTabs";
-import { EmptyState } from "../design";
 
 import type { AppDispatch } from "../store";
 import type { WithNavigationProps } from "../hocs/withNavigation";
