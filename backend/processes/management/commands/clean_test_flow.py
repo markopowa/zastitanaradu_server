@@ -54,11 +54,16 @@ def _test_querysets():
     act_revisions = RiskAssessmentSectionRevision.objects.filter(
         section__in=act_sections
     )
-    category = DocumentCategory.objects.filter(name=TEST_CATEGORY_NAME)
-    doc_template = DocumentTemplate.objects.filter(name=TEST_DOC_TEMPLATE_NAME)
-    process_type = ProcessType.objects.filter(name=TEST_PROCESS_TYPE_NAME)
+    category = DocumentCategory.objects.filter(name__iexact=TEST_CATEGORY_NAME)
+    doc_template = DocumentTemplate.objects.filter(
+        Q(name__iexact=TEST_DOC_TEMPLATE_NAME) | Q(category__in=category)
+    )
+    process_type = ProcessType.objects.filter(
+        name__iexact=TEST_PROCESS_TYPE_NAME
+    )
     obligation_templates = ObligationTemplate.objects.filter(
-        process_type__in=process_type
+        Q(process_type__in=process_type)
+        | Q(document_template__in=doc_template)
     )
     risk_levels = RiskLevel.objects.filter(code=TEST_RISK_LEVEL_CODE)
     doc_files = DocumentFile.objects.filter(

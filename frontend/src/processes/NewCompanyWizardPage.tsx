@@ -771,8 +771,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {!hasEmployeeProcessTypes && (
                         <Alert severity="warning">
-                            Nema vrste obaveze za zaposlenog. Podesi G, H, I
-                            u integration tests pre dodavanja obaveze.
+                            Nema vrste obaveze za zaposlenog (integration
+                            tests: H). Šablon dokumenta (G) ovde ne pomaže —
+                            mora Periodični lekarski pregled u Vrste obaveza.
                         </Alert>
                     )}
                     {addedEmployees.length === 0 && (

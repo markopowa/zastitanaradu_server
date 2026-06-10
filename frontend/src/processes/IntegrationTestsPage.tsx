@@ -253,7 +253,7 @@ class IntegrationTestsPage extends Component<
                     display: "flex",
                     flexDirection: "column",
                     gap: 2,
-                    maxWidth: 720,
+                    width: "100%",
                 }}
             >
                 <Box>
