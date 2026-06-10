@@ -27,15 +27,12 @@ import {
     createClientCompany,
     createJobRole,
     getRiskLevels,
-    updateClientCompany,
 } from "../api/processes";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
-import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
 import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
-import { displayDateToIso } from "../utils/date";
 import { companyTabUrl } from "../utils/companyTabs";
 import { EmptyState } from "../design";
 
@@ -45,7 +42,6 @@ import type { ClientCompany, RiskLevel } from "../types/processes";
 
 const WIZARD_STEPS = [
     "Lična karta",
-    "Akt o proceni rizika",
     "Obavezna dokumentacija",
     "Radna mesta i rizik",
     "Zaposleni",
@@ -75,7 +71,6 @@ interface State {
     registryImporting: boolean;
     saving: boolean;
     stepError: string | null;
-    riskActDateValue: string;
     riskLevels: RiskLevel[];
     roleName: string;
     roleRiskLevelId: string;
@@ -102,7 +97,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
         registryImporting: false,
         saving: false,
         stepError: null,
-        riskActDateValue: "",
         riskLevels: [],
         roleName: "",
         roleRiskLevelId: "",
@@ -216,28 +210,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
             });
     };
 
-    saveRiskActStep = async (): Promise<boolean> => {
-        const { companyId, riskActDateValue } = this.state;
-        if (companyId == null) return false;
-        const iso = displayDateToIso(riskActDateValue);
-        if (!iso) return true;
-        this.setState((prev) => ({ ...prev, saving: true, stepError: null }));
-        try {
-            await updateClientCompany(companyId, {
-                risk_assessment_act_date: iso,
-            });
-            this.setState((prev) => ({ ...prev, saving: false }));
-            return true;
-        } catch {
-            this.setState((prev) => ({
-                ...prev,
-                saving: false,
-                stepError: "Greška pri čuvanju datuma akta.",
-            }));
-            return false;
-        }
-    };
-
     addRole = async (): Promise<boolean> => {
         const { companyId, roleName, roleRiskLevelId, roleDescription } =
             this.state;
@@ -297,18 +269,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
             });
             return;
         }
-        if (activeStep === 1) {
-            void this.saveRiskActStep().then((ok) => {
-                if (ok) {
-                    this.setState((prev) => ({
-                        ...prev,
-                        activeStep: prev.activeStep + 1,
-                    }));
-                }
-            });
-            return;
-        }
-        if (activeStep === 3) {
+        if (activeStep === 2) {
             const { roleName, roleRiskLevelId } = this.state;
             const hasPending =
                 roleName.trim() !== "" || roleRiskLevelId !== "";
@@ -381,7 +342,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
             registryImporting,
             saving,
             stepError,
-            riskActDateValue,
             riskLevels,
             roleName,
             roleRiskLevelId,
@@ -532,25 +492,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
 
         if (activeStep === 1) {
             return (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    {stepError && <Alert severity="error">{stepError}</Alert>}
-                    <DateTextFieldWithPicker
-                        label="Datum donošenja akta (dd.mm.yyyy)"
-                        value={riskActDateValue}
-                        allowPast
-                        onChange={(v) =>
-                            this.setState((prev) => ({
-                                ...prev,
-                                riskActDateValue: v,
-                            }))
-                        }
-                    />
-                </Box>
-            );
-        }
-
-        if (activeStep === 2) {
-            return (
                 <EmptyState
                     message="Obavezna dokumentacija se dodaje na tabu Dokumentacija u profilu firme."
                     action={
@@ -567,7 +508,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
             );
         }
 
-        if (activeStep === 3) {
+        if (activeStep === 2) {
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {stepError && <Alert severity="error">{stepError}</Alert>}
@@ -645,7 +586,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
             );
         }
 
-        if (activeStep === 4) {
+        if (activeStep === 3) {
             const companyStub: ClientCompany = {
                 id: companyId,
                 name: this.state.name,
@@ -688,7 +629,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
             );
         }
 
-        if (activeStep === 5) {
+        if (activeStep === 4) {
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     <PermissionGate permission="processes.add_processbinding">

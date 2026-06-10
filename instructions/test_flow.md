@@ -4,16 +4,15 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 
 ---
 
-## A. Nova firma — čarobnjak (7 koraka)
+## A. Nova firma — čarobnjak (6 koraka)
 
 1. **Firme → Dodaj firmu**.
 2. Korak 1 **„Lična karta"**: u „Matični broj" unesi `20644206` → klikni **„Uvezi"**; pa popuni: „Naziv" `PRIVREDNO DRUŠTVO UKRAS DOO, VELIKI POPOVIĆ`, „PIB" `108277286`, „Šifra delatnosti" `1623`, „Adresa" `Veliki Popović bb`, „Telefon" `035 555 123`, „Email" `markovuckovic1992@gmail.com`, „Beleške" `Test` → **„Sledeći"**.
-3. Korak 2 **„Akt o proceni rizika"**: „Datum donošenja akta (dd.mm.yyyy)" `15.01.2025` → **„Sledeći"**. *(Pun Akt sa 3 sekcije se prilaže na tabu — sekcija D.)*
-4. Korak 3 **„Obavezna dokumentacija"**: klikni **„Preskoči korak"** *(dodaješ na tabu — sekcija C)*.
-5. Korak 4 **„Radna mesta i rizik"**: „Naziv radnog mesta" `Viljuškarista`, „Nivo rizika" `Povećan` → **„Sledeći"**.
-6. Korak 5 **„Zaposleni"**: **„Dodaj zaposlenog"** → popuni formu (vidi sekciju F, koraci 2–13) → **„Sledeći"**.
-7. Korak 6 **„Lekarski pregledi"**: **„Preskoči korak"** *(prvo se konfiguriše vrsta obaveze — sekcija G)*.
-8. Korak 7 **„Stručni nalazi"**: **„Završi"** *(vodi na tab „Usklađenost" firme)*.
+3. Korak 2 **„Obavezna dokumentacija"**: klikni **„Preskoči korak"** *(dodaješ na tabu — sekcija C)*.
+4. Korak 3 **„Radna mesta i rizik"**: „Naziv radnog mesta" `Viljuškarista`, „Nivo rizika" `Povećan` → **„Sledeći"**.
+5. Korak 4 **„Zaposleni"**: **„Dodaj zaposlenog"** → popuni formu (vidi sekciju F, koraci 2–13) → **„Sledeći"**.
+6. Korak 5 **„Lekarski pregledi"**: **„Preskoči korak"** *(prvo se konfiguriše vrsta obaveze — sekcija G)*.
+7. Korak 6 **„Stručni nalazi"**: **„Završi"** *(vodi na tab „Usklađenost" firme)*.
 
 ---
 
@@ -58,7 +57,7 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 
 ## E. Radna mesta (tab Radna mesta i rizik)
 
-*(Viljuškarista je dodat u čarobnjaku, korak 5.)*
+*(Viljuškarista je dodat u čarobnjaku, korak 3.)*
 1. Otvori tab **„Radna mesta i rizik"**.
 2. **„Dodaj radno mesto"** → „Naziv radnog mesta" `Magacioner`, „Nivo rizika" `Umeren` → **„Sačuvaj"**.
 3. U redu „Viljuškarista" → meni akcija → **„Izmeni"** → „Opis" `Rukovanje viljuškarom u magacinu` → **„Sačuvaj"**.
