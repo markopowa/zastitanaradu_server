@@ -404,7 +404,7 @@ export class ComplianceFindingsPanel extends Component<Props, State> {
                             <input
                                 type="file"
                                 hidden
-                                accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
+                                accept=".pdf,application/pdf"
                                 onChange={(e) =>
                                     this.setState({
                                         dialogFile: e.target.files?.[0] ?? null,

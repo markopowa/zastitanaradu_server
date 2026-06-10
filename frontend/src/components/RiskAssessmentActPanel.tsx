@@ -212,13 +212,14 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
     saveSectionRevision = (): void => {
         const { act, editSection, editFile, editReason } = this.state;
         if (act == null || editSection == null || editFile == null) return;
-        if (editReason.trim().length < 5) return;
+        const isFirstAttach = !editSection.current_file;
+        if (!isFirstAttach && editReason.trim().length < 5) return;
         this.setState({ uploading: true });
         uploadRiskAssessmentSectionRevision(
             act.id,
             editSection.section_type,
             editFile,
-            editReason.trim(),
+            isFirstAttach ? "" : editReason.trim(),
         )
             .then((updated) => {
                 this.setState({
@@ -385,8 +386,11 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
         const sortedSections = [...act.sections].sort(
             (a, b) => a.order - b.order,
         );
+        const isFirstAttach = editSection != null && !editSection.current_file;
         const canSaveEdit =
-            editFile != null && editReason.trim().length >= 5 && !uploading;
+            editFile != null &&
+            !uploading &&
+            (isFirstAttach || editReason.trim().length >= 5);
 
         return (
             <Paper sx={{ p: 3 }}>
@@ -658,7 +662,7 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                             <input
                                 type="file"
                                 hidden
-                                accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.webp,image/*,application/pdf"
+                                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                 onChange={(e) =>
                                     this.setState({
                                         editFile: e.target.files?.[0] ?? null,
@@ -666,20 +670,22 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                                 }
                             />
                         </Button>
-                        <TextField
-                            margin="dense"
-                            label="Razlog izmene"
-                            required
-                            fullWidth
-                            multiline
-                            minRows={3}
-                            value={editReason}
-                            onChange={(e) =>
-                                this.setState({ editReason: e.target.value })
-                            }
-                            helperText="Razlog je obavezan i trajno se beleži."
-                            sx={{ mt: 2 }}
-                        />
+                        {!isFirstAttach && (
+                            <TextField
+                                margin="dense"
+                                label="Razlog izmene"
+                                required
+                                fullWidth
+                                multiline
+                                minRows={3}
+                                value={editReason}
+                                onChange={(e) =>
+                                    this.setState({ editReason: e.target.value })
+                                }
+                                helperText="Razlog je obavezan i trajno se beleži."
+                                sx={{ mt: 2 }}
+                            />
+                        )}
                     </DialogContent>
                     <DialogActions>
                         <Button

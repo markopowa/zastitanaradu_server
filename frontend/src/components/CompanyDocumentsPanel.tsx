@@ -28,26 +28,46 @@ import { ConfirmDialog, LoadingState, SectionCard } from "../design";
 
 import type { CompanyDocument, CompanyDocumentKind } from "../types/processes";
 
+const PDF_ONLY_ACCEPT = ".pdf,application/pdf";
+const WORD_OR_PDF_ACCEPT =
+    ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
 const COMPANY_DOCUMENT_KINDS: {
     kind: CompanyDocumentKind;
     label: string;
+    accept: string;
 }[] = [
-    { kind: "CONTRACT", label: "Ugovor" },
+    { kind: "CONTRACT", label: "Ugovor", accept: PDF_ONLY_ACCEPT },
     {
         kind: "DECISION",
         label: "Odluka o imenovanju lica za BZNR",
+        accept: PDF_ONLY_ACCEPT,
     },
-    { kind: "RULEBOOK_OSH", label: "Pravilnik o BZNR" },
-    { kind: "RULEBOOK_PPE", label: "Pravilnik o LZO" },
+    {
+        kind: "RULEBOOK_OSH",
+        label: "Pravilnik o BZNR",
+        accept: WORD_OR_PDF_ACCEPT,
+    },
+    {
+        kind: "RULEBOOK_PPE",
+        label: "Pravilnik o LZO",
+        accept: WORD_OR_PDF_ACCEPT,
+    },
     {
         kind: "TRAINING_EMPLOYEES",
         label: "Program obuke za zaposlene",
+        accept: WORD_OR_PDF_ACCEPT,
     },
     {
         kind: "TRAINING_MANAGERS",
         label: "Program obuke za rukovodioce",
+        accept: WORD_OR_PDF_ACCEPT,
     },
-    { kind: "TRAINING_PPE", label: "Program obuke za LZO" },
+    {
+        kind: "TRAINING_PPE",
+        label: "Program obuke za LZO",
+        accept: WORD_OR_PDF_ACCEPT,
+    },
 ];
 
 interface CompanyDocumentsPanelProps {
@@ -326,7 +346,9 @@ export class CompanyDocumentsPanel extends Component<
                                                                 <input
                                                                     type="file"
                                                                     hidden
-                                                                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                                                    accept={
+                                                                        slot.accept
+                                                                    }
                                                                     onChange={(
                                                                         e,
                                                                     ) =>

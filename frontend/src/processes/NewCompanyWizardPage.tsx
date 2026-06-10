@@ -81,6 +81,7 @@ interface State {
     roleRiskLevelId: string;
     roleDescription: string;
     savingRole: boolean;
+    addedRoles: { id: number; name: string }[];
     empDialogOpen: boolean;
     bindingDialogOpen: boolean;
 }
@@ -107,6 +108,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
         roleRiskLevelId: "",
         roleDescription: "",
         savingRole: false,
+        addedRoles: [],
         empDialogOpen: false,
         bindingDialogOpen: false,
     };
@@ -236,18 +238,24 @@ class NewCompanyWizardPage extends Component<Props, State> {
         }
     };
 
-    saveRoleStep = async (): Promise<boolean> => {
+    addRole = async (): Promise<boolean> => {
         const { companyId, roleName, roleRiskLevelId, roleDescription } =
             this.state;
         if (companyId == null) return false;
-        if (!roleName.trim() || !roleRiskLevelId) return true;
+        if (!roleName.trim() || !roleRiskLevelId) {
+            this.setState((prev) => ({
+                ...prev,
+                stepError: "Naziv i nivo rizika su obavezni.",
+            }));
+            return false;
+        }
         this.setState((prev) => ({
             ...prev,
             savingRole: true,
             stepError: null,
         }));
         try {
-            await createJobRole({
+            const created = await createJobRole({
                 client_company: companyId,
                 name: roleName.trim(),
                 risk_level: Number(roleRiskLevelId),
@@ -259,6 +267,10 @@ class NewCompanyWizardPage extends Component<Props, State> {
                 roleName: "",
                 roleRiskLevelId: "",
                 roleDescription: "",
+                addedRoles: [
+                    ...prev.addedRoles,
+                    { id: created.id, name: created.name },
+                ],
             }));
             enqueueSnackbar("Radno mesto je dodato.", { variant: "success" });
             return true;
@@ -297,14 +309,24 @@ class NewCompanyWizardPage extends Component<Props, State> {
             return;
         }
         if (activeStep === 3) {
-            void this.saveRoleStep().then((ok) => {
-                if (ok) {
-                    this.setState((prev) => ({
-                        ...prev,
-                        activeStep: prev.activeStep + 1,
-                    }));
-                }
-            });
+            const { roleName, roleRiskLevelId } = this.state;
+            const hasPending =
+                roleName.trim() !== "" || roleRiskLevelId !== "";
+            if (hasPending) {
+                void this.addRole().then((ok) => {
+                    if (ok) {
+                        this.setState((prev) => ({
+                            ...prev,
+                            activeStep: prev.activeStep + 1,
+                        }));
+                    }
+                });
+            } else {
+                this.setState((prev) => ({
+                    ...prev,
+                    activeStep: prev.activeStep + 1,
+                }));
+            }
             return;
         }
         this.setState((prev) => ({
@@ -365,6 +387,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
             roleRiskLevelId,
             roleDescription,
             savingRole,
+            addedRoles,
             empDialogOpen,
             bindingDialogOpen,
         } = this.state;
@@ -548,6 +571,15 @@ class NewCompanyWizardPage extends Component<Props, State> {
             return (
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {stepError && <Alert severity="error">{stepError}</Alert>}
+                    {addedRoles.length > 0 && (
+                        <Box>
+                            {addedRoles.map((r) => (
+                                <Typography key={r.id} variant="body2">
+                                    • {r.name}
+                                </Typography>
+                            ))}
+                        </Box>
+                    )}
                     <TextField
                         label="Naziv radnog mesta"
                         fullWidth
@@ -591,6 +623,19 @@ class NewCompanyWizardPage extends Component<Props, State> {
                             }))
                         }
                     />
+                    <Box>
+                        <Button
+                            variant="outlined"
+                            disabled={
+                                savingRole ||
+                                !roleName.trim() ||
+                                !roleRiskLevelId
+                            }
+                            onClick={() => void this.addRole()}
+                        >
+                            Dodaj radno mesto
+                        </Button>
+                    </Box>
                     {savingRole && (
                         <Box sx={{ display: "flex", justifyContent: "center" }}>
                             <CircularProgress size={24} />

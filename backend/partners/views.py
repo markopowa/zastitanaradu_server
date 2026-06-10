@@ -386,17 +386,6 @@ class RiskAssessmentActViewSet(viewsets.ModelViewSet):
                 {"detail": "Nije priložen fajl (polje 'file')."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        reason = (request.data.get("reason") or "").strip()
-        if not reason:
-            return Response(
-                {"detail": "Razlog izmene je obavezan."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if len(reason) < 5:
-            return Response(
-                {"detail": "Razlog izmene mora imati najmanje 5 znakova."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
         try:
             section = act.sections.get(section_type=section_type)
         except RiskAssessmentSection.DoesNotExist:
@@ -404,19 +393,35 @@ class RiskAssessmentActViewSet(viewsets.ModelViewSet):
                 {"detail": "Sekcija nije pronađena."},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        version = section.current_version + 1
-        revision = RiskAssessmentSectionRevision.objects.create(
-            section=section,
-            version=version,
-            file=file_obj,
-            reason=reason,
-            created_by=(
-                request.user if request.user.is_authenticated else None
-            ),
-        )
-        section.current_file = revision.file
-        section.current_version = version
-        section.save(update_fields=["current_file", "current_version"])
+        if section.current_version == 0:
+            section.current_file = file_obj
+            section.current_version = 1
+            section.save(update_fields=["current_file", "current_version"])
+        else:
+            reason = (request.data.get("reason") or "").strip()
+            if not reason:
+                return Response(
+                    {"detail": "Razlog izmene je obavezan."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if len(reason) < 5:
+                return Response(
+                    {"detail": "Razlog izmene mora imati najmanje 5 znakova."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            version = section.current_version + 1
+            revision = RiskAssessmentSectionRevision.objects.create(
+                section=section,
+                version=version,
+                file=file_obj,
+                reason=reason,
+                created_by=(
+                    request.user if request.user.is_authenticated else None
+                ),
+            )
+            section.current_file = revision.file
+            section.current_version = version
+            section.save(update_fields=["current_file", "current_version"])
         act = self.get_queryset().get(pk=act.pk)
         return Response(RiskAssessmentActSerializer(act).data)
 

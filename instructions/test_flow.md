@@ -35,7 +35,7 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 1. Otvori tab **„Dokumentacija"** → sekcija „Obavezna dokumentacija".
 2. Red „Ugovor" → **„Priloži"** → `obavezna_dokumentacija\ugovor.pdf`.
 3. Red „Odluka o imenovanju lica za BZNR" → **„Priloži"** → `obavezna_dokumentacija\odluka.pdf`.
-4. Red „Pravilnik o BZNR" → **„Priloži"** → `obavezna_dokumentacija\Pravilnik BZNR - opste 2025.doc`.
+4. Red „Pravilnik o BZNR" → **„Priloži"** → `obavezna_dokumentacija\Pravilnik BZNR - opšte 2025.doc`.
 5. Red „Pravilnik o LZO" → **„Priloži"** → `obavezna_dokumentacija\Pravilnik LZO - 2025.doc`.
 6. Red „Program obuke za zaposlene" → **„Priloži"** → `obavezna_dokumentacija\Program obuke 2025.doc`.
 7. Red „Program obuke za rukovodioce" → **„Priloži"** → `obavezna_dokumentacija\Program obuke za rukovodioce.docx`.
@@ -48,10 +48,10 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 1. U sekciji „Akt o proceni rizika" klikni **„Dodaj Akt"**.
 2. „Datum donošenja (dd.mm.yyyy)" `15.01.2025` → **„Sačuvaj datum"**.
 3. Sekcija „Uvod" → **„Priloži"** → „Izaberi fajl…" → `akt_o_proceni_rizika\0.Uvod.docx` → „Razlog izmene" `Inicijalni prilog uvoda` → **„Sačuvaj"**.
-4. Sekcija „Procene" → **„Priloži"** → `akt_o_proceni_rizika\1.Direktor.doc` → „Razlog izmene" `Inicijalni prilog procene` → **„Sačuvaj"**.
-5. Sekcija „Zaključak" → **„Priloži"** → `akt_o_proceni_rizika\Zakljucak.docx` → „Razlog izmene" `Inicijalni prilog zakljucka` → **„Sačuvaj"**.
-6. Sekcija „Procene" → **„Izmeni"** → `akt_o_proceni_rizika\2.Finansijski direktor.doc` → „Razlog izmene" `Dopuna procene` → **„Sačuvaj"**.
-7. Sekcija „Procene" → **„Istorija"**.
+4. Sekcija „Procene po radnom mestu" → **„Priloži"** → `akt_o_proceni_rizika\1.Direktor.doc` → „Razlog izmene" `Inicijalni prilog procene` → **„Sačuvaj"**.
+5. Sekcija „Zaključak" → **„Priloži"** → `akt_o_proceni_rizika\Zaključak.docx` → „Razlog izmene" `Inicijalni prilog zakljucka` → **„Sačuvaj"**.
+6. Sekcija „Procene po radnom mestu" → **„Izmeni"** → `akt_o_proceni_rizika\2.Finansijski direktor.doc` → „Razlog izmene" `Dopuna procene` → **„Sačuvaj"**.
+7. Sekcija „Procene po radnom mestu" → **„Istorija"**.
 8. **„Objedini u PDF"**.
 
 ---
@@ -138,10 +138,10 @@ Fajlovi su u `files_for_test\` (podfolder po sekciji). Prijavi se kao superuser.
 ## L. Stručni nalazi (tab Stručni nalazi)
 
 1. Otvori firmu → tab **„Stručni nalazi"**.
-2. Red „opreme za rad" → **„Priloži fajl"** → `strucni_nalazi\Strucni nalaz_Oprema za rad_Ukras_31.03.2026.pdf`, „Datum izdavanja (dd.mm.yyyy)" `31.03.2026` → **„Sačuvaj"**.
-3. Red „električnih instalacija" → **„Priloži fajl"** → `strucni_nalazi\Strucni nalaz -o pregledu i ispitivanju elektricnih instalacija_2026.pdf`, „Datum izdavanja" `01.02.2026` → **„Sačuvaj"**.
-4. Red „uslovi radne sredine — letnji period" → **„Priloži fajl"** → `strucni_nalazi\Strucni nalaz_uslovi radne sredine letnji period_2025.pdf`, „Datum izdavanja" `15.06.2025` → **„Sačuvaj"**.
-5. Red „uslovi radne sredine — zimski period" → **„Priloži fajl"** → `strucni_nalazi\Strucni nalaz_uslovi radne sredine zimski period_2025.pdf`, „Datum izdavanja" `15.01.2025` → **„Sačuvaj"**.
+2. Red „Stručni nalaz o pregledu i proveri opreme za rad" → **„Priloži fajl"** → `strucni_nalazi\Stručni nalaz_Oprema za rad_Ukras_31.03.2026.pdf`, „Datum izdavanja (dd.mm.yyyy)" `31.03.2026` → **„Sačuvaj"**.
+3. Red „Stručni nalaz o pregledu i proveri električnih instalacija" → **„Priloži fajl"** → `strucni_nalazi\Strucni nalaz -o pregledu i ispitivanju elektricnih instalacija_2026.pdf`, „Datum izdavanja" `01.02.2026` → **„Sačuvaj"**.
+4. Red „Stručni nalaz o ispitivanju uslova radne sredine — letnji period" → **„Priloži fajl"** → `strucni_nalazi\Stručni nalaz_uslovi radne sredine letnji period_2025.pdf`, „Datum izdavanja" `15.06.2025` → **„Sačuvaj"**.
+5. Red „Stručni nalaz o ispitivanju uslova radne sredine — zimski period" → **„Priloži fajl"** → `strucni_nalazi\Stručni nalaz_uslovi radne sredine zimski period_2025.pdf`, „Datum izdavanja" `15.01.2025` → **„Sačuvaj"**.
 6. Na jednom nalazu → **„Pregled"** → „Zatvori"; pa **„Promeni fajl"** (izaberi isti, izmeni datum) → „Sačuvaj"; pa **„Obriši"** → potvrdi.
 
 ---

@@ -168,6 +168,7 @@ export class EmployeeFormDialog extends Component<
             org_unit,
             position,
             client_company_id,
+            job_role,
         } = this.state;
         return [
             first_name,
@@ -176,6 +177,7 @@ export class EmployeeFormDialog extends Component<
             org_unit,
             position,
             client_company_id,
+            job_role,
         ].every((v) => v.trim() !== "");
     };
 
@@ -470,7 +472,7 @@ export class EmployeeFormDialog extends Component<
                         Radno mesto i rizik
                     </Typography>
                     <Divider sx={{ mb: 1 }} />
-                    <FormControl margin="dense" fullWidth size="small">
+                    <FormControl margin="dense" fullWidth size="small" required>
                         <InputLabel>Radno mesto</InputLabel>
                         <Select
                             label="Radno mesto"
@@ -481,9 +483,6 @@ export class EmployeeFormDialog extends Component<
                                 })
                             }
                         >
-                            <MenuItem value="">
-                                <em>—</em>
-                            </MenuItem>
                             {jobRoles.map((r) => (
                                 <MenuItem key={r.id} value={String(r.id)}>
                                     {r.name}
