@@ -95,6 +95,9 @@ import type {
     JobRole,
     ProcessBinding,
 } from "../types/processes";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
+import { riskLevelIdByLabel } from "../testFlow/helpers";
 
 const formatDate = (v?: string | null) => formatDateDisplay(v);
 
@@ -151,6 +154,8 @@ class ClientCompanyDetailPageInner extends Component<
     ClientCompanyDetailPageProps,
     ClientCompanyDetailPageState
 > {
+    private testFillCleanups: Array<() => void> = [];
+
     state: ClientCompanyDetailPageState = {
         item: null,
         employees: [],
@@ -773,6 +778,7 @@ class ClientCompanyDetailPageInner extends Component<
 
     componentDidMount(): void {
         this.applyRouteId("mount");
+        this.bindTestFillHandlers();
     }
 
     componentDidUpdate(prevProps: ClientCompanyDetailPageProps): void {
@@ -786,11 +792,63 @@ class ClientCompanyDetailPageInner extends Component<
         ) {
             this.updateBreadcrumbs(this.state.item);
         }
+        this.bindTestFillHandlers();
     }
 
     componentWillUnmount(): void {
         this.props.setBreadcrumbs([]);
+        this.clearTestFillHandlers();
     }
+
+    clearTestFillHandlers = (): void => {
+        for (const cleanup of this.testFillCleanups) {
+            cleanup();
+        }
+        this.testFillCleanups = [];
+    };
+
+    bindTestFillHandlers = (): void => {
+        this.clearTestFillHandlers();
+        this.testFillCleanups.push(
+            setupTestFill(
+                "E_ADD",
+                () => {
+                    const ja = TEST_FLOW.jobRoleAdd;
+                    this.setState({
+                        roleDialogOpen: true,
+                        editingRoleId: null,
+                        role_name: ja.name,
+                        role_risk_level: riskLevelIdByLabel(
+                            this.state.riskLevels,
+                            ja.riskLevelLabel,
+                        ),
+                        role_description: "",
+                        roleError: null,
+                    });
+                    return true;
+                },
+                () =>
+                    parseCompanyTab(this.props.location.search) === "job_roles",
+            ),
+            setupTestFill(
+                "E_EDIT",
+                () => {
+                    if (
+                        !this.state.roleDialogOpen ||
+                        this.state.editingRoleId == null
+                    ) {
+                        return false;
+                    }
+                    this.setState({
+                        role_description: TEST_FLOW.jobRoleEdit.description,
+                    });
+                    return true;
+                },
+                () =>
+                    parseCompanyTab(this.props.location.search) === "job_roles",
+            ),
+        );
+    };
 
     render() {
         const {
@@ -970,7 +1028,9 @@ class ClientCompanyDetailPageInner extends Component<
                                         loading={registryImporting}
                                         loadingLabel="Tražim…"
                                         variant="outlined"
-                                        disabled={!editRegistration_number.trim()}
+                                        disabled={
+                                            !editRegistration_number.trim()
+                                        }
                                         onClick={this.handleRegistryImport}
                                         sx={{ flexShrink: 0 }}
                                     />

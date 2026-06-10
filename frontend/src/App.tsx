@@ -57,6 +57,9 @@ const ProcessRunDetailPage = lazy(
 const UpcomingDeadlinesPage = lazy(
     () => import("./processes/UpcomingDeadlinesPage"),
 );
+const IntegrationTestsPage = lazy(
+    () => import("./processes/IntegrationTestsPage"),
+);
 
 const routeFallback = (
     <Box
@@ -84,6 +87,10 @@ class App extends Component {
                     >
                         <Route index element={<RedirectComponent />} />
                         <Route path="dashboard" element={<DashboardPage />} />
+                        <Route
+                            path="integration-tests"
+                            element={<IntegrationTestsPage />}
+                        />
                         <Route
                             path="client-companies"
                             element={<ClientCompaniesListPage />}

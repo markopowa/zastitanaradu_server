@@ -38,6 +38,7 @@ import type { RootState, AppDispatch } from "../store";
 import { loadMe, logout } from "../store/authSlice";
 import { hasPermissionWithPrefix } from "../utils/permissions";
 import { AppBreadcrumbs } from "./Breadcrumbs";
+import { TestSessionBootstrap } from "./TestSessionBootstrap";
 import { getPageTitle } from "../locations";
 import {
     ensureClientCompanies,
@@ -652,6 +653,7 @@ class AppLayoutInner extends Component<Props, State> {
                         {breadcrumbs.length > 1 && (
                             <AppBreadcrumbs items={breadcrumbs} />
                         )}
+                        <TestSessionBootstrap />
                         <Outlet />
                     </Box>
 

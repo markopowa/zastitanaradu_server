@@ -57,6 +57,8 @@ import type {
     DocumentTemplatesListPageState,
     DocumentTemplatesListPageStateProps,
 } from "../types/documentPages";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
 
 const CONTEXT_OPTIONS: {
     value: DocumentTemplatesListContextType;
@@ -73,6 +75,8 @@ class DocumentTemplatesListPageInner extends Component<
     DocumentTemplatesListPageProps,
     DocumentTemplatesListPageState
 > {
+    private testFillCleanup: (() => void) | null = null;
+
     state: DocumentTemplatesListPageState = {
         items: [],
         categories: [],
@@ -95,6 +99,28 @@ class DocumentTemplatesListPageInner extends Component<
     componentDidMount(): void {
         this.props.setLastPath?.("/documents/templates");
         this.load();
+        this.testFillCleanup = setupTestFill("G", () => {
+            const dt = TEST_FLOW.documentTemplate;
+            const category = this.state.categories.find(
+                (c) => c.name === dt.category_name,
+            );
+            this.setState({
+                dialogOpen: true,
+                editingId: null,
+                name: dt.name,
+                description: "",
+                context_type: dt.context_type,
+                category_id: category ? String(category.id) : "",
+                create_mode: "FROM_FILE",
+                document_file_id: "",
+                upload_file: null,
+            });
+            return true;
+        });
+    }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
     }
 
     load = (): void => {

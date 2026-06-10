@@ -39,6 +39,9 @@ import { EmptyState } from "../design";
 import type { AppDispatch } from "../store";
 import type { WithNavigationProps } from "../hocs/withNavigation";
 import type { ClientCompany, RiskLevel } from "../types/processes";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
+import { riskLevelIdByLabel } from "../testFlow/helpers";
 
 const WIZARD_STEPS = [
     "Lična karta",
@@ -82,6 +85,8 @@ interface State {
 }
 
 class NewCompanyWizardPage extends Component<Props, State> {
+    private testFillCleanups: Array<() => void> = [];
+
     state: State = {
         activeStep: 0,
         companyId: null,
@@ -118,11 +123,65 @@ class NewCompanyWizardPage extends Component<Props, State> {
                 this.setState((prev) => ({ ...prev, riskLevels: items })),
             )
             .catch(() => undefined);
+        this.bindTestFillHandlers();
+    }
+
+    componentDidUpdate(): void {
+        this.bindTestFillHandlers();
     }
 
     componentWillUnmount(): void {
         this.props.setBreadcrumbs([]);
+        this.clearTestFillHandlers();
     }
+
+    clearTestFillHandlers = (): void => {
+        for (const cleanup of this.testFillCleanups) {
+            cleanup();
+        }
+        this.testFillCleanups = [];
+    };
+
+    bindTestFillHandlers = (): void => {
+        this.clearTestFillHandlers();
+        const c = TEST_FLOW.company;
+        this.testFillCleanups.push(
+            setupTestFill(
+                "A1",
+                () => {
+                    this.setState({
+                        name: c.name,
+                        tax_id: c.tax_id,
+                        registration_number: c.registration_number,
+                        address: c.address,
+                        phone: c.phone,
+                        email: c.email,
+                        website: "",
+                        notes: c.notes,
+                        activity_code: c.activity_code,
+                    });
+                    return true;
+                },
+                () => this.state.activeStep === 0,
+            ),
+            setupTestFill(
+                "A3",
+                () => {
+                    const jr = TEST_FLOW.jobRoleWizard;
+                    this.setState({
+                        roleName: jr.name,
+                        roleRiskLevelId: riskLevelIdByLabel(
+                            this.state.riskLevels,
+                            jr.riskLevelLabel,
+                        ),
+                        roleDescription: "",
+                    });
+                    return true;
+                },
+                () => this.state.activeStep === 2,
+            ),
+        );
+    };
 
     handleRegistryImport = (): void => {
         const { registration_number } = this.state;
@@ -271,8 +330,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
         }
         if (activeStep === 2) {
             const { roleName, roleRiskLevelId } = this.state;
-            const hasPending =
-                roleName.trim() !== "" || roleRiskLevelId !== "";
+            const hasPending = roleName.trim() !== "" || roleRiskLevelId !== "";
             if (hasPending) {
                 void this.addRole().then((ok) => {
                     if (ok) {

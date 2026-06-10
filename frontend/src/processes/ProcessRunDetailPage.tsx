@@ -61,6 +61,12 @@ import type {
     ProcessRunDetailPageProps,
     ProcessRunDetailPageState,
 } from "../types/processPages";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import {
+    TEST_FLOW,
+    activityPerformedAtDisplay,
+    activityValidUntilDisplay,
+} from "../testFlow/fixture";
 
 const USAGE_KIND_LABELS: Record<string, string> = {
     INVITATION: "Uput / poziv",
@@ -135,6 +141,7 @@ class ProcessRunDetailPageInner extends Component<
     ProcessRunDetailPageState
 > {
     private fileInputRef = createRef<HTMLInputElement>();
+    private testFillCleanup: (() => void) | null = null;
 
     state: ProcessRunDetailPageState = {
         loading: true,
@@ -194,16 +201,30 @@ class ProcessRunDetailPageInner extends Component<
     componentDidMount(): void {
         this.props.setLastPath?.(`/processes/runs/${this.props.id}`);
         this.loadAll();
+        const ac = TEST_FLOW.activityComplete;
+        this.testFillCleanup = setupTestFill("K", () => {
+            this.setState({
+                showCompleteForm: true,
+                complete_valid_until: activityValidUntilDisplay(),
+                complete_performed_at: activityPerformedAtDisplay(),
+                complete_report_number: ac.report_number,
+                complete_fitness_assessment: ac.fitness_assessment,
+                complete_measures_taken: ac.measures_taken,
+                complete_notes: "",
+            });
+            return true;
+        });
+    }
+
+    componentWillUnmount(): void {
+        this.props.setBreadcrumbs?.([]);
+        this.testFillCleanup?.();
     }
 
     componentDidUpdate(prevProps: ProcessRunDetailPageProps): void {
         if (prevProps.id !== this.props.id) {
             this.loadAll();
         }
-    }
-
-    componentWillUnmount(): void {
-        this.props.setBreadcrumbs?.([]);
     }
 
     handleBack = (): void => {

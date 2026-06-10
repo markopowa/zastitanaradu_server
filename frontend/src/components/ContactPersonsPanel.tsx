@@ -36,6 +36,8 @@ import RowActionsMenu from "./RowActionsMenu";
 import { ConfirmDialog, SectionCard, TableStateRow } from "../design";
 
 import type { ContactPerson, ContactPersonRole } from "../types/processes";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
 
 const ROLE_OPTIONS: { value: ContactPersonRole; label: string }[] = [
     { value: "DIRECTOR", label: "Direktor" },
@@ -68,6 +70,8 @@ export class ContactPersonsPanel extends Component<
     ContactPersonsPanelProps,
     ContactPersonsPanelState
 > {
+    private testFillCleanup: (() => void) | null = null;
+
     state: ContactPersonsPanelState = {
         items: [],
         loading: true,
@@ -86,6 +90,23 @@ export class ContactPersonsPanel extends Component<
 
     componentDidMount(): void {
         this.load();
+        this.testFillCleanup = setupTestFill("B", () => {
+            const f = TEST_FLOW.contactPerson;
+            this.setState({
+                dialogOpen: true,
+                editingId: null,
+                formFullName: f.full_name,
+                formRole: f.role,
+                formPhone: f.phone,
+                formEmail: f.email,
+                formIsPrimary: f.is_primary,
+            });
+            return true;
+        });
+    }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
     }
 
     componentDidUpdate(prevProps: ContactPersonsPanelProps): void {

@@ -39,6 +39,15 @@ import type {
     CompanyComplianceFindingRow,
     ComplianceFindingStatus,
 } from "../types/processes";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
+
+const FINDING_DATE_BY_NAME: Record<string, string> = {
+    opreme: TEST_FLOW.complianceFindingDates.equipment,
+    električnih: TEST_FLOW.complianceFindingDates.electrical,
+    "letnji period": TEST_FLOW.complianceFindingDates.environmentSummer,
+    "zimski period": TEST_FLOW.complianceFindingDates.environmentWinter,
+};
 
 const STATUS_BADGE: Record<
     ComplianceFindingStatus,
@@ -81,6 +90,8 @@ function uploadErrorMessage(
 }
 
 export class ComplianceFindingsPanel extends Component<Props, State> {
+    private testFillCleanup: (() => void) | null = null;
+
     state: State = {
         rows: [],
         loading: true,
@@ -98,6 +109,30 @@ export class ComplianceFindingsPanel extends Component<Props, State> {
 
     componentDidMount(): void {
         this.loadRows();
+        this.testFillCleanup = setupTestFill(
+            "L_DATE",
+            () => {
+                const { dialogOpen, dialogTypeName } = this.state;
+                if (!dialogOpen) {
+                    return false;
+                }
+                const key = Object.keys(FINDING_DATE_BY_NAME).find((k) =>
+                    dialogTypeName.toLowerCase().includes(k),
+                );
+                if (!key) {
+                    return false;
+                }
+                this.setState({
+                    dialogIssuedDate: FINDING_DATE_BY_NAME[key],
+                });
+                return true;
+            },
+            () => this.state.dialogOpen,
+        );
+    }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
     }
 
     componentDidUpdate(prevProps: Props): void {

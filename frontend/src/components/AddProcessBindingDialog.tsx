@@ -30,6 +30,9 @@ import type {
     AddProcessBindingDialogProps,
     AddProcessBindingDialogState,
 } from "../types/processPages";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW, bindingTermDateDisplay } from "../testFlow/fixture";
+import { idByName } from "../testFlow/helpers";
 
 function suggestedNextRunAt(processType: ProcessType | undefined): string {
     if (!processType?.default_period_months) return "";
@@ -42,12 +45,36 @@ export class AddProcessBindingDialog extends Component<
     AddProcessBindingDialogProps,
     AddProcessBindingDialogState
 > {
+    private testFillCleanup: (() => void) | null = null;
+
     state: AddProcessBindingDialogState = {
         processTypes: [],
         processTypeId: "",
         nextRunAt: "",
         saving: false,
     };
+
+    componentDidMount(): void {
+        this.testFillCleanup = setupTestFill(
+            "J1",
+            () => {
+                const typeId = idByName(
+                    this.state.processTypes,
+                    TEST_FLOW.processBinding.process_type_name,
+                );
+                this.setState({
+                    processTypeId: typeId || this.state.processTypeId,
+                    nextRunAt: bindingTermDateDisplay(),
+                });
+                return this.props.open;
+            },
+            () => this.props.open,
+        );
+    }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
+    }
 
     componentDidUpdate(prevProps: AddProcessBindingDialogProps): void {
         if (

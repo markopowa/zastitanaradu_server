@@ -25,18 +25,17 @@
         },
         {
             "label": "Format All TypeScript/JavaScript Files",
-            "command": "npx",
             "type": "process",
-            "args": [
-                "prettier",
-                "--write",
-                "frontend/src/**/*.{ts,tsx,js,jsx}",
-                "frontend/**/*.{ts,tsx,js,jsx,json}"
-            ],
+            "command": "npm",
+            "args": ["run", "format"],
+            "options": {
+                "cwd": "${workspaceFolder}/frontend"
+            },
             "problemMatcher": [],
             "presentation": {
                 "reveal": "always",
-                "panel": "shared"
+                "panel": "shared",
+                "clear": true
             },
             "group": {
                 "kind": "build",

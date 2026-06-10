@@ -28,6 +28,8 @@ import { ErrorState, StatusBadge, TableStateRow } from "../design";
 
 import type { AppDispatch, RootState } from "../store";
 import type { ClientCompany, UpcomingDeadline } from "../types/processes";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
 
 const EXPIRING_SOON_DAYS = 7;
 
@@ -55,6 +57,8 @@ interface State {
 }
 
 class UpcomingDeadlinesPageInner extends Component<Props, State> {
+    private testFillCleanup: (() => void) | null = null;
+
     state: State = {
         client_company_id: "",
         within_days: "30",
@@ -98,6 +102,21 @@ class UpcomingDeadlinesPageInner extends Component<Props, State> {
         this.props.setLastPath("/processes/upcoming");
         this.props.ensureClientCompanies();
         this.load();
+        const targetName = TEST_FLOW.upcomingDeadlines.company_name;
+        this.testFillCleanup = setupTestFill("O", () => {
+            const company = this.props.clientCompanies.find(
+                (c) => c.name === targetName || c.name.includes("UKRAS"),
+            );
+            this.setState({
+                client_company_id: company ? String(company.id) : "",
+                within_days: TEST_FLOW.upcomingDeadlines.within_days,
+            });
+            return true;
+        });
+    }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
     }
 
     openDetail = (runId: number): void => {

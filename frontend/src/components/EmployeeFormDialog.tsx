@@ -37,6 +37,8 @@ import type {
     EmployeeFormDialogState,
 } from "../types/processPages";
 import type { Employee } from "../types/processes";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
 
 const emptyForm = (): Omit<
     EmployeeFormDialogState,
@@ -62,6 +64,8 @@ export class EmployeeFormDialog extends Component<
     EmployeeFormDialogProps,
     EmployeeFormDialogState
 > {
+    private testFillCleanup: (() => void) | null = null;
+
     state: EmployeeFormDialogState = {
         ...emptyForm(),
         jobRoles: [],
@@ -69,6 +73,39 @@ export class EmployeeFormDialog extends Component<
         saving: false,
         error: null,
     };
+
+    componentDidMount(): void {
+        this.testFillCleanup = setupTestFill(
+            "F",
+            () => {
+                const f = TEST_FLOW.employee;
+                const role = this.state.jobRoles.find(
+                    (r) => r.name === f.job_role_name,
+                );
+                const dob = jmbgToDateString(f.national_id);
+                this.setState({
+                    first_name: f.first_name,
+                    last_name: f.last_name,
+                    father_name: f.father_name,
+                    national_id: f.national_id,
+                    date_of_birth: dob ?? "",
+                    place_of_birth: f.place_of_birth,
+                    email: f.email,
+                    org_unit: f.org_unit,
+                    position: f.position,
+                    occupation: f.job_role_name,
+                    high_risk_position_name: f.job_role_name,
+                    job_role: role ? String(role.id) : "",
+                });
+                return this.props.open;
+            },
+            () => this.props.open,
+        );
+    }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
+    }
 
     componentDidUpdate(prevProps: EmployeeFormDialogProps): void {
         if (this.props.open && !prevProps.open) {

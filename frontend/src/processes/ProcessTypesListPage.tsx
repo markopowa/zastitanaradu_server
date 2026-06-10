@@ -52,6 +52,8 @@ import type {
     ProcessTypesListPageState,
     ProcessTypesListPageStateProps,
 } from "../types/processPages";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
 
 const SUBJECT_OPTIONS = ["EMPLOYEE", "EQUIPMENT", "CLIENT_COMPANY"] as const;
 
@@ -59,6 +61,8 @@ class ProcessTypesListPageInner extends Component<
     ProcessTypesListPageProps,
     ProcessTypesListPageState
 > {
+    private testFillCleanup: (() => void) | null = null;
+
     state: ProcessTypesListPageState = {
         dialogOpen: false,
         editingId: null,
@@ -75,6 +79,30 @@ class ProcessTypesListPageInner extends Component<
     componentDidMount(): void {
         this.props.setLastPath?.("/processes/types");
         this.props.ensureProcessTypes?.();
+        this.testFillCleanup = setupTestFill(
+            "H",
+            () => {
+                const pt = TEST_FLOW.processType;
+                this.setState({
+                    dialogOpen: true,
+                    editingId: null,
+                    name: pt.name,
+                    description: "",
+                    subject_kind: pt.subject_kind,
+                    default_period_months: pt.default_period_months,
+                    lead_time_days: pt.lead_time_days,
+                    is_active: pt.is_active,
+                    include_in_medical_exam_record:
+                        pt.include_in_medical_exam_record,
+                });
+                return true;
+            },
+            () => true,
+        );
+    }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
     }
 
     openCreate = (): void => {

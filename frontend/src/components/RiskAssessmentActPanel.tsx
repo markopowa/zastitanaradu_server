@@ -43,6 +43,8 @@ import type {
     RiskAssessmentAct,
     RiskAssessmentSection,
 } from "../types/processes";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
 
 interface Props {
     clientCompanyId: number;
@@ -91,6 +93,8 @@ function formatDateTime(iso: string): string {
 }
 
 export class RiskAssessmentActPanel extends Component<Props, State> {
+    private testFillCleanups: Array<() => void> = [];
+
     state: State = {
         act: null,
         loading: true,
@@ -112,13 +116,52 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
 
     componentDidMount(): void {
         this.loadAct();
+        this.bindTestFillHandlers();
     }
 
     componentDidUpdate(prevProps: Props): void {
         if (prevProps.clientCompanyId !== this.props.clientCompanyId) {
             this.loadAct();
         }
+        this.bindTestFillHandlers();
     }
+
+    componentWillUnmount(): void {
+        for (const cleanup of this.testFillCleanups) {
+            cleanup();
+        }
+        this.testFillCleanups = [];
+    }
+
+    bindTestFillHandlers = (): void => {
+        for (const cleanup of this.testFillCleanups) {
+            cleanup();
+        }
+        this.testFillCleanups = [];
+        const reasons = TEST_FLOW.riskActRevisionReason;
+        this.testFillCleanups.push(
+            setupTestFill("D_DATE", () => {
+                this.setState({ actDateValue: TEST_FLOW.riskActDate });
+                return true;
+            }),
+            setupTestFill("D_REASON", () => {
+                const { editDialogOpen, editSection } = this.state;
+                if (!editDialogOpen || editSection == null) {
+                    return false;
+                }
+                let reason = reasons.intro;
+                if (editSection.section_type === "ASSESSMENTS") {
+                    reason = editSection.current_file
+                        ? reasons.assessmentsRevision
+                        : reasons.assessments;
+                } else if (editSection.section_type === "CONCLUSION") {
+                    reason = reasons.conclusion;
+                }
+                this.setState({ editReason: reason });
+                return true;
+            }),
+        );
+    };
 
     loadAct = (): void => {
         const { clientCompanyId } = this.props;
@@ -680,7 +723,9 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                                 minRows={3}
                                 value={editReason}
                                 onChange={(e) =>
-                                    this.setState({ editReason: e.target.value })
+                                    this.setState({
+                                        editReason: e.target.value,
+                                    })
                                 }
                                 helperText="Razlog je obavezan i trajno se beleži."
                                 sx={{ mt: 2 }}
