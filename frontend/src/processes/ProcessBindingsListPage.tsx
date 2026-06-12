@@ -245,7 +245,7 @@ class ProcessBindingsListPageInner extends Component<
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <Typography variant="h6">Obaveze</Typography>
+                <Typography variant="h6">Dodeljene obaveze</Typography>
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                     <FormControl size="small" sx={{ minWidth: 200 }}>
                         <InputLabel>Firma</InputLabel>

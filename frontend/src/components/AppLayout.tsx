@@ -97,13 +97,6 @@ const STATIC_NAV_ITEMS: NavItem[] = [
         showInBottomNav: true,
     },
     {
-        path: "/processes/upcoming",
-        label: "Rokovi",
-        icon: <EventIcon />,
-        group: "operations",
-        permissionPrefix: "processes.view_processrun",
-    },
-    {
         path: "/processes/runs",
         label: "Aktivnosti",
         icon: <EventIcon />,
@@ -133,7 +126,7 @@ const STATIC_NAV_ITEMS: NavItem[] = [
     },
     {
         path: "/processes/bindings",
-        label: "Vezivanja",
+        label: "Dodeljene obaveze",
         icon: <LinkIcon />,
         group: "admin",
         permissionPrefix: "processes.view_processbinding",

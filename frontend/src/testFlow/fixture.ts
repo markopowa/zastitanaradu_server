@@ -83,10 +83,6 @@ export const TEST_FLOW = {
         label: "Testni nivo",
         score: "5",
     },
-    upcomingDeadlines: {
-        company_name: "PRIVREDNO DRUŠTVO UKRAS DOO, VELIKI POPOVIĆ",
-        within_days: "30",
-    },
 } as const;
 
 export function bindingTermDateDisplay(): string {

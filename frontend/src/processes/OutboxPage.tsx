@@ -337,9 +337,12 @@ class OutboxPageInner extends Component<Props, State> {
                                                         whiteSpace: "nowrap",
                                                     }}
                                                 >
-                                                    {row.recipients.join(
-                                                        ", ",
-                                                    ) || "—"}
+                                                    {(
+                                                        row.recipients_display
+                                                            ?.length
+                                                            ? row.recipients_display
+                                                            : row.recipients
+                                                    ).join(", ") || "—"}
                                                 </Typography>
                                             </TableCell>
                                             <TableCell>
@@ -471,15 +474,21 @@ class OutboxPageInner extends Component<Props, State> {
                                             />
                                         )}
                                     </Box>
-                                    {row.recipients.length > 0 && (
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            display="block"
-                                        >
-                                            {row.recipients.join(", ")}
-                                        </Typography>
-                                    )}
+                                    {(() => {
+                                        const rcpts =
+                                            row.recipients_display?.length
+                                                ? row.recipients_display
+                                                : row.recipients;
+                                        return rcpts.length > 0 ? (
+                                            <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                                display="block"
+                                            >
+                                                {rcpts.join(", ")}
+                                            </Typography>
+                                        ) : null;
+                                    })()}
                                     {row.last_error && (
                                         <Typography
                                             variant="caption"

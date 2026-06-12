@@ -573,16 +573,23 @@ class DanasPageInner extends Component<Props, State> {
                                                             variant="outlined"
                                                         />
                                                     )}
-                                                    {row.recipients.length >
-                                                        0 && (
-                                                        <Chip
-                                                            label={row.recipients.join(
-                                                                ", ",
-                                                            )}
-                                                            size="small"
-                                                            variant="outlined"
-                                                        />
-                                                    )}
+                                                    {(() => {
+                                                        const rcpts =
+                                                            row.recipients_display
+                                                                ?.length
+                                                                ? row.recipients_display
+                                                                : row.recipients;
+                                                        return rcpts.length >
+                                                            0 ? (
+                                                            <Chip
+                                                                label={rcpts.join(
+                                                                    ", ",
+                                                                )}
+                                                                size="small"
+                                                                variant="outlined"
+                                                            />
+                                                        ) : null;
+                                                    })()}
                                                     {row.rendered_subject && (
                                                         <Typography
                                                             variant="caption"

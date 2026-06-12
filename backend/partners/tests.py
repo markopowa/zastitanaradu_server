@@ -57,10 +57,10 @@ class ApplicabilityEvaluationTest(TestCase):
         pt = make_process_type(applicability_rule={"always": True})
         self.assertTrue(evaluate_applicability(pt, company))
 
-    def test_always_false_when_not_set(self):
+    def test_empty_rule_is_applicable(self):
         company = make_company()
         pt = make_process_type(applicability_rule={})
-        self.assertFalse(evaluate_applicability(pt, company))
+        self.assertTrue(evaluate_applicability(pt, company))
 
     def test_zop_category_in_match(self):
         company = make_company(zop_category=ClientCompany.ZOP_CATEGORY_I)

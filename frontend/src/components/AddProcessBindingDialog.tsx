@@ -269,7 +269,7 @@ class AddProcessBindingDialogInner extends Component<
                 fullWidth
                 fullScreen={fullScreen}
             >
-                <DialogTitle>Dodaj obavezu</DialogTitle>
+                <DialogTitle>Dodeli obavezu</DialogTitle>
                 <DialogContent>
                     {!unlocked && subjectLabel && (
                         <TextField

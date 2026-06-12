@@ -151,14 +151,6 @@ export const TEST_FLOW_SECTIONS: TestFlowSectionMeta[] = [
         routeLabel: "Aktivnosti",
     },
     {
-        id: "O",
-        phaseId: "ops",
-        label: "Predstojeći rokovi",
-        hint: "Filter pregleda",
-        route: "/processes/upcoming",
-        routeLabel: "Rokovi",
-    },
-    {
         id: "M",
         phaseId: "ops",
         label: "Nivo rizika (test)",

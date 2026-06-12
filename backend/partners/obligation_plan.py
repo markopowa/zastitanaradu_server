@@ -34,7 +34,7 @@ def evaluate_applicability(process_type: ProcessType, company) -> bool:
     if rule.get("high_risk_only"):
         return bool(company.high_risk_activity)
 
-    return False
+    return True
 
 
 def _finding_status_to_plan_status(finding_status: str) -> str:

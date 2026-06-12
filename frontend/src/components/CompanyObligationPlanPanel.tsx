@@ -11,15 +11,20 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
-    List,
-    ListItem,
-    ListItemSecondaryAction,
-    ListItemText,
+    IconButton,
+    Menu,
+    MenuItem,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
     TextField,
     Typography,
     useMediaQuery,
     useTheme,
 } from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
 import { enqueueSnackbar } from "notistack";
 
 import {
@@ -57,6 +62,21 @@ interface State {
     excluding: boolean;
     excludeError: string | null;
     reincluding: number | null;
+    menuAnchor: HTMLElement | null;
+    menuRow: ObligationPlanRow | null;
+}
+
+function domainSummaryChips(domainRows: ObligationPlanRow[]) {
+    let missing = 0;
+    let overdue = 0;
+    let ok = 0;
+    for (const row of domainRows) {
+        if (row.excluded || !row.applicable) continue;
+        if (row.status === "MISSING") missing++;
+        else if (row.status === "OVERDUE") overdue++;
+        else if (row.status === "OK" || row.status === "DUE_SOON") ok++;
+    }
+    return { missing, overdue, ok };
 }
 
 class CompanyObligationPlanPanelInner extends Component<
@@ -72,6 +92,8 @@ class CompanyObligationPlanPanelInner extends Component<
         excluding: false,
         excludeError: null,
         reincluding: null,
+        menuAnchor: null,
+        menuRow: null,
     };
 
     componentDidMount(): void {
@@ -97,7 +119,20 @@ class CompanyObligationPlanPanelInner extends Component<
             );
     };
 
+    openMenu = (
+        event: React.MouseEvent<HTMLButtonElement>,
+        row: ObligationPlanRow,
+    ): void => {
+        event.stopPropagation();
+        this.setState({ menuAnchor: event.currentTarget, menuRow: row });
+    };
+
+    closeMenu = (): void => {
+        this.setState({ menuAnchor: null, menuRow: null });
+    };
+
     openExclude = (row: ObligationPlanRow): void => {
+        this.closeMenu();
         this.setState({
             excludeTarget: row,
             excludeReason: "",
@@ -150,6 +185,7 @@ class CompanyObligationPlanPanelInner extends Component<
     };
 
     reinclude = (row: ObligationPlanRow): void => {
+        this.closeMenu();
         this.setState({ reincluding: row.process_type.id });
         deleteObligationExclusion(this.props.companyId, row.process_type.id)
             .then(() => {
@@ -174,74 +210,6 @@ class CompanyObligationPlanPanelInner extends Component<
             );
     };
 
-    private renderAction(row: ObligationPlanRow): React.ReactNode {
-        const { companyId, isSmall } = this.props;
-        const { reincluding } = this.state;
-
-        if (row.excluded) {
-            return (
-                <Button
-                    size="small"
-                    disabled={reincluding === row.process_type.id}
-                    onClick={() => this.reinclude(row)}
-                    sx={{ whiteSpace: "nowrap" }}
-                >
-                    {reincluding === row.process_type.id ? "..." : "Vrati"}
-                </Button>
-            );
-        }
-
-        if (!row.applicable) {
-            return null;
-        }
-
-        const status = row.status;
-
-        if (status === "MISSING" || status === "OVERDUE") {
-            const shape = row.process_type.shape ?? "";
-            const tab = SHAPE_TAB[shape] ?? "obligations";
-            const href = companyTabUrl(companyId, tab);
-            return (
-                <Box
-                    sx={{
-                        display: "flex",
-                        gap: 0.5,
-                        flexWrap: isSmall ? "wrap" : "nowrap",
-                        justifyContent: "flex-end",
-                    }}
-                >
-                    <Button
-                        size="small"
-                        component={Link}
-                        to={href}
-                        sx={{ whiteSpace: "nowrap" }}
-                    >
-                        Ispravi
-                    </Button>
-                    <Button
-                        size="small"
-                        color="inherit"
-                        onClick={() => this.openExclude(row)}
-                        sx={{ whiteSpace: "nowrap", color: "text.secondary" }}
-                    >
-                        Nije primenljivo
-                    </Button>
-                </Box>
-            );
-        }
-
-        return (
-            <Button
-                size="small"
-                color="inherit"
-                onClick={() => this.openExclude(row)}
-                sx={{ whiteSpace: "nowrap", color: "text.secondary" }}
-            >
-                Nije primenljivo
-            </Button>
-        );
-    }
-
     render() {
         const {
             loading,
@@ -251,8 +219,11 @@ class CompanyObligationPlanPanelInner extends Component<
             excludeReason,
             excluding,
             excludeError,
+            menuAnchor,
+            menuRow,
+            reincluding,
         } = this.state;
-        const { isSmall } = this.props;
+        const { isSmall, companyId } = this.props;
 
         if (loading) {
             return (
@@ -296,60 +267,206 @@ class CompanyObligationPlanPanelInner extends Component<
                     {allDomains.map((domain) => {
                         const domainRows = byDomain.get(domain) ?? [];
                         const domainLabel = DOMAIN_LABELS[domain] ?? domain;
+                        const { missing, overdue, ok } =
+                            domainSummaryChips(domainRows);
 
                         return (
-                            <SectionCard key={domain} title={domainLabel}>
-                                <List disablePadding>
-                                    {domainRows.map((row, idx) => {
-                                        const meta = planStatusMeta(
-                                            row.excluded
+                            <SectionCard
+                                key={domain}
+                                title={domainLabel}
+                                action={
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            flexWrap: "wrap",
+                                            gap: 0.5,
+                                        }}
+                                    >
+                                        {missing > 0 && (
+                                            <Chip
+                                                size="small"
+                                                color="default"
+                                                label={`${missing} nedostaje`}
+                                            />
+                                        )}
+                                        {overdue > 0 && (
+                                            <Chip
+                                                size="small"
+                                                color="error"
+                                                label={`${overdue} kasni`}
+                                            />
+                                        )}
+                                        {ok > 0 && (
+                                            <Chip
+                                                size="small"
+                                                color="success"
+                                                label={`${ok} u redu`}
+                                            />
+                                        )}
+                                    </Box>
+                                }
+                            >
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Obaveza</TableCell>
+                                            <TableCell
+                                                align="right"
+                                                sx={{ width: 130 }}
+                                            >
+                                                Status
+                                            </TableCell>
+                                            <TableCell
+                                                sx={{ width: 48 }}
+                                            />
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {domainRows.map((row) => {
+                                            const effectiveStatus = row.excluded
                                                 ? "EXCLUDED"
                                                 : row.applicable
                                                   ? row.status
-                                                  : "NOT_APPLICABLE",
-                                        );
-                                        const muted =
-                                            row.excluded ||
-                                            !row.applicable ||
-                                            row.status === "NOT_APPLICABLE";
-                                        return (
-                                            <ListItem
-                                                key={row.process_type.id}
-                                                divider={
-                                                    idx < domainRows.length - 1
-                                                }
-                                                sx={{
-                                                    opacity: muted ? 0.55 : 1,
-                                                    flexWrap: isSmall
-                                                        ? "wrap"
-                                                        : "nowrap",
-                                                    pr: isSmall ? 1 : 14,
-                                                    gap: 1,
-                                                }}
-                                                alignItems="flex-start"
-                                            >
-                                                <ListItemText
-                                                    primary={
-                                                        <Box
-                                                            sx={{
-                                                                display: "flex",
-                                                                alignItems:
-                                                                    "center",
-                                                                gap: 1,
-                                                                flexWrap:
-                                                                    "wrap",
-                                                            }}
-                                                        >
-                                                            <Typography
-                                                                variant="body2"
-                                                                component="span"
-                                                            >
-                                                                {
+                                                  : "NOT_APPLICABLE";
+                                            const meta =
+                                                planStatusMeta(effectiveStatus);
+                                            const muted =
+                                                row.excluded || !row.applicable;
+                                            const hasMenu =
+                                                row.excluded ||
+                                                (row.applicable &&
+                                                    effectiveStatus !==
+                                                        "NOT_APPLICABLE");
+
+                                            return (
+                                                <TableRow
+                                                    key={row.process_type.id}
+                                                    sx={{
+                                                        opacity: muted
+                                                            ? 0.5
+                                                            : 1,
+                                                        verticalAlign: isSmall
+                                                            ? "top"
+                                                            : "middle",
+                                                    }}
+                                                >
+                                                    <TableCell
+                                                        sx={{ py: 1.25 }}
+                                                    >
+                                                        {isSmall ? (
+                                                            <Box>
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    fontWeight={
+                                                                        500
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        row
+                                                                            .process_type
+                                                                            .name
+                                                                    }
+                                                                </Typography>
+                                                                <Chip
+                                                                    size="small"
+                                                                    color={
+                                                                        meta.color
+                                                                    }
+                                                                    label={
+                                                                        meta.label
+                                                                    }
+                                                                    sx={{
+                                                                        mt: 0.5,
+                                                                    }}
+                                                                />
+                                                                {row.excluded &&
+                                                                    row.exclusion_reason && (
+                                                                        <Typography
+                                                                            variant="caption"
+                                                                            color="text.secondary"
+                                                                            display="block"
+                                                                            sx={{
+                                                                                mt: 0.25,
+                                                                            }}
+                                                                        >
+                                                                            Isključeno:{" "}
+                                                                            {
+                                                                                row.exclusion_reason
+                                                                            }
+                                                                        </Typography>
+                                                                    )}
+                                                                {!row.excluded &&
                                                                     row
                                                                         .process_type
-                                                                        .name
-                                                                }
-                                                            </Typography>
+                                                                        .legal_basis && (
+                                                                        <Typography
+                                                                            variant="caption"
+                                                                            color="text.secondary"
+                                                                            display="block"
+                                                                            sx={{
+                                                                                mt: 0.25,
+                                                                            }}
+                                                                        >
+                                                                            {
+                                                                                row
+                                                                                    .process_type
+                                                                                    .legal_basis
+                                                                            }
+                                                                        </Typography>
+                                                                    )}
+                                                            </Box>
+                                                        ) : (
+                                                            <Box>
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    fontWeight={
+                                                                        500
+                                                                    }
+                                                                >
+                                                                    {
+                                                                        row
+                                                                            .process_type
+                                                                            .name
+                                                                    }
+                                                                </Typography>
+                                                                {row.excluded &&
+                                                                    row.exclusion_reason && (
+                                                                        <Typography
+                                                                            variant="caption"
+                                                                            color="text.secondary"
+                                                                            display="block"
+                                                                        >
+                                                                            Isključeno:{" "}
+                                                                            {
+                                                                                row.exclusion_reason
+                                                                            }
+                                                                        </Typography>
+                                                                    )}
+                                                                {!row.excluded &&
+                                                                    row
+                                                                        .process_type
+                                                                        .legal_basis && (
+                                                                        <Typography
+                                                                            variant="caption"
+                                                                            color="text.secondary"
+                                                                            display="block"
+                                                                        >
+                                                                            {
+                                                                                row
+                                                                                    .process_type
+                                                                                    .legal_basis
+                                                                            }
+                                                                        </Typography>
+                                                                    )}
+                                                            </Box>
+                                                        )}
+                                                    </TableCell>
+                                                    {!isSmall && (
+                                                        <TableCell
+                                                            align="right"
+                                                            sx={{ py: 1.25 }}
+                                                        >
                                                             <Chip
                                                                 size="small"
                                                                 color={
@@ -359,44 +476,85 @@ class CompanyObligationPlanPanelInner extends Component<
                                                                     meta.label
                                                                 }
                                                             />
-                                                        </Box>
-                                                    }
-                                                    secondary={
-                                                        row.excluded
-                                                            ? `Isključeno: ${row.exclusion_reason}`
-                                                            : (row.process_type
-                                                                  .legal_basis ??
-                                                              undefined)
-                                                    }
-                                                    secondaryTypographyProps={{
-                                                        variant: "caption",
-                                                        color: "text.secondary",
-                                                    }}
-                                                />
-                                                {!isSmall ? (
-                                                    <ListItemSecondaryAction>
-                                                        {this.renderAction(row)}
-                                                    </ListItemSecondaryAction>
-                                                ) : (
-                                                    <Box
+                                                        </TableCell>
+                                                    )}
+                                                    <TableCell
+                                                        align="right"
                                                         sx={{
-                                                            width: "100%",
-                                                            display: "flex",
-                                                            justifyContent:
-                                                                "flex-end",
+                                                            py: 0.5,
+                                                            width: 48,
                                                         }}
                                                     >
-                                                        {this.renderAction(row)}
-                                                    </Box>
-                                                )}
-                                            </ListItem>
-                                        );
-                                    })}
-                                </List>
+                                                        {hasMenu && (
+                                                            <IconButton
+                                                                size="small"
+                                                                disabled={
+                                                                    reincluding ===
+                                                                    row
+                                                                        .process_type
+                                                                        .id
+                                                                }
+                                                                onClick={(e) =>
+                                                                    this.openMenu(
+                                                                        e,
+                                                                        row,
+                                                                    )
+                                                                }
+                                                            >
+                                                                <MoreVertIcon fontSize="small" />
+                                                            </IconButton>
+                                                        )}
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
+                                    </TableBody>
+                                </Table>
                             </SectionCard>
                         );
                     })}
                 </Box>
+
+                <Menu
+                    anchorEl={menuAnchor}
+                    open={Boolean(menuAnchor)}
+                    onClose={this.closeMenu}
+                >
+                    {menuRow && !menuRow.excluded && (
+                        (menuRow.status === "MISSING" ||
+                            menuRow.status === "OVERDUE") && (
+                            <MenuItem
+                                component={Link}
+                                to={companyTabUrl(
+                                    companyId,
+                                    SHAPE_TAB[
+                                        menuRow.process_type.shape ?? ""
+                                    ] ?? "obligations",
+                                )}
+                                onClick={this.closeMenu}
+                            >
+                                Ispravi
+                            </MenuItem>
+                        )
+                    )}
+                    {menuRow && !menuRow.excluded && menuRow.applicable && (
+                        <MenuItem onClick={() => this.openExclude(menuRow)}>
+                            Nije primenljivo
+                        </MenuItem>
+                    )}
+                    {menuRow && menuRow.excluded && (
+                        <MenuItem
+                            onClick={() => this.reinclude(menuRow)}
+                            disabled={
+                                reincluding === menuRow.process_type.id
+                            }
+                        >
+                            {reincluding === menuRow.process_type.id
+                                ? "Vraćam..."
+                                : "Vrati"}
+                        </MenuItem>
+                    )}
+                </Menu>
 
                 <Dialog
                     open={excludeTarget != null}

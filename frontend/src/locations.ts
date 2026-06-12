@@ -38,9 +38,9 @@ const pathToTitle: Record<string, string> = {
     [paths.riskLevels]: "Nivoi rizika",
     [paths.processTypes]: "Vrste obaveza",
     [paths.processTemplates]: "Šabloni obaveza",
-    [paths.processBindings]: "Vezivanja",
+    [paths.processBindings]: "Dodeljene obaveze",
     [paths.processRuns]: "Aktivnosti",
-    [paths.processUpcoming]: "Rokovi",
+    [paths.processUpcoming]: "Aktivnosti",
     [paths.processOutbox]: "Slanja",
 };
 

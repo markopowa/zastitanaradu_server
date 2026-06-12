@@ -381,6 +381,7 @@ export interface NotificationOutbox {
     attempts: number;
     last_error: string;
     recipients: string[];
+    recipients_display: string[];
     rendered_subject: string;
     rendered_body: string;
     document_file: number | null;

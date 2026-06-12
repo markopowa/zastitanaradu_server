@@ -4,11 +4,13 @@ import { connect } from "react-redux";
 import {
     Box,
     Button,
+    Chip,
     FormControl,
     InputLabel,
     MenuItem,
     Paper,
     Select,
+    Stack,
     Table,
     TableBody,
     TableCell,
@@ -25,32 +27,89 @@ import {
     fetchRuns,
 } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
-import { formatDateDisplay, isScheduledOverdue } from "../utils/date";
+import {
+    formatDateDisplay,
+    isScheduledOverdue,
+    isoDateToLocalDate,
+    todayLocalDate,
+} from "../utils/date";
 import { withNavigation } from "../hocs/withNavigation";
 import { ErrorState, StatusBadge, TableStateRow } from "../design";
 import { RUN_STATUS_KINDS, runStatusLabel } from "../design/labels";
 
 import type { AppDispatch, RootState } from "../store";
+import type { ProcessRun } from "../types/processes";
 import type {
     ProcessRunsListPageDispatchProps,
     ProcessRunsListPageProps,
     ProcessRunsListPageState,
     ProcessRunsListPageStateProps,
+    RunsQuickFilter,
 } from "../types/processPages";
+
+const SOON_DAYS = 14;
+
+const QUICK_FILTER_OPTIONS: {
+    value: RunsQuickFilter;
+    label: string;
+    color: "default" | "error" | "warning" | "primary";
+}[] = [
+    { value: "overdue", label: "Kasni", color: "error" },
+    { value: "soon", label: "Stiže uskoro", color: "warning" },
+    { value: "open", label: "Otvorene", color: "primary" },
+    { value: "all", label: "Sve", color: "default" },
+];
+
+function isoDateNowPlus(days: number): Date {
+    const d = todayLocalDate();
+    d.setDate(d.getDate() + days);
+    return d;
+}
+
+function applyQuickFilter(
+    items: ProcessRun[],
+    filter: RunsQuickFilter,
+): ProcessRun[] {
+    if (filter === "all") return items;
+    const isOpen = (r: ProcessRun) =>
+        r.status === "PENDING" || r.status === "SENT";
+    if (filter === "open") return items.filter(isOpen);
+    if (filter === "overdue") {
+        return items.filter(
+            (r) => isOpen(r) && isScheduledOverdue(r.scheduled_for),
+        );
+    }
+    if (filter === "soon") {
+        const soonLimit = isoDateNowPlus(SOON_DAYS);
+        return items.filter((r) => {
+            if (!isOpen(r)) return false;
+            if (isScheduledOverdue(r.scheduled_for)) return false;
+            const d = isoDateToLocalDate(r.valid_until);
+            if (!d) return false;
+            return d <= soonLimit;
+        });
+    }
+    return items;
+}
 
 function parseRunsListSearch(
     search: string,
 ): Pick<
     ProcessRunsListPageState,
-    "client_company_id" | "process_type_id" | "status"
+    "client_company_id" | "process_type_id" | "status" | "quickFilter"
 > {
     const q = new URLSearchParams(
         search.startsWith("?") ? search.slice(1) : search,
     );
+    const qf = q.get("quick_filter") as RunsQuickFilter | null;
+    const validFilters: RunsQuickFilter[] = ["overdue", "soon", "open", "all"];
     return {
         client_company_id: q.get("client_company_id") ?? "",
         process_type_id: q.get("process_type_id") ?? "",
         status: q.get("status") ?? "",
+        quickFilter: validFilters.includes(qf as RunsQuickFilter)
+            ? (qf as RunsQuickFilter)
+            : "open",
     };
 }
 
@@ -62,6 +121,7 @@ class ProcessRunsListPageInner extends Component<
         client_company_id: "",
         process_type_id: "",
         status: "",
+        quickFilter: "open",
     };
 
     load = (): void => {
@@ -101,19 +161,57 @@ class ProcessRunsListPageInner extends Component<
         this.props.navigate(`/processes/runs/${runId}`);
     };
 
+    setQuickFilter = (filter: RunsQuickFilter): void => {
+        this.setState({ quickFilter: filter });
+    };
+
     render() {
         const {
-            runsItems: items,
+            runsItems: allItems,
             clientCompanies: clients,
             processTypes: types,
             runsLoading: loading,
             runsError: error,
         } = this.props;
-        const { client_company_id, process_type_id, status } = this.state;
+        const {
+            client_company_id,
+            process_type_id,
+            status,
+            quickFilter,
+        } = this.state;
+
+        const items = applyQuickFilter(allItems, quickFilter);
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Typography variant="h6">Aktivnosti</Typography>
+
+                <Stack
+                    direction="row"
+                    spacing={1}
+                    flexWrap="wrap"
+                    sx={{ rowGap: 1 }}
+                >
+                    {QUICK_FILTER_OPTIONS.map((opt) => (
+                        <Chip
+                            key={opt.value}
+                            label={opt.label}
+                            color={
+                                quickFilter === opt.value
+                                    ? opt.color
+                                    : "default"
+                            }
+                            variant={
+                                quickFilter === opt.value
+                                    ? "filled"
+                                    : "outlined"
+                            }
+                            onClick={() => this.setQuickFilter(opt.value)}
+                            clickable
+                        />
+                    ))}
+                </Stack>
+
                 <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                     <FormControl size="small" sx={{ minWidth: 200 }}>
                         <InputLabel>Firma</InputLabel>
@@ -179,9 +277,9 @@ class ProcessRunsListPageInner extends Component<
                             }
                         >
                             <MenuItem value="">Svi</MenuItem>
-                            {RUN_STATUS_KINDS.map((status) => (
-                                <MenuItem key={status} value={status}>
-                                    {runStatusLabel(status)}
+                            {RUN_STATUS_KINDS.map((s) => (
+                                <MenuItem key={s} value={s}>
+                                    {runStatusLabel(s)}
                                 </MenuItem>
                             ))}
                         </Select>

@@ -17,8 +17,7 @@ export type TestFlowSection =
     | "J1"
     | "K"
     | "L_DATE"
-    | "M"
-    | "O";
+    | "M";
 
 export type TestFillCommand = {
     type: "fill";

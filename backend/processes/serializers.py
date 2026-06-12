@@ -15,6 +15,7 @@ from .models import (
     TaskAssignment,
 )
 from .tasks import get_open_run_for_binding
+from .utils import _resolve_email_recipients
 
 
 def _user_display_label(user) -> str:
@@ -435,6 +436,7 @@ class NotificationOutboxSerializer(serializers.ModelSerializer):
     process_type_name = serializers.SerializerMethodField()
     company_name = serializers.SerializerMethodField()
     run_id = serializers.IntegerField(source="process_run.id", read_only=True)
+    recipients_display = serializers.SerializerMethodField()
 
     class Meta:
         model = NotificationOutbox
@@ -449,6 +451,7 @@ class NotificationOutboxSerializer(serializers.ModelSerializer):
             "attempts",
             "last_error",
             "recipients",
+            "recipients_display",
             "rendered_subject",
             "rendered_body",
             "document_file",
@@ -477,6 +480,19 @@ class NotificationOutboxSerializer(serializers.ModelSerializer):
         except Exception:
             pass
         return ""
+
+    def get_recipients_display(self, obj: NotificationOutbox) -> list[str]:
+        stored = obj.recipients
+        if stored:
+            return stored
+        template = obj.process_template
+        if template is None:
+            return []
+        try:
+            binding = obj.process_run.process_binding
+            return _resolve_email_recipients(template, binding)
+        except Exception:
+            return []
 
 
 class NotificationOutboxPreviewSerializer(serializers.Serializer):

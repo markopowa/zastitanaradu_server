@@ -99,7 +99,7 @@ class IntegrationTestsPage extends Component<
     handleOpenAppTab = (): void => {
         const id = this.state.sessionId ?? getTestSessionId();
         if (!id) return;
-        window.open(`${window.location.origin}/dashboard?testSession=${id}`);
+        window.open(`${window.location.origin}/danas?testSession=${id}`);
     };
 
     handleOpenRoute = (route: string): void => {
@@ -252,7 +252,7 @@ class IntegrationTestsPage extends Component<
 
     render() {
         if (!this.props.isSuperuser) {
-            return <Navigate to="/dashboard" replace />;
+            return <Navigate to="/danas" replace />;
         }
 
         const { sessionActive } = this.state;

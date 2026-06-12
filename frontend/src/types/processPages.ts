@@ -110,10 +110,13 @@ export type ProcessRunsListPageProps = ProcessRunsListPageStateProps &
     ProcessRunsListPageDispatchProps &
     WithNavigationProps;
 
+export type RunsQuickFilter = "overdue" | "soon" | "open" | "all";
+
 export interface ProcessRunsListPageState {
     client_company_id: string;
     process_type_id: string;
     status: string;
+    quickFilter: RunsQuickFilter;
 }
 
 export interface ProcessRunDetailPageDispatchProps {
