@@ -228,9 +228,12 @@ setupDockerQuick() {
     makeMigrations
     copyBackendIntoContainer
     docker compose exec -T backend python manage.py migrate --noinput
+    docker compose exec -T backend python manage.py seed_compliance_finding_types
+    docker compose exec -T backend python manage.py seed_obligation_catalog
     syncFrontendDist
     reloadCodeDependantServices
-    echo "Quick deploy done: code copied, backend restarted, nginx reloaded (no docker/npm build)."
+    setupTaskRunner
+    echo "Quick deploy done: code copied, backend restarted, nginx reloaded, timers refreshed (no docker/npm build)."
 }
 
 setupDocker() {
@@ -258,6 +261,8 @@ setupDocker() {
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
     cd "$APP_DIR"
     docker compose exec -T backend python manage.py migrate --noinput
+    docker compose exec -T backend python manage.py seed_compliance_finding_types
+    docker compose exec -T backend python manage.py seed_obligation_catalog
     docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
     mkdir -p "$STATIC_DIR"
     docker compose cp backend:/app/staticfiles/. "$STATIC_DIR/"
@@ -437,7 +442,7 @@ setupTaskRunner() {
     TASK_TMR="/etc/systemd/system/pznr-run-due-processes.timer"
     cat > "$TASK_SVC" << EOF
 [Unit]
-Description=PZNR process due checks (ensure open runs, ON_LEAD at 06:00)
+Description=PZNR process due checks (ensure open runs at 06:00)
 After=docker.service
 Requires=docker.service
 
@@ -468,7 +473,7 @@ EOF
     TMR2="/etc/systemd/system/pznr-run-process-reminders.timer"
     cat > "$SVC2" << EOF
 [Unit]
-Description=PZNR run process reminders (ON_SCHEDULED / ON_OVERDUE)
+Description=PZNR run process reminders (notification outbox materialize + send)
 After=docker.service
 Requires=docker.service
 
@@ -485,11 +490,12 @@ WantedBy=multi-user.target
 EOF
     cat > "$TMR2" << EOF
 [Unit]
-Description=Run PZNR process reminders daily at 07:00
+Description=Run PZNR process reminders daily at 07:00 and 13:00
 Requires=pznr-run-process-reminders.service
 
 [Timer]
 OnCalendar=*-*-* 07:00:00
+OnCalendar=*-*-* 13:00:00
 Persistent=true
 
 [Install]
@@ -567,7 +573,7 @@ EOF
     systemctl daemon-reload
     systemctl enable pznr-sync-company-registry.timer
     systemctl start pznr-sync-company-registry.timer
-    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-process-reminders.timer (daily 07:00), pznr-process-ai-document-queue.timer (every 5 min), pznr-sync-company-registry.timer (monthly 7th 03:00). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_process_reminders.log, $LOG_DIR/process_ai_document_queue.log, $LOG_DIR/sync_company_registry.log"
+    echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-process-reminders.timer (daily 07:00 and 13:00), pznr-process-ai-document-queue.timer (every 5 min), pznr-sync-company-registry.timer (monthly 7th 03:00). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_process_reminders.log, $LOG_DIR/process_ai_document_queue.log, $LOG_DIR/sync_company_registry.log"
 }
 
 runAll() {

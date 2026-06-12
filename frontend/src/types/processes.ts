@@ -21,6 +21,9 @@ export interface ClientCompany {
     risk_assessment_act_file?: string | null;
     risk_assessment_act_name?: string;
     risk_assessment_act_date?: string | null;
+    zop_category?: string | null;
+    high_risk_activity?: boolean;
+    installations?: string[] | null;
 }
 
 export type RiskAssessmentSectionType = "INTRO" | "ASSESSMENTS" | "CONCLUSION";
@@ -46,6 +49,17 @@ export interface RiskAssessmentSection {
     revisions: RiskAssessmentSectionRevision[];
 }
 
+export interface RiskAssessmentActAmendment {
+    id: number;
+    act: number;
+    title: string;
+    note: string;
+    file: string | null;
+    uploaded_by: number | null;
+    uploaded_by_username: string | null;
+    uploaded_at: string;
+}
+
 export interface RiskAssessmentAct {
     id: number;
     client_company: number;
@@ -53,6 +67,7 @@ export interface RiskAssessmentAct {
     created_at: string;
     updated_at: string;
     sections: RiskAssessmentSection[];
+    amendments: RiskAssessmentActAmendment[];
     is_complete: boolean;
 }
 
@@ -110,7 +125,11 @@ export type CompanyDocumentKind =
     | "RULEBOOK_PPE"
     | "TRAINING_EMPLOYEES"
     | "TRAINING_MANAGERS"
-    | "TRAINING_PPE";
+    | "TRAINING_PPE"
+    | "PLAN_ZOP"
+    | "PRAVILA_ZOP"
+    | "PLAN_EVAKUACIJE"
+    | "DECISION_ZOP";
 
 export interface CompanyDocument {
     id: number;
@@ -201,6 +220,14 @@ export interface ProcessType {
     lead_time_days: number;
     is_active: boolean;
     include_in_medical_exam_record?: boolean;
+    reminder_offsets?: number[] | null;
+    domain?: string | null;
+    legal_basis?: string | null;
+    shape?: string | null;
+    proof_kind?: string | null;
+    period_rules?: Record<string, unknown> | null;
+    applicability_rule?: string | null;
+    company_document_kind?: string | null;
     templates: ProcessTemplate[];
 }
 
@@ -335,4 +362,72 @@ export interface UpcomingDeadline {
     status: "PENDING" | "SENT";
     is_overdue: boolean;
     days_until_deadline: number | null;
+}
+
+export type NotificationOutboxStatus =
+    | "PENDING"
+    | "SENT"
+    | "FAILED"
+    | "CANCELLED";
+
+export interface NotificationOutbox {
+    id: number;
+    process_run: number;
+    run_id: number;
+    process_template: number | null;
+    offset_days: number | null;
+    scheduled_send_on: string | null;
+    status: NotificationOutboxStatus;
+    attempts: number;
+    last_error: string;
+    recipients: string[];
+    rendered_subject: string;
+    rendered_body: string;
+    document_file: number | null;
+    sent_at: string | null;
+    created_at: string;
+    process_type_name: string;
+    company_name: string;
+}
+
+export interface NotificationOutboxPreview {
+    rendered_subject: string;
+    rendered_body: string;
+    recipients: string[];
+}
+
+export type ObligationPlanStatus =
+    | "OK"
+    | "DUE_SOON"
+    | "OVERDUE"
+    | "MISSING"
+    | "EXCLUDED"
+    | "NOT_APPLICABLE";
+
+export interface ObligationPlanProcessType {
+    id: number;
+    code: string;
+    name: string;
+    subject_kind: string;
+    default_period_months: number | null;
+    domain?: string | null;
+    shape?: string | null;
+    legal_basis?: string | null;
+}
+
+export interface ObligationPlanRow {
+    process_type: ObligationPlanProcessType;
+    applicable: boolean;
+    excluded: boolean;
+    exclusion_reason: string;
+    status: ObligationPlanStatus;
+}
+
+export interface CompanyObligationExclusion {
+    id: number;
+    client_company: number;
+    process_type: number;
+    reason: string;
+    created_by: number | null;
+    created_at: string;
 }

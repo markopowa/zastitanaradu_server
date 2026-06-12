@@ -6,6 +6,7 @@ export const paths = {
     documents: "/documents",
     documentCategories: "/documents/categories",
     documentTemplates: "/documents/templates",
+    danas: "/danas",
     dashboard: "/dashboard",
     clientCompanies: "/client-companies",
     clientCompanyNew: "/client-companies/new",
@@ -18,6 +19,7 @@ export const paths = {
     processBindings: "/processes/bindings",
     processRuns: "/processes/runs",
     processUpcoming: "/processes/upcoming",
+    processOutbox: "/processes/outbox",
     processRunDetail: (id: number) => `/processes/runs/${id}`,
 } as const;
 
@@ -28,16 +30,18 @@ const pathToTitle: Record<string, string> = {
     [paths.documents]: "Dokumenti",
     [paths.documentCategories]: "Kategorije dokumenata",
     [paths.documentTemplates]: "Šabloni dokumenata",
-    [paths.dashboard]: "Kontrolna tabla",
+    [paths.danas]: "Danas",
+    [paths.dashboard]: "Dnevnik",
     [paths.clientCompanies]: "Firme",
     [paths.clientCompanyNew]: "Nova firma",
     [paths.equipment]: "Oprema",
     [paths.riskLevels]: "Nivoi rizika",
     [paths.processTypes]: "Vrste obaveza",
     [paths.processTemplates]: "Šabloni obaveza",
-    [paths.processBindings]: "Obaveze",
+    [paths.processBindings]: "Vezivanja",
     [paths.processRuns]: "Aktivnosti",
-    [paths.processUpcoming]: "Predstojeći rokovi",
+    [paths.processUpcoming]: "Rokovi",
+    [paths.processOutbox]: "Slanja",
 };
 
 export function getPageTitle(pathname: string): string {

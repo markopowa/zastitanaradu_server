@@ -6,11 +6,7 @@ import {
     Box,
     Button,
     CircularProgress,
-    FormControl,
-    InputLabel,
-    MenuItem,
     Paper,
-    Select,
     Step,
     StepLabel,
     Stepper,
@@ -33,6 +29,11 @@ import {
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
+import {
+    JobRoleFormFields,
+    jobRoleFormIsValid,
+} from "../components/JobRoleFormFields";
+import type { JobRoleFormValues } from "../components/JobRoleFormFields";
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
 import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
@@ -40,7 +41,11 @@ import { companyTabUrl } from "../utils/companyTabs";
 
 import type { AppDispatch } from "../store";
 import type { WithNavigationProps } from "../hocs/withNavigation";
-import type { ClientCompany, EmployeeSummary, RiskLevel } from "../types/processes";
+import type {
+    ClientCompany,
+    EmployeeSummary,
+    RiskLevel,
+} from "../types/processes";
 import { setupTestFill } from "../testFlow/registerTestFill";
 import { TEST_FLOW } from "../testFlow/fixture";
 import { riskLevelIdByLabel } from "../testFlow/helpers";
@@ -404,9 +409,12 @@ class NewCompanyWizardPage extends Component<Props, State> {
         if (activeStep === 3) {
             const { addedEmployees } = this.state;
             if (addedEmployees.length === 0) {
-                enqueueSnackbar("Dodaj bar jednog zaposlenog pre sledećeg koraka.", {
-                    variant: "warning",
-                });
+                enqueueSnackbar(
+                    "Dodaj bar jednog zaposlenog pre sledećeg koraka.",
+                    {
+                        variant: "warning",
+                    },
+                );
                 return;
             }
             this.setState((prev) => ({
@@ -436,12 +444,12 @@ class NewCompanyWizardPage extends Component<Props, State> {
         if (id == null) {
             void this.saveStep1().then((createdId) => {
                 if (createdId != null) {
-                    navigate(companyTabUrl(createdId, "compliance"));
+                    navigate(companyTabUrl(createdId, "overview"));
                 }
             });
             return;
         }
-        navigate(companyTabUrl(id, "compliance"));
+        navigate(companyTabUrl(id, "overview"));
     };
 
     renderStepContent(): React.ReactNode {
@@ -631,46 +639,21 @@ class NewCompanyWizardPage extends Component<Props, State> {
                             ))}
                         </Box>
                     )}
-                    <TextField
-                        label="Naziv radnog mesta"
-                        fullWidth
-                        value={roleName}
-                        onChange={(e) =>
+                    <JobRoleFormFields
+                        values={{
+                            name: roleName,
+                            riskLevelId: roleRiskLevelId,
+                            description: roleDescription,
+                        }}
+                        riskLevels={riskLevels}
+                        disabled={savingRole}
+                        requireRiskLevel
+                        onChange={(v: JobRoleFormValues) =>
                             this.setState((prev) => ({
                                 ...prev,
-                                roleName: e.target.value,
-                            }))
-                        }
-                    />
-                    <FormControl fullWidth>
-                        <InputLabel>Nivo rizika</InputLabel>
-                        <Select
-                            label="Nivo rizika"
-                            value={roleRiskLevelId}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    roleRiskLevelId: e.target.value,
-                                }))
-                            }
-                        >
-                            {riskLevels.map((r) => (
-                                <MenuItem key={r.id} value={String(r.id)}>
-                                    {r.label}
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <TextField
-                        label="Opis"
-                        fullWidth
-                        multiline
-                        minRows={2}
-                        value={roleDescription}
-                        onChange={(e) =>
-                            this.setState((prev) => ({
-                                ...prev,
-                                roleDescription: e.target.value,
+                                roleName: v.name,
+                                roleRiskLevelId: v.riskLevelId,
+                                roleDescription: v.description,
                             }))
                         }
                     />
@@ -679,8 +662,14 @@ class NewCompanyWizardPage extends Component<Props, State> {
                             variant="outlined"
                             disabled={
                                 savingRole ||
-                                !roleName.trim() ||
-                                !roleRiskLevelId
+                                !jobRoleFormIsValid(
+                                    {
+                                        name: roleName,
+                                        riskLevelId: roleRiskLevelId,
+                                        description: roleDescription,
+                                    },
+                                    true,
+                                )
                             }
                             onClick={() => void this.addRole()}
                         >
@@ -768,8 +757,8 @@ class NewCompanyWizardPage extends Component<Props, State> {
                 <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                     {!hasEmployeeProcessTypes && (
                         <Alert severity="warning">
-                            Nema aktivne vrste obaveze za zaposlenog. Dodaj je
-                            u Podešavanja → Vrste obaveza.
+                            Nema aktivne vrste obaveze za zaposlenog. Dodaj je u
+                            Podešavanja → Vrste obaveza.
                         </Alert>
                     )}
                     {addedEmployees.length === 0 && (

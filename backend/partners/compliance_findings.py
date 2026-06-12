@@ -1,6 +1,6 @@
 import os
-from datetime import timedelta
 
+from processes.dates import add_months
 from processes.models import ProcessBinding
 
 from .models import CompanyComplianceFinding
@@ -43,7 +43,7 @@ def compute_valid_until(issued_date, finding_type):
     if issued_date is None:
         return None
     months = finding_type.default_validity_months
-    return issued_date + timedelta(days=months * 30)
+    return add_months(issued_date, months)
 
 
 def sync_compliance_finding_binding(finding):

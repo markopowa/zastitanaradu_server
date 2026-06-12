@@ -46,6 +46,21 @@ class JobRole(models.Model):
 
 
 class ClientCompany(models.Model):
+    ZOP_CATEGORY_I = "I"
+    ZOP_CATEGORY_II = "II"
+    ZOP_CATEGORY_III = "III"
+    ZOP_CATEGORY_CHOICES = (
+        (ZOP_CATEGORY_I, "Kategorija I"),
+        (ZOP_CATEGORY_II, "Kategorija II"),
+        (ZOP_CATEGORY_III, "Kategorija III"),
+    )
+
+    INSTALLATION_HYDRANT_NETWORK = "HYDRANT_NETWORK"
+    INSTALLATION_FIRE_ALARM_SYSTEM = "FIRE_ALARM_SYSTEM"
+    INSTALLATION_LIGHTNING_PROTECTION = "LIGHTNING_PROTECTION"
+    INSTALLATION_STABLE_EXTINGUISHING_SYSTEM = "STABLE_EXTINGUISHING_SYSTEM"
+    INSTALLATION_FIRE_EXTINGUISHERS = "FIRE_EXTINGUISHERS"
+
     name = models.CharField(max_length=255)
     tax_id = models.CharField("PIB", max_length=32, unique=True)
     registration_number = models.CharField(max_length=32, blank=True)
@@ -68,6 +83,26 @@ class ClientCompany(models.Model):
         null=True,
         blank=True,
         help_text="Datum donošenja Akta o proceni rizika.",
+    )
+    zop_category = models.CharField(
+        max_length=4,
+        choices=ZOP_CATEGORY_CHOICES,
+        blank=True,
+        default="",
+        verbose_name="ZOP kategorija",
+    )
+    high_risk_activity = models.BooleanField(
+        default=False,
+        verbose_name="Delatnost visokog rizika",
+    )
+    installations = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Instalacije",
+        help_text=(
+            "Kodovi instalacija koje firma ima: HYDRANT_NETWORK, FIRE_ALARM_SYSTEM, "
+            "LIGHTNING_PROTECTION, STABLE_EXTINGUISHING_SYSTEM, FIRE_EXTINGUISHERS."
+        ),
     )
 
     class Meta:
@@ -198,6 +233,10 @@ class CompanyDocument(models.Model):
     KIND_TRAINING_EMPLOYEES = "TRAINING_EMPLOYEES"
     KIND_TRAINING_MANAGERS = "TRAINING_MANAGERS"
     KIND_TRAINING_PPE = "TRAINING_PPE"
+    KIND_PLAN_ZOP = "PLAN_ZOP"
+    KIND_PRAVILA_ZOP = "PRAVILA_ZOP"
+    KIND_PLAN_EVAKUACIJE = "PLAN_EVAKUACIJE"
+    KIND_DECISION_ZOP = "DECISION_ZOP"
     KIND_CHOICES = (
         (KIND_CONTRACT, "Ugovor"),
         (KIND_DECISION, "Odluka o imenovanju lica za BZNR"),
@@ -206,6 +245,10 @@ class CompanyDocument(models.Model):
         (KIND_TRAINING_EMPLOYEES, "Program obuke za zaposlene"),
         (KIND_TRAINING_MANAGERS, "Program obuke za rukovodioce"),
         (KIND_TRAINING_PPE, "Program obuke za LZO"),
+        (KIND_PLAN_ZOP, "Plan zaštite od požara"),
+        (KIND_PRAVILA_ZOP, "Pravila zaštite od požara"),
+        (KIND_PLAN_EVAKUACIJE, "Plan evakuacije"),
+        (KIND_DECISION_ZOP, "Odluka o imenovanju lica za ZOP"),
     )
 
     client_company = models.ForeignKey(
@@ -313,6 +356,47 @@ class RiskAssessmentSectionRevision(models.Model):
 
     def __str__(self) -> str:
         return f"{self.section} v{self.version}"
+
+
+class RiskAssessmentActAmendment(models.Model):
+    act = models.ForeignKey(
+        RiskAssessmentAct,
+        on_delete=models.CASCADE,
+        related_name="amendments",
+        verbose_name="Akt o proceni rizika",
+    )
+    title = models.CharField(
+        max_length=255,
+        verbose_name="Naziv izmene",
+    )
+    note = models.TextField(
+        blank=True,
+        verbose_name="Napomena",
+    )
+    file = models.FileField(
+        upload_to="risk_assessment_acts/amendments/",
+        verbose_name="Fajl izmene",
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="risk_assessment_act_amendments",
+        verbose_name="Postavio",
+    )
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name="Datum postavljanja",
+    )
+
+    class Meta:
+        verbose_name = "Izmena Akta o proceni rizika"
+        verbose_name_plural = "Izmene Akta o proceni rizika"
+        ordering = ("act", "uploaded_at")
+
+    def __str__(self) -> str:
+        return f"{self.title} ({self.act_id})"
 
 
 class ComplianceFindingType(models.Model):
@@ -435,6 +519,40 @@ class CompanyRegistrySnapshot(models.Model):
 
     def __str__(self) -> str:
         return f"Registry {self.cut_off_date} ({self.company_count})"
+
+
+class CompanyObligationExclusion(models.Model):
+    client_company = models.ForeignKey(
+        ClientCompany,
+        on_delete=models.CASCADE,
+        related_name="obligation_exclusions",
+        verbose_name="Klijentska firma",
+    )
+    process_type = models.ForeignKey(
+        "processes.ProcessType",
+        on_delete=models.CASCADE,
+        related_name="obligation_exclusions",
+        verbose_name="Vrsta obaveze",
+    )
+    reason = models.TextField(verbose_name="Razlog isključenja")
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="obligation_exclusions",
+        verbose_name="Kreirao",
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True, verbose_name="Datum kreiranja")
+
+    class Meta:
+        verbose_name = "Isključenje obaveze"
+        verbose_name_plural = "Isključenja obaveza"
+        unique_together = ("client_company", "process_type")
+
+    def __str__(self) -> str:
+        return f"{self.client_company} – {self.process_type}"
 
 
 class CompanyRegistryEntry(models.Model):

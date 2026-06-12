@@ -4,7 +4,19 @@ import { connect } from "react-redux";
 
 import {
     Box,
+    Checkbox,
+    Chip,
+    FormControl,
+    FormControlLabel,
+    FormGroup,
+    FormLabel,
+    InputLabel,
+    Link,
+    MenuItem,
     Paper,
+    Select,
+    Stack,
+    Switch,
     Typography,
     CircularProgress,
     Alert,
@@ -20,19 +32,25 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
 } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import AddIcon from "@mui/icons-material/Add";
 import BlockIcon from "@mui/icons-material/Block";
+import BusinessIcon from "@mui/icons-material/Business";
+import ContactsIcon from "@mui/icons-material/Contacts";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import NotesIcon from "@mui/icons-material/Notes";
 import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import {
+    DetailCard,
+    DetailField,
+    DetailFieldGrid,
+    DetailHeaderCard,
+} from "../components/DetailCard";
 import {
     bindingTermDateError,
     displayDateToIso,
@@ -60,8 +78,13 @@ import {
 import { PermissionGate } from "../components/PermissionGate";
 import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
+import {
+    JobRoleFormFields,
+    jobRoleFormIsValid,
+} from "../components/JobRoleFormFields";
+import type { JobRoleFormValues } from "../components/JobRoleFormFields";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
-import { CompanyComplianceOverview } from "../components/CompanyComplianceOverview";
+import { CompanyObligationPlanPanel } from "../components/CompanyObligationPlanPanel";
 import { AppButton } from "../design/AppButton";
 import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
@@ -178,6 +201,9 @@ class ClientCompanyDetailPageInner extends Component<
         editWebsite: "",
         editNotes: "",
         editActivity_code: "",
+        editZop_category: "",
+        editHigh_risk_activity: false,
+        editInstallations: [] as string[],
         registryImporting: false,
         riskLevels: [],
         jobRoles: [],
@@ -481,6 +507,11 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite: item.website ?? "",
             editNotes: item.notes ?? "",
             editActivity_code: item.activity_code ?? "",
+            editZop_category: item.zop_category ?? "",
+            editHigh_risk_activity: item.high_risk_activity ?? false,
+            editInstallations: Array.isArray(item.installations)
+                ? item.installations
+                : [],
         }));
     };
 
@@ -540,6 +571,9 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
+            editZop_category,
+            editHigh_risk_activity,
+            editInstallations,
         } = this.state;
         if (!editName.trim() || !editTaxId.trim()) return;
         this.setState((prev) => ({ ...prev, saving: true, saveError: null }));
@@ -553,6 +587,9 @@ class ClientCompanyDetailPageInner extends Component<
             website: editWebsite.trim() || undefined,
             notes: editNotes.trim() || undefined,
             activity_code: editActivity_code.trim() || undefined,
+            zop_category: editZop_category || null,
+            high_risk_activity: editHigh_risk_activity,
+            installations: editInstallations,
         })
             .then((item) => {
                 this.setState((prev) => ({
@@ -859,8 +896,6 @@ class ClientCompanyDetailPageInner extends Component<
             runs,
             loading,
             error,
-            generatingDoc,
-            docError,
             editing,
             saving,
             saveError,
@@ -873,6 +908,9 @@ class ClientCompanyDetailPageInner extends Component<
             editWebsite,
             editNotes,
             editActivity_code,
+            editZop_category,
+            editHigh_risk_activity,
+            editInstallations,
             registryImporting,
             jobRoles,
             riskLevels,
@@ -925,27 +963,350 @@ class ClientCompanyDetailPageInner extends Component<
                     activeTab={activeTab}
                     onChange={this.handleTabChange}
                 />
-                {activeTab === "identity" && (
+
+                {activeTab === "overview" && (
+                    <CompanyObligationPlanPanel companyId={item.id} />
+                )}
+
+                {activeTab === "identity" && editing && (
                     <Paper sx={{ p: 3 }}>
                         <Box
                             sx={{
                                 display: "flex",
-                                alignItems: "flex-start",
-                                justifyContent: "space-between",
-                                gap: 2,
-                                mb: editing ? 2 : 0,
+                                flexDirection: "column",
+                                gap: 1,
+                                maxWidth: 560,
                             }}
                         >
-                            {!editing && (
-                                <Typography variant="h6">
-                                    {item.name}
-                                </Typography>
+                            {saveError && (
+                                <Alert severity="error">{saveError}</Alert>
                             )}
-                            {!editing && (
-                                <Box sx={{ display: "flex", gap: 1 }}>
+                            <TextField
+                                margin="dense"
+                                label="Naziv"
+                                fullWidth
+                                required
+                                value={editName}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editName: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="PIB"
+                                fullWidth
+                                required
+                                value={editTaxId}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editTaxId: e.target.value,
+                                    }))
+                                }
+                            />
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    gap: 1,
+                                    alignItems: "center",
+                                }}
+                            >
+                                <TextField
+                                    margin="dense"
+                                    label="Matični broj"
+                                    fullWidth
+                                    value={editRegistration_number}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editRegistration_number:
+                                                e.target.value,
+                                        }))
+                                    }
+                                />
+                                <AppButton
+                                    label="Uvezi"
+                                    tooltip="Uvezi iz javnog registra."
+                                    loading={registryImporting}
+                                    loadingLabel="Tražim…"
+                                    variant="outlined"
+                                    disabled={!editRegistration_number.trim()}
+                                    onClick={this.handleRegistryImport}
+                                    sx={{ flexShrink: 0 }}
+                                />
+                            </Box>
+                            <TextField
+                                margin="dense"
+                                label="Adresa"
+                                fullWidth
+                                value={editAddress}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editAddress: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Telefon"
+                                fullWidth
+                                value={editPhone}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editPhone: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Email"
+                                fullWidth
+                                type="email"
+                                value={editEmail}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editEmail: e.target.value,
+                                    }))
+                                }
+                            />
+                            <TextField
+                                margin="dense"
+                                label="Web sajt"
+                                fullWidth
+                                value={editWebsite}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editWebsite: e.target.value,
+                                    }))
+                                }
+                            />
+                            <Tooltip title="Šifra delatnosti">
+                                <TextField
+                                    margin="dense"
+                                    label="Šifra delatnosti"
+                                    fullWidth
+                                    value={editActivity_code}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editActivity_code: e.target.value,
+                                        }))
+                                    }
+                                />
+                            </Tooltip>
+                            <TextField
+                                margin="dense"
+                                label="Beleške"
+                                fullWidth
+                                multiline
+                                minRows={2}
+                                value={editNotes}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editNotes: e.target.value,
+                                    }))
+                                }
+                            />
+                            <FormControl margin="dense" fullWidth>
+                                <InputLabel id="zop-cat-label">
+                                    ZOP kategorija
+                                </InputLabel>
+                                <Select
+                                    labelId="zop-cat-label"
+                                    label="ZOP kategorija"
+                                    value={editZop_category}
+                                    onChange={(e) =>
+                                        this.setState((prev) => ({
+                                            ...prev,
+                                            editZop_category: e.target.value,
+                                        }))
+                                    }
+                                >
+                                    <MenuItem value="">
+                                        <em>Nije određena</em>
+                                    </MenuItem>
+                                    <MenuItem value="I">Kategorija I</MenuItem>
+                                    <MenuItem value="II">
+                                        Kategorija II
+                                    </MenuItem>
+                                    <MenuItem value="III">
+                                        Kategorija III
+                                    </MenuItem>
+                                </Select>
+                            </FormControl>
+                            <FormControlLabel
+                                sx={{ mt: 1 }}
+                                control={
+                                    <Switch
+                                        checked={editHigh_risk_activity}
+                                        onChange={(e) =>
+                                            this.setState((prev) => ({
+                                                ...prev,
+                                                editHigh_risk_activity:
+                                                    e.target.checked,
+                                            }))
+                                        }
+                                    />
+                                }
+                                label="Delatnost visokog rizika"
+                            />
+                            <FormControl component="fieldset" margin="dense">
+                                <FormLabel component="legend">
+                                    Instalacije
+                                </FormLabel>
+                                <FormGroup>
+                                    {[
+                                        {
+                                            value: "HYDRANT_NETWORK",
+                                            label: "Hidrantska mreža",
+                                        },
+                                        {
+                                            value: "FIRE_ALARM_SYSTEM",
+                                            label: "Sistem za detekciju požara",
+                                        },
+                                        {
+                                            value: "LIGHTNING_PROTECTION",
+                                            label: "Gromobranska zaštita",
+                                        },
+                                        {
+                                            value: "STABLE_EXTINGUISHING_SYSTEM",
+                                            label: "Stabilni sistem za gašenje",
+                                        },
+                                        {
+                                            value: "FIRE_EXTINGUISHERS",
+                                            label: "Aparati za gašenje požara",
+                                        },
+                                    ].map((inst) => (
+                                        <FormControlLabel
+                                            key={inst.value}
+                                            control={
+                                                <Checkbox
+                                                    size="small"
+                                                    checked={editInstallations.includes(
+                                                        inst.value,
+                                                    )}
+                                                    onChange={(e) => {
+                                                        const next = e.target
+                                                            .checked
+                                                            ? [
+                                                                  ...editInstallations,
+                                                                  inst.value,
+                                                              ]
+                                                            : editInstallations.filter(
+                                                                  (v) =>
+                                                                      v !==
+                                                                      inst.value,
+                                                              );
+                                                        this.setState(
+                                                            (prev) => ({
+                                                                ...prev,
+                                                                editInstallations:
+                                                                    next,
+                                                            }),
+                                                        );
+                                                    }}
+                                                />
+                                            }
+                                            label={inst.label}
+                                        />
+                                    ))}
+                                </FormGroup>
+                            </FormControl>
+                            <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
+                                <Button
+                                    variant="contained"
+                                    disabled={
+                                        saving ||
+                                        !editName.trim() ||
+                                        !editTaxId.trim()
+                                    }
+                                    onClick={this.saveCompany}
+                                >
+                                    {saving ? "Čuvam..." : "Sačuvaj"}
+                                </Button>
+                                <Button
+                                    disabled={saving}
+                                    onClick={this.cancelEdit}
+                                >
+                                    Otkaži
+                                </Button>
+                            </Box>
+                        </Box>
+                    </Paper>
+                )}
+
+                {activeTab === "identity" && !editing && (
+                    <Stack spacing={2}>
+                        <DetailHeaderCard
+                            initials={item.name
+                                .split(" ")
+                                .slice(0, 2)
+                                .map((w) => w[0] ?? "")
+                                .join("")
+                                .toUpperCase()}
+                            title={item.name}
+                            badges={
+                                <>
+                                    {item.zop_category && (
+                                        <Chip
+                                            label={`ZOP kategorija ${item.zop_category}`}
+                                            size="small"
+                                            variant="outlined"
+                                            color="primary"
+                                        />
+                                    )}
+                                    {item.high_risk_activity && (
+                                        <Chip
+                                            label="Povećan rizik"
+                                            size="small"
+                                            variant="outlined"
+                                            color="warning"
+                                        />
+                                    )}
+                                    {Array.isArray(item.installations) &&
+                                        item.installations.map((inst) => {
+                                            const instLabels: Record<
+                                                string,
+                                                string
+                                            > = {
+                                                HYDRANT_NETWORK:
+                                                    "Hidrantska mreža",
+                                                FIRE_ALARM_SYSTEM:
+                                                    "Detekcija požara",
+                                                LIGHTNING_PROTECTION:
+                                                    "Gromobran",
+                                                STABLE_EXTINGUISHING_SYSTEM:
+                                                    "Stabilni sistem",
+                                                FIRE_EXTINGUISHERS:
+                                                    "Aparati PP",
+                                            };
+                                            return (
+                                                <Chip
+                                                    key={inst}
+                                                    label={
+                                                        instLabels[inst] ?? inst
+                                                    }
+                                                    size="small"
+                                                    variant="outlined"
+                                                />
+                                            );
+                                        })}
+                                </>
+                            }
+                            action={
+                                <>
                                     <PermissionGate permission="partners.change_clientcompany">
                                         <Button
                                             variant="outlined"
+                                            startIcon={<EditIcon />}
                                             onClick={this.startEdit}
                                         >
                                             Izmeni podatke
@@ -961,238 +1322,122 @@ class ClientCompanyDetailPageInner extends Component<
                                             Obriši firmu
                                         </Button>
                                     </PermissionGate>
-                                </Box>
-                            )}
-                        </Box>
-                        {editing ? (
-                            <Box
-                                sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    gap: 1,
-                                    maxWidth: 560,
-                                }}
+                                </>
+                            }
+                        />
+
+                        <DetailCard
+                            title="Osnovni podaci"
+                            icon={
+                                <BusinessIcon fontSize="small" color="action" />
+                            }
+                        >
+                            <DetailFieldGrid>
+                                <DetailField label="PIB" value={item.tax_id} />
+                                <DetailField
+                                    label="Matični broj"
+                                    value={item.registration_number}
+                                />
+                                <DetailField
+                                    label="Šifra delatnosti"
+                                    value={item.activity_code}
+                                />
+                            </DetailFieldGrid>
+                        </DetailCard>
+
+                        <DetailCard
+                            title="Kontakt"
+                            icon={
+                                <ContactsIcon fontSize="small" color="action" />
+                            }
+                        >
+                            <DetailFieldGrid>
+                                <DetailField
+                                    label="Adresa"
+                                    value={item.address}
+                                />
+                                <DetailField
+                                    label="Telefon"
+                                    value={item.phone}
+                                />
+                                <DetailField
+                                    label="Email"
+                                    value={
+                                        item.email ? (
+                                            <Link href={`mailto:${item.email}`}>
+                                                {item.email}
+                                            </Link>
+                                        ) : undefined
+                                    }
+                                />
+                                <DetailField
+                                    label="Web sajt"
+                                    value={
+                                        item.website ? (
+                                            <Link
+                                                href={item.website}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                            >
+                                                {item.website}
+                                            </Link>
+                                        ) : undefined
+                                    }
+                                />
+                            </DetailFieldGrid>
+                        </DetailCard>
+
+                        {item.notes && (
+                            <DetailCard
+                                title="Napomene"
+                                icon={
+                                    <NotesIcon
+                                        fontSize="small"
+                                        color="action"
+                                    />
+                                }
                             >
-                                {saveError && (
-                                    <Alert severity="error">{saveError}</Alert>
-                                )}
-                                <TextField
-                                    margin="dense"
-                                    label="Naziv"
-                                    fullWidth
-                                    required
-                                    value={editName}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            editName: e.target.value,
-                                        }))
-                                    }
-                                />
-                                <TextField
-                                    margin="dense"
-                                    label="PIB"
-                                    fullWidth
-                                    required
-                                    value={editTaxId}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            editTaxId: e.target.value,
-                                        }))
-                                    }
-                                />
-                                <Box
+                                <Typography
+                                    variant="body2"
                                     sx={{
-                                        display: "flex",
-                                        gap: 1,
-                                        alignItems: "center",
+                                        whiteSpace: "pre-wrap",
+                                        overflowWrap: "break-word",
                                     }}
                                 >
-                                    <TextField
-                                        margin="dense"
-                                        label="Matični broj"
-                                        fullWidth
-                                        value={editRegistration_number}
-                                        onChange={(e) =>
-                                            this.setState((prev) => ({
-                                                ...prev,
-                                                editRegistration_number:
-                                                    e.target.value,
-                                            }))
-                                        }
-                                    />
-                                    <AppButton
-                                        label="Uvezi"
-                                        tooltip="Uvezi iz javnog registra."
-                                        loading={registryImporting}
-                                        loadingLabel="Tražim…"
-                                        variant="outlined"
-                                        disabled={
-                                            !editRegistration_number.trim()
-                                        }
-                                        onClick={this.handleRegistryImport}
-                                        sx={{ flexShrink: 0 }}
-                                    />
-                                </Box>
-                                <TextField
-                                    margin="dense"
-                                    label="Adresa"
-                                    fullWidth
-                                    value={editAddress}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            editAddress: e.target.value,
-                                        }))
-                                    }
-                                />
-                                <TextField
-                                    margin="dense"
-                                    label="Telefon"
-                                    fullWidth
-                                    value={editPhone}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            editPhone: e.target.value,
-                                        }))
-                                    }
-                                />
-                                <TextField
-                                    margin="dense"
-                                    label="Email"
-                                    fullWidth
-                                    type="email"
-                                    value={editEmail}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            editEmail: e.target.value,
-                                        }))
-                                    }
-                                />
-                                <TextField
-                                    margin="dense"
-                                    label="Web sajt"
-                                    fullWidth
-                                    value={editWebsite}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            editWebsite: e.target.value,
-                                        }))
-                                    }
-                                />
-                                <Tooltip title="Šifra delatnosti">
-                                    <TextField
-                                        margin="dense"
-                                        label="Šifra delatnosti"
-                                        fullWidth
-                                        value={editActivity_code}
-                                        onChange={(e) =>
-                                            this.setState((prev) => ({
-                                                ...prev,
-                                                editActivity_code:
-                                                    e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </Tooltip>
-                                <TextField
-                                    margin="dense"
-                                    label="Beleške"
-                                    fullWidth
-                                    multiline
-                                    minRows={2}
-                                    value={editNotes}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            editNotes: e.target.value,
-                                        }))
-                                    }
-                                />
-                                <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
-                                    <Button
-                                        variant="contained"
-                                        disabled={
-                                            saving ||
-                                            !editName.trim() ||
-                                            !editTaxId.trim()
-                                        }
-                                        onClick={this.saveCompany}
-                                    >
-                                        {saving ? "Čuvam..." : "Sačuvaj"}
-                                    </Button>
-                                    <Button
-                                        disabled={saving}
-                                        onClick={this.cancelEdit}
-                                    >
-                                        Otkaži
-                                    </Button>
-                                </Box>
-                            </Box>
-                        ) : (
-                            <Box
-                                component="dl"
-                                sx={{
-                                    m: 0,
-                                    "& dd": { ml: 2 },
-                                    "& dt": { fontWeight: 600, mt: 1 },
-                                }}
-                            >
-                                <dt>PIB</dt>
-                                <dd>{item.tax_id}</dd>
-                                {item.registration_number && (
-                                    <>
-                                        <dt>Matični broj</dt>
-                                        <dd>{item.registration_number}</dd>
-                                    </>
-                                )}
-                                {item.address && (
-                                    <>
-                                        <dt>Adresa</dt>
-                                        <dd>{item.address}</dd>
-                                    </>
-                                )}
-                                {item.email && (
-                                    <>
-                                        <dt>Email</dt>
-                                        <dd>{item.email}</dd>
-                                    </>
-                                )}
-                                {item.phone && (
-                                    <>
-                                        <dt>Telefon</dt>
-                                        <dd>{item.phone}</dd>
-                                    </>
-                                )}
-                                {item.website && (
-                                    <>
-                                        <dt>Web</dt>
-                                        <dd>{item.website}</dd>
-                                    </>
-                                )}
-                                {item.activity_code && (
-                                    <>
-                                        <dt>Šifra delatnosti</dt>
-                                        <dd>{item.activity_code}</dd>
-                                    </>
-                                )}
-                                {item.notes && (
-                                    <>
-                                        <dt>Beleške</dt>
-                                        <dd>{item.notes}</dd>
-                                    </>
-                                )}
-                            </Box>
+                                    {item.notes}
+                                </Typography>
+                            </DetailCard>
                         )}
-                    </Paper>
-                )}
 
-                {activeTab === "identity" && (
-                    <ContactPersonsPanel clientCompanyId={item.id} />
+                        <DetailCard
+                            title="ZOP profil"
+                            icon={
+                                <InfoOutlinedIcon
+                                    fontSize="small"
+                                    color="action"
+                                />
+                            }
+                        >
+                            <DetailFieldGrid>
+                                <DetailField
+                                    label="ZOP kategorija"
+                                    value={
+                                        item.zop_category
+                                            ? `Kategorija ${item.zop_category}`
+                                            : undefined
+                                    }
+                                />
+                                <DetailField
+                                    label="Delatnost visokog rizika"
+                                    value={
+                                        item.high_risk_activity ? "Da" : "Ne"
+                                    }
+                                />
+                            </DetailFieldGrid>
+                        </DetailCard>
+
+                        <ContactPersonsPanel clientCompanyId={item.id} />
+                    </Stack>
                 )}
 
                 {activeTab === "documents" && (
@@ -1201,6 +1446,10 @@ class ClientCompanyDetailPageInner extends Component<
 
                 {activeTab === "documents" && (
                     <CompanyDocumentsPanel clientCompanyId={item.id} />
+                )}
+
+                {activeTab === "documents" && (
+                    <ComplianceFindingsPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "job_roles" && (
@@ -1630,48 +1879,6 @@ class ClientCompanyDetailPageInner extends Component<
                     </Fragment>
                 )}
 
-                {activeTab === "expert_findings" && (
-                    <ComplianceFindingsPanel clientCompanyId={item.id} />
-                )}
-
-                {activeTab === "compliance" && (
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 2,
-                        }}
-                    >
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                                gap: 2,
-                                flexWrap: "wrap",
-                            }}
-                        >
-                            <Typography variant="subtitle1" fontWeight={600}>
-                                Usklađenost firme
-                            </Typography>
-                            <Button
-                                variant="outlined"
-                                disabled={generatingDoc}
-                                onClick={this.handleGenerateMedicalExamRecord}
-                            >
-                                {generatingDoc
-                                    ? "Generišem..."
-                                    : "Generiši Obrazac 1"}
-                            </Button>
-                        </Box>
-                        {docError && <Alert severity="error">{docError}</Alert>}
-                        <CompanyComplianceOverview
-                            companyId={item.id}
-                            onOpenTab={this.handleTabChange}
-                        />
-                    </Box>
-                )}
-
                 <EmployeeFormDialog
                     open={empDialogOpen}
                     mode="create"
@@ -1792,52 +1999,20 @@ class ClientCompanyDetailPageInner extends Component<
                                 {this.state.roleError}
                             </Alert>
                         )}
-                        <TextField
-                            margin="dense"
-                            label="Naziv radnog mesta"
-                            fullWidth
-                            required
-                            value={this.state.role_name}
-                            onChange={(e) =>
+                        <JobRoleFormFields
+                            values={{
+                                name: this.state.role_name,
+                                riskLevelId: this.state.role_risk_level,
+                                description: this.state.role_description,
+                            }}
+                            riskLevels={riskLevels}
+                            disabled={this.state.savingRole}
+                            onChange={(v: JobRoleFormValues) =>
                                 this.setState((prev) => ({
                                     ...prev,
-                                    role_name: e.target.value,
-                                }))
-                            }
-                        />
-                        <FormControl margin="dense" fullWidth size="small">
-                            <InputLabel>Nivo rizika</InputLabel>
-                            <Select
-                                label="Nivo rizika"
-                                value={this.state.role_risk_level}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        role_risk_level: String(e.target.value),
-                                    }))
-                                }
-                            >
-                                <MenuItem value="">
-                                    <em>—</em>
-                                </MenuItem>
-                                {riskLevels.map((rl) => (
-                                    <MenuItem key={rl.id} value={String(rl.id)}>
-                                        {rl.label} (R={rl.score})
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        <TextField
-                            margin="dense"
-                            label="Opis"
-                            fullWidth
-                            multiline
-                            minRows={2}
-                            value={this.state.role_description}
-                            onChange={(e) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    role_description: e.target.value,
+                                    role_name: v.name,
+                                    role_risk_level: v.riskLevelId,
+                                    role_description: v.description,
                                 }))
                             }
                         />
@@ -1854,7 +2029,11 @@ class ClientCompanyDetailPageInner extends Component<
                             variant="contained"
                             disabled={
                                 this.state.savingRole ||
-                                !this.state.role_name.trim()
+                                !jobRoleFormIsValid({
+                                    name: this.state.role_name,
+                                    riskLevelId: this.state.role_risk_level,
+                                    description: this.state.role_description,
+                                })
                             }
                         >
                             {this.state.savingRole ? "Čuvam..." : "Sačuvaj"}

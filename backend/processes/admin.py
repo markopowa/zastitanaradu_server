@@ -16,14 +16,18 @@ class ProcessTypeAdmin(admin.ModelAdmin):
     list_display = (
         "code",
         "name",
+        "domain",
         "subject_kind",
+        "shape",
+        "proof_kind",
         "default_period_months",
         "lead_time_days",
         "is_active",
         "include_in_medical_exam_record",
     )
-    search_fields = ("code", "name")
-    list_filter = ("subject_kind", "is_active")
+    search_fields = ("code", "name", "legal_basis")
+    list_filter = ("domain", "subject_kind", "shape",
+                   "proof_kind", "is_active")
 
 
 @admin.register(ProcessNote)

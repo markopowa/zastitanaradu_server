@@ -18,7 +18,6 @@ import {
     TableRow,
     Typography,
 } from "@mui/material";
-import type { ChipProps } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 
 import {
@@ -34,11 +33,9 @@ import {
     formatDateDisplay,
     StringToDate,
 } from "../utils/date";
+import { findingStatusMeta } from "../utils/status";
 
-import type {
-    CompanyComplianceFindingRow,
-    ComplianceFindingStatus,
-} from "../types/processes";
+import type { CompanyComplianceFindingRow } from "../types/processes";
 import { setupTestFill } from "../testFlow/registerTestFill";
 import { TEST_FLOW } from "../testFlow/fixture";
 
@@ -47,16 +44,6 @@ const FINDING_DATE_BY_NAME: Record<string, string> = {
     električnih: TEST_FLOW.complianceFindingDates.electrical,
     "letnji period": TEST_FLOW.complianceFindingDates.environmentSummer,
     "zimski period": TEST_FLOW.complianceFindingDates.environmentWinter,
-};
-
-const STATUS_BADGE: Record<
-    ComplianceFindingStatus,
-    { label: string; color: ChipProps["color"] }
-> = {
-    VALID: { label: "važi", color: "success" },
-    EXPIRING: { label: "ističe uskoro", color: "warning" },
-    EXPIRED: { label: "istekao", color: "error" },
-    MISSING: { label: "nedostaje", color: "default" },
 };
 
 interface Props {
@@ -332,7 +319,7 @@ export class ComplianceFindingsPanel extends Component<Props, State> {
                                 </TableRow>
                             ) : (
                                 rows.map((row) => {
-                                    const badge = STATUS_BADGE[row.status];
+                                    const badge = findingStatusMeta(row.status);
                                     const hasFile = row.file != null;
                                     return (
                                         <TableRow key={row.finding_type}>

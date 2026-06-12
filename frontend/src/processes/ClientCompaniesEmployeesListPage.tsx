@@ -18,10 +18,6 @@ import {
     Alert,
     IconButton,
     Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     TextField,
 } from "@mui/material";
 import BuildIcon from "@mui/icons-material/Build";
@@ -36,6 +32,7 @@ import { EmployeeExamHistoryDialog } from "../components/EmployeeExamHistoryDial
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { PermissionGate } from "../components/PermissionGate";
+import { SendNowDialog } from "../components/SendNowDialog";
 import { withNavigation } from "../hocs/withNavigation";
 import { RiskBadge } from "../design";
 import {
@@ -482,52 +479,18 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                     onClose={this.closeHistory}
                 />
 
-                <Dialog
+                <SendNowDialog
                     open={sendDialogOpen}
+                    employeeName={sendEmployeeName}
+                    processTypes={types}
+                    processTypeId={sendProcessTypeId}
+                    sending={sending}
+                    onChangeProcessType={(id) =>
+                        this.setState({ sendProcessTypeId: id })
+                    }
                     onClose={this.closeSendDialog}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>
-                        Pošalji na pregled — {sendEmployeeName}
-                    </DialogTitle>
-                    <DialogContent>
-                        <FormControl fullWidth margin="dense">
-                            <InputLabel>Vrsta pregleda</InputLabel>
-                            <Select
-                                value={sendProcessTypeId}
-                                label="Vrsta pregleda"
-                                onChange={(e) =>
-                                    this.setState({
-                                        sendProcessTypeId: e.target
-                                            .value as string,
-                                    })
-                                }
-                            >
-                                {types.map((t) => (
-                                    <MenuItem key={t.id} value={String(t.id)}>
-                                        {t.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={this.closeSendDialog}
-                            disabled={sending}
-                        >
-                            Odustani
-                        </Button>
-                        <Button
-                            onClick={this.handleSend}
-                            variant="contained"
-                            disabled={sending || !sendProcessTypeId}
-                        >
-                            {sending ? "Šaljem..." : "Pošalji"}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    onSend={this.handleSend}
+                />
             </Box>
         );
     }

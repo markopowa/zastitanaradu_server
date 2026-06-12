@@ -6,12 +6,14 @@ from .models import (
     ClientCompany,
     CompanyComplianceFinding,
     CompanyDocument,
+    CompanyObligationExclusion,
     ComplianceFindingType,
     ContactPerson,
     Employee,
     EquipmentItem,
     JobRole,
     RiskAssessmentAct,
+    RiskAssessmentActAmendment,
     RiskAssessmentSection,
     RiskAssessmentSectionRevision,
     RiskLevel,
@@ -71,6 +73,9 @@ class ClientCompanySerializer(serializers.ModelSerializer):
             "risk_assessment_act_file",
             "risk_assessment_act_name",
             "risk_assessment_act_date",
+            "zop_category",
+            "high_risk_activity",
+            "installations",
         )
         read_only_fields = ("risk_assessment_act_file",)
 
@@ -285,8 +290,38 @@ class RiskAssessmentSectionSerializer(serializers.ModelSerializer):
         return f.url
 
 
+class RiskAssessmentActAmendmentSerializer(serializers.ModelSerializer):
+    file = serializers.SerializerMethodField()
+    uploaded_by_username = serializers.CharField(
+        source="uploaded_by.username",
+        read_only=True,
+    )
+
+    class Meta:
+        model = RiskAssessmentActAmendment
+        fields = (
+            "id",
+            "act",
+            "title",
+            "note",
+            "file",
+            "uploaded_by",
+            "uploaded_by_username",
+            "uploaded_at",
+        )
+        read_only_fields = ("act", "uploaded_by", "uploaded_at")
+
+    def get_file(self, obj):
+        f = obj.file
+        if not f:
+            return None
+        return f.url
+
+
 class RiskAssessmentActSerializer(serializers.ModelSerializer):
     sections = RiskAssessmentSectionSerializer(many=True, read_only=True)
+    amendments = RiskAssessmentActAmendmentSerializer(
+        many=True, read_only=True)
     is_complete = serializers.SerializerMethodField()
 
     class Meta:
@@ -298,6 +333,7 @@ class RiskAssessmentActSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "sections",
+            "amendments",
             "is_complete",
         )
 
@@ -324,3 +360,25 @@ class EquipmentItemSerializer(serializers.ModelSerializer):
             "notes",
             "is_active",
         )
+
+
+class CompanyObligationExclusionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyObligationExclusion
+        fields = (
+            "id",
+            "client_company",
+            "process_type",
+            "reason",
+            "created_by",
+            "created_at",
+        )
+        read_only_fields = ("client_company", "created_by", "created_at")
+
+
+class ObligationPlanRowSerializer(serializers.Serializer):
+    process_type = serializers.DictField()
+    applicable = serializers.BooleanField()
+    excluded = serializers.BooleanField()
+    exclusion_reason = serializers.CharField(allow_blank=True)
+    status = serializers.CharField()

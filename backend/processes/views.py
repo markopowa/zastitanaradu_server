@@ -16,6 +16,7 @@ from .activity_log import log_activity
 from .date_format import format_date_display
 from .models import (
     ActivityLog,
+    NotificationOutbox,
     ProcessBinding,
     ProcessNote,
     ProcessRun,
@@ -30,6 +31,8 @@ from .send_now import send_now_for_binding
 from .serializers import (
     ActivityLogSerializer,
     EmployeeSendNowSerializer,
+    NotificationOutboxPreviewSerializer,
+    NotificationOutboxSerializer,
     ProcessBindingSerializer,
     ProcessNoteCreateSerializer,
     ProcessNoteSerializer,
@@ -728,3 +731,100 @@ class TaskAssignmentViewSet(viewsets.ModelViewSet):
         if status_filter is not None and status_filter != "":
             queryset = queryset.filter(status=status_filter)
         return queryset
+
+
+class NotificationOutboxViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = (
+        NotificationOutbox.objects.select_related(
+            "process_run",
+            "process_run__process_type",
+            "process_run__process_binding",
+            "process_run__process_binding__client_company",
+            "process_run__process_binding__employee",
+            "process_run__process_binding__employee__client_company",
+            "process_run__process_binding__equipment_item",
+            "process_run__process_binding__equipment_item__client_company",
+            "process_template",
+            "document_file",
+        )
+        .all()
+        .order_by("scheduled_send_on", "id")
+    )
+    serializer_class = NotificationOutboxSerializer
+    permission_classes = [permissions.DjangoModelPermissions]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        params = self.request.query_params
+
+        status_filter = params.get("status")
+        if status_filter is not None and status_filter != "":
+            queryset = queryset.filter(status=status_filter)
+
+        client_company_id = params.get("client_company_id")
+        if client_company_id is not None and client_company_id != "":
+            queryset = queryset.filter(
+                Q(process_run__process_binding__client_company_id=client_company_id)
+                | Q(process_run__process_binding__employee__client_company_id=client_company_id)
+                | Q(process_run__process_binding__equipment_item__client_company_id=client_company_id)
+            )
+
+        date_from = params.get("date_from")
+        if date_from is not None and date_from != "":
+            queryset = queryset.filter(scheduled_send_on__gte=date_from)
+
+        date_to = params.get("date_to")
+        if date_to is not None and date_to != "":
+            queryset = queryset.filter(scheduled_send_on__lte=date_to)
+
+        return queryset
+
+    @action(detail=True, methods=["post"], url_path="retry")
+    def retry(self, request, pk=None):
+        outbox = self.get_object()
+        if outbox.status != NotificationOutbox.STATUS_FAILED:
+            return Response(
+                {"detail": "Može se ponovo poslati samo red sa statusom FAILED."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        outbox.status = NotificationOutbox.STATUS_PENDING
+        outbox.attempts = 0
+        outbox.save(update_fields=["status", "attempts"])
+        return Response(NotificationOutboxSerializer(outbox).data)
+
+    @action(detail=True, methods=["get"], url_path="preview")
+    def preview(self, request, pk=None):
+        outbox = self.get_object()
+        if outbox.status != NotificationOutbox.STATUS_PENDING:
+            return Response(
+                {"detail": "Pregled je dostupan samo za red sa statusom PENDING."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        template = outbox.process_template
+        if template is None:
+            return Response(
+                {"detail": "Nije pronađen šablon za ovaj red."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        from .utils import (
+            _build_document_context,
+            _render_template_body,
+            _resolve_email_recipients,
+        )
+        run = outbox.process_run
+        binding = run.process_binding
+        snapshot = run.subject_snapshot or {}
+        context = _build_document_context(run, snapshot)
+        rendered_subject = _render_template_body(
+            template.email_subject_template or "", context
+        )
+        rendered_body = _render_template_body(
+            template.email_body_template or "", context
+        )
+        recipients = _resolve_email_recipients(template, binding)
+        data = NotificationOutboxPreviewSerializer({
+            "rendered_subject": rendered_subject,
+            "rendered_body": rendered_body,
+            "recipients": recipients,
+        }).data
+        return Response(data)

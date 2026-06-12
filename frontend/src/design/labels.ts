@@ -5,6 +5,7 @@ import type {
     SubjectKind,
     TriggerKind,
 } from "../types/design";
+import { runStatusMeta } from "../utils/status";
 
 export const RUN_STATUS_LABELS: Record<RunStatus, string> = {
     PENDING: "Na čekanju",
@@ -76,11 +77,11 @@ export const BUTTON_LABELS = {
 };
 
 export function runStatusLabel(status: string): string {
-    return RUN_STATUS_LABELS[status as RunStatus] ?? status;
+    return runStatusMeta(status).label;
 }
 
 export function runStatusColor(status: string): ChipProps["color"] {
-    return RUN_STATUS_COLOR[status as RunStatus] ?? "default";
+    return runStatusMeta(status).color;
 }
 
 export function subjectKindLabel(kind: string): string {

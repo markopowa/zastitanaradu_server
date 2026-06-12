@@ -11,6 +11,10 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    Divider,
+    List,
+    ListItem,
+    ListItemText,
     Paper,
     Table,
     TableBody,
@@ -19,12 +23,16 @@ import {
     TableRow,
     TextField,
     Typography,
+    useMediaQuery,
+    useTheme,
 } from "@mui/material";
 import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import { enqueueSnackbar } from "notistack";
 
 import {
     createRiskAssessmentAct,
+    createRiskAssessmentActAmendment,
+    deleteRiskAssessmentActAmendment,
     downloadRiskAssessmentActMergedPdf,
     getRiskAssessmentAct,
     updateRiskAssessmentActDate,
@@ -41,6 +49,7 @@ import {
 
 import type {
     RiskAssessmentAct,
+    RiskAssessmentActAmendment,
     RiskAssessmentSection,
 } from "../types/processes";
 import { setupTestFill } from "../testFlow/registerTestFill";
@@ -48,6 +57,10 @@ import { TEST_FLOW } from "../testFlow/fixture";
 
 interface Props {
     clientCompanyId: number;
+}
+
+interface InnerProps extends Props {
+    isSmall: boolean;
 }
 
 interface State {
@@ -67,6 +80,13 @@ interface State {
     previewUrl: string | null;
     previewLabel: string;
     previewOpen: boolean;
+    amendmentDialogOpen: boolean;
+    amendmentTitle: string;
+    amendmentNote: string;
+    amendmentFile: File | null;
+    uploadingAmendment: boolean;
+    deletingAmendmentId: number | null;
+    previewAmendment: RiskAssessmentActAmendment | null;
 }
 
 function fileNameFromUrl(url: string | null): string {
@@ -92,7 +112,7 @@ function formatDateTime(iso: string): string {
     return `${dd}.${mm}.${yyyy} ${hh}:${min}`;
 }
 
-export class RiskAssessmentActPanel extends Component<Props, State> {
+class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
     private testFillCleanups: Array<() => void> = [];
 
     state: State = {
@@ -112,6 +132,13 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
         previewUrl: null,
         previewLabel: "",
         previewOpen: false,
+        amendmentDialogOpen: false,
+        amendmentTitle: "",
+        amendmentNote: "",
+        amendmentFile: null,
+        uploadingAmendment: false,
+        deletingAmendmentId: null,
+        previewAmendment: null,
     };
 
     componentDidMount(): void {
@@ -119,7 +146,7 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
         this.bindTestFillHandlers();
     }
 
-    componentDidUpdate(prevProps: Props): void {
+    componentDidUpdate(prevProps: InnerProps): void {
         if (prevProps.clientCompanyId !== this.props.clientCompanyId) {
             this.loadAct();
         }
@@ -344,6 +371,114 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
             );
     };
 
+    openAmendmentDialog = (): void => {
+        this.setState({
+            amendmentDialogOpen: true,
+            amendmentTitle: "",
+            amendmentNote: "",
+            amendmentFile: null,
+        });
+    };
+
+    closeAmendmentDialog = (): void => {
+        this.setState({
+            amendmentDialogOpen: false,
+            amendmentTitle: "",
+            amendmentNote: "",
+            amendmentFile: null,
+        });
+    };
+
+    submitAmendment = (): void => {
+        const { act, amendmentTitle, amendmentNote, amendmentFile } =
+            this.state;
+        if (act == null || amendmentFile == null || !amendmentTitle.trim())
+            return;
+        this.setState({ uploadingAmendment: true });
+        createRiskAssessmentActAmendment(
+            act.id,
+            amendmentTitle.trim(),
+            amendmentFile,
+            amendmentNote.trim() || undefined,
+        )
+            .then((amendment) => {
+                this.setState((prev) => ({
+                    act: prev.act
+                        ? {
+                              ...prev.act,
+                              amendments: [...prev.act.amendments, amendment],
+                          }
+                        : prev.act,
+                    uploadingAmendment: false,
+                }));
+                this.closeAmendmentDialog();
+                enqueueSnackbar("Izmena i dopuna je priložena.", {
+                    variant: "success",
+                });
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState({ uploadingAmendment: false });
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri otpremanju.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
+    };
+
+    deleteAmendment = (amendment: RiskAssessmentActAmendment): void => {
+        const { act } = this.state;
+        if (act == null) return;
+        this.setState({ deletingAmendmentId: amendment.id });
+        deleteRiskAssessmentActAmendment(act.id, amendment.id)
+            .then(() => {
+                this.setState((prev) => ({
+                    act: prev.act
+                        ? {
+                              ...prev.act,
+                              amendments: prev.act.amendments.filter(
+                                  (a) => a.id !== amendment.id,
+                              ),
+                          }
+                        : prev.act,
+                    deletingAmendmentId: null,
+                }));
+                enqueueSnackbar("Izmena i dopuna je obrisana.", {
+                    variant: "success",
+                });
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    this.setState({ deletingAmendmentId: null });
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri brisanju.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                },
+            );
+    };
+
+    openAmendmentPreview = (amendment: RiskAssessmentActAmendment): void => {
+        this.setState({ previewAmendment: amendment });
+    };
+
+    closeAmendmentPreview = (): void => {
+        this.setState({ previewAmendment: null });
+    };
+
     attachedCount(act: RiskAssessmentAct): number {
         return act.sections.filter((s) => s.current_file).length;
     }
@@ -366,7 +501,16 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
             previewOpen,
             previewUrl,
             previewLabel,
+            amendmentDialogOpen,
+            amendmentTitle,
+            amendmentNote,
+            amendmentFile,
+            uploadingAmendment,
+            deletingAmendmentId,
+            previewAmendment,
         } = this.state;
+
+        const { isSmall } = this.props;
 
         if (loading) {
             return (
@@ -434,6 +578,11 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
             editFile != null &&
             !uploading &&
             (isFirstAttach || editReason.trim().length >= 5);
+
+        const canSubmitAmendment =
+            amendmentFile != null &&
+            amendmentTitle.trim().length > 0 &&
+            !uploadingAmendment;
 
         return (
             <Paper sx={{ p: 3 }}>
@@ -680,11 +829,131 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                     </Table>
                 </Box>
 
+                <Divider sx={{ my: 3 }} />
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 2,
+                        flexWrap: "wrap",
+                        mb: 2,
+                    }}
+                >
+                    <Typography variant="subtitle2" fontWeight={600}>
+                        Izmene i dopune Akta
+                    </Typography>
+                    <PermissionGate permission="partners.change_riskassessmentact">
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={this.openAmendmentDialog}
+                        >
+                            Dodaj izmenu
+                        </Button>
+                    </PermissionGate>
+                </Box>
+
+                {act.amendments.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                        Nema priloženih izmena i dopuna.
+                    </Typography>
+                ) : (
+                    <List disablePadding>
+                        {act.amendments.map((amendment, idx) => (
+                            <ListItem
+                                key={amendment.id}
+                                divider={idx < act.amendments.length - 1}
+                                alignItems="flex-start"
+                                sx={{
+                                    flexWrap: isSmall ? "wrap" : "nowrap",
+                                    gap: 1,
+                                    px: 0,
+                                }}
+                            >
+                                <ListItemText
+                                    primary={amendment.title}
+                                    secondary={
+                                        <>
+                                            {formatDateTime(
+                                                amendment.uploaded_at,
+                                            )}
+                                            {amendment.uploaded_by_username &&
+                                                ` · ${amendment.uploaded_by_username}`}
+                                            {amendment.note &&
+                                                ` · ${amendment.note}`}
+                                        </>
+                                    }
+                                    secondaryTypographyProps={{
+                                        variant: "caption",
+                                        color: "text.secondary",
+                                    }}
+                                />
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        gap: 0.5,
+                                        flexShrink: 0,
+                                        alignItems: "center",
+                                        flexWrap: "wrap",
+                                        justifyContent: "flex-end",
+                                        width: isSmall ? "100%" : "auto",
+                                    }}
+                                >
+                                    {amendment.file && (
+                                        <Button
+                                            size="small"
+                                            onClick={() =>
+                                                this.openAmendmentPreview(
+                                                    amendment,
+                                                )
+                                            }
+                                        >
+                                            Pregled
+                                        </Button>
+                                    )}
+                                    {amendment.file && (
+                                        <Button
+                                            size="small"
+                                            component="a"
+                                            href={amendment.file}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                        >
+                                            Preuzmi
+                                        </Button>
+                                    )}
+                                    <PermissionGate permission="partners.delete_riskassessmentactamendment">
+                                        <Button
+                                            size="small"
+                                            color="error"
+                                            disabled={
+                                                deletingAmendmentId ===
+                                                amendment.id
+                                            }
+                                            onClick={() =>
+                                                this.deleteAmendment(amendment)
+                                            }
+                                        >
+                                            {deletingAmendmentId ===
+                                            amendment.id
+                                                ? "Brišem..."
+                                                : "Obriši"}
+                                        </Button>
+                                    </PermissionGate>
+                                </Box>
+                            </ListItem>
+                        ))}
+                    </List>
+                )}
+
                 <Dialog
                     open={editDialogOpen}
                     onClose={this.closeEditDialog}
                     maxWidth="sm"
                     fullWidth
+                    fullScreen={isSmall}
                 >
                     <DialogTitle>
                         {editSection?.current_file
@@ -713,6 +982,13 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                                 }
                             />
                         </Button>
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 0.5, display: "block" }}
+                        >
+                            Word fajlovi se automatski prebacuju u PDF.
+                        </Typography>
                         {!isFirstAttach && (
                             <TextField
                                 margin="dense"
@@ -749,12 +1025,95 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                     </DialogActions>
                 </Dialog>
 
+                <Dialog
+                    open={amendmentDialogOpen}
+                    onClose={this.closeAmendmentDialog}
+                    maxWidth="sm"
+                    fullWidth
+                    fullScreen={isSmall}
+                >
+                    <DialogTitle>Dodaj izmenu i dopunu Akta</DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            margin="dense"
+                            label="Naziv"
+                            required
+                            fullWidth
+                            value={amendmentTitle}
+                            disabled={uploadingAmendment}
+                            onChange={(e) =>
+                                this.setState({
+                                    amendmentTitle: e.target.value,
+                                })
+                            }
+                            sx={{ mb: 1 }}
+                        />
+                        <TextField
+                            margin="dense"
+                            label="Napomena (opciono)"
+                            fullWidth
+                            multiline
+                            minRows={2}
+                            value={amendmentNote}
+                            disabled={uploadingAmendment}
+                            onChange={(e) =>
+                                this.setState({ amendmentNote: e.target.value })
+                            }
+                            sx={{ mb: 2 }}
+                        />
+                        <Button
+                            component="label"
+                            variant="outlined"
+                            fullWidth
+                            disabled={uploadingAmendment}
+                        >
+                            {amendmentFile
+                                ? amendmentFile.name
+                                : "Izaberi fajl..."}
+                            <input
+                                type="file"
+                                hidden
+                                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                onChange={(e) =>
+                                    this.setState({
+                                        amendmentFile:
+                                            e.target.files?.[0] ?? null,
+                                    })
+                                }
+                            />
+                        </Button>
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mt: 0.5, display: "block" }}
+                        >
+                            Word fajlovi se automatski prebacuju u PDF.
+                        </Typography>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={this.closeAmendmentDialog}
+                            disabled={uploadingAmendment}
+                        >
+                            Odustani
+                        </Button>
+                        <Button
+                            variant="contained"
+                            disabled={!canSubmitAmendment}
+                            onClick={this.submitAmendment}
+                        >
+                            {uploadingAmendment ? "Otpremam..." : "Priloži"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
                 {previewUrl && (
                     <Dialog
                         open={previewOpen}
                         onClose={this.closePreview}
                         maxWidth="lg"
                         fullWidth
+                        fullScreen={isSmall}
                     >
                         <DialogTitle>{previewLabel}</DialogTitle>
                         <DialogContent>
@@ -768,7 +1127,43 @@ export class RiskAssessmentActPanel extends Component<Props, State> {
                         </DialogActions>
                     </Dialog>
                 )}
+
+                {previewAmendment?.file && (
+                    <Dialog
+                        open
+                        onClose={this.closeAmendmentPreview}
+                        maxWidth="lg"
+                        fullWidth
+                        fullScreen={isSmall}
+                    >
+                        <DialogTitle>{previewAmendment.title}</DialogTitle>
+                        <DialogContent>
+                            <FilePreviewContent
+                                url={previewAmendment.file}
+                                label={previewAmendment.title}
+                            />
+                        </DialogContent>
+                        <DialogActions>
+                            <Button
+                                href={previewAmendment.file}
+                                target="_blank"
+                                rel="noreferrer"
+                            >
+                                Otvori u novom prozoru
+                            </Button>
+                            <Button onClick={this.closeAmendmentPreview}>
+                                Zatvori
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
+                )}
             </Paper>
         );
     }
+}
+
+export function RiskAssessmentActPanel(props: Props) {
+    const theme = useTheme();
+    const isSmall = useMediaQuery(theme.breakpoints.down("sm"));
+    return <RiskAssessmentActPanelInner {...props} isSmall={isSmall} />;
 }

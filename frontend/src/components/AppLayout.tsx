@@ -32,6 +32,9 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import BusinessIcon from "@mui/icons-material/Business";
 import BuildIcon from "@mui/icons-material/Build";
+import TodayIcon from "@mui/icons-material/Today";
+import SendIcon from "@mui/icons-material/Send";
+import LinkIcon from "@mui/icons-material/Link";
 import { enqueueSnackbar } from "notistack";
 
 import type { RootState, AppDispatch } from "../store";
@@ -49,13 +52,7 @@ const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 600;
 const APP_TITLE = "Zaštita na radu";
 
-type NavGroup =
-    | "overview"
-    | "companies"
-    | "operations"
-    | "documents"
-    | "settings_admin"
-    | "users";
+type NavGroup = "top" | "operations" | "admin";
 
 interface NavItem {
     path: string;
@@ -68,46 +65,43 @@ interface NavItem {
 
 const STATIC_NAV_ITEMS: NavItem[] = [
     {
-        path: "/dashboard",
-        label: "Kontrolna tabla",
-        icon: <DashboardIcon />,
-        group: "overview",
+        path: "/danas",
+        label: "Danas",
+        icon: <TodayIcon />,
+        group: "top",
         permissionPrefix: "processes.view_processrun",
-    },
-    {
-        path: "/processes/upcoming",
-        label: "Predstojeći rokovi",
-        icon: <EventIcon />,
-        group: "overview",
-        permissionPrefix: "processes.view_processrun",
+        showInBottomNav: true,
     },
     {
         path: "/client-companies",
         label: "Firme",
         icon: <BusinessIcon />,
-        group: "companies",
+        group: "top",
         permissionPrefix: "partners.view_clientcompany",
+        showInBottomNav: true,
     },
     {
         path: "/client-companies-employees",
         label: "Zaposleni",
         icon: <PeopleIcon />,
-        group: "companies",
+        group: "top",
         permissionPrefix: "partners.view_employee",
+        showInBottomNav: true,
     },
     {
         path: "/equipment",
         label: "Oprema",
         icon: <BuildIcon />,
-        group: "companies",
+        group: "top",
         permissionPrefix: "partners.view_equipmentitem",
+        showInBottomNav: true,
     },
     {
-        path: "/processes/bindings",
-        label: "Obaveze",
+        path: "/processes/upcoming",
+        label: "Rokovi",
         icon: <EventIcon />,
         group: "operations",
-        permissionPrefix: "processes.view_processbinding",
+        permissionPrefix: "processes.view_processrun",
     },
     {
         path: "/processes/runs",
@@ -117,88 +111,96 @@ const STATIC_NAV_ITEMS: NavItem[] = [
         permissionPrefix: "processes.view_processrun",
     },
     {
+        path: "/processes/outbox",
+        label: "Slanja",
+        icon: <SendIcon />,
+        group: "operations",
+        permissionPrefix: "processes.view_processrun",
+    },
+    {
         path: "/processes/types",
         label: "Vrste obaveza",
         icon: <SchoolIcon />,
-        group: "settings_admin",
+        group: "admin",
         permissionPrefix: "processes.view_processtype",
     },
     {
         path: "/processes/templates",
         label: "Šabloni obaveza",
         icon: <MenuBookIcon />,
-        group: "settings_admin",
+        group: "admin",
         permissionPrefix: "processes.view_processtemplate",
     },
     {
-        path: "/risk-levels",
-        label: "Nivoi rizika",
-        icon: <ReportProblemIcon />,
-        group: "settings_admin",
-        permissionPrefix: "partners.view_risklevel",
+        path: "/processes/bindings",
+        label: "Vezivanja",
+        icon: <LinkIcon />,
+        group: "admin",
+        permissionPrefix: "processes.view_processbinding",
+    },
+    {
+        path: "/dashboard",
+        label: "Dnevnik",
+        icon: <DashboardIcon />,
+        group: "admin",
+        permissionPrefix: "processes.view_processrun",
     },
     {
         path: "/documents",
         label: "Dokumenti",
         icon: <FolderIcon />,
-        group: "documents",
+        group: "admin",
         permissionPrefix: "documents.view_document",
     },
     {
         path: "/documents/categories",
         label: "Kategorije dokumenata",
         icon: <CategoryIcon />,
-        group: "documents",
+        group: "admin",
         permissionPrefix: "documents.view_document",
     },
     {
         path: "/documents/templates",
         label: "Šabloni dokumenata",
         icon: <MenuBookIcon />,
-        group: "documents",
+        group: "admin",
         permissionPrefix: "documents.view_documenttemplate",
     },
     {
         path: "/users",
         label: "Korisnici",
         icon: <PeopleIcon />,
-        group: "users",
+        group: "admin",
         permissionPrefix: "auth.view_user",
     },
     {
         path: "/roles",
-        label: "Role",
+        label: "Uloge",
         icon: <BadgeIcon />,
-        group: "users",
+        group: "admin",
         permissionPrefix: "auth.view_group",
+    },
+    {
+        path: "/risk-levels",
+        label: "Nivoi rizika",
+        icon: <ReportProblemIcon />,
+        group: "admin",
+        permissionPrefix: "partners.view_risklevel",
     },
 ];
 
-const NAV_GROUP_ORDER: NavGroup[] = [
-    "overview",
-    "companies",
-    "operations",
-    "documents",
-    "settings_admin",
-    "users",
-];
+const NAV_GROUP_ORDER: NavGroup[] = ["top", "operations", "admin"];
 
 const NAV_GROUP_LABEL: Record<NavGroup, string> = {
-    overview: "Pregled",
-    companies: "Firme",
+    top: "",
     operations: "Operativa",
-    documents: "Dokumenti",
-    settings_admin: "Podešavanja",
-    users: "Korisnici / Role",
+    admin: "Administracija",
 };
 
 const NAV_GROUP_ICON: Record<NavGroup, ReactNode> = {
-    overview: <DashboardIcon />,
-    companies: <BusinessIcon />,
+    top: <TodayIcon />,
     operations: <EventIcon />,
-    documents: <FolderIcon />,
-    settings_admin: <SchoolIcon />,
-    users: <PeopleIcon />,
+    admin: <SchoolIcon />,
 };
 
 function visibleNavItems(permissions: string[]): NavItem[] {
@@ -421,17 +423,19 @@ class AppLayoutInner extends Component<Props, State> {
                                             gap: 0.5,
                                         }}
                                     >
-                                        <Typography
-                                            variant="caption"
-                                            sx={{
-                                                px: 2,
-                                                mb: 0.5,
-                                                textTransform: "uppercase",
-                                                color: "text.secondary",
-                                            }}
-                                        >
-                                            {NAV_GROUP_LABEL[groupKey]}
-                                        </Typography>
+                                        {NAV_GROUP_LABEL[groupKey] && (
+                                            <Typography
+                                                variant="caption"
+                                                sx={{
+                                                    px: 2,
+                                                    mb: 0.5,
+                                                    textTransform: "uppercase",
+                                                    color: "text.secondary",
+                                                }}
+                                            >
+                                                {NAV_GROUP_LABEL[groupKey]}
+                                            </Typography>
+                                        )}
                                         {groupItems.map((item) => {
                                             const fullPath = item.path;
                                             const isActive =
@@ -501,7 +505,7 @@ class AppLayoutInner extends Component<Props, State> {
                                                 </Box>
                                             );
                                         })}
-                                        {!["users"].includes(groupKey) && (
+                                        {!["admin"].includes(groupKey) && (
                                             <Divider
                                                 sx={{ mt: 1.25, opacity: 0.6 }}
                                             />

@@ -11,10 +11,6 @@ import {
     TableRow,
     Typography,
     Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
     FormControl,
     InputLabel,
     Select,
@@ -28,18 +24,13 @@ import BlockIcon from "@mui/icons-material/Block";
 import { enqueueSnackbar } from "notistack";
 
 import type { ProcessBindingsParams } from "../api/processes";
-import {
-    getEmployees,
-    getEquipment,
-    sendNowForBinding,
-} from "../api/processes";
+import { sendNowForBinding } from "../api/processes";
+import { AddProcessBindingDialog } from "../components/AddProcessBindingDialog";
 import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
-import { subjectKindLabel } from "../design/labels";
 import {
-    addProcessBinding,
     ensureClientCompanies,
     ensureProcessTypes,
     fetchBindings,
@@ -47,17 +38,14 @@ import {
 } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
 import {
-    addMonths,
     bindingTermDateError,
-    DateToString,
     displayDateToIso,
     formatDateDisplay,
     isoDateToFormDisplay,
-    todayLocalDate,
 } from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
-import type { ProcessBinding, ProcessType } from "../types/processes";
+import type { ProcessBinding } from "../types/processes";
 import type {
     ProcessBindingsListPageDispatchProps,
     ProcessBindingsListPageProps,
@@ -65,29 +53,14 @@ import type {
     ProcessBindingsListPageStateProps,
 } from "../types/processPages";
 
-function suggestedNextRunAt(processType: ProcessType | undefined): string {
-    if (!processType?.default_period_months) return "";
-    return DateToString(
-        addMonths(todayLocalDate(), processType.default_period_months),
-    );
-}
-
 class ProcessBindingsListPageInner extends Component<
     ProcessBindingsListPageProps,
     ProcessBindingsListPageState
 > {
     state: ProcessBindingsListPageState = {
-        employees: [],
-        equipment: [],
         client_company_id: "",
         process_type_id: "",
         dialogOpen: false,
-        new_subject_kind: "EMPLOYEE",
-        new_employee: "",
-        new_equipment: "",
-        new_client_company: "",
-        new_process_type: "",
-        new_next_run_at: "",
         sendingBindingId: null,
         savingStartDateBindingId: null,
         deactivatingBindingId: null,
@@ -188,24 +161,7 @@ class ProcessBindingsListPageInner extends Component<
     }
 
     openAdd = (): void => {
-        const types = this.props.processTypes;
-        const firstType = types[0];
-        this.setState((prev) => ({
-            ...prev,
-            dialogOpen: true,
-            new_subject_kind: firstType?.subject_kind ?? "EMPLOYEE",
-            new_employee: "",
-            new_equipment: "",
-            new_client_company: "",
-            new_process_type: firstType ? String(firstType.id) : "",
-            new_next_run_at: suggestedNextRunAt(firstType),
-        }));
-        getEmployees().then((e) =>
-            this.setState((prev) => ({ ...prev, employees: e })),
-        );
-        getEquipment().then((eq) =>
-            this.setState((prev) => ({ ...prev, equipment: eq })),
-        );
+        this.setState((prev) => ({ ...prev, dialogOpen: true }));
     };
 
     closeDialog = (): void => {
@@ -259,75 +215,11 @@ class ProcessBindingsListPageInner extends Component<
             );
     };
 
-    handleCreate = (): void => {
-        const {
-            new_subject_kind,
-            new_employee,
-            new_equipment,
-            new_client_company,
-            new_process_type,
-            new_next_run_at,
-        } = this.state;
-        if (!new_process_type) return;
-        const termError = bindingTermDateError(new_next_run_at);
-        if (termError) {
-            enqueueSnackbar(termError, { variant: "error" });
-            return;
-        }
-        const nextRunAtISO = displayDateToIso(new_next_run_at);
-        if (!nextRunAtISO) return;
-        const payload: Partial<ProcessBinding> = {
-            process_type: Number(new_process_type),
-            subject_kind: new_subject_kind as
-                | "EMPLOYEE"
-                | "EQUIPMENT"
-                | "CLIENT_COMPANY",
-            next_run_at: nextRunAtISO,
-            is_active: true,
-        };
-        if (new_subject_kind === "EMPLOYEE" && new_employee)
-            payload.employee = Number(new_employee);
-        else if (new_subject_kind === "EQUIPMENT" && new_equipment)
-            payload.equipment_item = Number(new_equipment);
-        else if (new_subject_kind === "CLIENT_COMPANY" && new_client_company)
-            payload.client_company = Number(new_client_company);
-        else return;
-        void this.props
-            .addBinding(payload)
-            .unwrap()
-            .then(() => {
-                this.closeDialog();
-                this.load();
-            })
-            .catch(
-                (
-                    err:
-                        | { message?: string }
-                        | { response?: { data?: { detail?: string } } },
-                ) => {
-                    const msg =
-                        (err as { response?: { data?: { detail?: string } } })
-                            .response?.data?.detail ??
-                        (err as { message?: string }).message ??
-                        "Greška pri dodavanju obaveze.";
-                    enqueueSnackbar(msg, { variant: "error" });
-                },
-            );
-    };
-
     render() {
         const {
             client_company_id,
             process_type_id,
             dialogOpen,
-            new_subject_kind,
-            new_employee,
-            new_equipment,
-            new_client_company,
-            new_process_type,
-            new_next_run_at,
-            employees,
-            equipment,
             sendingBindingId,
             savingStartDateBindingId,
             deactivatingBindingId,
@@ -339,8 +231,6 @@ class ProcessBindingsListPageInner extends Component<
             bindingsLoading: loading,
             bindingsError: error,
         } = this.props;
-
-        const newTermError = bindingTermDateError(new_next_run_at);
 
         const subjectLabel = (b: ProcessBinding) => {
             if (b.employee) {
@@ -540,156 +430,15 @@ class ProcessBindingsListPageInner extends Component<
                     </Paper>
                 )}
 
-                <Dialog
+                <AddProcessBindingDialog
                     open={dialogOpen}
                     onClose={this.closeDialog}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>Dodaj obavezu</DialogTitle>
-                    <DialogContent>
-                        <FormControl fullWidth margin="dense">
-                            <InputLabel>Vrsta obaveze</InputLabel>
-                            <Select
-                                value={new_process_type}
-                                label="Vrsta obaveze"
-                                onChange={(e) => {
-                                    const selectedType = types.find(
-                                        (t) => String(t.id) === e.target.value,
-                                    );
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        new_process_type: e.target.value,
-                                        new_subject_kind:
-                                            selectedType?.subject_kind ??
-                                            prev.new_subject_kind,
-                                        new_employee: "",
-                                        new_equipment: "",
-                                        new_client_company: "",
-                                        new_next_run_at:
-                                            suggestedNextRunAt(selectedType),
-                                    }));
-                                }}
-                            >
-                                {types.map((t) => (
-                                    <MenuItem key={t.id} value={String(t.id)}>
-                                        {t.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                        {new_subject_kind === "EMPLOYEE" && (
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel>Zaposleni</InputLabel>
-                                <Select
-                                    value={new_employee}
-                                    label="Zaposleni"
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            new_employee: e.target.value,
-                                        }))
-                                    }
-                                >
-                                    {employees.map((e) => (
-                                        <MenuItem
-                                            key={e.id}
-                                            value={String(e.id)}
-                                        >
-                                            {e.first_name} {e.last_name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        )}
-                        {new_subject_kind === "EQUIPMENT" && (
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel>Oprema</InputLabel>
-                                <Select
-                                    value={new_equipment}
-                                    label="Oprema"
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            new_equipment: e.target.value,
-                                        }))
-                                    }
-                                >
-                                    {equipment.map((e) => (
-                                        <MenuItem
-                                            key={e.id}
-                                            value={String(e.id)}
-                                        >
-                                            {e.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        )}
-                        {new_subject_kind === "CLIENT_COMPANY" && (
-                            <FormControl fullWidth margin="dense">
-                                <InputLabel>
-                                    {subjectKindLabel("CLIENT_COMPANY")}
-                                </InputLabel>
-                                <Select
-                                    value={new_client_company}
-                                    label={subjectKindLabel("CLIENT_COMPANY")}
-                                    onChange={(e) =>
-                                        this.setState((prev) => ({
-                                            ...prev,
-                                            new_client_company: e.target.value,
-                                        }))
-                                    }
-                                >
-                                    {clients.map((c) => (
-                                        <MenuItem
-                                            key={c.id}
-                                            value={String(c.id)}
-                                        >
-                                            {c.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        )}
-                        <DateTextFieldWithPicker
-                            label="Termin (dd.mm.yyyy)"
-                            value={new_next_run_at}
-                            error={newTermError != null}
-                            helperText={
-                                newTermError ??
-                                "Kada obaveza prvi put treba da se desi"
-                            }
-                            onChange={(v) =>
-                                this.setState((prev) => ({
-                                    ...prev,
-                                    new_next_run_at: v,
-                                }))
-                            }
-                        />
-                    </DialogContent>
-                    <DialogActions sx={{ px: 3, pb: 2 }}>
-                        <Button onClick={this.closeDialog}>Odustani</Button>
-                        <Button
-                            onClick={this.handleCreate}
-                            variant="contained"
-                            disableElevation
-                            disabled={
-                                !new_process_type ||
-                                !new_next_run_at.trim() ||
-                                newTermError != null ||
-                                (new_subject_kind === "EMPLOYEE" &&
-                                    !new_employee) ||
-                                (new_subject_kind === "EQUIPMENT" &&
-                                    !new_equipment) ||
-                                (new_subject_kind === "CLIENT_COMPANY" &&
-                                    !new_client_company)
-                            }
-                        >
-                            Dodaj
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    onSuccess={() => {
+                        this.closeDialog();
+                        this.load();
+                    }}
+                    unlocked
+                />
             </Box>
         );
     }
@@ -721,7 +470,6 @@ const mapDispatchToProps = (
     loadBindings: (params) => {
         void dispatch(fetchBindings(params));
     },
-    addBinding: (payload) => dispatch(addProcessBinding(payload)),
     saveBinding: (args) => dispatch(saveProcessBinding(args)),
 });
 

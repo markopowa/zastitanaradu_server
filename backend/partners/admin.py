@@ -4,12 +4,14 @@ from .models import (
     ClientCompany,
     CompanyComplianceFinding,
     CompanyDocument,
+    CompanyObligationExclusion,
     ComplianceFindingType,
     ContactPerson,
     Employee,
     EquipmentItem,
     JobRole,
     RiskAssessmentAct,
+    RiskAssessmentActAmendment,
     RiskAssessmentSection,
     RiskAssessmentSectionRevision,
     RiskLevel,
@@ -111,6 +113,13 @@ class RiskAssessmentActAdmin(admin.ModelAdmin):
     list_display = ("client_company", "act_date", "updated_at")
 
 
+@admin.register(RiskAssessmentActAmendment)
+class RiskAssessmentActAmendmentAdmin(admin.ModelAdmin):
+    list_display = ("act", "title", "uploaded_by", "uploaded_at")
+    list_filter = ("act__client_company",)
+    raw_id_fields = ("act", "uploaded_by")
+
+
 @admin.register(RiskAssessmentSection)
 class RiskAssessmentSectionAdmin(admin.ModelAdmin):
     list_display = ("act", "section_type", "current_version")
@@ -127,3 +136,12 @@ class EquipmentItemAdmin(admin.ModelAdmin):
                     "inventory_number", "is_active")
     search_fields = ("name", "inventory_number", "location")
     list_filter = ("client_company", "is_active")
+
+
+@admin.register(CompanyObligationExclusion)
+class CompanyObligationExclusionAdmin(admin.ModelAdmin):
+    list_display = ("client_company", "process_type",
+                    "created_by", "created_at")
+    search_fields = ("client_company__name", "process_type__code", "reason")
+    list_filter = ("process_type",)
+    raw_id_fields = ("client_company", "process_type", "created_by")

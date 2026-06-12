@@ -72,7 +72,6 @@ export interface ProcessBindingsListPageDispatchProps {
     ensureClientCompanies: () => void;
     ensureProcessTypes: () => void;
     loadBindings: (params: ProcessBindingsParams) => void;
-    addBinding: (payload: Partial<ProcessBinding>) => AsyncThunkDispatchResult;
     saveBinding: (args: {
         id: number;
         payload: Partial<ProcessBinding>;
@@ -84,17 +83,9 @@ export type ProcessBindingsListPageProps = ProcessBindingsListPageStateProps &
     WithNavigationProps;
 
 export interface ProcessBindingsListPageState {
-    employees: ProcessBindingFormEmployeeOption[];
-    equipment: EquipmentItem[];
     client_company_id: string;
     process_type_id: string;
     dialogOpen: boolean;
-    new_subject_kind: string;
-    new_employee: string;
-    new_equipment: string;
-    new_client_company: string;
-    new_process_type: string;
-    new_next_run_at: string;
     sendingBindingId: number | null;
     savingStartDateBindingId: number | null;
     deactivatingBindingId: number | null;
@@ -247,6 +238,9 @@ export interface ClientCompanyDetailPageState {
     editWebsite: string;
     editNotes: string;
     editActivity_code: string;
+    editZop_category: string;
+    editHigh_risk_activity: boolean;
+    editInstallations: string[];
     registryImporting: boolean;
     riskLevels: RiskLevel[];
     jobRoles: JobRole[];
@@ -413,11 +407,12 @@ export interface AddProcessBindingDialogProps {
     open: boolean;
     onClose: () => void;
     onSuccess: () => void;
-    subjectKind: ProcessType["subject_kind"];
-    subjectLabel: string;
+    subjectKind?: ProcessType["subject_kind"];
+    subjectLabel?: string;
     clientCompanyId?: number;
     employeeId?: number;
     equipmentItemId?: number;
+    unlocked?: boolean;
 }
 
 export interface AddProcessBindingDialogState {
@@ -425,6 +420,13 @@ export interface AddProcessBindingDialogState {
     processTypeId: string;
     nextRunAt: string;
     saving: boolean;
+    unlockedSubjectKind: ProcessType["subject_kind"];
+    unlockedEmployeeId: string;
+    unlockedEquipmentId: string;
+    unlockedClientCompanyId: string;
+    employees: import("./processes").EmployeeSummary[];
+    equipment: import("./processes").EquipmentItem[];
+    clientCompanies: import("./processes").ClientCompany[];
 }
 
 export interface EntityProcessBindingsPanelProps {

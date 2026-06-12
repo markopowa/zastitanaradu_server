@@ -5,11 +5,15 @@ import type {
     ClientCompany,
     CompanyDocument,
     CompanyDocumentKind,
+    CompanyObligationExclusion,
     ContactPerson,
     Employee,
     EmployeeSummary,
     EquipmentItem,
     JobRole,
+    NotificationOutbox,
+    NotificationOutboxPreview,
+    ObligationPlanRow,
     ProcessBinding,
     ProcessRun,
     ProcessRunNote,
@@ -19,6 +23,7 @@ import type {
     CompanyComplianceFindingRow,
     ComplianceFindingType,
     RiskAssessmentAct,
+    RiskAssessmentActAmendment,
     RiskAssessmentSectionType,
     RiskLevel,
     UpcomingDeadline,
@@ -797,4 +802,100 @@ export async function registryLookup(
         { registration_number: registrationNumber },
     );
     return data;
+}
+
+export interface OutboxParams {
+    status?: string;
+    client_company_id?: number;
+    date_from?: string;
+    date_to?: string;
+}
+
+export async function getOutbox(
+    params: OutboxParams = {},
+): Promise<NotificationOutbox[]> {
+    const search = new URLSearchParams();
+    if (params.status) search.set("status", params.status);
+    if (params.client_company_id != null)
+        search.set("client_company_id", String(params.client_company_id));
+    if (params.date_from) search.set("date_from", params.date_from);
+    if (params.date_to) search.set("date_to", params.date_to);
+    const qs = search.toString();
+    const url = qs ? `/api/processes/outbox/?${qs}` : "/api/processes/outbox/";
+    const { data } = await api.get<ListResponse<NotificationOutbox>>(url);
+    return asList(data);
+}
+
+export async function retryOutboxRow(id: number): Promise<NotificationOutbox> {
+    const { data } = await api.post<NotificationOutbox>(
+        `/api/processes/outbox/${id}/retry/`,
+        {},
+    );
+    return data;
+}
+
+export async function previewOutboxRow(
+    id: number,
+): Promise<NotificationOutboxPreview> {
+    const { data } = await api.get<NotificationOutboxPreview>(
+        `/api/processes/outbox/${id}/preview/`,
+    );
+    return data;
+}
+
+export async function createRiskAssessmentActAmendment(
+    actId: number,
+    title: string,
+    file: File,
+    note?: string,
+): Promise<RiskAssessmentActAmendment> {
+    const form = new FormData();
+    form.append("title", title);
+    form.append("file", file);
+    if (note?.trim()) form.append("note", note.trim());
+    const { data } = await api.post<RiskAssessmentActAmendment>(
+        `/api/partners/risk-assessment-acts/${actId}/amendments/`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
+export async function deleteRiskAssessmentActAmendment(
+    actId: number,
+    amendmentId: number,
+): Promise<void> {
+    await api.delete(
+        `/api/partners/risk-assessment-acts/${actId}/amendments/${amendmentId}/`,
+    );
+}
+
+export async function getObligationPlan(
+    companyId: number,
+): Promise<ObligationPlanRow[]> {
+    const { data } = await api.get<ObligationPlanRow[]>(
+        `/api/partners/client-companies/${companyId}/obligation-plan/`,
+    );
+    return Array.isArray(data) ? data : [];
+}
+
+export async function createObligationExclusion(
+    companyId: number,
+    processTypeId: number,
+    reason: string,
+): Promise<CompanyObligationExclusion> {
+    const { data } = await api.post<CompanyObligationExclusion>(
+        `/api/partners/client-companies/${companyId}/obligation-plan/${processTypeId}/exclusion/`,
+        { reason },
+    );
+    return data;
+}
+
+export async function deleteObligationExclusion(
+    companyId: number,
+    processTypeId: number,
+): Promise<void> {
+    await api.delete(
+        `/api/partners/client-companies/${companyId}/obligation-plan/${processTypeId}/exclusion/`,
+    );
 }

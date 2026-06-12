@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ActivityLogView,
     EmployeeSendNowView,
+    NotificationOutboxViewSet,
     ProcessBindingViewSet,
     ProcessRunViewSet,
     ProcessTemplateViewSet,
@@ -22,6 +23,7 @@ router.register("bindings", ProcessBindingViewSet, basename="process-bindings")
 router.register("runs", ProcessRunViewSet, basename="process-runs")
 router.register("task-assignments", TaskAssignmentViewSet,
                 basename="task-assignments")
+router.register("outbox", NotificationOutboxViewSet, basename="outbox")
 
 urlpatterns = [
     path("dashboard/activity-log", ActivityLogView.as_view(),

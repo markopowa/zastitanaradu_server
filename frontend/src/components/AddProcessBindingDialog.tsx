@@ -11,10 +11,18 @@ import {
     MenuItem,
     Select,
     TextField,
+    useMediaQuery,
+    useTheme,
 } from "@mui/material";
 import { enqueueSnackbar } from "notistack";
 
-import { createProcessBinding, getProcessTypes } from "../api/processes";
+import {
+    createProcessBinding,
+    getClientCompanies,
+    getEmployees,
+    getEquipment,
+    getProcessTypes,
+} from "../api/processes";
 import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import { subjectKindLabel } from "../design/labels";
 import {
@@ -41,8 +49,8 @@ function suggestedNextRunAt(processType: ProcessType | undefined): string {
     );
 }
 
-export class AddProcessBindingDialog extends Component<
-    AddProcessBindingDialogProps,
+class AddProcessBindingDialogInner extends Component<
+    AddProcessBindingDialogProps & { fullScreen: boolean },
     AddProcessBindingDialogState
 > {
     private testFillCleanup: (() => void) | null = null;
@@ -52,6 +60,13 @@ export class AddProcessBindingDialog extends Component<
         processTypeId: "",
         nextRunAt: "",
         saving: false,
+        unlockedSubjectKind: "EMPLOYEE",
+        unlockedEmployeeId: "",
+        unlockedEquipmentId: "",
+        unlockedClientCompanyId: "",
+        employees: [],
+        equipment: [],
+        clientCompanies: [],
     };
 
     componentDidMount(): void {
@@ -87,18 +102,33 @@ export class AddProcessBindingDialog extends Component<
     }
 
     loadProcessTypes = (): void => {
-        const { subjectKind } = this.props;
+        const { subjectKind, unlocked } = this.props;
         getProcessTypes().then((types) => {
-            const filtered = types.filter(
-                (t) => t.subject_kind === subjectKind,
-            );
+            const filtered = unlocked
+                ? types
+                : types.filter((t) => t.subject_kind === subjectKind);
             const first = filtered[0];
+            const kind = unlocked
+                ? (first?.subject_kind ?? "EMPLOYEE")
+                : (subjectKind ?? "EMPLOYEE");
             this.setState({
                 processTypes: filtered,
                 processTypeId: first ? String(first.id) : "",
                 nextRunAt: suggestedNextRunAt(first),
+                unlockedSubjectKind: kind,
             });
         });
+        if (unlocked) {
+            void getEmployees().then((employees) =>
+                this.setState({ employees }),
+            );
+            void getEquipment().then((equipment) =>
+                this.setState({ equipment }),
+            );
+            void getClientCompanies().then((clientCompanies) =>
+                this.setState({ clientCompanies }),
+            );
+        }
     };
 
     handleClose = (): void => {
@@ -108,14 +138,22 @@ export class AddProcessBindingDialog extends Component<
 
     handleSubmit = (): void => {
         const {
-            subjectKind,
+            subjectKind: propsSubjectKind,
             clientCompanyId,
             employeeId,
             equipmentItemId,
             onClose,
             onSuccess,
+            unlocked,
         } = this.props;
-        const { processTypeId, nextRunAt } = this.state;
+        const {
+            processTypeId,
+            nextRunAt,
+            unlockedSubjectKind,
+            unlockedEmployeeId,
+            unlockedEquipmentId,
+            unlockedClientCompanyId,
+        } = this.state;
         if (!processTypeId) return;
 
         const nextRunAtISO = displayDateToIso(nextRunAt);
@@ -126,21 +164,39 @@ export class AddProcessBindingDialog extends Component<
             return;
         }
 
-        const payload = {
+        const subjectKind = unlocked
+            ? unlockedSubjectKind
+            : (propsSubjectKind ?? "EMPLOYEE");
+
+        let payload: Record<string, unknown> = {
             process_type: Number(processTypeId),
             subject_kind: subjectKind,
             next_run_at: nextRunAtISO,
             is_active: true,
-            ...(subjectKind === "EMPLOYEE" && employeeId != null
-                ? { employee: employeeId }
-                : {}),
-            ...(subjectKind === "EQUIPMENT" && equipmentItemId != null
-                ? { equipment_item: equipmentItemId }
-                : {}),
-            ...(subjectKind === "CLIENT_COMPANY" && clientCompanyId != null
-                ? { client_company: clientCompanyId }
-                : {}),
         };
+
+        if (unlocked) {
+            if (subjectKind === "EMPLOYEE" && unlockedEmployeeId)
+                payload.employee = Number(unlockedEmployeeId);
+            else if (subjectKind === "EQUIPMENT" && unlockedEquipmentId)
+                payload.equipment_item = Number(unlockedEquipmentId);
+            else if (
+                subjectKind === "CLIENT_COMPANY" &&
+                unlockedClientCompanyId
+            )
+                payload.client_company = Number(unlockedClientCompanyId);
+            else return;
+        } else {
+            if (subjectKind === "EMPLOYEE" && employeeId != null)
+                payload.employee = employeeId;
+            else if (subjectKind === "EQUIPMENT" && equipmentItemId != null)
+                payload.equipment_item = equipmentItemId;
+            else if (
+                subjectKind === "CLIENT_COMPANY" &&
+                clientCompanyId != null
+            )
+                payload.client_company = clientCompanyId;
+        }
 
         this.setState({ saving: true });
         createProcessBinding(payload)
@@ -168,9 +224,42 @@ export class AddProcessBindingDialog extends Component<
     };
 
     render() {
-        const { open, subjectKind, subjectLabel } = this.props;
-        const { processTypes, processTypeId, nextRunAt, saving } = this.state;
+        const {
+            open,
+            subjectKind: propsSubjectKind,
+            subjectLabel,
+            unlocked,
+            fullScreen,
+        } = this.props;
+        const {
+            processTypes,
+            processTypeId,
+            nextRunAt,
+            saving,
+            unlockedSubjectKind,
+            unlockedEmployeeId,
+            unlockedEquipmentId,
+            unlockedClientCompanyId,
+            employees,
+            equipment,
+            clientCompanies,
+        } = this.state;
         const termError = bindingTermDateError(nextRunAt);
+
+        const subjectKind = unlocked
+            ? unlockedSubjectKind
+            : (propsSubjectKind ?? "EMPLOYEE");
+
+        const canSubmit =
+            !saving &&
+            !!processTypeId &&
+            !!nextRunAt.trim() &&
+            termError == null &&
+            (!unlocked ||
+                (subjectKind === "EMPLOYEE" && !!unlockedEmployeeId) ||
+                (subjectKind === "EQUIPMENT" && !!unlockedEquipmentId) ||
+                (subjectKind === "CLIENT_COMPANY" &&
+                    !!unlockedClientCompanyId));
 
         return (
             <Dialog
@@ -178,16 +267,19 @@ export class AddProcessBindingDialog extends Component<
                 onClose={this.handleClose}
                 maxWidth="sm"
                 fullWidth
+                fullScreen={fullScreen}
             >
                 <DialogTitle>Dodaj obavezu</DialogTitle>
                 <DialogContent>
-                    <TextField
-                        margin="dense"
-                        label={subjectKindLabel(subjectKind)}
-                        fullWidth
-                        value={subjectLabel}
-                        slotProps={{ input: { readOnly: true } }}
-                    />
+                    {!unlocked && subjectLabel && (
+                        <TextField
+                            margin="dense"
+                            label={subjectKindLabel(subjectKind)}
+                            fullWidth
+                            value={subjectLabel}
+                            slotProps={{ input: { readOnly: true } }}
+                        />
+                    )}
                     <FormControl fullWidth margin="dense">
                         <InputLabel>Vrsta obaveze</InputLabel>
                         <Select
@@ -197,10 +289,29 @@ export class AddProcessBindingDialog extends Component<
                                 const selectedType = processTypes.find(
                                     (t) => String(t.id) === e.target.value,
                                 );
-                                this.setState({
-                                    processTypeId: e.target.value,
-                                    nextRunAt: suggestedNextRunAt(selectedType),
-                                });
+                                const nextKind:
+                                    | "EMPLOYEE"
+                                    | "EQUIPMENT"
+                                    | "CLIENT_COMPANY" =
+                                    selectedType?.subject_kind ??
+                                    unlockedSubjectKind;
+                                if (unlocked) {
+                                    this.setState({
+                                        processTypeId: e.target.value,
+                                        nextRunAt:
+                                            suggestedNextRunAt(selectedType),
+                                        unlockedSubjectKind: nextKind,
+                                        unlockedEmployeeId: "",
+                                        unlockedEquipmentId: "",
+                                        unlockedClientCompanyId: "",
+                                    });
+                                } else {
+                                    this.setState({
+                                        processTypeId: e.target.value,
+                                        nextRunAt:
+                                            suggestedNextRunAt(selectedType),
+                                    });
+                                }
                             }}
                         >
                             {processTypes.map((t) => (
@@ -210,6 +321,71 @@ export class AddProcessBindingDialog extends Component<
                             ))}
                         </Select>
                     </FormControl>
+                    {unlocked && subjectKind === "EMPLOYEE" && (
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel>Zaposleni</InputLabel>
+                            <Select
+                                value={unlockedEmployeeId}
+                                label="Zaposleni"
+                                onChange={(e) =>
+                                    this.setState({
+                                        unlockedEmployeeId: e.target.value,
+                                    })
+                                }
+                            >
+                                {employees.map((emp) => (
+                                    <MenuItem
+                                        key={emp.id}
+                                        value={String(emp.id)}
+                                    >
+                                        {emp.first_name} {emp.last_name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+                    {unlocked && subjectKind === "EQUIPMENT" && (
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel>Oprema</InputLabel>
+                            <Select
+                                value={unlockedEquipmentId}
+                                label="Oprema"
+                                onChange={(e) =>
+                                    this.setState({
+                                        unlockedEquipmentId: e.target.value,
+                                    })
+                                }
+                            >
+                                {equipment.map((eq) => (
+                                    <MenuItem key={eq.id} value={String(eq.id)}>
+                                        {eq.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
+                    {unlocked && subjectKind === "CLIENT_COMPANY" && (
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel>
+                                {subjectKindLabel("CLIENT_COMPANY")}
+                            </InputLabel>
+                            <Select
+                                value={unlockedClientCompanyId}
+                                label={subjectKindLabel("CLIENT_COMPANY")}
+                                onChange={(e) =>
+                                    this.setState({
+                                        unlockedClientCompanyId: e.target.value,
+                                    })
+                                }
+                            >
+                                {clientCompanies.map((c) => (
+                                    <MenuItem key={c.id} value={String(c.id)}>
+                                        {c.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    )}
                     <DateTextFieldWithPicker
                         label="Termin (dd.mm.yyyy)"
                         value={nextRunAt}
@@ -229,12 +405,7 @@ export class AddProcessBindingDialog extends Component<
                         onClick={this.handleSubmit}
                         variant="contained"
                         disableElevation
-                        disabled={
-                            saving ||
-                            !processTypeId ||
-                            !nextRunAt.trim() ||
-                            termError != null
-                        }
+                        disabled={!canSubmit}
                     >
                         {saving ? "Čuvam..." : "Dodaj"}
                     </Button>
@@ -242,4 +413,10 @@ export class AddProcessBindingDialog extends Component<
             </Dialog>
         );
     }
+}
+
+export function AddProcessBindingDialog(props: AddProcessBindingDialogProps) {
+    const theme = useTheme();
+    const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
+    return <AddProcessBindingDialogInner {...props} fullScreen={fullScreen} />;
 }

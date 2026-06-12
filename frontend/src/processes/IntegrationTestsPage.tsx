@@ -136,7 +136,9 @@ class IntegrationTestsPage extends Component<
                     borderTop: "1px solid",
                     borderColor: "divider",
                     bgcolor: clicked ? "success.50" : undefined,
-                    "&:hover": { bgcolor: clicked ? "success.50" : "action.hover" },
+                    "&:hover": {
+                        bgcolor: clicked ? "success.50" : "action.hover",
+                    },
                 }}
             >
                 <Chip
@@ -146,7 +148,11 @@ class IntegrationTestsPage extends Component<
                     color={clicked ? "success" : "default"}
                     sx={{ minWidth: 44, fontWeight: 600, fontSize: "0.7rem" }}
                 />
-                <Tooltip title={section.hint} placement="top-start" enterDelay={400}>
+                <Tooltip
+                    title={section.hint}
+                    placement="top-start"
+                    enterDelay={400}
+                >
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" fontWeight={500} noWrap>
                             {section.label}
@@ -160,7 +166,9 @@ class IntegrationTestsPage extends Component<
                 </Tooltip>
                 <Stack direction="row" spacing={0.5} flexShrink={0}>
                     {section.route && (
-                        <Tooltip title={section.routeLabel ?? "Otvori stranicu"}>
+                        <Tooltip
+                            title={section.routeLabel ?? "Otvori stranicu"}
+                        >
                             <IconButton
                                 size="small"
                                 onClick={() =>
@@ -187,7 +195,9 @@ class IntegrationTestsPage extends Component<
         );
     };
 
-    renderPhase = (phase: (typeof TEST_FLOW_PHASES)[number]): React.ReactNode => {
+    renderPhase = (
+        phase: (typeof TEST_FLOW_PHASES)[number],
+    ): React.ReactNode => {
         const sections = TEST_FLOW_SECTIONS.filter(
             (s) => s.phaseId === phase.id,
         );
@@ -221,7 +231,10 @@ class IntegrationTestsPage extends Component<
                             {phase.title}
                         </Typography>
                         {phase.description && (
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                            >
                                 {phase.description}
                             </Typography>
                         )}

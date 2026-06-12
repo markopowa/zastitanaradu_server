@@ -34,6 +34,31 @@ class ProcessType(models.Model):
         (SUBJECT_CLIENT_COMPANY, "Klijentska firma"),
     )
 
+    DOMAIN_BZNR = "BZNR"
+    DOMAIN_ZOP = "ZOP"
+    DOMAIN_CHOICES = (
+        (DOMAIN_BZNR, "Bezbednost i zdravlje na radu"),
+        (DOMAIN_ZOP, "Zaštita od požara"),
+    )
+
+    SHAPE_PERIODIC = "PERIODIC"
+    SHAPE_LIVING_DOCUMENT = "LIVING_DOCUMENT"
+    SHAPE_APPOINTMENT = "APPOINTMENT"
+    SHAPE_CHOICES = (
+        (SHAPE_PERIODIC, "Periodična obaveza"),
+        (SHAPE_LIVING_DOCUMENT, "Živi dokument"),
+        (SHAPE_APPOINTMENT, "Imenovanje"),
+    )
+
+    PROOF_UPLOAD = "UPLOAD"
+    PROOF_GENERATED = "GENERATED"
+    PROOF_RECORDED = "RECORDED"
+    PROOF_CHOICES = (
+        (PROOF_UPLOAD, "Otpremljeni dokument"),
+        (PROOF_GENERATED, "Generisani dokument"),
+        (PROOF_RECORDED, "Evidentiran"),
+    )
+
     code = models.CharField(max_length=64, unique=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
@@ -47,6 +72,62 @@ class ProcessType(models.Model):
     include_in_medical_exam_record = models.BooleanField(
         default=True,
         help_text="Ako je uključeno, završeni run-ovi ove vrste ulaze u generisanje Obrazca 1.",
+    )
+    reminder_offsets = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=(
+            "Lista dana u odnosu na termin (negativno=pre, 0=na dan, pozitivno=kašnjenje). "
+            "Prazna lista znači podrazumevano ponašanje: [-(lead_time_days ili 30), 0]."
+        ),
+    )
+    domain = models.CharField(
+        max_length=8,
+        choices=DOMAIN_CHOICES,
+        default=DOMAIN_BZNR,
+        verbose_name="Domen",
+    )
+    legal_basis = models.CharField(
+        max_length=255,
+        blank=True,
+        verbose_name="Pravni osnov",
+    )
+    shape = models.CharField(
+        max_length=20,
+        choices=SHAPE_CHOICES,
+        default=SHAPE_PERIODIC,
+        verbose_name="Oblik obaveze",
+    )
+    proof_kind = models.CharField(
+        max_length=12,
+        choices=PROOF_CHOICES,
+        default=PROOF_RECORDED,
+        verbose_name="Vrsta dokaza",
+    )
+    period_rules = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Pravila perioda",
+        help_text=(
+            'Lista {"when": {"risk": "high"}, "months": int}. '
+            "Prva koja odgovara pobeđuje, zatim default_period_months."
+        ),
+    )
+    applicability_rule = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Pravilo primenjivosti",
+        help_text=(
+            'Podržani ključevi: always, zop_category_in, requires_installation, high_risk_only.'
+        ),
+    )
+    company_document_kind = models.CharField(
+        max_length=64,
+        blank=True,
+        verbose_name="Vrsta dokumenta firme",
+        help_text=(
+            "Vezuje LIVING_DOCUMENT/APPOINTMENT vrstu za odgovarajući CompanyDocument kind."
+        ),
     )
 
     class Meta:
@@ -249,6 +330,13 @@ class ProcessRun(models.Model):
         verbose_name = "Aktivnost obaveze"
         verbose_name_plural = "Aktivnosti obaveza"
         ordering = ("-scheduled_for", "-id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["process_binding"],
+                condition=models.Q(status__in=["PENDING", "SENT"]),
+                name="unique_open_run_per_binding",
+            )
+        ]
 
     def __str__(self) -> str:
         return f"{self.process_type.name} – {self.scheduled_for} ({self.status})"
@@ -302,6 +390,60 @@ class ProcessTriggerRun(models.Model):
         verbose_name = "Izvršeni okidač"
         verbose_name_plural = "Izvršeni okidači"
         ordering = ("executed_at",)
+
+
+class NotificationOutbox(models.Model):
+    STATUS_PENDING = "PENDING"
+    STATUS_SENT = "SENT"
+    STATUS_FAILED = "FAILED"
+    STATUS_CANCELLED = "CANCELLED"
+
+    STATUS_CHOICES = (
+        (STATUS_PENDING, "Na čekanju"),
+        (STATUS_SENT, "Poslato"),
+        (STATUS_FAILED, "Neuspešno"),
+        (STATUS_CANCELLED, "Otkazano"),
+    )
+
+    process_run = models.ForeignKey(
+        ProcessRun,
+        on_delete=models.CASCADE,
+        related_name="notifications",
+    )
+    process_template = models.ForeignKey(
+        ProcessTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="outbox_rows",
+    )
+    offset_days = models.IntegerField()
+    scheduled_send_on = models.DateField(db_index=True)
+    status = models.CharField(
+        max_length=16,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+    )
+    attempts = models.PositiveIntegerField(default=0)
+    last_error = models.TextField(blank=True)
+    recipients = models.JSONField(default=list)
+    rendered_subject = models.CharField(max_length=255, blank=True)
+    rendered_body = models.TextField(blank=True)
+    document_file = models.ForeignKey(
+        "documents.DocumentFile",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="outbox_rows",
+    )
+    sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Obaveštenje u redu"
+        verbose_name_plural = "Obaveštenja u redu"
+        unique_together = (("process_run", "offset_days"),)
+        ordering = ("scheduled_send_on",)
 
 
 class ProcessRunDocument(models.Model):

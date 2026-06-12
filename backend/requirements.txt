@@ -19,3 +19,4 @@ Pillow
 pdf2image
 pytesseract
 PyMuPDF
+python-dateutil>=2.8.0,<3.0.0

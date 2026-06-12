@@ -11,6 +11,7 @@ const ALLOWED_HOME_PATHS = new Set<string>([
     paths.profile,
     paths.users,
     paths.roles,
+    paths.danas,
     paths.dashboard,
     paths.clientCompanies,
     paths.equipment,
@@ -18,6 +19,8 @@ const ALLOWED_HOME_PATHS = new Set<string>([
     paths.processTemplates,
     paths.processBindings,
     paths.processRuns,
+    paths.processUpcoming,
+    paths.processOutbox,
     paths.documents,
     paths.documentCategories,
     paths.documentTemplates,
@@ -56,7 +59,7 @@ class RedirectComponent extends Component<Props> {
 
         let targetPath: string = paths.profile;
         if (hasPermissionWithPrefix(permissions, "processes.view_processrun")) {
-            targetPath = paths.dashboard;
+            targetPath = paths.danas;
         } else if (
             hasPermissionWithPrefix(permissions, "partners.view_clientcompany")
         ) {

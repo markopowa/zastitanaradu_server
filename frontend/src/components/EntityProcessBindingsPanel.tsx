@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { Link } from "react-router-dom";
 
 import {
     Box,
@@ -225,7 +226,16 @@ export class EntityProcessBindingsPanel extends Component<
                                             r.status === "SENT") &&
                                         isScheduledOverdue(r.scheduled_for);
                                     return (
-                                        <TableRow key={r.id}>
+                                        <TableRow
+                                            key={r.id}
+                                            hover
+                                            component={Link}
+                                            to={`/processes/runs/${r.id}`}
+                                            sx={{
+                                                textDecoration: "none",
+                                                cursor: "pointer",
+                                            }}
+                                        >
                                             <TableCell>
                                                 {r.process_type_name}
                                             </TableCell>

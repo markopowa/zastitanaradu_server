@@ -2,23 +2,12 @@ import { Component, type ReactElement } from "react";
 import { useParams } from "react-router-dom";
 import { connect } from "react-redux";
 
-import {
-    Box,
-    Paper,
-    Typography,
-    CircularProgress,
-    Button,
-    Dialog,
-    DialogTitle,
-    DialogContent,
-    DialogActions,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
-} from "@mui/material";
+import { Box, CircularProgress, Button, Link, Stack } from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
+import ContactsIcon from "@mui/icons-material/Contacts";
 import EditIcon from "@mui/icons-material/Edit";
+import PersonIcon from "@mui/icons-material/Person";
 import SendIcon from "@mui/icons-material/Send";
 import { enqueueSnackbar } from "notistack";
 
@@ -28,9 +17,16 @@ import {
     getProcessRuns,
     sendNowForEmployee,
 } from "../api/processes";
+import {
+    DetailCard,
+    DetailField,
+    DetailFieldGrid,
+    DetailHeaderCard,
+} from "../components/DetailCard";
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { EntityProcessBindingsPanel } from "../components/EntityProcessBindingsPanel";
 import { PermissionGate } from "../components/PermissionGate";
+import { SendNowDialog } from "../components/SendNowDialog";
 import { ErrorState, RiskBadge } from "../design";
 import { withNavigation } from "../hocs/withNavigation";
 import {
@@ -256,6 +252,10 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         }
 
         const employeeName = `${item.first_name} ${item.last_name}`.trim();
+        const effectiveRisk =
+            item.effective_risk_level ??
+            item.risk_level_override_detail ??
+            item.job_role_risk_level;
 
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -266,103 +266,153 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                 >
                     Nazad
                 </Button>
-                <Paper sx={{ p: 3 }}>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            flexWrap: "wrap",
-                            gap: 1,
-                            mb: 2,
-                        }}
+                <Stack spacing={2}>
+                    <DetailHeaderCard
+                        initials={[item.first_name, item.last_name]
+                            .filter(Boolean)
+                            .map((w) => (w ?? "")[0] ?? "")
+                            .join("")
+                            .toUpperCase()}
+                        title={employeeName}
+                        subtitle={
+                            item.position ?? item.job_role_name ?? undefined
+                        }
+                        badges={<RiskBadge riskLevel={effectiveRisk} />}
+                        action={
+                            <>
+                                <PermissionGate permission="partners.change_employee">
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        startIcon={<EditIcon />}
+                                        onClick={this.openEdit}
+                                    >
+                                        Izmeni
+                                    </Button>
+                                </PermissionGate>
+                                <PermissionGate permission="processes.add_processrun">
+                                    <Button
+                                        size="small"
+                                        variant="contained"
+                                        startIcon={<SendIcon />}
+                                        onClick={this.openSendDialog}
+                                    >
+                                        Pošalji na pregled
+                                    </Button>
+                                </PermissionGate>
+                            </>
+                        }
+                    />
+
+                    <DetailCard
+                        title="Lični podaci"
+                        icon={<PersonIcon fontSize="small" color="action" />}
                     >
-                        <Box
-                            sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                                flexWrap: "wrap",
-                            }}
-                        >
-                            <Typography variant="h6">{employeeName}</Typography>
-                            <RiskBadge
-                                riskLevel={
-                                    item.effective_risk_level ??
-                                    item.risk_level_override_detail ??
-                                    item.job_role_risk_level
+                        <DetailFieldGrid>
+                            <DetailField
+                                label="JMBG"
+                                value={item.national_id}
+                            />
+                            <DetailField
+                                label="Datum rođenja"
+                                value={
+                                    formatDateDisplay(item.date_of_birth) ||
+                                    undefined
                                 }
                             />
-                        </Box>
-                        <Box sx={{ display: "flex", gap: 1 }}>
-                            <PermissionGate permission="partners.change_employee">
-                                <Button
-                                    size="small"
-                                    variant="outlined"
-                                    startIcon={<EditIcon />}
-                                    onClick={this.openEdit}
-                                >
-                                    Izmeni
-                                </Button>
-                            </PermissionGate>
-                            <PermissionGate permission="processes.add_processrun">
-                                <Button
-                                    size="small"
-                                    variant="contained"
-                                    startIcon={<SendIcon />}
-                                    onClick={this.openSendDialog}
-                                >
-                                    Pošalji na pregled
-                                </Button>
-                            </PermissionGate>
-                        </Box>
-                    </Box>
-                    <Box
-                        component="dl"
-                        sx={{
-                            m: 0,
-                            "& dd": { ml: 2 },
-                            "& dt": { fontWeight: 600, mt: 1 },
-                        }}
+                            <DetailField
+                                label="Mesto rođenja"
+                                value={item.place_of_birth}
+                            />
+                            <DetailField
+                                label="Ime oca"
+                                value={item.father_name}
+                            />
+                        </DetailFieldGrid>
+                    </DetailCard>
+
+                    <DetailCard
+                        title="Posao"
+                        icon={
+                            <BusinessCenterIcon
+                                fontSize="small"
+                                color="action"
+                            />
+                        }
                     >
-                        <dt>Ime</dt>
-                        <dd>{item.first_name ?? "—"}</dd>
-                        <dt>Prezime</dt>
-                        <dd>{item.last_name ?? "—"}</dd>
-                        <dt>Ime oca</dt>
-                        <dd>{item.father_name ?? "—"}</dd>
-                        <dt>JMBG</dt>
-                        <dd>{item.national_id ?? "—"}</dd>
-                        <dt>Datum rođenja</dt>
-                        <dd>{formatDateDisplay(item.date_of_birth)}</dd>
-                        <dt>Mesto rođenja</dt>
-                        <dd>{item.place_of_birth ?? "—"}</dd>
-                        <dt>Firma</dt>
-                        <dd>{item.client_company_name ?? "—"}</dd>
-                        <dt>Email</dt>
-                        <dd>{item.email ?? "—"}</dd>
-                        <dt>Organizaciona jedinica</dt>
-                        <dd>{item.org_unit ?? "—"}</dd>
-                        <dt>Pozicija</dt>
-                        <dd>{item.position ?? "—"}</dd>
-                        <dt>Zanimanje</dt>
-                        <dd>{item.occupation ?? "—"}</dd>
-                        <dt>Naziv radnog mesta sa povećanim rizikom</dt>
-                        <dd>{item.high_risk_position_name ?? "—"}</dd>
-                        <dt>Radno mesto</dt>
-                        <dd>{item.job_role_name ?? "—"}</dd>
-                        <dt>Nivo rizika</dt>
-                        <dd>
-                            {item.effective_risk_level
-                                ? `${item.effective_risk_level.label} (R=${item.effective_risk_level.score})${
-                                      item.risk_level_override
-                                          ? " — izuzetak"
-                                          : " — iz radnog mesta"
-                                  }`
-                                : "—"}
-                        </dd>
-                    </Box>
-                </Paper>
+                        <DetailFieldGrid>
+                            <DetailField
+                                label="Firma"
+                                value={
+                                    item.client_company != null ? (
+                                        <Link
+                                            href={`/client-companies/${item.client_company}`}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                navigate(
+                                                    `/client-companies/${item.client_company}`,
+                                                );
+                                            }}
+                                        >
+                                            {item.client_company_name ??
+                                                `Firma #${item.client_company}`}
+                                        </Link>
+                                    ) : (
+                                        item.client_company_name
+                                    )
+                                }
+                            />
+                            <DetailField
+                                label="Radno mesto"
+                                value={item.job_role_name}
+                            />
+                            <DetailField
+                                label="Organizaciona jedinica"
+                                value={item.org_unit}
+                            />
+                            <DetailField
+                                label="Zanimanje"
+                                value={item.occupation}
+                            />
+                            <DetailField
+                                label="Pozicija"
+                                value={item.position}
+                            />
+                            {item.high_risk_position_name && (
+                                <DetailField
+                                    label="Radno mesto sa povećanim rizikom"
+                                    value={item.high_risk_position_name}
+                                />
+                            )}
+                            <DetailField
+                                label="Nivo rizika"
+                                value={
+                                    item.effective_risk_level
+                                        ? `${item.effective_risk_level.label} (R=${item.effective_risk_level.score}) — ${item.risk_level_override ? "izuzetak" : "iz radnog mesta"}`
+                                        : undefined
+                                }
+                            />
+                        </DetailFieldGrid>
+                    </DetailCard>
+
+                    <DetailCard
+                        title="Kontakt"
+                        icon={<ContactsIcon fontSize="small" color="action" />}
+                    >
+                        <DetailFieldGrid>
+                            <DetailField
+                                label="Email"
+                                value={
+                                    item.email ? (
+                                        <Link href={`mailto:${item.email}`}>
+                                            {item.email}
+                                        </Link>
+                                    ) : undefined
+                                }
+                            />
+                        </DetailFieldGrid>
+                    </DetailCard>
+                </Stack>
 
                 <EntityProcessBindingsPanel
                     subjectKind="EMPLOYEE"
@@ -383,52 +433,18 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                     onSaved={this.handleSaved}
                 />
 
-                <Dialog
+                <SendNowDialog
                     open={sendDialogOpen}
+                    employeeName={employeeName}
+                    processTypes={processTypes}
+                    processTypeId={sendProcessTypeId}
+                    sending={sending}
+                    onChangeProcessType={(id) =>
+                        this.setState({ sendProcessTypeId: id })
+                    }
                     onClose={this.closeSendDialog}
-                    maxWidth="sm"
-                    fullWidth
-                >
-                    <DialogTitle>
-                        Pošalji na pregled — {employeeName}
-                    </DialogTitle>
-                    <DialogContent>
-                        <FormControl fullWidth margin="dense">
-                            <InputLabel>Vrsta pregleda</InputLabel>
-                            <Select
-                                value={sendProcessTypeId}
-                                label="Vrsta pregleda"
-                                onChange={(e) =>
-                                    this.setState({
-                                        sendProcessTypeId: e.target
-                                            .value as string,
-                                    })
-                                }
-                            >
-                                {processTypes.map((t) => (
-                                    <MenuItem key={t.id} value={String(t.id)}>
-                                        {t.name}
-                                    </MenuItem>
-                                ))}
-                            </Select>
-                        </FormControl>
-                    </DialogContent>
-                    <DialogActions>
-                        <Button
-                            onClick={this.closeSendDialog}
-                            disabled={sending}
-                        >
-                            Odustani
-                        </Button>
-                        <Button
-                            onClick={this.handleSend}
-                            variant="contained"
-                            disabled={sending || !sendProcessTypeId}
-                        >
-                            {sending ? "Šaljem..." : "Pošalji"}
-                        </Button>
-                    </DialogActions>
-                </Dialog>
+                    onSend={this.handleSend}
+                />
             </Box>
         );
     }

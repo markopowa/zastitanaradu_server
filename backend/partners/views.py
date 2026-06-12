@@ -23,28 +23,36 @@ from .compliance_findings import (
 from documents.utils import merge_section_files_to_pdf
 
 from .medical_exam_record import generate_medical_exam_record
+from documents.conversion import ConversionError, _is_office_file, convert_office_to_pdf
+
 from .models import (
     ClientCompany,
     CompanyComplianceFinding,
     CompanyDocument,
+    CompanyObligationExclusion,
     ComplianceFindingType,
     ContactPerson,
     Employee,
     EquipmentItem,
     JobRole,
     RiskAssessmentAct,
+    RiskAssessmentActAmendment,
     RiskAssessmentSection,
     RiskAssessmentSectionRevision,
     RiskLevel,
 )
+from .obligation_plan import build_obligation_plan
 from .serializers import (
     ClientCompanySerializer,
     CompanyDocumentSerializer,
+    CompanyObligationExclusionSerializer,
     ComplianceFindingTypeSerializer,
     ContactPersonSerializer,
     EmployeeSerializer,
     EquipmentItemSerializer,
     JobRoleSerializer,
+    ObligationPlanRowSerializer,
+    RiskAssessmentActAmendmentSerializer,
     RiskAssessmentActSerializer,
     RiskLevelSerializer,
 )
@@ -216,6 +224,57 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
             compliance_finding_row(finding_type, finding),
         )
 
+    @action(detail=True, methods=["get"], url_path="obligation-plan")
+    def obligation_plan(self, request, pk=None):
+        company = self.get_object()
+        rows = build_obligation_plan(company)
+        serializer = ObligationPlanRowSerializer(rows, many=True)
+        return Response(serializer.data)
+
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path=r"obligation-plan/(?P<type_id>[0-9]+)/exclusion",
+    )
+    def obligation_exclusion(self, request, pk=None, type_id=None):
+        from processes.models import ProcessType as PT
+
+        company = self.get_object()
+        process_type = get_object_or_404(PT, pk=type_id)
+
+        if request.method == "DELETE":
+            deleted, _ = CompanyObligationExclusion.objects.filter(
+                client_company=company,
+                process_type=process_type,
+            ).delete()
+            if deleted:
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            return Response(
+                {"detail": "Isključenje nije pronađeno."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        reason = (request.data.get("reason") or "").strip()
+        if not reason:
+            return Response(
+                {"detail": "Razlog isključenja je obavezan."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = request.user if getattr(
+            request.user, "is_authenticated", False) else None
+        exclusion, created = CompanyObligationExclusion.objects.get_or_create(
+            client_company=company,
+            process_type=process_type,
+            defaults={"reason": reason, "created_by": user},
+        )
+        if not created:
+            exclusion.reason = reason
+            exclusion.save(update_fields=["reason"])
+        return Response(
+            CompanyObligationExclusionSerializer(exclusion).data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+
 
 class EmployeeViewSet(viewsets.ModelViewSet):
     queryset = Employee.objects.select_related(
@@ -226,6 +285,12 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     ).all().order_by("last_name", "first_name")
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+
+    def perform_create(self, serializer):
+        from .employee_bindings import ensure_default_bindings_for_employee
+
+        employee = serializer.save()
+        ensure_default_bindings_for_employee(employee)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -312,6 +377,19 @@ class CompanyDocumentViewSet(viewsets.ModelViewSet):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if _is_office_file(file_obj.name):
+            try:
+                file_obj = convert_office_to_pdf(file_obj)
+            except ConversionError:
+                return Response(
+                    {
+                        "detail": (
+                            "Konverzija u PDF nije uspela. "
+                            "Pošaljite PDF ili pokušajte ponovo."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         obj = CompanyDocument.objects.create(
             client_company_id=client_company_id,
             kind=kind,
@@ -337,6 +415,8 @@ class RiskAssessmentActViewSet(viewsets.ModelViewSet):
     ).prefetch_related(
         "sections__revisions",
         "sections__revisions__created_by",
+        "amendments",
+        "amendments__uploaded_by",
     ).all()
     serializer_class = RiskAssessmentActSerializer
     permission_classes = [permissions.DjangoModelPermissions]
@@ -386,6 +466,19 @@ class RiskAssessmentActViewSet(viewsets.ModelViewSet):
                 {"detail": "Nije priložen fajl (polje 'file')."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if _is_office_file(file_obj.name):
+            try:
+                file_obj = convert_office_to_pdf(file_obj)
+            except ConversionError:
+                return Response(
+                    {
+                        "detail": (
+                            "Konverzija u PDF nije uspela. "
+                            "Pošaljite PDF ili pokušajte ponovo."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         try:
             section = act.sections.get(section_type=section_type)
         except RiskAssessmentSection.DoesNotExist:
@@ -444,6 +537,69 @@ class RiskAssessmentActViewSet(viewsets.ModelViewSet):
             f'attachment; filename="akt_{slug}.pdf"'
         )
         return response
+
+    @action(
+        detail=True,
+        methods=["post"],
+        url_path="amendments",
+        parser_classes=[MultiPartParser, FormParser],
+    )
+    def create_amendment(self, request, pk=None):
+        act = self.get_object()
+        title = (request.data.get("title") or "").strip()
+        if not title:
+            return Response(
+                {"detail": "Naslov izmene je obavezan."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        file_obj = request.FILES.get("file")
+        if file_obj is None:
+            return Response(
+                {"detail": "Nije priložen fajl (polje 'file')."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if _is_office_file(file_obj.name):
+            try:
+                file_obj = convert_office_to_pdf(file_obj)
+            except ConversionError:
+                return Response(
+                    {
+                        "detail": (
+                            "Konverzija u PDF nije uspela. "
+                            "Pošaljite PDF ili pokušajte ponovo."
+                        )
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        note = (request.data.get("note") or "").strip()
+        amendment = RiskAssessmentActAmendment.objects.create(
+            act=act,
+            title=title,
+            note=note,
+            file=file_obj,
+            uploaded_by=(
+                request.user if request.user.is_authenticated else None
+            ),
+        )
+        return Response(
+            RiskAssessmentActAmendmentSerializer(amendment).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+    @action(
+        detail=True,
+        methods=["delete"],
+        url_path=r"amendments/(?P<amendment_pk>[0-9]+)",
+    )
+    def delete_amendment(self, request, pk=None, amendment_pk=None):
+        act = self.get_object()
+        amendment = get_object_or_404(
+            RiskAssessmentActAmendment, pk=amendment_pk, act=act
+        )
+        if amendment.file:
+            amendment.file.delete(save=False)
+        amendment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class CompanyRegistryLookupView(APIView):

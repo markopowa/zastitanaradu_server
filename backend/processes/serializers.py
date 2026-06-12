@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from .models import (
     ActivityLog,
+    NotificationOutbox,
     ProcessBinding,
     ProcessNote,
     ProcessRun,
@@ -116,6 +117,14 @@ class ProcessTypeSerializer(serializers.ModelSerializer):
             "lead_time_days",
             "is_active",
             "include_in_medical_exam_record",
+            "reminder_offsets",
+            "domain",
+            "legal_basis",
+            "shape",
+            "proof_kind",
+            "period_rules",
+            "applicability_rule",
+            "company_document_kind",
             "templates",
         )
         read_only_fields = ["code", "templates"]
@@ -420,3 +429,57 @@ class ActivityLogSerializer(serializers.ModelSerializer):
         if obj.user_id:
             return obj.user.username
         return "Sistem"
+
+
+class NotificationOutboxSerializer(serializers.ModelSerializer):
+    process_type_name = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
+    run_id = serializers.IntegerField(source="process_run.id", read_only=True)
+
+    class Meta:
+        model = NotificationOutbox
+        fields = (
+            "id",
+            "process_run",
+            "run_id",
+            "process_template",
+            "offset_days",
+            "scheduled_send_on",
+            "status",
+            "attempts",
+            "last_error",
+            "recipients",
+            "rendered_subject",
+            "rendered_body",
+            "document_file",
+            "sent_at",
+            "created_at",
+            "process_type_name",
+            "company_name",
+        )
+        read_only_fields = fields
+
+    def get_process_type_name(self, obj: NotificationOutbox) -> str:
+        try:
+            return obj.process_run.process_type.name
+        except Exception:
+            return ""
+
+    def get_company_name(self, obj: NotificationOutbox) -> str:
+        try:
+            binding = obj.process_run.process_binding
+            if binding.client_company_id:
+                return binding.client_company.name
+            if binding.employee_id and binding.employee.client_company_id:
+                return binding.employee.client_company.name
+            if binding.equipment_item_id and binding.equipment_item.client_company_id:
+                return binding.equipment_item.client_company.name
+        except Exception:
+            pass
+        return ""
+
+
+class NotificationOutboxPreviewSerializer(serializers.Serializer):
+    rendered_subject = serializers.CharField(allow_blank=True)
+    rendered_body = serializers.CharField(allow_blank=True)
+    recipients = serializers.ListField(child=serializers.CharField())

@@ -32,7 +32,7 @@ const PDF_ONLY_ACCEPT = ".pdf,application/pdf";
 const WORD_OR_PDF_ACCEPT =
     ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-const COMPANY_DOCUMENT_KINDS: {
+export const COMPANY_DOCUMENT_KINDS: {
     kind: CompanyDocumentKind;
     label: string;
     accept: string;
@@ -68,7 +68,29 @@ const COMPANY_DOCUMENT_KINDS: {
         label: "Program obuke za LZO",
         accept: WORD_OR_PDF_ACCEPT,
     },
+    {
+        kind: "PLAN_ZOP",
+        label: "Plan zaštite od požara",
+        accept: WORD_OR_PDF_ACCEPT,
+    },
+    {
+        kind: "PRAVILA_ZOP",
+        label: "Pravila zaštite od požara",
+        accept: WORD_OR_PDF_ACCEPT,
+    },
+    {
+        kind: "PLAN_EVAKUACIJE",
+        label: "Plan evakuacije",
+        accept: WORD_OR_PDF_ACCEPT,
+    },
+    {
+        kind: "DECISION_ZOP",
+        label: "Odluka o imenovanju lica za ZOP",
+        accept: PDF_ONLY_ACCEPT,
+    },
 ];
+
+export const COMPANY_DOCUMENT_KIND_COUNT = COMPANY_DOCUMENT_KINDS.length;
 
 interface CompanyDocumentsPanelProps {
     clientCompanyId: number;
@@ -290,32 +312,57 @@ export class CompanyDocumentsPanel extends Component<
                                             </Box>
                                         ) : (
                                             <PermissionGate permission="partners.add_companydocument">
-                                                <Button
-                                                    size="small"
-                                                    variant="contained"
-                                                    component="label"
-                                                    disabled={
-                                                        uploadingKind ===
-                                                        slot.kind
-                                                    }
+                                                <Box
+                                                    sx={{
+                                                        display: "flex",
+                                                        flexDirection: "column",
+                                                        alignItems: "flex-end",
+                                                        gap: 0.5,
+                                                    }}
                                                 >
-                                                    {uploadingKind === slot.kind
-                                                        ? "Otpremam..."
-                                                        : "Priloži"}
-                                                    <input
-                                                        type="file"
-                                                        hidden
-                                                        accept={slot.accept}
-                                                        onChange={(e) =>
-                                                            this.handleUpload(
-                                                                slot.kind,
-                                                                e.target
-                                                                    .files?.[0] ??
-                                                                    null,
-                                                            )
+                                                    <Button
+                                                        size="small"
+                                                        variant="contained"
+                                                        component="label"
+                                                        disabled={
+                                                            uploadingKind ===
+                                                            slot.kind
                                                         }
-                                                    />
-                                                </Button>
+                                                    >
+                                                        {uploadingKind ===
+                                                        slot.kind
+                                                            ? "Otpremam..."
+                                                            : "Priloži"}
+                                                        <input
+                                                            type="file"
+                                                            hidden
+                                                            accept={slot.accept}
+                                                            onChange={(e) =>
+                                                                this.handleUpload(
+                                                                    slot.kind,
+                                                                    e.target
+                                                                        .files?.[0] ??
+                                                                        null,
+                                                                )
+                                                            }
+                                                        />
+                                                    </Button>
+                                                    {slot.accept ===
+                                                        WORD_OR_PDF_ACCEPT && (
+                                                        <Typography
+                                                            variant="caption"
+                                                            color="text.secondary"
+                                                            sx={{
+                                                                textAlign:
+                                                                    "right",
+                                                            }}
+                                                        >
+                                                            Word fajlovi se
+                                                            automatski prebacuju
+                                                            u PDF.
+                                                        </Typography>
+                                                    )}
+                                                </Box>
                                             </PermissionGate>
                                         )}
                                     </TableCell>
