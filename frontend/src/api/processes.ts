@@ -11,6 +11,7 @@ import type {
     EmployeeSummary,
     EquipmentItem,
     JobRole,
+    JobRoleTemplateKey,
     NotificationOutbox,
     NotificationOutboxPreview,
     ObligationPlanRow,
@@ -356,6 +357,31 @@ export async function updateJobRole(
 
 export async function deleteJobRole(id: number): Promise<void> {
     await api.delete(`/api/partners/job-roles/${id}/`);
+}
+
+export async function uploadJobRoleTemplate(
+    roleId: number,
+    templateKey: JobRoleTemplateKey,
+    file: File,
+): Promise<JobRole> {
+    const form = new FormData();
+    form.append("file", file);
+    const { data } = await api.post<JobRole>(
+        `/api/partners/job-roles/${roleId}/templates/${templateKey}/`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
+export async function clearJobRoleTemplate(
+    roleId: number,
+    templateKey: JobRoleTemplateKey,
+): Promise<JobRole> {
+    const { data } = await api.delete<JobRole>(
+        `/api/partners/job-roles/${roleId}/templates/${templateKey}/`,
+    );
+    return data;
 }
 
 export async function getEmployees(params?: {

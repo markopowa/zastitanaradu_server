@@ -34,6 +34,21 @@ class JobRole(models.Model):
         null=True,
         blank=True,
     )
+    obrazac6_template = models.FileField(
+        upload_to="job_role_templates/obrazac6/",
+        null=True,
+        blank=True,
+    )
+    lzo_revers_template = models.FileField(
+        upload_to="job_role_templates/lzo/",
+        null=True,
+        blank=True,
+    )
+    potvrda_clan5_template = models.FileField(
+        upload_to="job_role_templates/potvrda_clan5/",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = "Job role"
@@ -237,6 +252,7 @@ class CompanyDocument(models.Model):
     KIND_PRAVILA_ZOP = "PRAVILA_ZOP"
     KIND_PLAN_EVAKUACIJE = "PLAN_EVAKUACIJE"
     KIND_DECISION_ZOP = "DECISION_ZOP"
+    KIND_OCENA_MEDICINE_RADA = "OCENA_MEDICINE_RADA"
     KIND_CHOICES = (
         (KIND_CONTRACT, "Ugovor"),
         (KIND_DECISION, "Odluka o imenovanju lica za BZNR"),
@@ -249,6 +265,7 @@ class CompanyDocument(models.Model):
         (KIND_PRAVILA_ZOP, "Pravila zaštite od požara"),
         (KIND_PLAN_EVAKUACIJE, "Plan evakuacije"),
         (KIND_DECISION_ZOP, "Odluka o imenovanju lica za ZOP"),
+        (KIND_OCENA_MEDICINE_RADA, "Ocena medicine rada"),
     )
 
     client_company = models.ForeignKey(

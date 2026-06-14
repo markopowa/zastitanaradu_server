@@ -31,6 +31,11 @@ class JobRoleAdmin(admin.ModelAdmin):
     list_display = ("name", "client_company", "risk_level")
     search_fields = ("name",)
     list_filter = ("client_company", "risk_level")
+    readonly_fields = (
+        "obrazac6_template",
+        "lzo_revers_template",
+        "potvrda_clan5_template",
+    )
 
 
 @admin.register(ClientCompany)

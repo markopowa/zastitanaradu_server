@@ -36,6 +36,7 @@ export const COMPANY_DOCUMENT_KINDS: {
     kind: CompanyDocumentKind;
     label: string;
     accept: string;
+    optional?: boolean;
 }[] = [
     { kind: "CONTRACT", label: "Ugovor", accept: PDF_ONLY_ACCEPT },
     {
@@ -88,9 +89,17 @@ export const COMPANY_DOCUMENT_KINDS: {
         label: "Odluka o imenovanju lica za ZOP",
         accept: PDF_ONLY_ACCEPT,
     },
+    {
+        kind: "OCENA_MEDICINE_RADA",
+        label: "Ocena medicine rada",
+        accept: PDF_ONLY_ACCEPT,
+        optional: true,
+    },
 ];
 
-export const COMPANY_DOCUMENT_KIND_COUNT = COMPANY_DOCUMENT_KINDS.length;
+export const COMPANY_DOCUMENT_KIND_COUNT = COMPANY_DOCUMENT_KINDS.filter(
+    (s) => !s.optional,
+).length;
 
 interface CompanyDocumentsPanelProps {
     clientCompanyId: number;
@@ -260,7 +269,13 @@ export class CompanyDocumentsPanel extends Component<
                                     <TableCell>
                                         <Chip
                                             size="small"
-                                            label={hasFile ? "ima" : "nema"}
+                                            label={
+                                                hasFile
+                                                    ? "ima"
+                                                    : slot.optional
+                                                      ? "opciono"
+                                                      : "nema"
+                                            }
                                             color={
                                                 hasFile ? "success" : "default"
                                             }
@@ -378,12 +393,15 @@ export class CompanyDocumentsPanel extends Component<
     render() {
         const { embedded } = this.props;
         const { items, deleteId, deleting, previewDoc } = this.state;
-        const attachedCount = COMPANY_DOCUMENT_KINDS.filter((s) =>
+        const mandatoryKinds = COMPANY_DOCUMENT_KINDS.filter(
+            (s) => !s.optional,
+        );
+        const attachedCount = mandatoryKinds.filter((s) =>
             items.some((d) => d.kind === s.kind),
         ).length;
         const countLabel = (
             <Typography variant="body2" color="text.secondary">
-                {attachedCount} / {COMPANY_DOCUMENT_KINDS.length} priloženo
+                {attachedCount} / {mandatoryKinds.length} priloženo
             </Typography>
         );
 

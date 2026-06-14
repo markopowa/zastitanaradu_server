@@ -85,6 +85,7 @@ import {
 import type { JobRoleFormValues } from "../components/JobRoleFormFields";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
 import { CompanyObligationPlanPanel } from "../components/CompanyObligationPlanPanel";
+import { JobRoleTemplatesPanel } from "../components/JobRoleTemplatesPanel";
 import { AppButton } from "../design/AppButton";
 import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
@@ -437,6 +438,12 @@ class ClientCompanyDetailPageInner extends Component<
                     this.setState({ deletingRole: false });
                 },
             );
+    };
+
+    handleRoleUpdated = (role: JobRole): void => {
+        this.setState((prev) => ({
+            jobRoles: prev.jobRoles.map((r) => (r.id === role.id ? role : r)),
+        }));
     };
 
     saveRole = (): void => {
@@ -1543,6 +1550,15 @@ class ClientCompanyDetailPageInner extends Component<
                                 </TableBody>
                             </Table>
                         </Box>
+                    </SectionCard>
+                )}
+
+                {activeTab === "job_roles" && (
+                    <SectionCard title="Blanko šabloni po radnom mestu">
+                        <JobRoleTemplatesPanel
+                            jobRoles={jobRoles}
+                            onRoleUpdated={this.handleRoleUpdated}
+                        />
                     </SectionCard>
                 )}
 

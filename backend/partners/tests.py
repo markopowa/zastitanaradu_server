@@ -651,3 +651,272 @@ class AutoSpawnBindingsTest(TestCase):
             process_type__code="LEKARSKI_PREGLED",
         )
         self.assertGreater(lekarski.next_run_at, today)
+
+
+class JobRoleTemplateFieldsTest(TestCase):
+    def setUp(self):
+        self.company = make_company()
+        self.role = JobRole.objects.create(
+            client_company=self.company,
+            name="Test radno mesto",
+        )
+
+    def test_fields_are_null_by_default(self):
+        self.assertFalse(bool(self.role.obrazac6_template))
+        self.assertFalse(bool(self.role.lzo_revers_template))
+
+    def test_can_set_obrazac6_template(self):
+        self.role.obrazac6_template.save(
+            "test_obrazac6.docx",
+            ContentFile(b"fake docx"),
+            save=True,
+        )
+        self.role.refresh_from_db()
+        self.assertTrue(bool(self.role.obrazac6_template))
+        self.assertIn("obrazac6", self.role.obrazac6_template.name)
+
+    def test_can_set_lzo_revers_template(self):
+        self.role.lzo_revers_template.save(
+            "test_lzo.docx",
+            ContentFile(b"fake docx lzo"),
+            save=True,
+        )
+        self.role.refresh_from_db()
+        self.assertTrue(bool(self.role.lzo_revers_template))
+        self.assertIn("lzo", self.role.lzo_revers_template.name)
+
+    def test_clear_obrazac6_sets_field_to_none(self):
+        self.role.obrazac6_template.save(
+            "to_clear.docx",
+            ContentFile(b"data"),
+            save=True,
+        )
+        self.role.refresh_from_db()
+        self.role.obrazac6_template.delete(save=False)
+        self.role.obrazac6_template = None
+        self.role.save(update_fields=["obrazac6_template"])
+        self.role.refresh_from_db()
+        self.assertFalse(bool(self.role.obrazac6_template))
+
+
+class SeedObligationCatalogProofKindTest(TestCase):
+    def test_osposobljavanje_bzr_proof_kind_is_upload(self):
+        from django.core.management import call_command
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="OSPOSOBLJAVANJE_BZR")
+        self.assertEqual(pt.proof_kind, ProcessType.PROOF_UPLOAD)
+
+    def test_zop_obuka_proof_kind_is_upload(self):
+        from django.core.management import call_command
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="ZOP_OBUKA")
+        self.assertEqual(pt.proof_kind, ProcessType.PROOF_UPLOAD)
+
+    def test_lzo_zaduzenje_created_with_correct_fields(self):
+        from django.core.management import call_command
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="LZO_ZADUZENJE")
+        self.assertEqual(pt.proof_kind, ProcessType.PROOF_UPLOAD)
+        self.assertEqual(pt.default_period_months, 12)
+        self.assertEqual(pt.subject_kind, ProcessType.SUBJECT_EMPLOYEE)
+        self.assertEqual(pt.domain, ProcessType.DOMAIN_BZNR)
+        self.assertEqual(pt.shape, ProcessType.SHAPE_PERIODIC)
+        self.assertEqual(pt.period_rules, [])
+        self.assertFalse(pt.include_in_medical_exam_record)
+        self.assertEqual(pt.applicability_rule, {"always": True})
+
+    def test_seed_is_idempotent(self):
+        from django.core.management import call_command
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        call_command("seed_obligation_catalog", verbosity=0)
+        count = ProcessType.objects.filter(code="LZO_ZADUZENJE").count()
+        self.assertEqual(count, 1)
+
+    def test_uput_document_template_created(self):
+        from django.core.management import call_command
+        from documents.models import DocumentTemplate
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        self.assertTrue(
+            DocumentTemplate.objects.filter(
+                name="Uput za lekarski pregled"
+            ).exists()
+        )
+
+    def test_uput_process_template_created_for_prethodni(self):
+        from django.core.management import call_command
+        from processes.models import ProcessTemplate
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="PRETHODNI_LEKARSKI")
+        self.assertTrue(
+            ProcessTemplate.objects.filter(
+                process_type=pt,
+                trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+                generate_document=True,
+            ).exists()
+        )
+
+    def test_uput_process_template_created_for_lekarski(self):
+        from django.core.management import call_command
+        from processes.models import ProcessTemplate
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="LEKARSKI_PREGLED")
+        self.assertTrue(
+            ProcessTemplate.objects.filter(
+                process_type=pt,
+                trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+                generate_document=True,
+            ).exists()
+        )
+
+
+class LzoZaduzenjeAutoSpawnTest(TestCase):
+    def setUp(self):
+        self.company = make_company()
+        for code, name in (
+            ("OSPOSOBLJAVANJE_BZR", "Osposobljavanje BZR"),
+            ("ZOP_OBUKA", "ZOP obuka"),
+            ("LZO_ZADUZENJE", "Zaduženje LZO"),
+        ):
+            ProcessType.objects.get_or_create(
+                code=code,
+                defaults={
+                    "name": name,
+                    "subject_kind": ProcessType.SUBJECT_EMPLOYEE,
+                    "domain": ProcessType.DOMAIN_BZNR,
+                    "shape": ProcessType.SHAPE_PERIODIC,
+                    "proof_kind": ProcessType.PROOF_UPLOAD,
+                    "applicability_rule": {"always": True},
+                    "is_active": True,
+                    "default_period_months": 12,
+                },
+            )
+
+    def test_lzo_zaduzenje_spawned_for_every_employee(self):
+        from partners.employee_bindings import ensure_default_bindings_for_employee
+
+        employee = Employee.objects.create(
+            client_company=self.company,
+            first_name="Ana",
+            last_name="Anić",
+        )
+        ensure_default_bindings_for_employee(employee)
+        codes = {
+            b.process_type.code
+            for b in ProcessBinding.objects.filter(
+                subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
+                employee=employee,
+                is_active=True,
+            ).select_related("process_type")
+        }
+        self.assertIn("LZO_ZADUZENJE", codes)
+
+    def test_lzo_zaduzenje_not_duplicated_on_repeat(self):
+        from partners.employee_bindings import ensure_default_bindings_for_employee
+
+        employee = Employee.objects.create(
+            client_company=self.company,
+            first_name="Petar",
+            last_name="Petrović",
+        )
+        ensure_default_bindings_for_employee(employee)
+        ensure_default_bindings_for_employee(employee)
+        count = ProcessBinding.objects.filter(
+            subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
+            employee=employee,
+            is_active=True,
+            process_type__code="LZO_ZADUZENJE",
+        ).count()
+        self.assertEqual(count, 1)
+
+
+class UtputGenerationModeTest(TestCase):
+    def test_template_body_mode_generates_text_content(self):
+        from django.contrib.auth import get_user_model
+        from documents.models import DocumentCategory, DocumentTemplate
+        from processes.utils import _generate_document_for_run
+
+        User = get_user_model()
+        user = User.objects.create_superuser(
+            username="sysgen", password="x", email="sysgen@test.local"
+        )
+        category = DocumentCategory.objects.create(name="Test kategorija")
+        doc_tpl = DocumentTemplate.objects.create(
+            name="Uput test",
+            context_type=DocumentTemplate.CONTEXT_EMPLOYEE,
+            template_body="Firma: {{ client.name }}\nZaposleni: {{ employee.first_name }}",
+            generation_config={"mode": "TEMPLATE_BODY"},
+            category=category,
+        )
+        company = make_company(name="Firma Test")
+        employee = Employee.objects.create(
+            client_company=company,
+            first_name="Jovana",
+            last_name="Jovanović",
+        )
+        pt = make_process_type(
+            subject_kind=ProcessType.SUBJECT_EMPLOYEE,
+            shape=ProcessType.SHAPE_PERIODIC,
+        )
+        from processes.models import ProcessBinding, ProcessTemplate as PT
+
+        binding = ProcessBinding.objects.create(
+            process_type=pt,
+            subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
+            employee=employee,
+            is_active=True,
+            next_run_at=date.today(),
+        )
+        run = ProcessRun.objects.create(
+            process_binding=binding,
+            process_type=pt,
+            scheduled_for=date.today(),
+            status=ProcessRun.STATUS_PENDING,
+            subject_snapshot={
+                "kind": "EMPLOYEE",
+                "employee": {
+                    "first_name": "Jovana",
+                    "last_name": "Jovanović",
+                    "email": "",
+                    "org_unit": "",
+                    "position": "",
+                    "father_name": "",
+                    "national_id": "",
+                    "date_of_birth": "",
+                    "place_of_birth": "",
+                    "occupation": "",
+                    "high_risk_position_name": "",
+                },
+                "client": {
+                    "name": "Firma Test",
+                    "tax_id": company.tax_id,
+                    "registration_number": "",
+                    "activity_code": "",
+                    "address": "",
+                    "phone": "",
+                    "email": "",
+                    "website": "",
+                    "risk_assessment_act_name": "",
+                    "risk_assessment_act_date": "",
+                },
+            },
+        )
+        process_tpl = PT.objects.create(
+            process_type=pt,
+            document_template=doc_tpl,
+            trigger=PT.TRIGGER_ON_SCHEDULED,
+            generate_document=True,
+            send_email=False,
+        )
+        result = _generate_document_for_run(run, process_tpl, run.subject_snapshot)
+        self.assertIsNotNone(result)
+        with result.file.open("rb") as fh:
+            content = fh.read()
+        self.assertIn(b"Firma Test", content)
+        self.assertIn(b"Jovana", content)

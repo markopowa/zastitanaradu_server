@@ -50,6 +50,14 @@ class JobRoleSerializer(serializers.ModelSerializer):
             "risk_level",
             "risk_level_detail",
             "employee_count",
+            "obrazac6_template",
+            "lzo_revers_template",
+            "potvrda_clan5_template",
+        )
+        read_only_fields = (
+            "obrazac6_template",
+            "lzo_revers_template",
+            "potvrda_clan5_template",
         )
 
 

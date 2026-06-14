@@ -12,6 +12,12 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+_JOB_ROLE_TEMPLATE_FIELDS = {
+    "obrazac6": "obrazac6_template",
+    "lzo-revers": "lzo_revers_template",
+    "potvrda-clan5": "potvrda_clan5_template",
+}
+
 from .company_registry import lookup_company_by_registration_number
 from .models import CompanyRegistrySnapshot
 from .compliance_findings import (
@@ -85,6 +91,40 @@ class JobRoleViewSet(viewsets.ModelViewSet):
         if client_company_id is not None and client_company_id != "":
             queryset = queryset.filter(client_company_id=client_company_id)
         return queryset
+
+    @action(
+        detail=True,
+        methods=["post", "delete"],
+        url_path=r"templates/(?P<tpl_key>[^/.]+)",
+        parser_classes=[MultiPartParser, FormParser],
+    )
+    def job_role_template(self, request, pk=None, tpl_key=None):
+        field_name = _JOB_ROLE_TEMPLATE_FIELDS.get(tpl_key)
+        if not field_name:
+            return Response(
+                {"detail": "Nepoznat tip šablona. Dozvoljeno: obrazac6, lzo-revers, potvrda-clan5."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        role = self.get_object()
+        if request.method == "DELETE":
+            field = getattr(role, field_name)
+            if field:
+                field.delete(save=False)
+                setattr(role, field_name, None)
+                role.save(update_fields=[field_name])
+            return Response(self.get_serializer(role).data)
+        file_obj = request.FILES.get("file")
+        if file_obj is None:
+            return Response(
+                {"detail": "Nije priložen fajl (polje 'file')."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        existing = getattr(role, field_name)
+        if existing:
+            existing.delete(save=False)
+        setattr(role, field_name, file_obj)
+        role.save(update_fields=[field_name])
+        return Response(self.get_serializer(role).data)
 
 
 class ComplianceFindingTypeViewSet(viewsets.ModelViewSet):

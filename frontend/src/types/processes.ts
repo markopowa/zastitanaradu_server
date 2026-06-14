@@ -129,7 +129,8 @@ export type CompanyDocumentKind =
     | "PLAN_ZOP"
     | "PRAVILA_ZOP"
     | "PLAN_EVAKUACIJE"
-    | "DECISION_ZOP";
+    | "DECISION_ZOP"
+    | "OCENA_MEDICINE_RADA";
 
 export interface CompanyDocument {
     id: number;
@@ -159,7 +160,12 @@ export interface JobRole {
     risk_level: number | null;
     risk_level_detail?: RiskLevel | null;
     employee_count?: number;
+    obrazac6_template: string | null;
+    lzo_revers_template: string | null;
+    potvrda_clan5_template: string | null;
 }
+
+export type JobRoleTemplateKey = "obrazac6" | "lzo-revers" | "potvrda-clan5";
 
 export interface Employee {
     id: number;

@@ -360,7 +360,19 @@ def _generate_document_for_run(
     generation_config = getattr(doc_template, "generation_config", None) or {}
     mode = generation_config.get("mode")
 
-    if doc_template.template_file:
+    if mode == "TEMPLATE_BODY" and doc_template.template_body:
+        try:
+            rendered = _render_template_body(doc_template.template_body, context)
+            content_bytes = rendered.encode("utf-8")
+            ext = ".txt"
+        except Exception as e:
+            logger.warning(
+                "Failed to render template_body for run id=%s: %s",
+                run.id,
+                e,
+            )
+
+    if not content_bytes and doc_template.template_file:
         name = getattr(doc_template.template_file, "name", "") or ""
 
         if mode == "VISUAL":

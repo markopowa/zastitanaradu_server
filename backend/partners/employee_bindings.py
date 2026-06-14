@@ -38,7 +38,7 @@ def ensure_default_bindings_for_employee(employee) -> None:
     rl = employee.effective_risk_level
     is_high_risk = bool(rl and rl.is_high_risk)
 
-    for code in ("OSPOSOBLJAVANJE_BZR", "ZOP_OBUKA"):
+    for code in ("OSPOSOBLJAVANJE_BZR", "ZOP_OBUKA", "LZO_ZADUZENJE"):
         pt = _get_active_type(code)
         if pt is None:
             continue
