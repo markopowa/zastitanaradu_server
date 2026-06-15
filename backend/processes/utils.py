@@ -5,6 +5,7 @@ from pathlib import Path
 import docx
 from jinja2 import Template
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 
@@ -500,6 +501,76 @@ def _resolve_email_recipients(
             )
         return cleaned
     return []
+
+
+def resolve_reminder_recipients(binding: ProcessBinding) -> list[str]:
+    recipients: list[str] = []
+    if binding.client_company_id:
+        addr = (binding.client_company.email or "").strip()
+        if addr:
+            recipients.append(addr)
+    group_name = getattr(settings, "REMINDER_INTERNAL_GROUP", "") or ""
+    internal = None
+    if group_name:
+        internal = User.objects.filter(
+            groups__name=group_name,
+            is_active=True,
+        ).exclude(email="")
+    if internal is None or not internal.exists():
+        internal = User.objects.filter(is_active=True, is_staff=True).exclude(
+            email=""
+        )
+    for addr in internal.values_list("email", flat=True).distinct():
+        addr = (addr or "").strip()
+        if addr and addr not in recipients:
+            recipients.append(addr)
+    return recipients
+
+
+def build_generic_reminder(run: ProcessRun, offset_days: int) -> tuple[str, str]:
+    snapshot = run.subject_snapshot or {}
+    subject_name = snapshot.get("name") or snapshot.get("kind") or ""
+    name = run.process_type.name if run.process_type_id else "Obaveza"
+    due = format_date_display(run.scheduled_for)
+    if offset_days < 0:
+        days = abs(offset_days)
+        subject = f"Podsetnik: {name}"
+        line = f"Obaveza „{name}” za {subject_name} dospeva {due} (za {days} dana)."
+    elif offset_days == 0:
+        subject = f"Danas je rok: {name}"
+        line = f"Danas ({due}) je rok za obavezu „{name}” za {subject_name}."
+    else:
+        subject = f"Prekoračen rok: {name}"
+        line = f"Rok za obavezu „{name}” za {subject_name} je istekao {due}."
+    body = f"{line}\n\nMolimo da se obaveza izvrši i evidentira u aplikaciji."
+    return subject.strip(), body
+
+
+def send_generic_reminder(
+    run: ProcessRun,
+    binding: ProcessBinding,
+    offset_days: int,
+    *,
+    fail_silently: bool = True,
+) -> tuple[bool, list[str], str, str]:
+    recipients = resolve_reminder_recipients(binding)
+    subject, body = build_generic_reminder(run, offset_days)
+    if not recipients:
+        if not fail_silently:
+            raise ValueError(
+                "Nema primaoca za podsetnik (firma bez mejla i nema internih korisnika)."
+            )
+        return False, [], subject, body
+    sent = get_email_sender().send(
+        recipients=recipients,
+        subject=subject,
+        body=body,
+        attachments=None,
+        fail_silently=fail_silently,
+    )
+    if not sent and not fail_silently:
+        raise RuntimeError("Slanje podsetnika nije uspelo.")
+    return bool(sent), recipients, subject, body
 
 
 def _read_document_file_attachment(

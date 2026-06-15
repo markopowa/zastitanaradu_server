@@ -24,6 +24,7 @@ from .utils import (
     _resolve_email_recipients,
     _send_email_for_template,
     binding_subject_snapshot,
+    send_generic_reminder,
 )
 
 logger = logging.getLogger(__name__)
@@ -88,8 +89,6 @@ def materialize_outbox_for_run(run: ProcessRun) -> int:
             trigger=trigger,
             send_email=True,
         ).first()
-        if template is None:
-            continue
 
         send_on = run.scheduled_for + timedelta(days=offset)
 
@@ -351,11 +350,46 @@ def _send_outbox_row(outbox: NotificationOutbox, now) -> None:
     template = outbox.process_template
 
     if template is None:
-        outbox.attempts += 1
-        outbox.last_error = "Šablon nije pronađen."
-        if outbox.attempts >= MAX_ATTEMPTS:
-            outbox.status = NotificationOutbox.STATUS_FAILED
-        outbox.save(update_fields=["attempts", "last_error", "status"])
+        try:
+            sent, recipients, subject_text, body_text = send_generic_reminder(
+                run, binding, outbox.offset_days, fail_silently=False
+            )
+        except Exception as exc:
+            outbox.attempts += 1
+            outbox.last_error = str(exc)
+            if outbox.attempts >= MAX_ATTEMPTS:
+                outbox.status = NotificationOutbox.STATUS_FAILED
+            outbox.save(update_fields=["attempts", "last_error", "status"])
+            return
+        outbox.status = NotificationOutbox.STATUS_SENT
+        outbox.sent_at = now
+        outbox.recipients = recipients
+        outbox.rendered_subject = subject_text[:255]
+        outbox.rendered_body = body_text
+        outbox.save(
+            update_fields=[
+                "status",
+                "sent_at",
+                "recipients",
+                "rendered_subject",
+                "rendered_body",
+            ]
+        )
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            process_template=None,
+            trigger=_trigger_for_offset(outbox.offset_days),
+            executed_at=now,
+            email_sent=True,
+            email_error="",
+        )
+        subject_name = snapshot.get("name") or snapshot.get("kind") or ""
+        log_activity(
+            ActivityLog.EVENT_RUN_SENT,
+            f"Poslat podsetnik za '{run.process_type.name}' ({subject_name})",
+            process_run=run,
+            process_binding=binding,
+        )
         return
 
     existing_doc = None

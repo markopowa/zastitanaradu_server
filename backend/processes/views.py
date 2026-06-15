@@ -801,18 +801,23 @@ class NotificationOutboxViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         template = outbox.process_template
+        run = outbox.process_run
+        binding = run.process_binding
         if template is None:
-            return Response(
-                {"detail": "Nije pronađen šablon za ovaj red."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            from .utils import build_generic_reminder, resolve_reminder_recipients
+
+            subject, body = build_generic_reminder(run, outbox.offset_days)
+            data = NotificationOutboxPreviewSerializer({
+                "rendered_subject": subject,
+                "rendered_body": body,
+                "recipients": resolve_reminder_recipients(binding),
+            }).data
+            return Response(data)
         from .utils import (
             _build_document_context,
             _render_template_body,
             _resolve_email_recipients,
         )
-        run = outbox.process_run
-        binding = run.process_binding
         snapshot = run.subject_snapshot or {}
         context = _build_document_context(run, snapshot)
         rendered_subject = _render_template_body(
