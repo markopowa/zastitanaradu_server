@@ -228,8 +228,6 @@ setupDockerQuick() {
     makeMigrations
     copyBackendIntoContainer
     docker compose exec -T backend python manage.py migrate --noinput
-    docker compose exec -T backend python manage.py seed_compliance_finding_types
-    docker compose exec -T backend python manage.py seed_obligation_catalog
     syncFrontendDist
     reloadCodeDependantServices
     setupTaskRunner
@@ -261,8 +259,6 @@ setupDocker() {
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
     cd "$APP_DIR"
     docker compose exec -T backend python manage.py migrate --noinput
-    docker compose exec -T backend python manage.py seed_compliance_finding_types
-    docker compose exec -T backend python manage.py seed_obligation_catalog
     docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
     mkdir -p "$STATIC_DIR"
     docker compose cp backend:/app/staticfiles/. "$STATIC_DIR/"
