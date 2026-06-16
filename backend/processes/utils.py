@@ -554,9 +554,8 @@ def build_generic_reminder(run: ProcessRun, offset_days: int) -> tuple[str, str]
     name = run.process_type.name if run.process_type_id else "Obaveza"
     due = format_date_display(run.scheduled_for)
     if offset_days < 0:
-        days = abs(offset_days)
         subject = f"Podsetnik: {name}"
-        line = f"Obaveza „{name}” za {subject_name} dospeva {due} (za {days} dana)."
+        line = f"Obaveza „{name}” za {subject_name} dospeva {due}."
     elif offset_days == 0:
         subject = f"Danas je rok: {name}"
         line = f"Danas ({due}) je rok za obavezu „{name}” za {subject_name}."
