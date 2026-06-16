@@ -10,13 +10,13 @@ CAT_TRAINING = "training"
 CAT_MEDICAL = "medical"
 
 
+CLIENT = ProcessTemplate.EMAIL_TO_CLIENT_MAIN
+BOTH = ProcessTemplate.EMAIL_TO_CLIENT_AND_MAK
+MAK = ProcessTemplate.EMAIL_TO_MAK
+
+
 def _content(category: str, trigger: str, name: str):
     quoted = "„" + name + "”"
-    to = (
-        ProcessTemplate.EMAIL_TO_MAK
-        if trigger == OVERDUE
-        else ProcessTemplate.EMAIL_TO_CLIENT_AND_MAK
-    )
 
     if category == CAT_SERVICE:
         if trigger == LEAD:
@@ -25,21 +25,21 @@ def _content(category: str, trigger: str, name: str):
                 "Poštovani,\n\nRok za " + quoted + " ističe {{ scheduled_for }}. "
                 "Potrebno je naručiti novi pregled kod ovlašćene organizacije i "
                 "otpremiti nalaz u aplikaciju.\n\nS poštovanjem",
-                to,
+                BOTH,
             )
         if trigger == COMPLETED:
             return (
                 "Evidentirano: " + name,
                 "Poštovani,\n\n" + name + " je evidentiran u aplikaciji. "
                 "Važi do {{ valid_until }}.\n\nS poštovanjem",
-                to,
+                CLIENT,
             )
         if trigger == OVERDUE:
             return (
                 "Prekoračen rok: " + name,
                 "Rok za " + quoted + " je istekao ({{ scheduled_for }}) i još nije "
                 "obnovljen. Potrebno je hitno naručiti pregled i otpremiti nalaz.",
-                to,
+                MAK,
             )
 
     if category == CAT_TRAINING:
@@ -48,37 +48,37 @@ def _content(category: str, trigger: str, name: str):
                 "Podsetnik: " + name,
                 "Poštovani,\n\nBliži se rok za " + quoted + " ({{ scheduled_for }}). "
                 "Potrebno je organizovati i evidentirati u aplikaciji.\n\nS poštovanjem",
-                to,
+                BOTH,
             )
         if trigger == OVERDUE:
             return (
                 "Prekoračen rok: " + name,
                 "Rok za " + quoted + " je prošao ({{ scheduled_for }}) i nije "
                 "evidentirano. Potrebno je hitno organizovati.",
-                to,
+                MAK,
             )
 
     if category == CAT_MEDICAL:
         if trigger == LEAD:
             return (
-                "Podsetnik: " + name,
-                "Poštovani,\n\nBliži se rok za " + quoted + " zaposlenog "
-                "({{ scheduled_for }}). Potrebno je pripremiti uput.\n\nS poštovanjem",
-                to,
+                "Priprema uputa: " + name,
+                "Bliži se rok za " + quoted + " zaposlenog ({{ scheduled_for }}). "
+                "Potrebno je pripremiti uput.",
+                MAK,
             )
         if trigger == COMPLETED:
             return (
                 "Evidentiran: " + name,
                 "Poštovani,\n\n" + name + " je evidentiran u aplikaciji. "
                 "Važi do {{ valid_until }}.\n\nS poštovanjem",
-                to,
+                CLIENT,
             )
         if trigger == OVERDUE:
             return (
                 "Prekoračen rok: " + name,
                 quoted + " — rok je prošao ({{ scheduled_for }}) i nalaz nije "
                 "unet u aplikaciju.",
-                to,
+                MAK,
             )
 
     return None

@@ -1,8 +1,6 @@
 from django.utils import timezone
 
-from processes.dates import add_months
 from processes.models import ProcessBinding, ProcessType
-from processes.period_resolution import resolve_period_months
 from processes.tasks import ensure_process_run_for_binding
 
 
@@ -52,9 +50,3 @@ def ensure_default_bindings_for_employee(employee) -> None:
         if pt_prethodni is not None and not _has_active_binding(pt_prethodni, employee):
             binding = _create_binding(pt_prethodni, employee, today)
             ensure_process_run_for_binding(binding)
-
-        pt_lekarski = _get_active_type("LEKARSKI_PREGLED")
-        if pt_lekarski is not None and not _has_active_binding(pt_lekarski, employee):
-            period = resolve_period_months(pt_lekarski, employee) or 12
-            next_run_at = add_months(today, period)
-            _create_binding(pt_lekarski, employee, next_run_at)

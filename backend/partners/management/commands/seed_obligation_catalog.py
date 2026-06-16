@@ -248,6 +248,16 @@ class Command(BaseCommand):
                 process_type, category, triggers
             )
 
+        try:
+            prethodni = ProcessType.objects.get(code="PRETHODNI_LEKARSKI")
+            periodicni = ProcessType.objects.get(code="LEKARSKI_PREGLED")
+            ProcessTemplate.objects.filter(
+                process_type=prethodni,
+                trigger=ProcessTemplate.TRIGGER_ON_COMPLETED,
+            ).update(followup_process_type=periodicni)
+        except ProcessType.DoesNotExist:
+            pass
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Obligation catalog: {created} created, {skipped} existing left untouched. "
