@@ -7,7 +7,7 @@ from partners.management.commands.seed_compliance_finding_types import (
     FINDING_TYPE_PROCESS_TYPES,
 )
 from partners.management.commands.seed_obligation_catalog import CATALOG
-from processes.models import ProcessType
+from processes.models import ProcessBinding, ProcessRun, ProcessType
 
 
 def canonical_codes():
@@ -54,6 +54,9 @@ class Command(BaseCommand):
                 self.stdout.write(f"  stray: {pt.code} — {pt.name}")
                 continue
             if do_delete:
+                ProcessRun.objects.filter(process_type=pt).delete()
+                ProcessBinding.objects.filter(process_type=pt).delete()
+                pt.templates.all().delete()
                 try:
                     pt.delete()
                     deleted += 1

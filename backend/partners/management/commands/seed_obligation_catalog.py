@@ -3,6 +3,27 @@ from django.db import transaction
 
 from documents.models import DocumentTemplate
 from processes.models import ProcessTemplate, ProcessType
+from processes.reminder_templates import (
+    CAT_MEDICAL,
+    CAT_SERVICE,
+    CAT_TRAINING,
+    COMPLETED,
+    LEAD,
+    OVERDUE,
+    ensure_obligation_templates,
+)
+
+OBLIGATION_TEMPLATE_PLAN = {
+    "LEKARSKI_PREGLED": (CAT_MEDICAL, [LEAD, COMPLETED, OVERDUE]),
+    "PRETHODNI_LEKARSKI": (CAT_MEDICAL, [COMPLETED, OVERDUE]),
+    "OSPOSOBLJAVANJE_BZR": (CAT_TRAINING, [LEAD, OVERDUE]),
+    "ZOP_OBUKA": (CAT_TRAINING, [LEAD, OVERDUE]),
+    "LZO_ZADUZENJE": (CAT_TRAINING, [LEAD]),
+    "PP_APARATI_SERVIS": (CAT_SERVICE, [LEAD, OVERDUE]),
+    "HIDRANTI_ISPITIVANJE": (CAT_SERVICE, [LEAD, OVERDUE]),
+    "HIDRANTSKA_CREVA": (CAT_SERVICE, [LEAD, OVERDUE]),
+    "SDP_PREGLED": (CAT_SERVICE, [LEAD, OVERDUE]),
+}
 
 CATALOG = [
     {
@@ -15,7 +36,7 @@ CATALOG = [
         "legal_basis": "Zakon o BZR 35/2023, čl. 33-34",
         "default_period_months": 36,
         "period_rules": [{"when": {"risk": "high"}, "months": 12}],
-        "reminder_offsets": [-15, 0, 7],
+        "reminder_offsets": [-15, 7, 15, 30],
         "applicability_rule": {"always": True},
         "company_document_kind": "",
         "include_in_medical_exam_record": False,
@@ -30,7 +51,7 @@ CATALOG = [
         "legal_basis": "Zakon o BZR 35/2023, čl. 56",
         "default_period_months": None,
         "period_rules": [{"when": {"risk": "high"}, "months": 12}],
-        "reminder_offsets": [-30, -7, 0, 14],
+        "reminder_offsets": [-30, 0, 7, 15, 30],
         "applicability_rule": {"high_risk_only": True},
         "company_document_kind": "",
         "include_in_medical_exam_record": True,
@@ -45,7 +66,7 @@ CATALOG = [
         "legal_basis": "Zakon o BZR 35/2023, čl. 56",
         "default_period_months": None,
         "period_rules": [],
-        "reminder_offsets": [-7, 0, 7],
+        "reminder_offsets": [0, 7, 15, 30],
         "applicability_rule": {"high_risk_only": True},
         "company_document_kind": "",
         "include_in_medical_exam_record": True,
@@ -60,7 +81,7 @@ CATALOG = [
         "legal_basis": "Zakon o ZOP, čl. 53",
         "default_period_months": 36,
         "period_rules": [],
-        "reminder_offsets": [-15, 0, 7],
+        "reminder_offsets": [-15, 7, 15, 30],
         "applicability_rule": {"always": True},
         "company_document_kind": "",
         "include_in_medical_exam_record": False,
@@ -75,7 +96,7 @@ CATALOG = [
         "legal_basis": "Zakon o BZR 35/2023, čl. 15",
         "default_period_months": 12,
         "period_rules": [],
-        "reminder_offsets": [-15, 0, 7],
+        "reminder_offsets": [-15],
         "applicability_rule": {"always": True},
         "company_document_kind": "",
         "include_in_medical_exam_record": False,
@@ -90,7 +111,7 @@ CATALOG = [
         "legal_basis": "Zakon o ZOP, čl. 43-44",
         "default_period_months": 6,
         "period_rules": [],
-        "reminder_offsets": [-14, 0, 7],
+        "reminder_offsets": [-14, 7, 15, 30],
         "applicability_rule": {"requires_installation": "FIRE_EXTINGUISHERS"},
         "company_document_kind": "",
         "include_in_medical_exam_record": False,
@@ -105,7 +126,7 @@ CATALOG = [
         "legal_basis": "",
         "default_period_months": 6,
         "period_rules": [],
-        "reminder_offsets": [-14, 0, 7],
+        "reminder_offsets": [-14, 7, 15, 30],
         "applicability_rule": {"requires_installation": "HYDRANT_NETWORK"},
         "company_document_kind": "",
         "include_in_medical_exam_record": False,
@@ -120,7 +141,7 @@ CATALOG = [
         "legal_basis": "",
         "default_period_months": 12,
         "period_rules": [],
-        "reminder_offsets": [-14, 0, 7],
+        "reminder_offsets": [-14, 7, 15, 30],
         "applicability_rule": {"requires_installation": "HYDRANT_NETWORK"},
         "company_document_kind": "",
         "include_in_medical_exam_record": False,
@@ -135,7 +156,7 @@ CATALOG = [
         "legal_basis": "",
         "default_period_months": 12,
         "period_rules": [],
-        "reminder_offsets": [-30, 0, 14],
+        "reminder_offsets": [-14, 7, 15, 30],
         "applicability_rule": {"requires_installation": "FIRE_ALARM_SYSTEM"},
         "company_document_kind": "",
         "include_in_medical_exam_record": False,
@@ -217,10 +238,21 @@ class Command(BaseCommand):
             if was_created:
                 uput_pt_created += 1
 
+        reminder_templates_created = 0
+        for code, (category, triggers) in OBLIGATION_TEMPLATE_PLAN.items():
+            try:
+                process_type = ProcessType.objects.get(code=code)
+            except ProcessType.DoesNotExist:
+                continue
+            reminder_templates_created += ensure_obligation_templates(
+                process_type, category, triggers
+            )
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Obligation catalog: {created} created, {skipped} existing left untouched. "
                 f"Uput DocumentTemplate {'created' if uput_tpl_created else 'existing'}. "
-                f"{uput_pt_created} uput ProcessTemplate(s) created.",
+                f"{uput_pt_created} uput ProcessTemplate(s) created. "
+                f"{reminder_templates_created} reminder template(s) created.",
             ),
         )

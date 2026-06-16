@@ -463,11 +463,13 @@ def _resolve_email_recipients(
     if template.email_to_kind == ProcessTemplate.EMAIL_TO_CUSTOM:
         addr = (template.custom_email_recipient or "").strip()
         return [addr] if addr else []
-    if (
-        template.email_to_kind == ProcessTemplate.EMAIL_TO_CLIENT_MAIN
-        and binding.client_company_id
-    ):
-        addr = (binding.client_company.email or "").strip()
+    if template.email_to_kind == ProcessTemplate.EMAIL_TO_CLIENT_AND_MAK:
+        return resolve_reminder_recipients(binding)
+    if template.email_to_kind == ProcessTemplate.EMAIL_TO_MAK:
+        return internal_mak_recipients()
+    if template.email_to_kind == ProcessTemplate.EMAIL_TO_CLIENT_MAIN:
+        company = _binding_company(binding)
+        addr = (company.email or "").strip() if company else ""
         return [addr] if addr else []
     if (
         template.email_to_kind == ProcessTemplate.EMAIL_TO_EMPLOYEE
@@ -503,12 +505,17 @@ def _resolve_email_recipients(
     return []
 
 
-def resolve_reminder_recipients(binding: ProcessBinding) -> list[str]:
-    recipients: list[str] = []
+def _binding_company(binding: ProcessBinding):
     if binding.client_company_id:
-        addr = (binding.client_company.email or "").strip()
-        if addr:
-            recipients.append(addr)
+        return binding.client_company
+    if binding.employee_id and binding.employee.client_company_id:
+        return binding.employee.client_company
+    if binding.equipment_item_id and binding.equipment_item.client_company_id:
+        return binding.equipment_item.client_company
+    return None
+
+
+def internal_mak_recipients() -> list[str]:
     group_name = getattr(settings, "REMINDER_INTERNAL_GROUP", "") or ""
     internal = None
     if group_name:
@@ -520,9 +527,23 @@ def resolve_reminder_recipients(binding: ProcessBinding) -> list[str]:
         internal = User.objects.filter(is_active=True, is_staff=True).exclude(
             email=""
         )
+    recipients: list[str] = []
     for addr in internal.values_list("email", flat=True).distinct():
         addr = (addr or "").strip()
         if addr and addr not in recipients:
+            recipients.append(addr)
+    return recipients
+
+
+def resolve_reminder_recipients(binding: ProcessBinding) -> list[str]:
+    recipients: list[str] = []
+    company = _binding_company(binding)
+    if company is not None:
+        addr = (company.email or "").strip()
+        if addr:
+            recipients.append(addr)
+    for addr in internal_mak_recipients():
+        if addr not in recipients:
             recipients.append(addr)
     return recipients
 

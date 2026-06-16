@@ -3,6 +3,13 @@ from django.db import transaction
 
 from partners.models import ComplianceFindingType
 from processes.models import ProcessType
+from processes.reminder_templates import (
+    CAT_SERVICE,
+    COMPLETED,
+    LEAD,
+    OVERDUE,
+    ensure_obligation_templates,
+)
 
 FINDING_TYPE_PROCESS_TYPES = [
     {
@@ -17,7 +24,7 @@ FINDING_TYPE_PROCESS_TYPES = [
             "shape": ProcessType.SHAPE_PERIODIC,
             "proof_kind": ProcessType.PROOF_UPLOAD,
             "default_period_months": 36,
-            "reminder_offsets": [-30, 0, 14],
+            "reminder_offsets": [-30, 7, 15, 30],
             "applicability_rule": {"always": True},
             "include_in_medical_exam_record": False,
         },
@@ -34,7 +41,7 @@ FINDING_TYPE_PROCESS_TYPES = [
             "shape": ProcessType.SHAPE_PERIODIC,
             "proof_kind": ProcessType.PROOF_UPLOAD,
             "default_period_months": 36,
-            "reminder_offsets": [-30, 0, 14],
+            "reminder_offsets": [-30, 7, 15, 30],
             "applicability_rule": {"always": True},
             "include_in_medical_exam_record": False,
         },
@@ -51,7 +58,7 @@ FINDING_TYPE_PROCESS_TYPES = [
             "shape": ProcessType.SHAPE_PERIODIC,
             "proof_kind": ProcessType.PROOF_UPLOAD,
             "default_period_months": 36,
-            "reminder_offsets": [-30, 0, 14],
+            "reminder_offsets": [-30, 7, 15, 30],
             "applicability_rule": {"always": True},
             "include_in_medical_exam_record": False,
         },
@@ -68,7 +75,7 @@ FINDING_TYPE_PROCESS_TYPES = [
             "shape": ProcessType.SHAPE_PERIODIC,
             "proof_kind": ProcessType.PROOF_UPLOAD,
             "default_period_months": 36,
-            "reminder_offsets": [-30, 0, 14],
+            "reminder_offsets": [-30, 7, 15, 30],
             "applicability_rule": {"always": True},
             "include_in_medical_exam_record": False,
         },
@@ -85,7 +92,7 @@ FINDING_TYPE_PROCESS_TYPES = [
             "shape": ProcessType.SHAPE_PERIODIC,
             "proof_kind": ProcessType.PROOF_UPLOAD,
             "default_period_months": 36,
-            "reminder_offsets": [-30, 0, 14],
+            "reminder_offsets": [-30, 7, 15, 30],
             "applicability_rule": {"requires_installation": "LIGHTNING_PROTECTION"},
             "include_in_medical_exam_record": False,
         },
@@ -102,7 +109,7 @@ FINDING_TYPE_PROCESS_TYPES = [
             "shape": ProcessType.SHAPE_PERIODIC,
             "proof_kind": ProcessType.PROOF_UPLOAD,
             "default_period_months": 36,
-            "reminder_offsets": [-30, 0, 14],
+            "reminder_offsets": [-30, 7, 15, 30],
             "applicability_rule": {"always": True},
             "include_in_medical_exam_record": False,
         },
@@ -118,6 +125,7 @@ class Command(BaseCommand):
         created_ft = 0
         created_pt = 0
         linked_ft = 0
+        reminder_templates_created = 0
 
         for data in FINDING_TYPE_PROCESS_TYPES:
             pt_data = data["process_type"]
@@ -156,10 +164,15 @@ class Command(BaseCommand):
                 ft.save(update_fields=["process_type"])
                 linked_ft += 1
 
+            reminder_templates_created += ensure_obligation_templates(
+                pt, CAT_SERVICE, [LEAD, COMPLETED, OVERDUE]
+            )
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Finding types: {created_ft} created, {linked_ft} linked, "
                 f"{len(FINDING_TYPE_PROCESS_TYPES) - created_ft - linked_ft} existing left untouched. "
-                f"Process types: {created_pt} created.",
+                f"Process types: {created_pt} created. "
+                f"{reminder_templates_created} reminder template(s) created.",
             ),
         )
