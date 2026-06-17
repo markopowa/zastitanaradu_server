@@ -26,11 +26,26 @@ import {
     startTestSession,
     subscribeTestFillResults,
 } from "../testFlow/channel";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 import { TEST_FLOW_PHASES, TEST_FLOW_SECTIONS } from "../testFlow/sections";
 import type { TestFlowSection, TestFlowSectionMeta } from "../testFlow/types";
 import { setLastPath } from "../store/locationSlice";
 
 import type { AppDispatch, RootState } from "../store";
+
+const DOC_MODULES = import.meta.glob("../testFlow/docs/*.md", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+}) as Record<string, string>;
+
+const DOCS_BY_NUM: Record<string, string> = {};
+for (const [path, content] of Object.entries(DOC_MODULES)) {
+    const name = path.split("/").pop() || "";
+    DOCS_BY_NUM[name.slice(0, 2)] = content;
+}
 
 interface StateProps {
     isSuperuser: boolean;
@@ -45,6 +60,7 @@ interface State {
     sessionId: string | null;
     clickedSections: Partial<Record<TestFlowSection, boolean>>;
     lastResults: Partial<Record<TestFlowSection, boolean>>;
+    activeNum: string;
 }
 
 class IntegrationTestsPage extends Component<
@@ -58,6 +74,7 @@ class IntegrationTestsPage extends Component<
         sessionId: getTestSessionId(),
         clickedSections: {},
         lastResults: {},
+        activeNum: "01",
     };
 
     componentDidMount(): void {
@@ -213,16 +230,23 @@ class IntegrationTestsPage extends Component<
                 sx={{ overflow: "hidden" }}
             >
                 <Box
+                    onClick={() =>
+                        this.setState({ activeNum: phase.id.slice(0, 2) })
+                    }
                     sx={{
                         px: 2,
                         py: 1.25,
-                        bgcolor: "grey.50",
+                        bgcolor:
+                            this.state.activeNum === phase.id.slice(0, 2)
+                                ? "action.selected"
+                                : "action.hover",
                         borderBottom: "1px solid",
                         borderColor: "divider",
                         display: "flex",
                         alignItems: "baseline",
                         justifyContent: "space-between",
                         gap: 1,
+                        cursor: "pointer",
                     }}
                 >
                     <Box>
@@ -297,50 +321,107 @@ class IntegrationTestsPage extends Component<
                         </Button>
                     </Paper>
                 ) : (
-                    <Paper variant="outlined" sx={{ p: 2 }}>
-                        <Stack
-                            direction="row"
-                            spacing={1}
-                            flexWrap="wrap"
-                            alignItems="center"
-                            sx={{ mb: 1.5 }}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: { xs: "column", md: "row" },
+                            gap: 2,
+                            alignItems: "flex-start",
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: "100%",
+                                flex: { md: "0 0 400px" },
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 2,
+                            }}
                         >
-                            <Button
-                                size="small"
-                                variant="contained"
-                                startIcon={<OpenInNewIcon />}
-                                onClick={this.handleOpenAppTab}
-                            >
-                                App tab
-                            </Button>
-                            <Button
-                                size="small"
-                                variant="outlined"
-                                color="error"
-                                startIcon={<StopIcon />}
-                                onClick={this.handleEndSession}
-                            >
-                                Završi
-                            </Button>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ ml: "auto !important" }}
-                            >
-                                {done}/{total} kliknuto
-                            </Typography>
-                        </Stack>
-                        <LinearProgress
-                            variant="determinate"
-                            value={progress}
-                            color="success"
-                            sx={{ height: 6, borderRadius: 1 }}
-                        />
-                    </Paper>
+                            <Paper variant="outlined" sx={{ p: 2 }}>
+                                <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    flexWrap="wrap"
+                                    alignItems="center"
+                                    sx={{ mb: 1.5 }}
+                                >
+                                    <Button
+                                        size="small"
+                                        variant="contained"
+                                        startIcon={<OpenInNewIcon />}
+                                        onClick={this.handleOpenAppTab}
+                                    >
+                                        App tab
+                                    </Button>
+                                    <Button
+                                        size="small"
+                                        variant="outlined"
+                                        color="error"
+                                        startIcon={<StopIcon />}
+                                        onClick={this.handleEndSession}
+                                    >
+                                        Završi
+                                    </Button>
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{ ml: "auto !important" }}
+                                    >
+                                        {done}/{total} kliknuto
+                                    </Typography>
+                                </Stack>
+                                <LinearProgress
+                                    variant="determinate"
+                                    value={progress}
+                                    color="success"
+                                    sx={{ height: 6, borderRadius: 1 }}
+                                />
+                            </Paper>
+                            {TEST_FLOW_PHASES.map((phase) =>
+                                this.renderPhase(phase),
+                            )}
+                        </Box>
+                        <Paper
+                            variant="outlined"
+                            sx={{
+                                width: "100%",
+                                flex: 1,
+                                p: 2,
+                                position: { md: "sticky" },
+                                top: { md: 16 },
+                                maxHeight: { md: "calc(100vh - 32px)" },
+                                overflow: "auto",
+                                "& h1": { fontSize: "1.3rem", mt: 0 },
+                                "& h2": { fontSize: "1.1rem" },
+                                "& h3": { fontSize: "1rem" },
+                                "& code": {
+                                    bgcolor: "action.hover",
+                                    px: 0.5,
+                                    borderRadius: 0.5,
+                                },
+                                "& pre": {
+                                    bgcolor: "action.hover",
+                                    p: 1,
+                                    borderRadius: 1,
+                                    overflow: "auto",
+                                },
+                                "& table": { borderCollapse: "collapse" },
+                                "& th, & td": {
+                                    border: "1px solid",
+                                    borderColor: "divider",
+                                    px: 1,
+                                    py: 0.5,
+                                },
+                            }}
+                        >
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {DOCS_BY_NUM[this.state.activeNum] ||
+                                    "Nema doca za ovu temu."}
+                            </ReactMarkdown>
+                        </Paper>
+                    </Box>
                 )}
-
-                {sessionActive &&
-                    TEST_FLOW_PHASES.map((phase) => this.renderPhase(phase))}
             </Box>
         );
     }
