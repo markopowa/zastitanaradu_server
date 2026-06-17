@@ -335,7 +335,8 @@ class AppLayoutInner extends Component<Props, State> {
         return (
             <Box
                 sx={{
-                    minHeight: "100vh",
+                    height: "100vh",
+                    overflow: "hidden",
                     display: "flex",
                     bgcolor: "background.default",
                     color: "text.primary",

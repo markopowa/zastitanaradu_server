@@ -338,8 +338,7 @@ class IntegrationTestsPage extends Component<
                             display: "flex",
                             flexDirection: { xs: "column", md: "row" },
                             gap: 2,
-                            height: { md: "calc(100dvh - 140px)" },
-                            overflow: { md: "hidden" },
+                            alignItems: "flex-start",
                         }}
                     >
                         <Box
@@ -349,8 +348,6 @@ class IntegrationTestsPage extends Component<
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: 2,
-                                minHeight: 0,
-                                overflow: { md: "auto" },
                             }}
                         >
                             <Paper variant="outlined" sx={{ p: 2 }}>
@@ -402,13 +399,16 @@ class IntegrationTestsPage extends Component<
                             sx={{
                                 width: "100%",
                                 flex: { md: 1 },
-                                minHeight: 0,
-                                overflow: { md: "auto" },
+                                position: { md: "sticky" },
+                                top: { md: 8 },
+                                alignSelf: { md: "flex-start" },
                             }}
                         >
                             <Box
                                 sx={{
                                     p: 3,
+                                    maxHeight: { md: "calc(100vh - 96px)" },
+                                    overflow: { md: "auto" },
                                     "& > *:first-of-type": { mt: 0 },
                                     "& > *:last-child": { mb: 0 },
                                     "& h1": { fontSize: "1.3rem", mt: 0 },
