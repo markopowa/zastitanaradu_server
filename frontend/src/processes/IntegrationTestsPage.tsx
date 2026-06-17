@@ -311,9 +311,6 @@ class IntegrationTestsPage extends Component<
                     flexDirection: "column",
                     gap: 2,
                     width: "100%",
-                    height: { md: "100%" },
-                    minHeight: 0,
-                    overflow: { md: "hidden" },
                 }}
             >
                 <Box sx={{ flexShrink: 0 }}>
@@ -341,8 +338,7 @@ class IntegrationTestsPage extends Component<
                             display: "flex",
                             flexDirection: { xs: "column", md: "row" },
                             gap: 2,
-                            flex: { md: 1 },
-                            minHeight: 0,
+                            height: { md: "calc(100dvh - 140px)" },
                             overflow: { md: "hidden" },
                         }}
                     >
@@ -407,7 +403,6 @@ class IntegrationTestsPage extends Component<
                                 width: "100%",
                                 flex: { md: 1 },
                                 minHeight: 0,
-                                height: { md: "100%" },
                                 overflow: { md: "auto" },
                             }}
                         >
