@@ -110,9 +110,18 @@ TASKS = {
 }
 
 EMAIL_SENDER_BACKEND = os.environ.get(
-    "EMAIL_SENDER_BACKEND", "core.email_sender.SESEmailSender"
+    "EMAIL_SENDER_BACKEND", "core.email_sender.SMTPEmailSender"
 )
 EMAIL_FROM_ADDRESS = os.environ.get("EMAIL_FROM_ADDRESS", "")
+DEFAULT_FROM_EMAIL = EMAIL_FROM_ADDRESS or "noreply@localhost"
+
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
+EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
+
 AWS_REGION = os.environ.get("AWS_REGION", "") or os.environ.get(
     "AWS_DEFAULT_REGION", "eu-central-1"
 )

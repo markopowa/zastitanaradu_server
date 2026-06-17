@@ -201,7 +201,6 @@ class IntegrationTestsPage extends Component<
         const sections = TEST_FLOW_SECTIONS.filter(
             (s) => s.phaseId === phase.id,
         );
-        if (sections.length === 0) return null;
 
         const clickedInPhase = sections.filter(
             (s) => this.state.clickedSections[s.id],
@@ -239,13 +238,22 @@ class IntegrationTestsPage extends Component<
                             </Typography>
                         )}
                     </Box>
-                    {this.state.sessionActive && (
+                    {this.state.sessionActive && sections.length > 0 && (
                         <Typography variant="caption" color="text.secondary">
                             {clickedInPhase}/{sections.length}
                         </Typography>
                     )}
                 </Box>
-                {sections.map((section) => this.renderSectionRow(section))}
+                {sections.length === 0 ? (
+                    <Box sx={{ px: 2, py: 1.5 }}>
+                        <Typography variant="caption" color="text.secondary">
+                            Nema formi za popunjavanje — ručni/provera korak. Vidi
+                            instructions/test/{phase.id}.md
+                        </Typography>
+                    </Box>
+                ) : (
+                    sections.map((section) => this.renderSectionRow(section))
+                )}
             </Paper>
         );
     };
