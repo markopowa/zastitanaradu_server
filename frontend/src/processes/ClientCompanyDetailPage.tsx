@@ -891,6 +891,41 @@ class ClientCompanyDetailPageInner extends Component<
                 () =>
                     parseCompanyTab(this.props.location.search) === "job_roles",
             ),
+            setupTestFill(
+                "P_PROFIL",
+                () => {
+                    if (!this.state.editing) {
+                        return false;
+                    }
+                    const p = TEST_FLOW.companyProfile;
+                    this.setState({
+                        editZop_category: p.zop_category,
+                        editHigh_risk_activity: p.high_risk_activity,
+                        editInstallations: [...p.installations],
+                    });
+                    return true;
+                },
+                () =>
+                    parseCompanyTab(this.props.location.search) === "identity",
+            ),
+            setupTestFill(
+                "EQ1",
+                () => {
+                    const eq = TEST_FLOW.equipment;
+                    this.setState({
+                        eqDialogOpen: true,
+                        equipmentError: null,
+                        eq_name: eq.name,
+                        eq_category: eq.category,
+                        eq_inventory_number: eq.inventory_number,
+                        eq_location: eq.location,
+                        eq_notes: "",
+                    });
+                    return true;
+                },
+                () =>
+                    parseCompanyTab(this.props.location.search) === "employees",
+            ),
         );
     };
 

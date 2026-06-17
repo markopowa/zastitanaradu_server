@@ -187,6 +187,16 @@ class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
                 this.setState({ editReason: reason });
                 return true;
             }),
+            setupTestFill("D_AMD", () => {
+                if (!this.state.amendmentDialogOpen) {
+                    return false;
+                }
+                this.setState({
+                    amendmentTitle: TEST_FLOW.actAmendment.title,
+                    amendmentNote: TEST_FLOW.actAmendment.note,
+                });
+                return true;
+            }),
         );
     };
 

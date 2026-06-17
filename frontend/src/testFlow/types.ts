@@ -17,7 +17,10 @@ export type TestFlowSection =
     | "J1"
     | "K"
     | "L_DATE"
-    | "M";
+    | "M"
+    | "P_PROFIL"
+    | "D_AMD"
+    | "EQ1";
 
 export type TestFillCommand = {
     type: "fill";

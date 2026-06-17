@@ -1,38 +1,20 @@
-# Test flow — korak po korak
+# Test flow — indeks
 
-Pretpostavka: **prazna baza** (samo superuser). Fajlovi su u `files_for_test\`.
+Linearno, **jedan po jedan**, na **praznoj bazi** (samo superuser). Ne skači — svaki doc pretpostavlja da su prethodni odrađeni (stanje se nagomilava). Fajlovi su u `instructions/test/`.
 
-## Integration tests
+**Fill:** `/integration-tests` → **Pokreni sesiju** → **Otvori app tab** → biraš case → **Popuni** (dugme pozeleni). Fajlovi za upload su u `files_for_test/`.
 
-`/integration-tests` → **Pokreni sesiju** → **Otvori app tab**. Idi gde ti treba, otvori formu, klikni **Popuni**. Dugme postane zeleno kad ga klikneš.
+| # | Doc | Pokriva |
+|---|---|---|
+| 01 | `01_uvod.md` | orijentacija + obilazak navigacije |
+| 02 | `02_podesavanje.md` | seed kataloga obaveza + pregled admin ekrana |
+| 03 | `03_unos_firme.md` | čarobnjak nove firme |
+| 04 | `04_firma_pregled.md` | hub firme: Pregled (checklista), profil firme |
+| 05 | `05_dokumenta.md` | dokumentacija, Akt + amandmani, stručni nalazi, blanko šabloni |
+| 06 | `06_zaposleni_oprema.md` | zaposleni (+auto-spawn obaveza), oprema, radna mesta |
+| 07 | `07_obaveze_aktivnosti.md` | Dodeljene obaveze, Aktivnosti, završetak, lančanje |
+| 08 | `08_podsetnici_slanja.md` | Danas, Slanja, okidači i mejlovi |
+| 09 | `09_obrazac1.md` | Obrazac 1 (medicinska evidencija) |
+| 10 | `10_korisnici_uloge.md` | korisnici i uloge |
 
----
-
-## G. Kategorija + šablon + H, I (podešavanja)
-
-Potrebno pre lekarskih pregleda.
-
-1. **Dokumenti → Kategorije → Dodaj kategoriju** → **G0 → Popuni** → **Sačuvaj**.
-2. **Dokumenti → Šabloni** → **G → Popuni** → PDF → **Sačuvaj** → **Uredi polja**.
-3. **Vrste obaveza → Dodaj** → **H → Popuni** → **Sačuvaj**.
-4. **Šabloni obaveza** → **I1**, **I2 → Popuni** (dva okidača).
-
----
-
-## A. Nova firma — čarobnjak
-
-1. **Firme → Dodaj firmu**.
-2. Korak 1: **A1 → Popuni** → matični `20644206` → **Uvezi** → **Sledeći**.
-3. Korak 2 dokumentacija (sekcija C, može prazno) → **Sledeći**.
-4. Korak 3: **A3 → Popuni** → **Dodaj radno mesto** → **Sledeći**.
-5. Korak 4: **F1 → Popuni** → **Sačuvaj** → **Sledeći**.
-6. Korak 5: **J1 → Popuni** → **Dodaj** → **Sledeći**.
-7. Korak 6 → **Završi**.
-
----
-
-## B–O. Ostalo
-
-**B** kontakt-lice · **C** obavezna dokumentacija · **D** akt o proceni rizika · **E** radna mesta · **F** zaposleni · **J** slanje pregleda · **K** završi aktivnost · **L** stručni nalazi · **M** nivo rizika · **N** Obrazac 1 · **O** predstojeći rokovi
-
-Detalji po sekcijama — vidi ranije verzije ili app UI.
+Status videa za svaku temu — u sekciji **Video** unutar doca.

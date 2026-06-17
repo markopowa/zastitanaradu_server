@@ -143,6 +143,24 @@ export const TEST_FLOW_SECTIONS: TestFlowSectionMeta[] = [
         hint: "Tab Stručni nalazi",
     },
     {
+        id: "P_PROFIL",
+        phaseId: "company",
+        label: "Profil firme (ZOP/rizik/instalacije)",
+        hint: "Tab Lična karta → Izmeni",
+    },
+    {
+        id: "D_AMD",
+        phaseId: "company",
+        label: "Izmena i dopuna Akta",
+        hint: "Akt → Dodaj izmenu (dialog)",
+    },
+    {
+        id: "EQ1",
+        phaseId: "company",
+        label: "Oprema",
+        hint: "Oprema → Dodaj (dialog)",
+    },
+    {
         id: "K",
         phaseId: "ops",
         label: "Završi aktivnost",

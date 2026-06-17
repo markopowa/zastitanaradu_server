@@ -83,6 +83,21 @@ export const TEST_FLOW = {
         label: "Testni nivo",
         score: "5",
     },
+    companyProfile: {
+        zop_category: "III" as const,
+        high_risk_activity: true,
+        installations: ["FIRE_EXTINGUISHERS", "HYDRANT_NETWORK"] as const,
+    },
+    actAmendment: {
+        title: "Izmena i dopuna Akta",
+        note: "Promena na radnom mestu — povećan rizik",
+    },
+    equipment: {
+        name: "Viljuškar Linde H25",
+        category: "Oprema za rad",
+        inventory_number: "INV-001",
+        location: "Magacin",
+    },
 } as const;
 
 export function bindingTermDateDisplay(): string {
