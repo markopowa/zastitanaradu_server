@@ -311,9 +311,12 @@ class IntegrationTestsPage extends Component<
                     flexDirection: "column",
                     gap: 2,
                     width: "100%",
+                    height: { md: "100%" },
+                    minHeight: 0,
+                    overflow: { md: "hidden" },
                 }}
             >
-                <Box>
+                <Box sx={{ flexShrink: 0 }}>
                     <Typography variant="h6" gutterBottom>
                         Integration tests
                     </Typography>
@@ -338,7 +341,9 @@ class IntegrationTestsPage extends Component<
                             display: "flex",
                             flexDirection: { xs: "column", md: "row" },
                             gap: 2,
-                            alignItems: "flex-start",
+                            flex: { md: 1 },
+                            minHeight: 0,
+                            overflow: { md: "hidden" },
                         }}
                     >
                         <Box
@@ -348,6 +353,8 @@ class IntegrationTestsPage extends Component<
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: 2,
+                                minHeight: 0,
+                                overflow: { md: "auto" },
                             }}
                         >
                             <Paper variant="outlined" sx={{ p: 2 }}>
@@ -399,16 +406,14 @@ class IntegrationTestsPage extends Component<
                             sx={{
                                 width: "100%",
                                 flex: { md: 1 },
-                                position: { md: "sticky" },
-                                top: { md: 8 },
-                                alignSelf: { md: "flex-start" },
+                                minHeight: 0,
+                                height: { md: "100%" },
+                                overflow: { md: "auto" },
                             }}
                         >
                             <Box
                                 sx={{
                                     p: 3,
-                                    maxHeight: { md: "calc(100vh - 96px)" },
-                                    overflow: "auto",
                                     "& > *:first-of-type": { mt: 0 },
                                     "& > *:last-child": { mb: 0 },
                                     "& h1": { fontSize: "1.3rem", mt: 0 },
