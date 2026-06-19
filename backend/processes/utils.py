@@ -363,7 +363,8 @@ def _generate_document_for_run(
 
     if mode == "TEMPLATE_BODY" and doc_template.template_body:
         try:
-            rendered = _render_template_body(doc_template.template_body, context)
+            rendered = _render_template_body(
+                doc_template.template_body, context)
             content_bytes = rendered.encode("utf-8")
             ext = ".txt"
         except Exception as e:

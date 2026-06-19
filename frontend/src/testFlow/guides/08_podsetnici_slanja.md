@@ -3,6 +3,13 @@
 ## Cilj
 Da se vidi šta sistem šalje, kome i kada: ekran **Danas**, ekran **Slanja** (outbox), i da podsetnici po obavezi idu pravom primaocu.
 
+## Šta je ovo (za naraciju)
+Ovo je „motor obaveštavanja" — razlog zašto aplikacija postoji. Svaka obaveza ima **okidače sa pomerajima** (npr. 30 dana pre roka, na dan, pa 7/15/30 dana posle ako kasni). Sistem te buduće mejlove unapred „materijalizuje" u **outbox** (red za slanje), a dnevni zadatak ih šalje kad dođe vreme. Tako se **ništa ne propušta** i postoji trag ko je, šta i kada obavešten.
+
+**Danas** je dnevni kokpit: šta **kasni**, šta **stiže uskoro**, **neuspela slanja** (sa „Ponovi") i šta će biti **poslato narednih 7 dana**. **Slanja** je istorija/red svih mejlova sa primaocima i statusom.
+
+Ključna finesa za video — **pravi primalac zavisi od vrste i faze obaveze**: podsetnik za lekarski unapred ide nama (MAK, da pripremimo uput), uput na dan ide poslodavcu, potvrda po obavljanju ide firmi, a sve što **kasni** ide samo nama. Tekst mejla je prilagođen kategoriji (naruči / organizuj / uput / potvrda), nije generički.
+
 ## Preduslovi
 - `07` odrađen (postoje aktivnosti sa rokovima).
 - Bar jedan interni korisnik sa mejlom (MAK tim = aktivni staff) i firma ima mejl.
@@ -26,6 +33,9 @@ Da se vidi šta sistem šalje, kome i kada: ekran **Danas**, ekran **Slanja** (o
 - [ ] Obuke **podsetnik** („organizuj") → firma + MAK.
 - [ ] **Prekoračen rok** (bilo šta) → samo MAK.
 - [ ] Tekst je po kategoriji (naruči/organizuj/uput/potvrda), ne generički; prikazuje datum, bez pogrešnog „za N dana".
+
+## Šta reći u videu (predlog naracije)
+> „Ovo je srž aplikacije — automatsko obaveštavanje. Svaka obaveza ima okidače: koliko dana pre roka, na dan, i posle ako kasni. Sistem te mejlove unapred priprema u redu za slanje, a dnevni zadatak ih šalje kad dođe vreme. Ekran Danas pokazuje šta kasni, šta stiže, šta nije prošlo i šta ide narednih sedam dana. Bitno je da pravu poruku dobije prava strana: podsetnik za lekarski ide nama da pripremimo uput, sam uput ide poslodavcu, potvrda firmi, a sve što kasni samo nama. Tekst je prilagođen — ne šaljemo generičke mejlove."
 
 ## Video
 - Status: **snimiti** (Danas i Slanja su novi, nema videa).

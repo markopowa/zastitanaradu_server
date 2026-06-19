@@ -317,9 +317,7 @@ class CompanyObligationPlanPanelInner extends Component<
                                             >
                                                 Status
                                             </TableCell>
-                                            <TableCell
-                                                sx={{ width: 48 }}
-                                            />
+                                            <TableCell sx={{ width: 48 }} />
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
@@ -520,7 +518,8 @@ class CompanyObligationPlanPanelInner extends Component<
                     open={Boolean(menuAnchor)}
                     onClose={this.closeMenu}
                 >
-                    {menuRow && !menuRow.excluded && (
+                    {menuRow &&
+                        !menuRow.excluded &&
                         (menuRow.status === "MISSING" ||
                             menuRow.status === "OVERDUE") && (
                             <MenuItem
@@ -535,8 +534,7 @@ class CompanyObligationPlanPanelInner extends Component<
                             >
                                 Ispravi
                             </MenuItem>
-                        )
-                    )}
+                        )}
                     {menuRow && !menuRow.excluded && menuRow.applicable && (
                         <MenuItem onClick={() => this.openExclude(menuRow)}>
                             Nije primenljivo
@@ -545,9 +543,7 @@ class CompanyObligationPlanPanelInner extends Component<
                     {menuRow && menuRow.excluded && (
                         <MenuItem
                             onClick={() => this.reinclude(menuRow)}
-                            disabled={
-                                reincluding === menuRow.process_type.id
-                            }
+                            disabled={reincluding === menuRow.process_type.id}
                         >
                             {reincluding === menuRow.process_type.id
                                 ? "Vraćam..."

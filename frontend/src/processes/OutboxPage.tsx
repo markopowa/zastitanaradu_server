@@ -337,11 +337,10 @@ class OutboxPageInner extends Component<Props, State> {
                                                         whiteSpace: "nowrap",
                                                     }}
                                                 >
-                                                    {(
-                                                        row.recipients_display
-                                                            ?.length
-                                                            ? row.recipients_display
-                                                            : row.recipients
+                                                    {(row.recipients_display
+                                                        ?.length
+                                                        ? row.recipients_display
+                                                        : row.recipients
                                                     ).join(", ") || "—"}
                                                 </Typography>
                                             </TableCell>
@@ -475,10 +474,10 @@ class OutboxPageInner extends Component<Props, State> {
                                         )}
                                     </Box>
                                     {(() => {
-                                        const rcpts =
-                                            row.recipients_display?.length
-                                                ? row.recipients_display
-                                                : row.recipients;
+                                        const rcpts = row.recipients_display
+                                            ?.length
+                                            ? row.recipients_display
+                                            : row.recipients;
                                         return rcpts.length > 0 ? (
                                             <Typography
                                                 variant="caption"

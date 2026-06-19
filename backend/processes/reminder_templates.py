@@ -22,7 +22,8 @@ def _content(category: str, trigger: str, name: str):
         if trigger == LEAD:
             return (
                 "Podsetnik: " + name + " ističe uskoro",
-                "Poštovani,\n\nRok za " + quoted + " ističe {{ scheduled_for }}. "
+                "Poštovani,\n\nRok za " + quoted +
+                " ističe {{ scheduled_for }}. "
                 "Potrebno je naručiti novi pregled kod ovlašćene organizacije i "
                 "otpremiti nalaz u aplikaciju.\n\nS poštovanjem",
                 BOTH,
@@ -37,7 +38,8 @@ def _content(category: str, trigger: str, name: str):
         if trigger == OVERDUE:
             return (
                 "Prekoračen rok: " + name,
-                "Rok za " + quoted + " je istekao ({{ scheduled_for }}) i još nije "
+                "Rok za " + quoted +
+                " je istekao ({{ scheduled_for }}) i još nije "
                 "obnovljen. Potrebno je hitno naručiti pregled i otpremiti nalaz.",
                 MAK,
             )
@@ -46,7 +48,8 @@ def _content(category: str, trigger: str, name: str):
         if trigger == LEAD:
             return (
                 "Podsetnik: " + name,
-                "Poštovani,\n\nBliži se rok za " + quoted + " ({{ scheduled_for }}). "
+                "Poštovani,\n\nBliži se rok za " +
+                quoted + " ({{ scheduled_for }}). "
                 "Potrebno je organizovati i evidentirati u aplikaciji.\n\nS poštovanjem",
                 BOTH,
             )
@@ -62,7 +65,8 @@ def _content(category: str, trigger: str, name: str):
         if trigger == LEAD:
             return (
                 "Priprema uputa: " + name,
-                "Bliži se rok za " + quoted + " zaposlenog ({{ scheduled_for }}). "
+                "Bliži se rok za " + quoted +
+                " zaposlenog ({{ scheduled_for }}). "
                 "Potrebno je pripremiti uput.",
                 MAK,
             )

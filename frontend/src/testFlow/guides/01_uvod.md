@@ -1,29 +1,42 @@
 # 01 — Uvod i orijentacija
 
 ## Cilj
-Upoznavanje sa aplikacijom i navigacijom pre nego što se uđe u podešavanje i unos podataka. Bez izmena podataka — samo obilazak.
+Prvi video: ukratko predstaviti **šta aplikacija radi, za koga je i kako je organizovana**, pre nego što se uđe u konkretan rad. Bez izmena podataka — samo obilazak.
+
+## Šta je aplikacija (za naraciju)
+Ovo je alat za firmu koja pruža usluge **bezbednosti i zdravlja na radu (BZNR)** i **zaštite od požara (ZOP)** drugim firmama (klijentima). Umesto vođenja po sveskama i Excel tabelama, sve stoji na jednom mestu:
+
+- klijentske firme, njihovi zaposleni, radna mesta i oprema;
+- koje **zakonske obaveze** svaka firma ima (lekarski pregledi, obuke, ispitivanja, stručni nalazi…);
+- **kada** svaka obaveza dospeva — aplikacija sama šalje podsetnike (i nama i klijentu) pre isteka;
+- **dokumentacija** (akt o proceni rizika, pravilnici, stručni nalazi, uputi…).
+
+Suština koju treba reći u videu: *cilj je da se ništa ne propusti i da u svakom trenutku znaš šta je sledeće, šta je urađeno i šta uskoro ističe.*
+
+## Kako je organizovana (tri zone u meniju)
+- **Danas** — početni ekran; pokazuje šta traži pažnju: šta **kasni**, šta **stiže uskoro**, **neuspela slanja**, i šta će biti **poslato narednih 7 dana**. Odavde počinješ svaki dan.
+- **Firme / Zaposleni / Oprema** — entiteti s kojima se radi.
+- **Operativa** (Aktivnosti, Slanja) — tekući posao: pojedinačne aktivnosti (obaveze u toku) i pregled poslatih/zakazanih mejlova.
+- **Administracija** (Vrste obaveza, Šabloni obaveza, Dokumenti, Kategorije/Šabloni dokumenata, Korisnici, Uloge, Nivoi rizika) — podešavanja koja se retko diraju; uglavnom se podese jednom na početku.
 
 ## Preduslovi
-- Prijavljen superuser.
-- Prazna baza (još ništa nije podešeno).
+- Prijavljen superuser; prazna baza (još ništa nije podešeno).
 
-## Koraci
-1. Prijavi se → očekivano: otvara se **Danas** (početna).
-2. Pogledaj levi meni — tri zone:
-   - **Vrh**: Danas, Firme, Zaposleni, Oprema
-   - **Operativa**: Rokovi/Aktivnosti, Slanja
-   - **Administracija**: Vrste obaveza, Šabloni obaveza, Dodeljene obaveze, Dnevnik, Dokumenti, Kategorije dokumenata, Šabloni dokumenata, Korisnici, Uloge, Nivoi rizika
-3. Klikni **Danas** → očekivano: prazne sekcije (Kasni / Stiže uskoro / Neuspela slanja / Slanja narednih 7 dana) — nema podataka jer baza prazna.
-4. Klikni **Firme** → očekivano: prazna lista.
+## Koraci (demo)
+1. Prijavi se → očekivano: otvara se **Danas** (prazno, jer nema podataka).
+2. Prođi kroz levi meni i pokaži tri zone (vrh / Operativa / Administracija).
+3. Klikni **Firme** → prazna lista.
 
 ## Provera (checklist)
 - [ ] Landing posle prijave je Danas.
-- [ ] Meni ima tri zone (vrh / Operativa / Administracija).
+- [ ] Meni ima tri zone.
 - [ ] Danas i Firme se otvaraju bez greške, prazni.
 
+## Šta reći u videu (predlog naracije)
+> „Ovo je alat za vođenje BZNR i protivpožarnih obaveza za klijentske firme. Umesto svesaka i tabela, sve je na jednom mestu — firme, zaposleni, obaveze i rokovi. Aplikacija sama prati šta ističe i šalje podsetnike, nama i klijentu. Krećemo od ekrana **Danas**, koji pokazuje šta treba danas; entiteti su **Firme/Zaposleni/Oprema**; tekući posao je pod **Operativom**; a **Administracija** su podešavanja koja se rade jednom. U narednim videima idemo korak po korak."
+
 ## Video
-- Status: **postoji** (`01_uvod.webm`), dobar — meta uvod (objašnjava da idu kratki videi po temama).
-- Napomena: ne pokazuje navigaciju u 3 zone (meni je kasnije restrukturiran). Opciono dosnimiti 20s obilaska menija.
+- Status: **postoji** (`01_uvod.webm`), ali stariji — dosnimiti kratku turu menija (3 zone) i ovu rečenicu-dve o tome šta app radi.
 
 ## Otvoreno / TODO
 - Nema.

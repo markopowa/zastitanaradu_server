@@ -281,41 +281,65 @@ class ProcessTypesListPageInner extends Component<
                             <TableHead>
                                 <TableRow>
                                     <TableCell
-                                        sx={{ ...tableCellEllipsis, width: "18%" }}
+                                        sx={{
+                                            ...tableCellEllipsis,
+                                            width: "18%",
+                                        }}
                                     >
                                         Šifra
                                     </TableCell>
                                     <TableCell
-                                        sx={{ ...tableCellEllipsis, width: "26%" }}
+                                        sx={{
+                                            ...tableCellEllipsis,
+                                            width: "26%",
+                                        }}
                                     >
                                         Naziv
                                     </TableCell>
                                     <TableCell
-                                        sx={{ ...tableCellEllipsis, width: "11%" }}
+                                        sx={{
+                                            ...tableCellEllipsis,
+                                            width: "11%",
+                                        }}
                                     >
                                         Subjekt
                                     </TableCell>
                                     <TableCell
-                                        sx={{ ...tableCellEllipsis, width: "11%" }}
+                                        sx={{
+                                            ...tableCellEllipsis,
+                                            width: "11%",
+                                        }}
                                     >
                                         Period (meseci)
                                     </TableCell>
                                     <TableCell
-                                        sx={{ ...tableCellEllipsis, width: "13%" }}
+                                        sx={{
+                                            ...tableCellEllipsis,
+                                            width: "13%",
+                                        }}
                                     >
                                         Rok unapred (dana)
                                     </TableCell>
                                     <TableCell
-                                        sx={{ ...tableCellEllipsis, width: "8%" }}
+                                        sx={{
+                                            ...tableCellEllipsis,
+                                            width: "8%",
+                                        }}
                                     >
                                         Aktivan
                                     </TableCell>
                                     <TableCell
-                                        sx={{ ...tableCellEllipsis, width: "9%" }}
+                                        sx={{
+                                            ...tableCellEllipsis,
+                                            width: "9%",
+                                        }}
                                     >
                                         Obrazac 1
                                     </TableCell>
-                                    <TableCell align="right" sx={{ width: 56 }} />
+                                    <TableCell
+                                        align="right"
+                                        sx={{ width: 56 }}
+                                    />
                                 </TableRow>
                             </TableHead>
                             <TableBody>

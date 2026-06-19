@@ -3,6 +3,11 @@
 ## Cilj
 Dodavanje zaposlenih (sa override-om rizika i **automatskim otvaranjem obaveza pri zaposlenju**), opreme, i radnih mesta.
 
+## Šta je ovo (za naraciju)
+Zaposleni i oprema su **nosioci obaveza**. Kad dodaš zaposlenog na radno mesto određenog rizika, aplikacija mu **sama otvara obaveze** koje mu po zakonu pripadaju: osposobljavanje za BZR, ZOP obuku, zaduženje LZO, a za rad sa povećanim rizikom i **prethodni lekarski pregled** (koji se po obavljanju lančano nastavlja u periodični — vidi `07`). Isto za opremu: dodaš PP aparat → otvori se obaveza servisa.
+
+Poenta za video: korisnik **ne mora ručno da pamti** šta kome treba — uneseš ko/šta je to i kog je rizika, a sistem otvori odgovarajuće obaveze i počne da prati rokove. Rizik radnog mesta se po potrebi može **redefinisati (override)** na samom zaposlenom.
+
 ## Preduslovi
 - `03`–`05` odrađeni (firma sa radnim mestima i dokumentima).
 
@@ -27,6 +32,9 @@ Dodavanje zaposlenih (sa override-om rizika i **automatskim otvaranjem obaveza p
 - [ ] Periodični lekarski se NE pravi pri zaposlenju (čeka lančanje iz prethodnog).
 - [ ] Override rizika menja efektivni nivo.
 - [ ] Oprema se dodaje i veže za firmu.
+
+## Šta reći u videu (predlog naracije)
+> „Zaposleni i oprema su nosioci obaveza. Čim dodam zaposlenog na radno mesto, sistem mu sam otvori obaveze — osposobljavanje, ZOP obuku, zaduženje opreme, a za povećan rizik i prethodni lekarski. Periodični lekarski se ne pravi odmah, nego se nastavlja iz prethodnog kad ga obavimo. Rizik mogu i ručno da redefinišem na zaposlenom. Isto i za opremu: dodam PP aparat i odmah dobijem obavezu servisa. Ne moram ništa da pamtim — kažem ko je i kog je rizika, sistem zna ostalo."
 
 ## Video
 - Status: **snimiti** (delom u 03/04 starih, ali auto-spawn i override nisu pokazani).

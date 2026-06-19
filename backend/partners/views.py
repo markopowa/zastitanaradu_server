@@ -1,3 +1,45 @@
+from .serializers import (
+    ClientCompanySerializer,
+    CompanyDocumentSerializer,
+    CompanyObligationExclusionSerializer,
+    ComplianceFindingTypeSerializer,
+    ContactPersonSerializer,
+    EmployeeSerializer,
+    EquipmentItemSerializer,
+    JobRoleSerializer,
+    ObligationPlanRowSerializer,
+    RiskAssessmentActAmendmentSerializer,
+    RiskAssessmentActSerializer,
+    RiskLevelSerializer,
+)
+from .obligation_plan import build_obligation_plan
+from .models import (
+    ClientCompany,
+    CompanyComplianceFinding,
+    CompanyDocument,
+    CompanyObligationExclusion,
+    ComplianceFindingType,
+    ContactPerson,
+    Employee,
+    EquipmentItem,
+    JobRole,
+    RiskAssessmentAct,
+    RiskAssessmentActAmendment,
+    RiskAssessmentSection,
+    RiskAssessmentSectionRevision,
+    RiskLevel,
+)
+from documents.conversion import ConversionError, _is_office_file, convert_office_to_pdf
+from .medical_exam_record import generate_medical_exam_record
+from documents.utils import merge_section_files_to_pdf
+from .compliance_findings import (
+    compliance_finding_row,
+    compute_valid_until,
+    deactivate_compliance_finding_binding,
+    sync_compliance_finding_binding,
+)
+from .models import CompanyRegistrySnapshot
+from .company_registry import lookup_company_by_registration_number
 from datetime import datetime
 from pathlib import Path
 
@@ -17,51 +59,6 @@ _JOB_ROLE_TEMPLATE_FIELDS = {
     "lzo-revers": "lzo_revers_template",
     "potvrda-clan5": "potvrda_clan5_template",
 }
-
-from .company_registry import lookup_company_by_registration_number
-from .models import CompanyRegistrySnapshot
-from .compliance_findings import (
-    compliance_finding_row,
-    compute_valid_until,
-    deactivate_compliance_finding_binding,
-    sync_compliance_finding_binding,
-)
-from documents.utils import merge_section_files_to_pdf
-
-from .medical_exam_record import generate_medical_exam_record
-from documents.conversion import ConversionError, _is_office_file, convert_office_to_pdf
-
-from .models import (
-    ClientCompany,
-    CompanyComplianceFinding,
-    CompanyDocument,
-    CompanyObligationExclusion,
-    ComplianceFindingType,
-    ContactPerson,
-    Employee,
-    EquipmentItem,
-    JobRole,
-    RiskAssessmentAct,
-    RiskAssessmentActAmendment,
-    RiskAssessmentSection,
-    RiskAssessmentSectionRevision,
-    RiskLevel,
-)
-from .obligation_plan import build_obligation_plan
-from .serializers import (
-    ClientCompanySerializer,
-    CompanyDocumentSerializer,
-    CompanyObligationExclusionSerializer,
-    ComplianceFindingTypeSerializer,
-    ContactPersonSerializer,
-    EmployeeSerializer,
-    EquipmentItemSerializer,
-    JobRoleSerializer,
-    ObligationPlanRowSerializer,
-    RiskAssessmentActAmendmentSerializer,
-    RiskAssessmentActSerializer,
-    RiskLevelSerializer,
-)
 
 
 class RiskLevelViewSet(viewsets.ModelViewSet):

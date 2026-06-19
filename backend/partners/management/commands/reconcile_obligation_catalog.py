@@ -12,7 +12,8 @@ from processes.models import ProcessBinding, ProcessRun, ProcessType
 
 def canonical_codes():
     codes = {entry["code"] for entry in CATALOG}
-    codes |= {item["process_type"]["code"] for item in FINDING_TYPE_PROCESS_TYPES}
+    codes |= {item["process_type"]["code"]
+              for item in FINDING_TYPE_PROCESS_TYPES}
     return codes
 
 
@@ -45,7 +46,8 @@ class Command(BaseCommand):
             call_command("seed_obligation_catalog")
 
         canonical = canonical_codes()
-        strays = ProcessType.objects.exclude(code__in=canonical).order_by("code")
+        strays = ProcessType.objects.exclude(
+            code__in=canonical).order_by("code")
 
         deleted = 0
         deactivated = 0

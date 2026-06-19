@@ -574,11 +574,11 @@ class DanasPageInner extends Component<Props, State> {
                                                         />
                                                     )}
                                                     {(() => {
-                                                        const rcpts =
-                                                            row.recipients_display
-                                                                ?.length
-                                                                ? row.recipients_display
-                                                                : row.recipients;
+                                                        const rcpts = row
+                                                            .recipients_display
+                                                            ?.length
+                                                            ? row.recipients_display
+                                                            : row.recipients;
                                                         return rcpts.length >
                                                             0 ? (
                                                             <Chip

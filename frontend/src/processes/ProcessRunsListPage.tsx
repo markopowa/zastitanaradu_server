@@ -173,12 +173,8 @@ class ProcessRunsListPageInner extends Component<
             runsLoading: loading,
             runsError: error,
         } = this.props;
-        const {
-            client_company_id,
-            process_type_id,
-            status,
-            quickFilter,
-        } = this.state;
+        const { client_company_id, process_type_id, status, quickFilter } =
+            this.state;
 
         const items = applyQuickFilter(allItems, quickFilter);
 

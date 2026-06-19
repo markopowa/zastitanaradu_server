@@ -914,7 +914,8 @@ class UtputGenerationModeTest(TestCase):
             generate_document=True,
             send_email=False,
         )
-        result = _generate_document_for_run(run, process_tpl, run.subject_snapshot)
+        result = _generate_document_for_run(
+            run, process_tpl, run.subject_snapshot)
         self.assertIsNotNone(result)
         with result.file.open("rb") as fh:
             content = fh.read()

@@ -154,8 +154,10 @@ export function JobRoleTemplatesPanel({ jobRoles, onRoleUpdated }: Props) {
                                                         target="_blank"
                                                         rel="noopener"
                                                         sx={{
-                                                            display: "inline-flex",
-                                                            alignItems: "center",
+                                                            display:
+                                                                "inline-flex",
+                                                            alignItems:
+                                                                "center",
                                                             gap: 0.5,
                                                         }}
                                                     >

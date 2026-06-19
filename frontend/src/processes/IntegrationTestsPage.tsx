@@ -283,8 +283,8 @@ class IntegrationTestsPage extends Component<
                 {sections.length === 0 ? (
                     <Box sx={{ px: 2, py: 1.5 }}>
                         <Typography variant="caption" color="text.secondary">
-                            Nema formi za popunjavanje — ručni/provera korak. Vidi
-                            instructions/test/{phase.id}.md
+                            Nema formi za popunjavanje — ručni/provera korak.
+                            Vidi instructions/test/{phase.id}.md
                         </Typography>
                     </Box>
                 ) : (
