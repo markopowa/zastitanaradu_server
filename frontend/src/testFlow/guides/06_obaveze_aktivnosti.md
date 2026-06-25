@@ -1,4 +1,4 @@
-# 07 — Obaveze i aktivnosti (motor)
+# 06 — Obaveze i aktivnosti (motor)
 
 ## Cilj
 Životni ciklus obaveze: dodeljena obaveza → aktivnost → završetak → sledeći ciklus. Plus **lančanje prethodni → periodični lekarski**.
@@ -9,7 +9,7 @@ Dok je „obaveza" (vrsta iz kataloga) opšti pojam, **aktivnost** je njena konk
 Svaka aktivnost prolazi kroz tok: zakazana → (šalje se uput/obaveštenje) → realizovana → završena. Najvažnije za video je **lančanje (chaining)**: kad se prethodni lekarski završi, sistem automatski otvara **periodični** sa sledećim rokom; kad se periodični završi, otvara se sledeći — i tako ciklično. Tako obaveza nikad ne „ispadne" iz evidencije.
 
 ## Preduslovi
-- `06` odrađen (zaposleni sa auto-otvorenim obavezama).
+- `05` odrađen (zaposleni sa auto-otvorenim obavezama).
 
 ## Koraci — pregled
 1. **Dodeljene obaveze** (admin) → očekivano: lista vezivanja po subjektu; akcije: izmeni datum, deaktiviraj, „Pošalji sad".

@@ -1,4 +1,4 @@
-# 04 — Firma: Pregled i profil
+# 03 — Firma: Pregled i profil
 
 ## Cilj
 Tab **Pregled** (checklista svih obaveza firme sa statusima) i **profil firme** (ZOP kategorija, rizik, instalacije) koji određuje koje su obaveze primenljive.
@@ -9,7 +9,7 @@ Tab **Pregled** (checklista svih obaveza firme sa statusima) i **profil firme** 
 **Profil firme** (na Ličnoj karti) je ono što govori aplikaciji koje obaveze ova firma **uopšte ima**: ZOP kategorija (I/II/III), da li je delatnost povećanog rizika, i koje **instalacije** postoje (PP aparati, hidranti, gromobran…). Npr. ako firma nema hidrante, obaveza „ispitivanje hidrantske mreže" je *Nije primenljivo*. Princip: aplikacija predviđa sve, a ti za svaku firmu kažeš šta važi, a šta ne (uz obrazloženje).
 
 ## Preduslovi
-- `03` odrađen (firma postoji i otvorena).
+- `02` odrađen (firma postoji i otvorena).
 
 ## Koraci
 1. Otvori firmu → tab **Pregled** → dve grupe (BZNR / Zaštita od požara), svaka obaveza red sa statusom i pravnim osnovom.

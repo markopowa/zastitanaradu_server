@@ -1,4 +1,4 @@
-# 09 — Obrazac 1 (medicinska evidencija)
+# 08 — Obrazac 1 (medicinska evidencija)
 
 ## Cilj
 Generisanje objedinjene evidencije lekarskih pregleda (Obrazac 1) za firmu, iz završenih lekarskih aktivnosti.
@@ -6,10 +6,10 @@ Generisanje objedinjene evidencije lekarskih pregleda (Obrazac 1) za firmu, iz z
 ## Šta je ovo (za naraciju)
 **Obrazac 1** je propisana evidencija zaposlenih raspoređenih na radna mesta sa **povećanim rizikom** i njihovih lekarskih pregleda — dokument koji poslodavac mora da vodi. Umesto ručnog kucanja tabele, aplikacija ga **sama generiše** iz već unetih podataka: uzima sve **završene** lekarske aktivnosti firme (datum pregleda, ocena sposobnosti, broj izveštaja, sledeći termin) i sklapa ih u jedan dokument sa zaglavljem firme.
 
-Poenta za video: pošto se podaci o pregledima ionako unose kroz aktivnosti (`07`), evidencija je „besplatna" — jedan klik i dobiješ uredan, ažuran Obrazac 1 bez prepisivanja.
+Poenta za video: pošto se podaci o pregledima ionako unose kroz aktivnosti (`06`), evidencija je „besplatna" — jedan klik i dobiješ uredan, ažuran Obrazac 1 bez prepisivanja.
 
 ## Preduslovi
-- `07` odrađen — bar jedan **završen** lekarski pregled (sa unetim poljima: ocena, broj izveštaja, datum, sledeći termin).
+- `06` odrađen — bar jedan **završen** lekarski pregled (sa unetim poljima: ocena, broj izveštaja, datum, sledeći termin).
 - Vrsta obaveze „periodični lekarski" ima uključeno „ulazi u Obrazac 1".
 
 ## Koraci
@@ -31,4 +31,4 @@ Poenta za video: pošto se podaci o pregledima ionako unose kroz aktivnosti (`07
 - Nema (koristi podatke iz završenih aktivnosti, `K`).
 
 ## Otvoreno / TODO
-- **NEDOVRŠENO**: u videu 03/04 rečeno da generisanje „treba još da se prouči". Pre snimanja: proveriti da `generateMedicalExamRecord` stvarno vraća ispravan dokument; finalizovati naziv („Obrazac 1" vs zvanični naziv evidencije).
+- **NEDOVRŠENO**: u ranijim videima rečeno da generisanje „treba još da se prouči". Pre snimanja: proveriti da `generateMedicalExamRecord` stvarno vraća ispravan dokument; finalizovati naziv („Obrazac 1" vs zvanični naziv evidencije).

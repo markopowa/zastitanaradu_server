@@ -17,7 +17,7 @@ Suština koju treba reći u videu: *cilj je da se ništa ne propusti i da u svak
 - **Danas** — početni ekran; pokazuje šta traži pažnju: šta **kasni**, šta **stiže uskoro**, **neuspela slanja**, i šta će biti **poslato narednih 7 dana**. Odavde počinješ svaki dan.
 - **Firme / Zaposleni / Oprema** — entiteti s kojima se radi.
 - **Operativa** (Aktivnosti, Slanja) — tekući posao: pojedinačne aktivnosti (obaveze u toku) i pregled poslatih/zakazanih mejlova.
-- **Administracija** (Vrste obaveza, Šabloni obaveza, Dokumenti, Kategorije/Šabloni dokumenata, Korisnici, Uloge, Nivoi rizika) — podešavanja koja se retko diraju; uglavnom se podese jednom na početku.
+- **Administracija** (Vrste obaveza, Šabloni obaveza, Dokumenti, Kategorije/Šabloni dokumenata, Korisnici, Uloge, Nivoi rizika) — podešavanja koja se retko diraju. Katalog obaveza, nivoi rizika i okidači se **ubace jednom komandom `add_setup`** (ne radi se kroz aplikaciju kao deo testa); admin samo naknadno doda **fajlove i polja na šablone dokumenata**.
 
 ## Preduslovi
 - Prijavljen superuser; prazna baza (još ništa nije podešeno).

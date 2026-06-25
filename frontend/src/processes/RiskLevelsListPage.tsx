@@ -41,8 +41,6 @@ import { setLastPath } from "../store/locationSlice";
 import type { AppDispatch } from "../store";
 import type { RiskLevelsListPageState } from "../types/processPages";
 import type { RiskLevel } from "../types/processes";
-import { setupTestFill } from "../testFlow/registerTestFill";
-import { TEST_FLOW } from "../testFlow/fixture";
 
 interface RiskLevelsListPageDispatchProps {
     setLastPath: (path: string) => void;
@@ -81,7 +79,6 @@ class RiskLevelsListPage extends Component<
     RiskLevelsListPageProps,
     RiskLevelsListPageState
 > {
-    private testFillCleanup: (() => void) | null = null;
 
     state: RiskLevelsListPageState = {
         items: [],
@@ -104,25 +101,6 @@ class RiskLevelsListPage extends Component<
     componentDidMount(): void {
         this.props.setLastPath("/risk-levels");
         this.load();
-        const rl = TEST_FLOW.riskLevelTest;
-        this.testFillCleanup = setupTestFill("M", () => {
-            this.setState({
-                dialogOpen: true,
-                editingId: null,
-                f_code: rl.code,
-                f_label: rl.label,
-                f_score: rl.score,
-                f_is_acceptable: true,
-                f_is_high_risk: false,
-                f_order: "0",
-                formError: null,
-            });
-            return true;
-        });
-    }
-
-    componentWillUnmount(): void {
-        this.testFillCleanup?.();
     }
 
     load = (): void => {

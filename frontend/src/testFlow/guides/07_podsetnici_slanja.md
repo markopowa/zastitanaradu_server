@@ -1,4 +1,4 @@
-# 08 — Podsetnici i slanja (Danas, Slanja, mejlovi)
+# 07 — Podsetnici i slanja (Danas, Slanja, mejlovi)
 
 ## Cilj
 Da se vidi šta sistem šalje, kome i kada: ekran **Danas**, ekran **Slanja** (outbox), i da podsetnici po obavezi idu pravom primaocu.
@@ -11,7 +11,7 @@ Ovo je „motor obaveštavanja" — razlog zašto aplikacija postoji. Svaka obav
 Ključna finesa za video — **pravi primalac zavisi od vrste i faze obaveze**: podsetnik za lekarski unapred ide nama (MAK, da pripremimo uput), uput na dan ide poslodavcu, potvrda po obavljanju ide firmi, a sve što **kasni** ide samo nama. Tekst mejla je prilagođen kategoriji (naruči / organizuj / uput / potvrda), nije generički.
 
 ## Preduslovi
-- `07` odrađen (postoje aktivnosti sa rokovima).
+- `06` odrađen (postoje aktivnosti sa rokovima).
 - Bar jedan interni korisnik sa mejlom (MAK tim = aktivni staff) i firma ima mejl.
 
 ## Koraci — Danas

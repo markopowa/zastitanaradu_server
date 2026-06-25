@@ -59,9 +59,6 @@ import {
     emailRecipientLabel,
     triggerLabel,
 } from "../design/labels";
-import { setupTestFill } from "../testFlow/registerTestFill";
-import { TEST_FLOW } from "../testFlow/fixture";
-import { idByName } from "../testFlow/helpers";
 
 const TEMPLATE_VARIABLES: TemplateVariable[] = [
     { key: "scheduled_for", label: "Datum termina" },
@@ -135,8 +132,6 @@ function attachmentSummary(template: ProcessTemplate): string {
 }
 
 class ProcessTemplatesListPageInner extends Component<Props, State> {
-    private testFillCleanups: Array<() => void> = [];
-
     state: State = {
         expandedTypeId: null,
         dialogOpen: false,
@@ -162,77 +157,7 @@ class ProcessTemplatesListPageInner extends Component<Props, State> {
         this.props.ensureProcessTypes();
         this.props.ensureProcessDocTemplates();
         this.props.loadRoles();
-        this.bindTestFillHandlers();
     }
-
-    componentDidUpdate(): void {
-        this.bindTestFillHandlers();
-    }
-
-    componentWillUnmount(): void {
-        for (const cleanup of this.testFillCleanups) {
-            cleanup();
-        }
-        this.testFillCleanups = [];
-    }
-
-    bindTestFillHandlers = (): void => {
-        for (const cleanup of this.testFillCleanups) {
-            cleanup();
-        }
-        this.testFillCleanups = [];
-        const { docTemplates, processTypes } = this.props;
-        const t1 = TEST_FLOW.triggerOnSchedule;
-        const t2 = TEST_FLOW.triggerOnComplete;
-        this.testFillCleanups.push(
-            setupTestFill("I1", () => {
-                if (!this.state.dialogOpen || this.state.editingId != null) {
-                    return false;
-                }
-                this.setState({
-                    form_trigger: "ON_SCHEDULED",
-                    form_document_template_id: idByName(
-                        docTemplates,
-                        t1.document_template_name,
-                    ),
-                    form_generate_document: true,
-                    form_send_email: true,
-                    form_attach_generated_document: true,
-                    form_attach_uploaded_documents: false,
-                    form_email_to_kind: "EMPLOYEE_EMAIL",
-                    form_email_subject_template: t1.email_subject,
-                    form_email_body_template: t1.email_body,
-                    form_followup_process_type_id: "",
-                    form_custom_email_recipient: "",
-                    form_notification_role_group_id: "",
-                });
-                return true;
-            }),
-            setupTestFill("I2", () => {
-                if (!this.state.dialogOpen || this.state.editingId != null) {
-                    return false;
-                }
-                this.setState({
-                    form_trigger: "ON_COMPLETED",
-                    form_document_template_id: "",
-                    form_generate_document: false,
-                    form_send_email: false,
-                    form_attach_generated_document: false,
-                    form_attach_uploaded_documents: false,
-                    form_email_to_kind: "",
-                    form_email_subject_template: "",
-                    form_email_body_template: "",
-                    form_followup_process_type_id: idByName(
-                        processTypes,
-                        t2.followup_process_type_name,
-                    ),
-                    form_custom_email_recipient: "",
-                    form_notification_role_group_id: "",
-                });
-                return true;
-            }),
-        );
-    };
 
     toggleExpand = (typeId: number): void => {
         this.setState((prev) => ({

@@ -1,4 +1,4 @@
-# 05 — Dokumentacija firme
+# 04 — Dokumentacija firme
 
 ## Cilj
 Obavezna dokumentacija (sa Word→PDF konverzijom), Akt o proceni rizika (sekcije, revizije, **izmene i dopune**, objedinjen PDF), stručni nalazi, i **blanko šabloni po radnom mestu**.
@@ -11,7 +11,7 @@ Dve posebnosti vredne pomena u videu:
 - **Akt o proceni rizika** je „živ" dokument: ima sekcije, revizije sa razlogom, i **izmene/dopune** — kad se nešto u firmi promeni (novo radno mesto, oprema), radi se izmena akta i vodi se ovde kao ravnopravan dokument. Tu su i **blanko šabloni po radnom mestu** (Obrazac 6, revers LZO, potvrda po članu 5) koje korisnik preuzme, popuni i vrati potpisane.
 
 ## Preduslovi
-- `04_firma_pregled.md` odrađen.
+- `03_firma_pregled.md` odrađen.
 - Fajlovi u `files_for_test/` (PDF i .docx).
 
 ## Koraci — tab Dokumentacija

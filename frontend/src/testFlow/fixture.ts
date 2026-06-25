@@ -39,31 +39,6 @@ export const TEST_FLOW = {
         conclusion: "Inicijalni prilog zakljucka",
         assessmentsRevision: "Dopuna procene",
     },
-    documentCategory: {
-        name: "Lekarski pregledi",
-        description: "",
-    },
-    documentTemplate: {
-        name: "Uput - periodični lekarski pregled",
-        context_type: "EMPLOYEE" as const,
-        category_name: "Lekarski pregledi",
-    },
-    processType: {
-        name: "Periodični lekarski pregled",
-        subject_kind: "EMPLOYEE" as const,
-        default_period_months: "12",
-        lead_time_days: "30",
-        is_active: true,
-        include_in_medical_exam_record: true,
-    },
-    triggerOnSchedule: {
-        document_template_name: "Uput - periodični lekarski pregled",
-        email_subject: "Uput za periodični lekarski pregled",
-        email_body: "U prilogu je uput za pregled.",
-    },
-    triggerOnComplete: {
-        followup_process_type_name: "Periodični lekarski pregled",
-    },
     processBinding: {
         process_type_name: "Periodični lekarski pregled",
     },
@@ -77,11 +52,6 @@ export const TEST_FLOW = {
         electrical: "01.02.2026",
         environmentSummer: "15.06.2025",
         environmentWinter: "15.01.2025",
-    },
-    riskLevelTest: {
-        code: "TEST",
-        label: "Testni nivo",
-        score: "5",
     },
     companyProfile: {
         zop_category: "III" as const,
