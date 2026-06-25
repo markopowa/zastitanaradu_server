@@ -1,4 +1,4 @@
-# 06 — Obaveze i aktivnosti (motor)
+# 07 — Obaveze i aktivnosti (motor)
 
 ## Cilj
 Životni ciklus obaveze: dodeljena obaveza → aktivnost → završetak → sledeći ciklus. Plus **lančanje prethodni → periodični lekarski**.
@@ -9,7 +9,7 @@ Dok je „obaveza" (vrsta iz kataloga) opšti pojam, **aktivnost** je njena konk
 Svaka aktivnost prolazi kroz tok: zakazana → (šalje se uput/obaveštenje) → realizovana → završena. Najvažnije za video je **lančanje (chaining)**: kad se prethodni lekarski završi, sistem automatski otvara **periodični** sa sledećim rokom; kad se periodični završi, otvara se sledeći — i tako ciklično. Tako obaveza nikad ne „ispadne" iz evidencije.
 
 ## Preduslovi
-- `05` odrađen (zaposleni sa auto-otvorenim obavezama).
+- `06` odrađen (zaposleni sa auto-otvorenim obavezama).
 
 ## Koraci — pregled
 1. **Dodeljene obaveze** (admin) → očekivano: lista vezivanja po subjektu; akcije: izmeni datum, deaktiviraj, „Pošalji sad".
@@ -32,7 +32,11 @@ Svaka aktivnost prolazi kroz tok: zakazana → (šalje se uput/obaveštenje) →
 - [ ] Po završetku se zatvore/otkažu preostali podsetnici te aktivnosti.
 
 ## Šta reći u videu (predlog naracije)
-> „Obaveza iz kataloga je opšti pojam; aktivnost je njena konkretna pojava — lekarski za tačno ovog zaposlenog, sa rokom. Aktivnost ima svoj tok: zakazujemo je, šalje se uput, realizujemo je, završavamo. Najvažnije: kad završim prethodni lekarski i unesem nalaz, sistem sam otvori periodični sa sledećim rokom, a kad se i on završi — opet sledeći. Tako se obaveze nikad ne izgube, lanac se nastavlja sam. Aktivnosti filtriramo po tome šta kasni, šta stiže i šta je otvoreno."
+> „Da objasnim razliku između dve reči koje stalno koristimo. **Obaveza** je opšti pojam — na primer „lekarski pregled". **Aktivnost** je konkretan slučaj — „lekarski za Petra Petrovića, rok 1. septembra". Na aktivnostima radimo svaki dan.
+>
+> Aktivnosti otvorim levo, i mogu da ih filtriram: šta kasni, šta stiže uskoro, šta je otvoreno. Otvorim jednu — vidim kad je zakazana, koji su dokumenti, koji mejlovi su otišli.
+>
+> Kad je pregled obavljen, otvorim tu aktivnost, upišem datum pregleda i nalaz, priložim PDF nalaza i kliknem **Završi**. Sad pazite šta se desi samo od sebe: aktivnost pređe u „završeno", a aplikacija **odmah otvori sledeći lekarski** sa novim rokom — i tako u krug. Znači obaveza nikad ne ispadne iz evidencije, lanac se nastavlja sam."
 
 ## Video
 - Status: **snimiti** (motor, filteri i lančanje nisu pokazani u starim videima).

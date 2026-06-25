@@ -1,4 +1,4 @@
-# 03 — Firma: Pregled i profil
+# 04 — Firma: Pregled i profil
 
 ## Cilj
 Tab **Pregled** (checklista svih obaveza firme sa statusima) i **profil firme** (ZOP kategorija, rizik, instalacije) koji određuje koje su obaveze primenljive.
@@ -9,7 +9,7 @@ Tab **Pregled** (checklista svih obaveza firme sa statusima) i **profil firme** 
 **Profil firme** (na Ličnoj karti) je ono što govori aplikaciji koje obaveze ova firma **uopšte ima**: ZOP kategorija (I/II/III), da li je delatnost povećanog rizika, i koje **instalacije** postoje (PP aparati, hidranti, gromobran…). Npr. ako firma nema hidrante, obaveza „ispitivanje hidrantske mreže" je *Nije primenljivo*. Princip: aplikacija predviđa sve, a ti za svaku firmu kažeš šta važi, a šta ne (uz obrazloženje).
 
 ## Preduslovi
-- `02` odrađen (firma postoji i otvorena).
+- `03` odrađen (firma postoji i otvorena).
 
 ## Koraci
 1. Otvori firmu → tab **Pregled** → dve grupe (BZNR / Zaštita od požara), svaka obaveza red sa statusom i pravnim osnovom.
@@ -26,7 +26,11 @@ Tab **Pregled** (checklista svih obaveza firme sa statusima) i **profil firme** 
 - [ ] Lična karta u read modu lepo izgleda (kartice), radi na telefonu i u obe teme.
 
 ## Šta reći u videu (predlog naracije)
-> „Pregled je centralni ekran firme — checklista svih obaveza sa statusima, podeljena na zaštitu na radu i zaštitu od požara. Da bi aplikacija znala koje obaveze firma uopšte ima, popunimo profil: ZOP kategoriju, da li je povećan rizik, i koje instalacije postoji. Tako npr. firma bez hidranata neće imati obavezu ispitivanja hidranata. Sve što firma stvarno nema, označimo kao 'nije primenljivo' uz razlog."
+> „Ovo je **Pregled** firme — najvažniji ekran. Ovde na jednom mestu vidim **sve** obaveze ove firme i u kom su statusu: u redu, stiže, kasni, nedostaje, ili ne važi za ovu firmu. Podeljeno je na dve grupe — bezbednost na radu i zaštita od požara — i ispod svake piše na osnovu kog zakona se traži. Na prvi pogled vidim gde firma štuca.
+>
+> Da bi aplikacija znala koje obaveze ova firma uopšte ima, popunim **profil firme**. Idem na tab **Lična karta**, kliknem **Izmeni**, i tu kažem: koja je ZOP kategorija, da li je delatnost povećanog rizika, i šta firma fizički ima — na primer PP aparate i hidrantsku mrežu. Kliknem **Sačuvaj**.
+>
+> Vratim se na **Pregled** i vidim da su se obaveze same prilagodile: pošto firma ima hidrante, sad traži njihovo ispitivanje; ono što firma nema, stoji kao „ne važi". Ako neka obaveza zaista ne važi za ovu firmu, kliknem na tri tačkice pa **Nije primenljivo** i obavezno upišem razlog — red posivi, a uvek mogu da ga vratim."
 
 ## Video
 - Status: **snimiti** (Pregled i profil su novi).

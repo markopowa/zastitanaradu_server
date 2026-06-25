@@ -1,4 +1,4 @@
-# 04 — Dokumentacija firme
+# 05 — Dokumentacija firme
 
 ## Cilj
 Obavezna dokumentacija (sa Word→PDF konverzijom), Akt o proceni rizika (sekcije, revizije, **izmene i dopune**, objedinjen PDF), stručni nalazi, i **blanko šabloni po radnom mestu**.
@@ -11,7 +11,7 @@ Dve posebnosti vredne pomena u videu:
 - **Akt o proceni rizika** je „živ" dokument: ima sekcije, revizije sa razlogom, i **izmene/dopune** — kad se nešto u firmi promeni (novo radno mesto, oprema), radi se izmena akta i vodi se ovde kao ravnopravan dokument. Tu su i **blanko šabloni po radnom mestu** (Obrazac 6, revers LZO, potvrda po članu 5) koje korisnik preuzme, popuni i vrati potpisane.
 
 ## Preduslovi
-- `03_firma_pregled.md` odrađen.
+- `04_firma_pregled.md` odrađen.
 - Fajlovi u `files_for_test/` (PDF i .docx).
 
 ## Koraci — tab Dokumentacija
@@ -34,7 +34,15 @@ Dve posebnosti vredne pomena u videu:
 - [ ] Blanko šabloni (obrazac 6 / revers / potvrda) se kače po radnom mestu.
 
 ## Šta reći u videu (predlog naracije)
-> „Ovde stoji sva dokumentacija firme — akt o proceni rizika, pravilnici, rešenja, uputi. Kad priložim Word dokument, sistem ga sam pretvori u PDF. Bitno: dokument nije isto što i obaveza; obaveza se ponavlja, dokument je papir koji firma mora da ima. Akt o proceni rizika je poseban — ima sekcije i izmene/dopune, jer kad se nešto u firmi promeni, radimo izmenu akta i vodimo je tu. Na radnim mestima su i blanko obrasci koje korisnik preuzme, popuni i vrati potpisane."
+> „Ovde stoje svi papiri firme — ugovor, akt o proceni rizika, pravilnici, programi obuke, stručni nalazi. Da pokažem kako se ubacuju.
+>
+> Kod **obavezne dokumentacije**, pored svake stavke imam dugme za prilaganje. Kliknem, izaberem Word fajl sa računara — i vidite, aplikacija ga sama pretvori u PDF. Gore raste brojač koliko je od potrebnih dokumenata priloženo.
+>
+> **Akt o proceni rizika** je poseban jer je živ dokument: upišem datum, priložim sekcije (uvod, procene po radnom mestu, zaključak) i mogu da ih objedinim u jedan PDF. Kad se nešto u firmi promeni, ne diram stari akt nego dodam **izmenu i dopunu** — kliknem **Dodaj izmenu**, upišem naslov i napomenu, priložim fajl, i ona stoji pored akta kao ravnopravan dokument.
+>
+> **Stručni nalaz** (na primer pregled opreme) priložim isto tako, samo upišem datum — aplikacija sama prati do kad važi i javi kad ističe.
+>
+> Na tabu radnih mesta su i **blanko obrasci** (obrazac 6, revers za zaštitnu opremu, potvrda) koje preuzmem, popunim, potpišem i vratim."
 
 ## Video
 - Status: **presnimiti**. `04_dokumenta...webm` pokriva osnovu, ali nema: Word→PDF konverziju, izmene/dopune Akta, objedinjen PDF, blanko šablone po radnom mestu.

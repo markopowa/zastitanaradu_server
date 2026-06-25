@@ -30,14 +30,15 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 import doc01 from "../testFlow/guides/01_uvod.md?raw";
-import doc02 from "../testFlow/guides/02_unos_firme.md?raw";
-import doc03 from "../testFlow/guides/03_firma_pregled.md?raw";
-import doc04 from "../testFlow/guides/04_dokumenta.md?raw";
-import doc05 from "../testFlow/guides/05_zaposleni_oprema.md?raw";
-import doc06 from "../testFlow/guides/06_obaveze_aktivnosti.md?raw";
-import doc07 from "../testFlow/guides/07_podsetnici_slanja.md?raw";
-import doc08 from "../testFlow/guides/08_obrazac1.md?raw";
-import doc09 from "../testFlow/guides/09_korisnici_uloge.md?raw";
+import doc02 from "../testFlow/guides/02_podesavanje.md?raw";
+import doc03 from "../testFlow/guides/03_unos_firme.md?raw";
+import doc04 from "../testFlow/guides/04_firma_pregled.md?raw";
+import doc05 from "../testFlow/guides/05_dokumenta.md?raw";
+import doc06 from "../testFlow/guides/06_zaposleni_oprema.md?raw";
+import doc07 from "../testFlow/guides/07_obaveze_aktivnosti.md?raw";
+import doc08 from "../testFlow/guides/08_podsetnici_slanja.md?raw";
+import doc09 from "../testFlow/guides/09_obrazac1.md?raw";
+import doc10 from "../testFlow/guides/10_korisnici_uloge.md?raw";
 
 import { TEST_FLOW_PHASES, TEST_FLOW_SECTIONS } from "../testFlow/sections";
 import type { TestFlowSection, TestFlowSectionMeta } from "../testFlow/types";
@@ -55,6 +56,7 @@ const DOCS_BY_NUM: Record<string, string> = {
     "07": doc07,
     "08": doc08,
     "09": doc09,
+    "10": doc10,
 };
 
 interface StateProps {

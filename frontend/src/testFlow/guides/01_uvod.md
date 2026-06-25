@@ -33,7 +33,13 @@ Suština koju treba reći u videu: *cilj je da se ništa ne propusti i da u svak
 - [ ] Danas i Firme se otvaraju bez greške, prazni.
 
 ## Šta reći u videu (predlog naracije)
-> „Ovo je alat za vođenje BZNR i protivpožarnih obaveza za klijentske firme. Umesto svesaka i tabela, sve je na jednom mestu — firme, zaposleni, obaveze i rokovi. Aplikacija sama prati šta ističe i šalje podsetnike, nama i klijentu. Krećemo od ekrana **Danas**, koji pokazuje šta treba danas; entiteti su **Firme/Zaposleni/Oprema**; tekući posao je pod **Operativom**; a **Administracija** su podešavanja koja se rade jednom. U narednim videima idemo korak po korak."
+> „Dobar dan. Ovo je aplikacija u kojoj vodimo sve obaveze bezbednosti na radu i zaštite od požara za vaše firme — ono što ste do sad držali po sveskama, fasciklama i Excel tabelama. Da vam prvo pokažem kako izgleda i kako je podeljena, pa ćemo posle u svaki deo posebno.
+>
+> Čim se ulogujete, prvo vidite ekran **Danas** — to je vaša početna tabla. Tu vam aplikacija sama izbaci šta gori: šta je već probilo rok, šta stiže uskoro, koji mejl nije uspeo da ode, i šta će se poslati narednih sedam dana. Svako jutro počinjete odavde.
+>
+> Sa leve strane je meni. Gore su **Firme, Zaposleni i Oprema** — stvari sa kojima radite. Ispod, pod **Operativa**, su **Aktivnosti** (konkretni poslovi u toku) i **Slanja** (svi mejlovi koji su otišli ili čekaju). Na dnu je **Administracija** — to su podešavanja koja se nameste jednom na početku i posle se ne diraju; o njima priča sledeći video.
+>
+> Za sada je sve prazno jer još nismo uneli nijednu firmu. U narednim koracima unosimo firmu i sve ostalo — korak po korak."
 
 ## Video
 - Status: **postoji** (`01_uvod.webm`), ali stariji — dosnimiti kratku turu menija (3 zone) i ovu rečenicu-dve o tome šta app radi.

@@ -1,4 +1,4 @@
-# 08 — Obrazac 1 (medicinska evidencija)
+# 09 — Obrazac 1 (medicinska evidencija)
 
 ## Cilj
 Generisanje objedinjene evidencije lekarskih pregleda (Obrazac 1) za firmu, iz završenih lekarskih aktivnosti.
@@ -6,10 +6,10 @@ Generisanje objedinjene evidencije lekarskih pregleda (Obrazac 1) za firmu, iz z
 ## Šta je ovo (za naraciju)
 **Obrazac 1** je propisana evidencija zaposlenih raspoređenih na radna mesta sa **povećanim rizikom** i njihovih lekarskih pregleda — dokument koji poslodavac mora da vodi. Umesto ručnog kucanja tabele, aplikacija ga **sama generiše** iz već unetih podataka: uzima sve **završene** lekarske aktivnosti firme (datum pregleda, ocena sposobnosti, broj izveštaja, sledeći termin) i sklapa ih u jedan dokument sa zaglavljem firme.
 
-Poenta za video: pošto se podaci o pregledima ionako unose kroz aktivnosti (`06`), evidencija je „besplatna" — jedan klik i dobiješ uredan, ažuran Obrazac 1 bez prepisivanja.
+Poenta za video: pošto se podaci o pregledima ionako unose kroz aktivnosti (`07`), evidencija je „besplatna" — jedan klik i dobiješ uredan, ažuran Obrazac 1 bez prepisivanja.
 
 ## Preduslovi
-- `06` odrađen — bar jedan **završen** lekarski pregled (sa unetim poljima: ocena, broj izveštaja, datum, sledeći termin).
+- `07` odrađen — bar jedan **završen** lekarski pregled (sa unetim poljima: ocena, broj izveštaja, datum, sledeći termin).
 - Vrsta obaveze „periodični lekarski" ima uključeno „ulazi u Obrazac 1".
 
 ## Koraci
@@ -22,7 +22,7 @@ Poenta za video: pošto se podaci o pregledima ionako unose kroz aktivnosti (`06
 - [ ] Polja (ocena/datum/sledeći/izveštaj/mere) tačno iz `result_data` aktivnosti.
 
 ## Šta reći u videu (predlog naracije)
-> „Obrazac 1 je propisana evidencija lekarskih pregleda zaposlenih na radnim mestima sa povećanim rizikom. Pošto smo podatke o pregledima već uneli kroz aktivnosti, ne moramo ništa da prepisujemo — jednim klikom aplikacija sastavi ceo obrazac: zaposleni, vrsta i datum pregleda, ocena sposobnosti, broj izveštaja i sledeći termin, sa zaglavljem firme. Evidencija je uvek ažurna jer izvire iz onoga što već vodimo."
+> „**Obrazac 1** je propisana evidencija lekarskih pregleda za radnike na mestima sa povećanim rizikom — papir koji firma mora da ima. Pošto smo sve podatke o pregledima već uneli kad smo zatvarali aktivnosti, ne moram ništa ponovo da kucam. Otvorim firmu i kliknem **Generiši Obrazac 1** — aplikacija sama sastavi ceo dokument: ko je pregledan, kog datuma, ocena sposobnosti, broj izveštaja, kad je sledeći, sa zaglavljem firme. Uvek je tačan jer se puni iz onoga što već vodimo."
 
 ## Video
 - Status: **snimiti** — tek kad se generisanje potvrdi/dovrši.

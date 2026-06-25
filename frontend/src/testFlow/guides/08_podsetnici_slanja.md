@@ -1,4 +1,4 @@
-# 07 — Podsetnici i slanja (Danas, Slanja, mejlovi)
+# 08 — Podsetnici i slanja (Danas, Slanja, mejlovi)
 
 ## Cilj
 Da se vidi šta sistem šalje, kome i kada: ekran **Danas**, ekran **Slanja** (outbox), i da podsetnici po obavezi idu pravom primaocu.
@@ -11,7 +11,7 @@ Ovo je „motor obaveštavanja" — razlog zašto aplikacija postoji. Svaka obav
 Ključna finesa za video — **pravi primalac zavisi od vrste i faze obaveze**: podsetnik za lekarski unapred ide nama (MAK, da pripremimo uput), uput na dan ide poslodavcu, potvrda po obavljanju ide firmi, a sve što **kasni** ide samo nama. Tekst mejla je prilagođen kategoriji (naruči / organizuj / uput / potvrda), nije generički.
 
 ## Preduslovi
-- `06` odrađen (postoje aktivnosti sa rokovima).
+- `07` odrađen (postoje aktivnosti sa rokovima).
 - Bar jedan interni korisnik sa mejlom (MAK tim = aktivni staff) i firma ima mejl.
 
 ## Koraci — Danas
@@ -35,7 +35,11 @@ Ključna finesa za video — **pravi primalac zavisi od vrste i faze obaveze**: 
 - [ ] Tekst je po kategoriji (naruči/organizuj/uput/potvrda), ne generički; prikazuje datum, bez pogrešnog „za N dana".
 
 ## Šta reći u videu (predlog naracije)
-> „Ovo je srž aplikacije — automatsko obaveštavanje. Svaka obaveza ima okidače: koliko dana pre roka, na dan, i posle ako kasni. Sistem te mejlove unapred priprema u redu za slanje, a dnevni zadatak ih šalje kad dođe vreme. Ekran Danas pokazuje šta kasni, šta stiže, šta nije prošlo i šta ide narednih sedam dana. Bitno je da pravu poruku dobije prava strana: podsetnik za lekarski ide nama da pripremimo uput, sam uput ide poslodavcu, potvrda firmi, a sve što kasni samo nama. Tekst je prilagođen — ne šaljemo generičke mejlove."
+> „Ovo je suština cele aplikacije — da nas sama opominje na vreme. Svaka obaveza ima podešeno kad se javlja: na primer trideset dana pre roka, na sam dan, pa opet ako se rok probije. Aplikacija te mejlove unapred spremi i pošalje kad dođe dan, i sve ostaje zabeleženo.
+>
+> Na ekranu **Danas** vidim šta kasni, šta stiže, koji mejl nije uspeo (sa dugmetom da pokušam ponovo) i šta će otići narednih sedam dana. Na **Slanja** vidim spisak svih mejlova — kome, kad, sa kojim statusom — i mogu da otvorim i pročitam svaki.
+>
+> Bitno je da pravu poruku dobije prava strana: podsetnik za lekarski stiže nama u MAK da pripremimo uput; sam uput ide poslodavcu da pošalje radnika; potvrda da je obavljeno ide firmi; a kad nešto kasni, opomena stiže samo nama. Tekst svakog mejla je prilagođen — nije isti za sve."
 
 ## Video
 - Status: **snimiti** (Danas i Slanja su novi, nema videa).
