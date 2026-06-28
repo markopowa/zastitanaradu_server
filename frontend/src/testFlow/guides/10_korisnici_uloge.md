@@ -23,9 +23,9 @@ Veza sa podsetnicima (`08`): korisnici koji su **staff i imaju mejl** čine „M
 - [ ] MAK tim (staff sa mejlom) postoji za potrebe podsetnika.
 
 ## Šta reći u videu (predlog naracije)
-> „Aplikaciju koristi ceo tim, pa svakom napravimo nalog. Kliknem **Korisnici → Dodaj korisnika**, upišem ime, mejl i lozinku, i dodelim mu **ulogu**. Uloga određuje šta sme da radi — neko menja firme, neko samo gleda, neko završava aktivnosti. Kome nešto nije dozvoljeno, to dugme uopšte ni ne vidi.
+> „Aplikaciju koristi ceo tim, pa svakom napravimo nalog. Kliknem **Korisnici → Dodaj korisnika**, upišem ime, mejl i lozinku, i dodelim mu **ulogu**. Uloga je tu da svako ima tačno onoliko prava koliko mu treba — neko sme da menja firme i zatvara aktivnosti, neko samo da gleda, neko je administrator. Zašto je to dobro: manje grešaka i veća sigurnost, jer čovek ne može da dira ono što nije njegov posao. I praktično — kome nešto nije dozvoljeno, to dugme uopšte ni ne vidi, pa se ne zbunjuje.
 >
-> I jedna veza sa podsetnicima: članovi tima koji imaju mejl automatski dobijaju interna obaveštenja koja smo videli na ekranu Danas."
+> I jedna veza sa podsetnicima iz prošlog videa: članovi tima koji imaju upisan mejl automatski postaju primaoci internih obaveštenja — onih koja smo videli na ekranu Danas. Zato je važno da svako ima tačan mejl."
 
 ## Video
 - Status: **opciono** (administrativno; snimiti samo ako treba uputstvo za podešavanje tima).

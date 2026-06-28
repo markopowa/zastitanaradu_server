@@ -34,13 +34,13 @@ Poenta za video: korisnik **ne mora ručno da pamti** šta kome treba — unese�
 - [ ] Oprema se dodaje i veže za firmu.
 
 ## Šta reći u videu (predlog naracije)
-> „Sad dodajemo zaposlene i opremu. Najbolji deo je što ne moram ništa da pamtim — čim nekog dodam, aplikacija mu sama otvori obaveze koje mu po zakonu slede.
+> „Sad dodajemo zaposlene i opremu. Ovde se vidi glavna prednost aplikacije: ne morate da pamtite ko šta mora — čim nekog unesete, aplikacija mu sama otvori obaveze koje mu po zakonu slede.
 >
-> Kliknem **Dodaj zaposlenog**, upišem podatke i vežem ga za radno mesto sa **povećanim rizikom**, **Sačuvaj**. Otvorim tog radnika i vidim da su mu se same pojavile obaveze: osposobljavanje za bezbedan rad, obuka iz zaštite od požara, zaduženje zaštitne opreme, i — pošto je povećan rizik — **prethodni lekarski pregled**. Periodični lekarski se ne otvara odmah; on dođe tek kad obavimo prethodni (to je sledeći video).
+> Kliknem **Dodaj zaposlenog**, upišem podatke i vežem ga za radno mesto sa **povećanim rizikom**, **Sačuvaj**. Otvorim tog radnika i vidim da su mu se same pojavile obaveze: osposobljavanje za bezbedan rad, obuka iz zaštite od požara, zaduženje zaštitne opreme, i — pošto je povećan rizik — **prethodni lekarski pregled**. Obratite pažnju: periodični lekarski se ne otvara odmah; on dolazi tek kad obavimo prethodni, jer rok za sledeći zavisi od toga šta lekar napiše. O tome priča sledeći video.
 >
-> Ako dodam radnika na radno mesto bez povećanog rizika, dobiće obuke ali ne i lekarski. Rizik mogu i ručno da promenim baš za tog radnika ako treba.
+> Da pokažem suprotno: ako dodam radnika na radno mesto bez povećanog rizika, dobiće obuke ali neće dobiti lekarski — jer mu zakonski ne treba. Sve to aplikacija zaključuje iz nivoa rizika koji sam izabrao. Ako baš za jednog radnika treba drugačije, mogu mu ručno da promenim rizik.
 >
-> Isto je sa opremom: kliknem **Oprema → Dodaj**, unesem na primer PP aparat, **Sačuvaj** — i odmah dobijem obavezu njegovog servisa."
+> Isto je sa opremom: kliknem **Oprema → Dodaj**, unesem na primer PP aparat, **Sačuvaj** — i odmah dobijem obavezu njegovog servisa, sa rokom koji aplikacija dalje prati."
 
 ## Video
 - Status: **snimiti** (delom u 03/04 starih, ali auto-spawn i override nisu pokazani).

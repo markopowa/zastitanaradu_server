@@ -26,11 +26,11 @@ Tab **Pregled** (checklista svih obaveza firme sa statusima) i **profil firme** 
 - [ ] Lična karta u read modu lepo izgleda (kartice), radi na telefonu i u obe teme.
 
 ## Šta reći u videu (predlog naracije)
-> „Ovo je **Pregled** firme — najvažniji ekran. Ovde na jednom mestu vidim **sve** obaveze ove firme i u kom su statusu: u redu, stiže, kasni, nedostaje, ili ne važi za ovu firmu. Podeljeno je na dve grupe — bezbednost na radu i zaštita od požara — i ispod svake piše na osnovu kog zakona se traži. Na prvi pogled vidim gde firma štuca.
+> „Ovo je **Pregled** firme — ekran na kom ćete provoditi najviše vremena. Na jednom mestu vidite **sve** obaveze ove firme i u kom su statusu: u redu, stiže, kasni, nedostaje, ili ne važi za ovu firmu. Podeljeno je na dve grupe — bezbednost na radu i zaštita od požara — a ispod svake obaveze piše na osnovu kog zakona se traži, da uvek imate pokriće ako vas neko pita. Suština: na prvi pogled vidite gde firma štuca, bez kopanja po papirima.
 >
-> Da bi aplikacija znala koje obaveze ova firma uopšte ima, popunim **profil firme**. Idem na tab **Lična karta**, kliknem **Izmeni**, i tu kažem: koja je ZOP kategorija, da li je delatnost povećanog rizika, i šta firma fizički ima — na primer PP aparate i hidrantsku mrežu. Kliknem **Sačuvaj**.
+> Ali da bi ovaj spisak bio tačan, aplikacija mora da zna koje obaveze ova firma uopšte ima — a to nije isto za svakoga. Zato popunjavamo **profil firme**: idem na tab **Lična karta**, kliknem **Izmeni**, i kažem koja je ZOP kategorija, da li je delatnost povećanog rizika, i šta firma fizički ima — na primer PP aparate i hidrantsku mrežu. **Sačuvaj**.
 >
-> Vratim se na **Pregled** i vidim da su se obaveze same prilagodile: pošto firma ima hidrante, sad traži njihovo ispitivanje; ono što firma nema, stoji kao „ne važi". Ako neka obaveza zaista ne važi za ovu firmu, kliknem na tri tačkice pa **Nije primenljivo** i obavezno upišem razlog — red posivi, a uvek mogu da ga vratim."
+> Vratim se na **Pregled** i vidim da su se obaveze same prilagodile: pošto sam rekao da firma ima hidrante, sad traži njihovo ispitivanje; ono što firma nema, stoji kao „ne važi" i ne smeta. To je princip cele aplikacije — ona predviđa sve moguće obaveze, a vi za svaku firmu kažete šta važi a šta ne. Ako neka zaista ne važi, kliknem na tri tačkice → **Nije primenljivo** i **obavezno upišem razlog** (da se kasnije zna zašto je isključeno) — red posivi, a uvek mogu da ga vratim."
 
 ## Video
 - Status: **snimiti** (Pregled i profil su novi).
