@@ -219,6 +219,45 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         out = self.get_serializer(instance)
         return Response(out.data, status=status.HTTP_201_CREATED)
 
+    @action(detail=True, methods=["post"], url_path="set-file")
+    def set_file(self, request, *args, **kwargs):
+        instance: DocumentTemplate = self.get_object()
+        uploaded_file = request.FILES.get("file")
+        document_file_id = request.data.get("document_file_id")
+
+        if uploaded_file:
+            try:
+                uploaded_file.seek(0)
+            except (AttributeError, OSError):
+                pass
+            instance.template_file.save(
+                uploaded_file.name, uploaded_file, save=True)
+        elif document_file_id:
+            try:
+                document_file = DocumentFile.objects.get(pk=document_file_id)
+            except DocumentFile.DoesNotExist:
+                return Response(
+                    {"detail": "Document file not found."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            file_field = getattr(document_file, "file", None)
+            if not file_field:
+                return Response(
+                    {"detail": "Document file has no associated file."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            instance.source_document_file_id = document_file.id
+            instance.template_file.save(
+                Path(file_field.name).name, file_field.file, save=True)
+        else:
+            return Response(
+                {"detail": "file or document_file_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        out = self.get_serializer(instance)
+        return Response(out.data, status=status.HTTP_200_OK)
+
 
 class DocumentAIFormatViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DocumentAIFormat.objects.filter(is_active=True).order_by("id")

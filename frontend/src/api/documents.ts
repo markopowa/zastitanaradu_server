@@ -110,6 +110,23 @@ export async function updateDocumentTemplate(
     return data;
 }
 
+export async function setDocumentTemplateFile(
+    id: number,
+    payload: { file?: File; document_file_id?: number },
+): Promise<DocumentTemplate> {
+    const formData = new FormData();
+    if (payload.file) formData.append("file", payload.file);
+    if (payload.document_file_id != null) {
+        formData.append("document_file_id", String(payload.document_file_id));
+    }
+    const { data } = await api.post<DocumentTemplate>(
+        `/api/documents/templates/${id}/set-file/`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
 export async function deleteDocumentTemplate(id: number): Promise<void> {
     await api.delete(`/api/documents/templates/${id}/`);
 }

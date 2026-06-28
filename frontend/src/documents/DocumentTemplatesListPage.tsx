@@ -43,6 +43,7 @@ import {
     createDocumentTemplateFromDocument,
     createDocumentTemplateFromUpload,
     updateDocumentTemplate,
+    setDocumentTemplateFile,
     deleteDocumentTemplate,
     type DocumentTemplate,
 } from "../api/documents";
@@ -149,7 +150,7 @@ class DocumentTemplatesListPageInner extends Component<
             category_id:
                 tpl.category?.id != null ? String(tpl.category.id) : "",
             context_type: tpl.context_type ?? "",
-            create_mode: "FROM_DOCUMENT",
+            create_mode: "FROM_FILE",
             document_file_id: "",
             upload_file: null,
         }));
@@ -194,6 +195,17 @@ class DocumentTemplatesListPageInner extends Component<
                 category_id: categoryIdNum,
             };
             op = updateDocumentTemplate(editingId, payload);
+            if (create_mode === "FROM_FILE" && upload_file) {
+                op = op.then(() =>
+                    setDocumentTemplateFile(editingId, { file: upload_file }),
+                );
+            } else if (create_mode === "FROM_DOCUMENT" && document_file_id) {
+                op = op.then(() =>
+                    setDocumentTemplateFile(editingId, {
+                        document_file_id: Number(document_file_id),
+                    }),
+                );
+            }
         } else {
             if (create_mode === "FROM_DOCUMENT") {
                 if (!document_file_id) return;
