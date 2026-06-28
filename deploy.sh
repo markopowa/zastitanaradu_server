@@ -128,7 +128,41 @@ maybeResetBeforeRunAll() {
     fi
 }
 
+ensureSwap() {
+    local size="${SWAP_SIZE:-2G}"
+    local swapfile="${SWAP_FILE:-/swapfile}"
+    local cur_kb
+    cur_kb="$(awk '/SwapTotal/{print $2}' /proc/meminfo 2>/dev/null || echo 0)"
+    if [ "${cur_kb:-0}" -ge 1048576 ]; then
+        echo "Swap already present ($((cur_kb / 1024)) MB) — skipping."
+        return 0
+    fi
+    if swapon --show=NAME --noheadings 2>/dev/null | grep -qx "$swapfile"; then
+        echo "Swapfile $swapfile already active — skipping."
+        return 0
+    fi
+    echo "Creating ${size} swap at ${swapfile}..."
+    if ! fallocate -l "$size" "$swapfile" 2>/dev/null; then
+        local mb
+        case "$size" in
+            *G) mb=$(( ${size%G} * 1024 )) ;;
+            *M) mb=${size%M} ;;
+            *) mb=2048 ;;
+        esac
+        dd if=/dev/zero of="$swapfile" bs=1M count="$mb" status=none
+    fi
+    chmod 600 "$swapfile"
+    mkswap "$swapfile" >/dev/null
+    swapon "$swapfile"
+    if ! grep -q "^${swapfile} " /etc/fstab 2>/dev/null; then
+        echo "${swapfile} none swap sw 0 0" >> /etc/fstab
+    fi
+    echo "Swap enabled:"
+    free -h | awk '/Swap/{print}'
+}
+
 initialSetup() {
+    ensureSwap
     if ! command -v docker >/dev/null 2>&1; then
         apt-get update
         apt-get install -y ca-certificates curl gnupg
@@ -593,6 +627,7 @@ runAll() {
 }
 
 case "$DEPLOY_TARGET" in
+    ensureSwap)       ensureSwap ;;
     initialSetup)     initialSetup ;;
     setupDatabase)    setupDatabase ;;
     setupDocker)      setupDocker ;;
@@ -605,5 +640,5 @@ case "$DEPLOY_TARGET" in
     cleanLogs)        cleanLogs ;;
     setupTaskRunner)  setupTaskRunner ;;
     all)              runAll ;;
-    *)                echo "Unknown target: $DEPLOY_TARGET. Use: initialSetup|setupDatabase|setupDocker|setupDockerQuick|setupNginx|setupSsl|setupFirewall|setupCron|setupLogrotate|cleanLogs|setupTaskRunner|all"; exit 1 ;;
+    *)                echo "Unknown target: $DEPLOY_TARGET. Use: ensureSwap|initialSetup|setupDatabase|setupDocker|setupDockerQuick|setupNginx|setupSsl|setupFirewall|setupCron|setupLogrotate|cleanLogs|setupTaskRunner|all"; exit 1 ;;
 esac

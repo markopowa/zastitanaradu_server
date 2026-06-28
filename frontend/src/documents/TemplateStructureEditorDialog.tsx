@@ -621,15 +621,6 @@ export default class TemplateStructureEditorDialog extends Component<
                     >
                         Kliknite na dokument da postavite polje.
                     </Typography>
-                    <Typography
-                        variant="caption"
-                        display="block"
-                        color="text.secondary"
-                        sx={{ mt: 0.5 }}
-                    >
-                        Ako zamenite fajl šablona, ponovo mapirajte polja
-                        (koordinate više neće odgovarati).
-                    </Typography>
                 </DialogTitle>
 
                 <DialogContent

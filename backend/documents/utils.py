@@ -134,18 +134,22 @@ def generate_page_images(template_id: int, source_path: Path) -> list[str]:
     resolved_path = _resolve_file_path(source_path)
     pdf_path = convert_document_to_pdf(resolved_path)
 
+    paths: list[str] = []
     with tempfile.TemporaryDirectory() as tmp:
         ascii_pdf = Path(tmp) / "document.pdf"
         shutil.copy2(_path_str(pdf_path), str(ascii_pdf))
-        images = convert_from_path(
-            str(ascii_pdf), dpi=200, poppler_path=settings.POPPLER_PATH
+        image_paths = convert_from_path(
+            str(ascii_pdf),
+            dpi=150,
+            poppler_path=settings.POPPLER_PATH,
+            output_folder=tmp,
+            fmt="png",
+            paths_only=True,
         )
-
-    paths: list[str] = []
-    for i, img in enumerate(images):
-        name = f"page_{i}.png"
-        img.save(_path_str(pages_dir / name), "PNG")
-        paths.append(f"template_pages/{template_id}/{name}")
+        for i, src in enumerate(image_paths):
+            name = f"page_{i}.png"
+            shutil.move(_path_str(Path(src)), _path_str(pages_dir / name))
+            paths.append(f"template_pages/{template_id}/{name}")
 
     return paths
 
