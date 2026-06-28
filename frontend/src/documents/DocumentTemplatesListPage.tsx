@@ -308,6 +308,11 @@ class DocumentTemplatesListPageInner extends Component<
             ? items.filter((i) => i.context_type === filter_context_type)
             : items;
 
+        const editingTpl =
+            editingId != null
+                ? items.find((i) => i.id === editingId) ?? null
+                : null;
+
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Typography variant="h6">Šabloni dokumenata</Typography>
@@ -521,15 +526,28 @@ class DocumentTemplatesListPageInner extends Component<
                                 ))}
                             </Select>
                         </FormControl>
-                        {editingId == null && (
+                        {(
                             <>
                                 <Box sx={{ mt: 2 }}>
                                     <Typography
                                         variant="subtitle2"
                                         gutterBottom
                                     >
-                                        Način kreiranja šablona
+                                        {editingId != null
+                                            ? "Fajl šablona"
+                                            : "Način kreiranja šablona"}
                                     </Typography>
+                                    {editingId != null && (
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{ mb: 1, display: "block" }}
+                                        >
+                                            {editingTpl?.template_file
+                                                ? "Fajl je priložen. Izaberi novi da ga zameniš, ili ostavi prazno da zadržiš postojeći."
+                                                : "Nije priložen fajl. Dodaj ga ovde, pa zatim obeleži polja."}
+                                        </Typography>
+                                    )}
                                     <RadioGroup
                                         row
                                         value={create_mode}
