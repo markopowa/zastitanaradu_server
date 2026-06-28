@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import tempfile
@@ -37,9 +38,11 @@ def convert_document_to_pdf(path: Path) -> Path:
     if suffix not in settings.DOCUMENT_CONVERTIBLE_SUFFIXES:
         raise TemplateUnsupportedError(suffix)
     with tempfile.TemporaryDirectory() as tmp:
+        profile_uri = Path(os.path.join(tmp, "louser")).as_uri()
         result = subprocess.run(
             [
                 settings.LIBREOFFICE_BIN,
+                "-env:UserInstallation=" + profile_uri,
                 "--headless",
                 "--norestore",
                 "--convert-to", "pdf",
@@ -48,6 +51,7 @@ def convert_document_to_pdf(path: Path) -> Path:
             ],
             capture_output=True,
             timeout=120,
+            env={**os.environ, "HOME": tmp},
         )
         if result.returncode != 0:
             raise RuntimeError(result.stderr.decode(errors="replace"))

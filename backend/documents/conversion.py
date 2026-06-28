@@ -32,10 +32,12 @@ def convert_office_to_pdf(uploaded_file) -> ContentFile:
             for chunk in uploaded_file.chunks():
                 fh.write(chunk)
 
+        profile_uri = Path(os.path.join(tmpdir, "louser")).as_uri()
         try:
             result = subprocess.run(
                 [
                     _libreoffice_bin(),
+                    "-env:UserInstallation=" + profile_uri,
                     "--headless",
                     "--norestore",
                     "--convert-to", "pdf",
@@ -44,6 +46,7 @@ def convert_office_to_pdf(uploaded_file) -> ContentFile:
                 ],
                 capture_output=True,
                 timeout=120,
+                env={**os.environ, "HOME": tmpdir},
             )
         except (FileNotFoundError, subprocess.TimeoutExpired) as exc:
             raise ConversionError(str(exc)) from exc
