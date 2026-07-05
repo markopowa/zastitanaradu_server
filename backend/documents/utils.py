@@ -1,7 +1,11 @@
+import json
+import logging
 import os
 import shutil
 import subprocess
 import tempfile
+import threading
+import time
 import unicodedata
 from datetime import date
 from pathlib import Path
@@ -12,6 +16,8 @@ from pdf2image import convert_from_path
 from django.conf import settings
 
 from processes.date_format import format_date_display
+
+logger = logging.getLogger(__name__)
 
 
 class TemplateUnsupportedError(Exception):
@@ -158,6 +164,92 @@ def invalidate_page_images(template_id: int) -> None:
     pages_dir = Path(settings.MEDIA_ROOT) / "template_pages" / str(template_id)
     if pages_dir.exists():
         shutil.rmtree(pages_dir)
+    with _generation_guard:
+        _generation_active.discard(template_id)
+
+
+# ---------------------------------------------------------------------------
+# Asynchronous page-image generation
+#
+# Rasterizing a large document (LibreOffice -> PDF -> pdftoppm) can take a few
+# minutes, which is far longer than the gunicorn worker timeout. So the HTTP
+# request only kicks off a background thread and returns immediately; the client
+# polls until the images are ready. State is tracked via a small JSON file in
+# the pages directory so it is visible across gunicorn workers (shared volume).
+# ---------------------------------------------------------------------------
+
+PAGE_STATUS_FILENAME = "_status.json"
+# If a "generating" marker is older than this, assume the worker/thread that
+# owned it died (e.g. redeploy) and allow a fresh generation to start.
+PAGE_GENERATION_STALE_SECONDS = 900
+
+_generation_guard = threading.Lock()
+_generation_active: set[int] = set()
+
+
+def _pages_dir(template_id: int) -> Path:
+    return Path(settings.MEDIA_ROOT) / "template_pages" / str(template_id)
+
+
+def existing_page_urls(template_id: int) -> list[str] | None:
+    existing = sorted(_pages_dir(template_id).glob("page_*.png"))
+    if existing:
+        return [f"template_pages/{template_id}/{p.name}" for p in existing]
+    return None
+
+
+def _write_generation_status(template_id: int, state: str, detail: str = "") -> None:
+    pages_dir = _pages_dir(template_id)
+    pages_dir.mkdir(parents=True, exist_ok=True)
+    status_path = pages_dir / PAGE_STATUS_FILENAME
+    tmp_path = pages_dir / (PAGE_STATUS_FILENAME + ".tmp")
+    payload = {"state": state, "detail": detail, "ts": time.time()}
+    tmp_path.write_text(json.dumps(payload))
+    tmp_path.replace(status_path)
+
+
+def get_page_generation_status(template_id: int) -> dict:
+    status_path = _pages_dir(template_id) / PAGE_STATUS_FILENAME
+    if not status_path.exists():
+        return {"state": "idle", "detail": "", "ts": 0}
+    try:
+        data = json.loads(status_path.read_text())
+    except (ValueError, OSError):
+        return {"state": "idle", "detail": "", "ts": 0}
+    if data.get("state") == "generating":
+        if time.time() - data.get("ts", 0) > PAGE_GENERATION_STALE_SECONDS:
+            return {"state": "idle", "detail": "", "ts": data.get("ts", 0)}
+    return data
+
+
+def _run_generation(template_id: int, source_path: Path) -> None:
+    try:
+        generate_page_images(template_id, source_path)
+        _write_generation_status(template_id, "done")
+    except Exception as exc:  # noqa: BLE001 - reported back to the client
+        logger.error(
+            "Async page image generation failed for template %s: %s",
+            template_id, exc, exc_info=True,
+        )
+        _write_generation_status(template_id, "error", str(exc))
+    finally:
+        with _generation_guard:
+            _generation_active.discard(template_id)
+
+
+def start_page_generation(template_id: int, source_path: Path) -> None:
+    """Kick off page-image generation in a background thread (idempotent)."""
+    with _generation_guard:
+        if template_id in _generation_active:
+            return
+        _generation_active.add(template_id)
+    _write_generation_status(template_id, "generating")
+    thread = threading.Thread(
+        target=_run_generation,
+        args=(template_id, source_path),
+        daemon=True,
+    )
+    thread.start()
 
 
 def build_preview_context() -> dict:

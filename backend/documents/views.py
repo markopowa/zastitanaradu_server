@@ -1,11 +1,25 @@
+import json
 import logging
+import time
 from pathlib import Path
 
 from django.conf import settings
-from django.http import HttpResponse
-from rest_framework import permissions, status, viewsets
+from django.http import HttpResponse, StreamingHttpResponse
+from rest_framework import permissions, renderers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+
+class ServerSentEventRenderer(renderers.BaseRenderer):
+    """Lets DRF content negotiation accept the EventSource `text/event-stream`
+    Accept header. The actual body is a StreamingHttpResponse, so render() is
+    never invoked, but the media type must be advertised to avoid a 406."""
+
+    media_type = "text/event-stream"
+    format = "event-stream"
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        return data
 
 from .models import (
     DocumentAIFormat,
@@ -24,9 +38,11 @@ from .serializers import (
 )
 from .utils import (
     build_preview_context,
+    existing_page_urls,
     fill_pdf_at_coordinates,
-    generate_page_images,
+    get_page_generation_status,
     invalidate_page_images,
+    start_page_generation,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,6 +71,12 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentTemplateSerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
+    def _page_urls_response(self, request, rel_paths):
+        urls = [request.build_absolute_uri(
+            f"{settings.MEDIA_URL}{p}") for p in rel_paths]
+        out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
+        return Response(out.data)
+
     @action(detail=True, methods=["get"], url_path="pages")
     def pages(self, request, *args, **kwargs):
         instance: DocumentTemplate = self.get_object()
@@ -64,45 +86,110 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                 {"detail": "Template has no file."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        try:
-            path = Path(fr"{file_field.path}")
-            rel_paths = generate_page_images(instance.pk, path)
-        except Exception as exc:
-            logger.error("Page image generation failed: %s",
-                         exc, exc_info=True)
+
+        rel_paths = existing_page_urls(instance.pk)
+        if rel_paths is not None:
+            return self._page_urls_response(request, rel_paths)
+
+        gen = get_page_generation_status(instance.pk)
+        if gen["state"] == "error":
             return Response(
-                {"detail": f"Failed to generate page images: {exc}"},
+                {
+                    "status": "error",
+                    "detail": f"Failed to generate page images: {gen['detail']}",
+                },
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-        urls = [request.build_absolute_uri(
-            f"{settings.MEDIA_URL}{p}") for p in rel_paths]
-        out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
-        return Response(out.data)
+        if gen["state"] != "generating":
+            path = Path(fr"{file_field.path}")
+            start_page_generation(instance.pk, path)
+        return Response(
+            {"status": "generating"},
+            status=status.HTTP_202_ACCEPTED,
+        )
+
+    # Cap on a single SSE connection's lifetime. The browser's EventSource
+    # reconnects automatically, so generation longer than this just resumes on
+    # the next connection — no client-side polling code involved.
+    SSE_MAX_DURATION_SECONDS = 240
+    SSE_POLL_INTERVAL_SECONDS = 1.5
+
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path="pages/stream",
+        renderer_classes=[ServerSentEventRenderer],
+    )
+    def pages_stream(self, request, *args, **kwargs):
+        instance: DocumentTemplate = self.get_object()
+        file_field = getattr(instance, "template_file", None)
+        template_id = instance.pk
+
+        def media_urls(rel_paths):
+            return [
+                request.build_absolute_uri(f"{settings.MEDIA_URL}{p}")
+                for p in rel_paths
+            ]
+
+        def event_stream():
+            # Hint the browser's reconnect delay (ms).
+            yield "retry: 3000\n\n"
+
+            if not file_field:
+                payload = json.dumps(
+                    {"status": "error", "detail": "Template has no file."})
+                yield f"event: failed\ndata: {payload}\n\n"
+                return
+
+            # Kick off generation if it hasn't started (idempotent).
+            if existing_page_urls(template_id) is None:
+                gen = get_page_generation_status(template_id)
+                if gen["state"] not in ("generating", "error"):
+                    start_page_generation(
+                        template_id, Path(fr"{file_field.path}"))
+
+            deadline = time.monotonic() + self.SSE_MAX_DURATION_SECONDS
+            while time.monotonic() < deadline:
+                rel_paths = existing_page_urls(template_id)
+                if rel_paths is not None:
+                    payload = json.dumps(
+                        {"status": "ready", "pages": media_urls(rel_paths)})
+                    yield f"event: done\ndata: {payload}\n\n"
+                    return
+                gen = get_page_generation_status(template_id)
+                if gen["state"] == "error":
+                    payload = json.dumps(
+                        {"status": "error", "detail": gen["detail"]})
+                    yield f"event: failed\ndata: {payload}\n\n"
+                    return
+                # Comment line keeps the connection (and nginx) alive.
+                yield ": keepalive\n\n"
+                time.sleep(self.SSE_POLL_INTERVAL_SECONDS)
+            # Lifetime exceeded — EventSource will reconnect and keep watching.
+
+        response = StreamingHttpResponse(
+            event_stream(), content_type="text/event-stream")
+        response["Cache-Control"] = "no-cache"
+        # Disable nginx proxy buffering for this response only.
+        response["X-Accel-Buffering"] = "no"
+        return response
 
     @action(detail=True, methods=["post"], url_path="regenerate-pages")
     def regenerate_pages(self, request, *args, **kwargs):
         instance: DocumentTemplate = self.get_object()
-        invalidate_page_images(instance.pk)
         file_field = getattr(instance, "template_file", None)
         if not file_field:
             return Response(
                 {"detail": "Template has no file."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        try:
-            path = Path(fr"{file_field.path}")
-            rel_paths = generate_page_images(instance.pk, path)
-        except Exception as exc:
-            logger.error("Page image regeneration failed: %s",
-                         exc, exc_info=True)
-            return Response(
-                {"detail": f"Failed to regenerate page images: {exc}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
-        urls = [request.build_absolute_uri(
-            f"{settings.MEDIA_URL}{p}") for p in rel_paths]
-        out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
-        return Response(out.data)
+        invalidate_page_images(instance.pk)
+        path = Path(fr"{file_field.path}")
+        start_page_generation(instance.pk, path)
+        return Response(
+            {"status": "generating"},
+            status=status.HTTP_202_ACCEPTED,
+        )
 
     @action(detail=True, methods=["post"], url_path="preview")
     def preview(self, request, *args, **kwargs):

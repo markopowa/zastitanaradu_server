@@ -27,4 +27,4 @@ RUN chown -R www-data:www-data /app
 RUN chown www-data:www-data /app/logs /app/media /app/home
 USER www-data
 EXPOSE 8000
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "2", "--access-logfile", "-", "--error-logfile", "-", "core.wsgi:application"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--worker-class", "gthread", "--workers", "2", "--threads", "8", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-", "core.wsgi:application"]

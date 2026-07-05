@@ -1,4 +1,4 @@
-import { api } from "./client";
+import { api, apiBaseUrl } from "./client";
 import type { DocumentCategory, DocumentFile } from "../types/documents";
 
 export interface DocumentTemplate {
@@ -161,11 +161,33 @@ export async function getTemplateFieldDefinitions(): Promise<
     return asList(data);
 }
 
-export async function getDocumentTemplatePages(id: number): Promise<string[]> {
-    const { data } = await api.get<string[]>(
+// Page images are rendered asynchronously on the backend (can take minutes for
+// large documents). Clients subscribe to the SSE stream below and are pushed a
+// `done` event with the ready image URLs — no polling. The plain endpoint below
+// stays available for non-streaming callers (200 = ready, 202 = generating).
+export type TemplatePagesResult =
+    | { status: "ready"; pages: string[] }
+    | { status: "generating" };
+
+export async function getDocumentTemplatePages(
+    id: number,
+): Promise<TemplatePagesResult> {
+    const res = await api.get<string[] | { status: string }>(
         `/api/documents/templates/${id}/pages/`,
+        { validateStatus: (s) => s === 200 || s === 202 },
     );
-    return data;
+    if (res.status === 202) {
+        return { status: "generating" };
+    }
+    return { status: "ready", pages: res.data as string[] };
+}
+
+// URL for the Server-Sent Events stream that pushes page-image progress. The
+// backend starts generation on connect and emits a `done` (or `failed`) event
+// when finished; the browser's EventSource reconnects on its own if the
+// connection drops mid-generation.
+export function documentTemplatePagesStreamUrl(id: number): string {
+    return `${apiBaseUrl}/api/documents/templates/${id}/pages/stream/`;
 }
 
 export async function saveVisualPlaceholders(

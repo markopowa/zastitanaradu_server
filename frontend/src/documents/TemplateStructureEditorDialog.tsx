@@ -24,7 +24,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { enqueueSnackbar } from "notistack";
 import type { DocumentTemplate, VisualPlaceholder } from "../api/documents";
 import {
-    getDocumentTemplatePages,
+    documentTemplatePagesStreamUrl,
     getTemplateFieldDefinitions,
     previewTemplate,
     saveVisualPlaceholders,
@@ -156,6 +156,7 @@ type DragSnapshot = {
 interface State {
     pageUrls: string[];
     loading: boolean;
+    generating: boolean;
     saving: boolean;
     error: string | null;
     placeholders: VisualPlaceholder[];
@@ -186,9 +187,12 @@ export default class TemplateStructureEditorDialog extends Component<
 
     private dragMoved = false;
 
+    private pagesStream: EventSource | null = null;
+
     state: State = {
         pageUrls: [],
         loading: false,
+        generating: false,
         saving: false,
         error: null,
         placeholders: [],
@@ -256,7 +260,15 @@ export default class TemplateStructureEditorDialog extends Component<
         if (this.state.previewUrl) {
             URL.revokeObjectURL(this.state.previewUrl);
         }
+        this.closePagesStream();
     }
+
+    private closePagesStream = (): void => {
+        if (this.pagesStream) {
+            this.pagesStream.close();
+            this.pagesStream = null;
+        }
+    };
 
     private snapPct = (value: number): number => {
         const { snapEnabled, gridStep } = this.state;
@@ -275,31 +287,90 @@ export default class TemplateStructureEditorDialog extends Component<
                 ? (config.placeholders as VisualPlaceholder[])
                 : [];
 
+        this.closePagesStream();
         this.setState((prev) => ({
             ...prev,
             error: null,
             loading: true,
+            generating: false,
             pageUrls: [],
             placeholders: initialPlaceholders,
         }));
 
-        getDocumentTemplatePages(template.id)
-            .then((pageUrls) =>
-                this.setState((prev) => ({ ...prev, pageUrls })),
-            )
-            .catch((e: unknown) => {
-                const detail = (
-                    e as { response?: { data?: { detail?: string } } }
-                )?.response?.data?.detail;
-                this.setState((prev) => ({
-                    ...prev,
-                    error:
-                        detail ?? "Greška pri učitavanju stranica dokumenta.",
-                }));
-            })
-            .finally(() =>
-                this.setState((prev) => ({ ...prev, loading: false })),
-            );
+        this.openPagesStream(template.id);
+    };
+
+    // Subscribe to the backend SSE stream. The server pushes a `done` event with
+    // the page URLs the moment rendering finishes — no client-side polling. If
+    // the connection drops mid-generation, EventSource reconnects on its own.
+    private openPagesStream = (templateId: number): void => {
+        const isStale = (): boolean =>
+            !this.props.open || this.props.template.id !== templateId;
+
+        const stream = new EventSource(
+            documentTemplatePagesStreamUrl(templateId),
+            { withCredentials: true },
+        );
+        this.pagesStream = stream;
+        this.setState((prev) => ({
+            ...prev,
+            loading: true,
+            generating: true,
+        }));
+
+        stream.addEventListener("done", (ev: Event) => {
+            if (isStale()) return;
+            let pages: string[] = [];
+            try {
+                pages =
+                    (JSON.parse((ev as MessageEvent).data) as {
+                        pages?: string[];
+                    }).pages ?? [];
+            } catch {
+                pages = [];
+            }
+            this.setState((prev) => ({
+                ...prev,
+                pageUrls: pages,
+                loading: false,
+                generating: false,
+            }));
+            this.closePagesStream();
+        });
+
+        stream.addEventListener("failed", (ev: Event) => {
+            if (isStale()) return;
+            let detail = "Greška pri učitavanju stranica dokumenta.";
+            try {
+                detail =
+                    (JSON.parse((ev as MessageEvent).data) as {
+                        detail?: string;
+                    }).detail ?? detail;
+            } catch {
+                /* keep default */
+            }
+            this.setState((prev) => ({
+                ...prev,
+                loading: false,
+                generating: false,
+                error: detail,
+            }));
+            this.closePagesStream();
+        });
+
+        // Native connection error: the browser auto-reconnects (readyState
+        // CONNECTING), so keep the "generating" state and let it retry.
+        stream.onerror = (): void => {
+            if (isStale()) {
+                this.closePagesStream();
+                return;
+            }
+            this.setState((prev) => ({
+                ...prev,
+                loading: true,
+                generating: true,
+            }));
+        };
     };
 
     private dragMoveHandler = (e: Event): void => {
@@ -578,6 +649,7 @@ export default class TemplateStructureEditorDialog extends Component<
         const {
             pageUrls,
             loading,
+            generating,
             saving,
             error,
             placeholders,
@@ -631,6 +703,8 @@ export default class TemplateStructureEditorDialog extends Component<
                         <Box
                             sx={{
                                 display: "flex",
+                                flexDirection: "column",
+                                gap: 2,
                                 justifyContent: "center",
                                 alignItems: "center",
                                 flex: 1,
@@ -638,6 +712,16 @@ export default class TemplateStructureEditorDialog extends Component<
                             }}
                         >
                             <CircularProgress />
+                            {generating && (
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    align="center"
+                                >
+                                    Generisanje stranica dokumenta… za veće
+                                    dokumente ovo može potrajati nekoliko minuta.
+                                </Typography>
+                            )}
                         </Box>
                     )}
                     {error && (
