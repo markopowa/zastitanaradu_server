@@ -355,6 +355,8 @@ class RiskAssessmentActSerializer(serializers.ModelSerializer):
 class EquipmentItemSerializer(serializers.ModelSerializer):
     client_company_name = serializers.CharField(
         source="client_company.name", read_only=True)
+    service_process_type_name = serializers.CharField(
+        source="service_process_type.name", read_only=True, allow_null=True)
 
     class Meta:
         model = EquipmentItem
@@ -367,7 +369,12 @@ class EquipmentItemSerializer(serializers.ModelSerializer):
             "location",
             "notes",
             "is_active",
+            "service_process_type",
+            "service_process_type_name",
         )
+        extra_kwargs = {
+            "service_process_type": {"allow_null": True, "required": False},
+        }
 
 
 class CompanyObligationExclusionSerializer(serializers.ModelSerializer):

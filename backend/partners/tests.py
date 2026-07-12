@@ -611,7 +611,10 @@ class AutoSpawnBindingsTest(TestCase):
         self.assertIn("OSPOSOBLJAVANJE_BZR", codes)
         self.assertIn("ZOP_OBUKA", codes)
         self.assertIn("PRETHODNI_LEKARSKI", codes)
-        self.assertIn("LEKARSKI_PREGLED", codes)
+        # LEKARSKI_PREGLED (periodični pregled) is not created at hire; it
+        # only appears later via followup chaining once PRETHODNI_LEKARSKI
+        # is completed (see test_lekarski_pregled_next_run_is_future).
+        self.assertNotIn("LEKARSKI_PREGLED", codes)
 
     def test_idempotent_second_call_does_not_duplicate_bindings(self):
         from partners.employee_bindings import ensure_default_bindings_for_employee
@@ -624,7 +627,11 @@ class AutoSpawnBindingsTest(TestCase):
             employee=employee,
             is_active=True,
         ).count()
-        self.assertEqual(count, 4)
+        # OSPOSOBLJAVANJE_BZR + ZOP_OBUKA + PRETHODNI_LEKARSKI. LZO_ZADUZENJE
+        # is referenced by employee_bindings.py but this test's catalog does
+        # not seed a LZO_ZADUZENJE ProcessType, so it is silently skipped
+        # (per test_missing_catalog_type_skipped_silently behavior).
+        self.assertEqual(count, 3)
 
     def test_missing_catalog_type_skipped_silently(self):
         from partners.employee_bindings import ensure_default_bindings_for_employee
@@ -637,13 +644,36 @@ class AutoSpawnBindingsTest(TestCase):
         self.assertNotIn("ZOP_OBUKA", codes)
 
     def test_lekarski_pregled_next_run_is_future(self):
+        from django.utils import timezone
+
         from partners.employee_bindings import ensure_default_bindings_for_employee
+        from processes.models import ProcessTemplate
+        from processes.process_run_completion import apply_process_run_completion
 
         employee = self._make_employee(job_role=self.job_role_high)
         ensure_default_bindings_for_employee(employee)
-        from django.utils import timezone
+
+        pt_prethodni = ProcessType.objects.get(code="PRETHODNI_LEKARSKI")
+        pt_periodicni = ProcessType.objects.get(code="LEKARSKI_PREGLED")
+        ProcessTemplate.objects.create(
+            process_type=pt_prethodni,
+            trigger=ProcessTemplate.TRIGGER_ON_COMPLETED,
+            followup_process_type=pt_periodicni,
+        )
+
+        prethodni_binding = ProcessBinding.objects.get(
+            subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
+            employee=employee,
+            is_active=True,
+            process_type=pt_prethodni,
+        )
+        run = ProcessRun.objects.get(process_binding=prethodni_binding)
 
         today = timezone.localdate()
+        apply_process_run_completion(
+            run, {"valid_until": today + timedelta(days=1)}
+        )
+
         lekarski = ProcessBinding.objects.get(
             subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
             employee=employee,

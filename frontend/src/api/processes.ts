@@ -460,6 +460,17 @@ export async function createEquipmentItem(
     return data;
 }
 
+export async function updateEquipmentItem(
+    id: number,
+    payload: Partial<EquipmentItem>,
+): Promise<EquipmentItem> {
+    const { data } = await api.patch<EquipmentItem>(
+        `/api/partners/equipment/${id}/`,
+        payload,
+    );
+    return data;
+}
+
 export async function getProcessTypes(): Promise<ProcessType[]> {
     const { data } = await api.get<ListResponse<ProcessType>>(
         "/api/processes/types/",

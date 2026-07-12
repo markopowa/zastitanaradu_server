@@ -511,6 +511,14 @@ class EquipmentItem(models.Model):
     location = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    service_process_type = models.ForeignKey(
+        "processes.ProcessType",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="equipment_items",
+        verbose_name="Vrsta obaveze servisa/pregleda",
+    )
 
     class Meta:
         verbose_name = "Oprema klijenta"

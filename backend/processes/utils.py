@@ -41,6 +41,33 @@ def _risk_assessment_act_name(client) -> str:
     return name
 
 
+def _resolve_client_contacts(client) -> dict:
+    try:
+        persons = list(client.contact_persons.all())
+    except Exception:
+        persons = []
+
+    directors = [p for p in persons if p.role == "DIRECTOR"]
+    director = next((p for p in directors if p.is_primary), None) or (
+        directors[0] if directors else None
+    )
+
+    contact = next((p for p in persons if p.is_primary), None)
+    if contact is None:
+        contact = next((p for p in persons if p.role == "CONTACT"), None)
+    if contact is None and persons:
+        contact = persons[0]
+
+    return {
+        "director_name": getattr(director, "full_name", "") or "",
+        "director_phone": getattr(director, "phone", "") or "",
+        "director_email": getattr(director, "email", "") or "",
+        "contact_name": getattr(contact, "full_name", "") or "",
+        "contact_phone": getattr(contact, "phone", "") or "",
+        "contact_email": getattr(contact, "email", "") or "",
+    }
+
+
 def binding_subject_snapshot(binding: ProcessBinding) -> dict:
     if binding.employee_id:
         e = binding.employee
@@ -89,6 +116,7 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                     if getattr(client, "risk_assessment_act_date", None)
                     else ""
                 ),
+                **_resolve_client_contacts(client),
             }
         return snapshot
 
@@ -127,6 +155,7 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                     if getattr(client, "risk_assessment_act_date", None)
                     else ""
                 ),
+                **_resolve_client_contacts(client),
             }
         return snapshot
 
@@ -155,6 +184,7 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                     if getattr(c, "risk_assessment_act_date", None)
                     else ""
                 ),
+                **_resolve_client_contacts(c),
             },
         }
 

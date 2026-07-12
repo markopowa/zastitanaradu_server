@@ -152,7 +152,10 @@ class RunProcessBindingTriggersTest(TestCase):
             email_to_kind=ProcessTemplate.EMAIL_TO_CUSTOM,
             custom_email_recipient="scheduled@test.local",
         )
-        with patch("processes.trigger_utils.execute_template_actions"):
+        with patch(
+            "processes.trigger_utils.execute_template_actions",
+            return_value=(None, False, ""),
+        ):
             run_process_binding(b.id)
         run = ProcessRun.objects.get(process_binding=b)
         self.assertEqual(run.status, ProcessRun.STATUS_PENDING)
@@ -284,14 +287,19 @@ class OutboxMaterializationTest(TestCase):
                          timedelta(days=30) + timedelta(days=-7))
         self.assertEqual(on_lead.status, NotificationOutbox.STATUS_PENDING)
 
-    def test_no_outbox_row_when_no_template(self):
+    def test_outbox_rows_created_with_no_template_when_none_configured(self):
         pt = make_process_type(lead_time_days=7, period_months=12)
         pt.reminder_offsets = [-7, 0]
         pt.save()
         b = make_binding(pt, next_run_at=TODAY + timedelta(days=30))
         run = ensure_process_run_for_binding(b)
-        self.assertEqual(NotificationOutbox.objects.filter(
-            process_run=run).count(), 0)
+        outbox_rows = NotificationOutbox.objects.filter(process_run=run)
+        # Rows are still materialized for the default offsets even without a
+        # ProcessTemplate; they just carry process_template=None.
+        self.assertEqual(outbox_rows.count(), 2)
+        self.assertTrue(
+            all(row.process_template is None for row in outbox_rows)
+        )
 
     def test_duplicate_offset_not_created_twice(self):
         pt = make_process_type(lead_time_days=7, period_months=12)

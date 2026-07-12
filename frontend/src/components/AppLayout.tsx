@@ -362,7 +362,24 @@ class AppLayoutInner extends Component<Props, State> {
                             }),
                         })}
                     >
-                        <Box sx={{ fontWeight: 600, flexShrink: 0 }}>
+                        <Box
+                            sx={{
+                                fontWeight: 600,
+                                flexShrink: 0,
+                                display: "flex",
+                                alignItems: "center",
+                            }}
+                        >
+                            <img
+                                src="/favicon.svg"
+                                alt="MAK Total Safety"
+                                style={{
+                                    width: 30,
+                                    height: 30,
+                                    marginRight: 8,
+                                    verticalAlign: "middle",
+                                }}
+                            />
                             {APP_TITLE}
                         </Box>
                         <Box

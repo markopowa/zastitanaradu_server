@@ -27,6 +27,12 @@ Korisno reći: matični broj je veza ka **APR-u** — kasnije će podaci moći a
 - [ ] Po završetku otvoren tab **Pregled** (ne stari „Usklađenost").
 
 ## Šta reći u videu (predlog naracije)
+
+> „Odradili smo podešavanja prema mejlovima koje ste poslali. Ono što ostaje je
+> korišćenje aplikacije i sada ću to da vam pokažem. Prva stvar je unos klijenata
+> sa kojima radite. Iz mejlova sam video da želimo da testiramo na firmi **UKRAS
+> DOO Veliki Popović** — pa hajde da nju unesemo."
+>
 > „Sad unosimo novu firmu — klijenta. Kliknem levo na **Firme**, pa gore na **Dodaj firmu**. Otvara se čarobnjak — prozor koji me vodi korak po korak, baš zato da ništa ne preskočim; bolje da me aplikacija pita nego da se kasnije ispostavi da fali podatak.
 >
 > Prvi korak je **lična karta firme**: naziv, PIB, adresa, telefon. Da ne kucam sve ručno i ne grešim, ovde gore upišem **matični broj** i kliknem **Uvezi** — aplikacija ode u APR i sama povuče zvanične podatke firme. (Ako uvoz baš ne radi, sve mogu i ručno.) **Sledeći**.

@@ -263,6 +263,8 @@ export interface ClientCompanyDetailPageState {
     eq_inventory_number: string;
     eq_location: string;
     eq_notes: string;
+    eq_service_process_type: number | null;
+    equipmentProcessTypes: ProcessType[];
     savingEquipment: boolean;
     equipmentError: string | null;
     bindingDialogOpen: boolean;

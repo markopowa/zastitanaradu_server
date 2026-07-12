@@ -279,6 +279,12 @@ def build_preview_context() -> dict:
             "activity_code": "6201",
             "risk_assessment_act_name": "Akt o proceni rizika 2024",
             "risk_assessment_act_date": format_date_display(date(2024, 3, 15)),
+            "director_name": "Petar Petrović",
+            "director_phone": "+381 60 1112223",
+            "director_email": "direktor@demo.rs",
+            "contact_name": "Jelena Jelić",
+            "contact_phone": "+381 60 3334445",
+            "contact_email": "kontakt@demo.rs",
         },
         "equipment": {
             "name": "Kompresor ABC-500",

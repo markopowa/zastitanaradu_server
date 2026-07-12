@@ -214,6 +214,8 @@ export interface EquipmentItem {
     location?: string;
     notes?: string;
     is_active: boolean;
+    service_process_type?: number | null;
+    service_process_type_name?: string | null;
 }
 
 export interface ProcessType {

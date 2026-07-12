@@ -357,6 +357,12 @@ class EquipmentItemViewSet(viewsets.ModelViewSet):
     serializer_class = EquipmentItemSerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
+    def perform_create(self, serializer):
+        from .equipment_bindings import ensure_default_bindings_for_equipment
+
+        equipment = serializer.save()
+        ensure_default_bindings_for_equipment(equipment)
+
     def get_queryset(self):
         queryset = super().get_queryset()
         client_company_id = self.request.query_params.get("client_company_id")

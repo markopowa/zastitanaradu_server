@@ -1,1 +1,49 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"> <!-- Shield --> <path d="M32 4 L56 12 V28 C56 44 44 54 32 60 C20 54 8 44 8 28 V12 Z" fill="#0B3D91"/> <!-- Flame --> <path d="M32 20 C28 26, 36 28, 32 36 C30 32, 24 34, 26 40 C28 46, 36 46, 38 40 C40 34, 34 32, 32 20 Z" fill="#D62828"/> <!-- PZNR Text --> <text x="32" y="54" font-size="10" text-anchor="middle" fill="#FFFFFF" font-family="Arial, sans-serif">PZNR</text> </svg>
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="MAK Total Safety">
+  <defs>
+    <linearGradient id="shield" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1f4b7a"/>
+      <stop offset="1" stop-color="#0d2440"/>
+    </linearGradient>
+    <linearGradient id="shieldEdge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3d7bb8"/>
+      <stop offset="1" stop-color="#16365c"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#ffd23f"/>
+      <stop offset="0.45" stop-color="#ff8c1a"/>
+      <stop offset="1" stop-color="#e23b1e"/>
+    </linearGradient>
+    <linearGradient id="flameInner" x1="0.5" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#fff3c4"/>
+      <stop offset="1" stop-color="#ffb01f"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Shield -->
+  <path fill="url(#shieldEdge)"
+        d="M256 40 L444 100 L444 268 C444 372 360 442 256 476 C152 442 68 372 68 268 L68 100 Z"/>
+  <path fill="url(#shield)"
+        d="M256 66 L420 118 L420 266 C420 356 348 418 256 449 C164 418 92 356 92 266 L92 118 Z"/>
+
+  <!-- Inner ring accent -->
+  <path fill="none" stroke="#4a86c4" stroke-width="6" stroke-opacity="0.35"
+        d="M256 92 L396 137 L396 264 C396 340 336 393 256 421 C176 393 116 340 116 264 L116 137 Z"/>
+
+  <!-- Flame -->
+  <path fill="url(#flame)"
+        d="M256 150
+           c 34 44 58 70 58 116
+           c 0 46 -26 80 -58 92
+           c -32 -12 -58 -46 -58 -92
+           c 0 -30 12 -50 30 -70
+           c 4 18 14 26 24 30
+           c -8 -34 -14 -58 4 -76 Z"/>
+  <!-- Inner flame -->
+  <path fill="url(#flameInner)"
+        d="M256 236
+           c 18 22 28 38 28 62
+           c 0 26 -12 42 -28 48
+           c -16 -6 -28 -22 -28 -48
+           c 0 -20 10 -34 20 -46
+           c 2 10 6 14 8 16 Z"/>
+</svg>

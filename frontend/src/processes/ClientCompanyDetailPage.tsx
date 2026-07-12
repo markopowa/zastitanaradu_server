@@ -60,6 +60,7 @@ import {
 import {
     registryLookup,
     createEquipmentItem,
+    getProcessTypes,
     createJobRole,
     deleteClientCompany,
     deleteJobRole,
@@ -224,6 +225,8 @@ class ClientCompanyDetailPageInner extends Component<
         eq_inventory_number: "",
         eq_location: "",
         eq_notes: "",
+        eq_service_process_type: null,
+        equipmentProcessTypes: [],
         savingEquipment: false,
         equipmentError: null,
         bindingDialogOpen: false,
@@ -309,7 +312,20 @@ class ClientCompanyDetailPageInner extends Component<
             eq_inventory_number: "",
             eq_location: "",
             eq_notes: "",
+            eq_service_process_type: null,
         }));
+        if (this.state.equipmentProcessTypes.length === 0) {
+            getProcessTypes()
+                .then((types) =>
+                    this.setState((prev) => ({
+                        ...prev,
+                        equipmentProcessTypes: types.filter(
+                            (t) => t.subject_kind === "EQUIPMENT",
+                        ),
+                    })),
+                )
+                .catch(() => undefined);
+        }
     };
 
     closeEqDialog = (): void => {
@@ -324,6 +340,7 @@ class ClientCompanyDetailPageInner extends Component<
             eq_inventory_number,
             eq_location,
             eq_notes,
+            eq_service_process_type,
         } = this.state;
         if (!eq_name.trim()) return;
         const payload: Partial<EquipmentItem> = {
@@ -332,6 +349,7 @@ class ClientCompanyDetailPageInner extends Component<
             inventory_number: eq_inventory_number.trim() || undefined,
             location: eq_location.trim() || undefined,
             notes: eq_notes.trim() || undefined,
+            service_process_type: eq_service_process_type ?? null,
             client_company: id,
             is_active: true,
         };
@@ -938,6 +956,8 @@ class ClientCompanyDetailPageInner extends Component<
             runs,
             loading,
             error,
+            generatingDoc,
+            docError,
             editing,
             saving,
             saveError,
@@ -963,6 +983,8 @@ class ClientCompanyDetailPageInner extends Component<
             eq_inventory_number,
             eq_location,
             eq_notes,
+            eq_service_process_type,
+            equipmentProcessTypes,
             savingEquipment,
             equipmentError,
         } = this.state;
@@ -1007,7 +1029,41 @@ class ClientCompanyDetailPageInner extends Component<
                 />
 
                 {activeTab === "overview" && (
-                    <CompanyObligationPlanPanel companyId={item.id} />
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "flex-end",
+                                gap: 1,
+                            }}
+                        >
+                            <Button
+                                variant="outlined"
+                                onClick={this.handleGenerateMedicalExamRecord}
+                                disabled={generatingDoc}
+                                startIcon={
+                                    generatingDoc ? (
+                                        <CircularProgress size={16} />
+                                    ) : undefined
+                                }
+                            >
+                                {generatingDoc
+                                    ? "Generiše se…"
+                                    : "Generiši Obrazac 1"}
+                            </Button>
+                        </Box>
+                        {docError && (
+                            <Alert severity="error">{docError}</Alert>
+                        )}
+                        <CompanyObligationPlanPanel companyId={item.id} />
+                    </Box>
                 )}
 
                 {activeTab === "identity" && editing && (
@@ -2015,6 +2071,38 @@ class ClientCompanyDetailPageInner extends Component<
                                 }))
                             }
                         />
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel id="eq-service-pt-label">
+                                Vrsta obaveze servisa/pregleda
+                            </InputLabel>
+                            <Select
+                                labelId="eq-service-pt-label"
+                                label="Vrsta obaveze servisa/pregleda"
+                                value={
+                                    eq_service_process_type == null
+                                        ? ""
+                                        : String(eq_service_process_type)
+                                }
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        eq_service_process_type:
+                                            e.target.value === ""
+                                                ? null
+                                                : Number(e.target.value),
+                                    }))
+                                }
+                            >
+                                <MenuItem value="">
+                                    <em>— bez obaveze —</em>
+                                </MenuItem>
+                                {equipmentProcessTypes.map((pt) => (
+                                    <MenuItem key={pt.id} value={String(pt.id)}>
+                                        {pt.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                     </DialogContent>
                     <DialogActions>
                         <Button
