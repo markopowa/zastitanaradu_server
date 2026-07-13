@@ -95,6 +95,12 @@ export const COMPANY_DOCUMENT_KINDS: {
         accept: PDF_ONLY_ACCEPT,
         optional: true,
     },
+    {
+        kind: "OBRAZAC1",
+        label: "Obrazac 1 — evidencija lekarskih pregleda",
+        accept: PDF_ONLY_ACCEPT,
+        optional: true,
+    },
 ];
 
 export const COMPANY_DOCUMENT_KIND_COUNT = COMPANY_DOCUMENT_KINDS.filter(

@@ -9,6 +9,7 @@ import type { WithNavigationProps } from "../hocs/withNavigation";
 import type {
     ClientCompany,
     Employee,
+    EmployeeDocumentRow,
     EmployeeSummary,
     EquipmentItem,
     JobRole,
@@ -174,6 +175,8 @@ export interface EquipmentListPageState {
     location: string;
     notes: string;
     new_client_company_id: string;
+    service_process_type: string;
+    equipmentProcessTypes: ProcessType[];
 }
 
 export interface EquipmentDetailPageDispatchProps {
@@ -355,6 +358,7 @@ export interface ClientCompanyEmployeesDetailPageState {
     item: Employee | null;
     bindings: ProcessBinding[];
     runs: ProcessRun[];
+    documents: EmployeeDocumentRow[];
     loading: boolean;
     error: string | null;
     editDialogOpen: boolean;
@@ -443,6 +447,7 @@ export interface EntityProcessBindingsPanelProps {
     bindings: ProcessBinding[];
     runs: ProcessRun[];
     onRefresh: () => void;
+    navigate: (path: string) => void;
 }
 
 export interface EntityProcessBindingsPanelState {

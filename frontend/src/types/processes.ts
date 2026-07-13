@@ -130,7 +130,8 @@ export type CompanyDocumentKind =
     | "PRAVILA_ZOP"
     | "PLAN_EVAKUACIJE"
     | "DECISION_ZOP"
-    | "OCENA_MEDICINE_RADA";
+    | "OCENA_MEDICINE_RADA"
+    | "OBRAZAC1";
 
 export interface CompanyDocument {
     id: number;
@@ -430,6 +431,19 @@ export interface ObligationPlanRow {
     excluded: boolean;
     exclusion_reason: string;
     status: ObligationPlanStatus;
+}
+
+export interface EmployeeDocumentRow {
+    id: number;
+    name: string;
+    file_url: string;
+    usage_kind: string;
+    process_type_name: string;
+    created_at: string;
+}
+
+export interface CompanyGeneratedDocumentRow extends EmployeeDocumentRow {
+    subject_label: string;
 }
 
 export interface CompanyObligationExclusion {

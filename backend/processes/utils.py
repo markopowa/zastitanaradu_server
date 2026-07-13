@@ -11,7 +11,7 @@ from django.core.files.base import ContentFile
 
 from core.email_sender import get_email_sender
 from documents.models import DocumentCategory, DocumentFile
-from documents.utils import fill_pdf_at_coordinates
+from documents.utils import _resolve_field_value, fill_pdf_at_coordinates
 
 from .date_format import format_date_display
 from .models import (
@@ -81,6 +81,7 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 "id": e.id,
                 "first_name": e.first_name,
                 "last_name": e.last_name,
+                "full_name": f"{e.first_name} {e.last_name}".strip(),
                 "email": e.email or "",
                 "org_unit": e.org_unit or "",
                 "position": e.position or "",
@@ -352,6 +353,33 @@ def _generate_tabular_docx(
     return buf.read()
 
 
+def _generate_cell_map_docx(
+    run: ProcessRun,
+    fill_file,
+    snapshot: dict,
+    config: dict,
+) -> bytes:
+    context = _build_document_context(run, snapshot)
+    with fill_file.open("rb") as fh:
+        doc = docx.Document(io.BytesIO(fh.read()))
+    for entry in config.get("cells") or []:
+        table_index = int(entry.get("table", 0))
+        row_index = int(entry.get("row", 0))
+        col_index = int(entry.get("col", 0))
+        field_key = entry.get("fieldKey", "")
+        try:
+            table = doc.tables[table_index]
+            cell = table.rows[row_index].cells[col_index]
+        except IndexError:
+            continue
+        value = _resolve_field_value(field_key, context)
+        cell.text = value
+    buf = io.BytesIO()
+    doc.save(buf)
+    buf.seek(0)
+    return buf.read()
+
+
 def _get_system_user():
     return User.objects.filter(is_superuser=True).first()
 
@@ -364,6 +392,13 @@ def _generate_document_for_run(
     doc_template = template.document_template
     if not doc_template:
         return None
+
+    fill_file = doc_template.template_file
+    binding = run.process_binding
+    emp = getattr(binding, "employee", None)
+    role = getattr(emp, "job_role", None) if emp else None
+    if role and getattr(role, "obrazac6_template", None):
+        fill_file = role.obrazac6_template
 
     system_user = _get_system_user()
     if not system_user:
@@ -404,8 +439,9 @@ def _generate_document_for_run(
                 e,
             )
 
-    if not content_bytes and doc_template.template_file:
-        name = getattr(doc_template.template_file, "name", "") or ""
+    active_file = fill_file if mode == "DOCX_CELL_MAP" else doc_template.template_file
+    if not content_bytes and active_file:
+        name = getattr(active_file, "name", "") or ""
 
         if mode == "VISUAL":
             try:
@@ -438,6 +474,28 @@ def _generate_document_for_run(
             else:
                 logger.warning(
                     "DOCX_TABLE_REPEAT_ROW requires a .docx template file for run id=%s template id=%s",
+                    run.id,
+                    template.id,
+                )
+        elif mode == "DOCX_CELL_MAP":
+            if name and name.lower().endswith(".docx"):
+                try:
+                    content_bytes = _generate_cell_map_docx(
+                        run,
+                        active_file,
+                        snapshot,
+                        generation_config,
+                    )
+                    ext = ".docx"
+                except Exception as e:
+                    logger.warning(
+                        "Failed to generate cell-map docx for run id=%s: %s",
+                        run.id,
+                        e,
+                    )
+            else:
+                logger.warning(
+                    "DOCX_CELL_MAP requires a .docx template file for run id=%s template id=%s",
                     run.id,
                     template.id,
                 )

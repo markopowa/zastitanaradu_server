@@ -5,9 +5,11 @@ import type {
     ClientCompany,
     CompanyDocument,
     CompanyDocumentKind,
+    CompanyGeneratedDocumentRow,
     CompanyObligationExclusion,
     ContactPerson,
     Employee,
+    EmployeeDocumentRow,
     EmployeeSummary,
     EquipmentItem,
     JobRole,
@@ -926,6 +928,24 @@ export async function createObligationExclusion(
         { reason },
     );
     return data;
+}
+
+export async function getEmployeeDocuments(
+    employeeId: number,
+): Promise<EmployeeDocumentRow[]> {
+    const { data } = await api.get<ListResponse<EmployeeDocumentRow>>(
+        `/api/partners/employees/${employeeId}/documents/`,
+    );
+    return asList(data);
+}
+
+export async function getCompanyGeneratedDocuments(
+    companyId: number,
+): Promise<CompanyGeneratedDocumentRow[]> {
+    const { data } = await api.get<ListResponse<CompanyGeneratedDocumentRow>>(
+        `/api/partners/client-companies/${companyId}/generated-documents/`,
+    );
+    return asList(data);
 }
 
 export async function deleteObligationExclusion(

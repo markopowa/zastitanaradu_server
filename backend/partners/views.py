@@ -44,6 +44,7 @@ from datetime import datetime
 from pathlib import Path
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db.models import ProtectedError, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -59,6 +60,40 @@ _JOB_ROLE_TEMPLATE_FIELDS = {
     "lzo-revers": "lzo_revers_template",
     "potvrda-clan5": "potvrda_clan5_template",
 }
+
+
+def _file_url(file_field, request):
+    if not file_field:
+        return None
+    url = file_field.url
+    if not url:
+        return None
+    if request and url.startswith("/"):
+        return request.build_absolute_uri(url)
+    return url
+
+
+def _run_document_row(prd, request):
+    run = prd.process_run
+    document_file = prd.document_file
+    return {
+        "id": prd.id,
+        "name": document_file.title,
+        "file_url": _file_url(document_file.file, request),
+        "usage_kind": prd.usage_kind,
+        "process_type_name": run.process_type.name,
+        "created_at": document_file.uploaded_at,
+    }
+
+
+def _binding_subject_label(binding):
+    if binding.employee_id:
+        return f"{binding.employee.first_name} {binding.employee.last_name}".strip()
+    if binding.equipment_item_id:
+        return binding.equipment_item.name
+    if binding.client_company_id:
+        return binding.client_company.name
+    return ""
 
 
 class RiskLevelViewSet(viewsets.ModelViewSet):
@@ -147,6 +182,18 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
         company = self.get_object()
         content = generate_medical_exam_record(company.id)
         slug = company.name.replace(" ", "_")[:40]
+        filename = f"obrazac1_{slug}.docx"
+        user = request.user if request.user.is_authenticated else None
+        obj, created = CompanyDocument.objects.get_or_create(
+            client_company=company,
+            kind=CompanyDocument.KIND_OBRAZAC1,
+            defaults={"uploaded_by": user},
+        )
+        if not created and obj.file:
+            obj.file.delete(save=False)
+        obj.file = ContentFile(content, name=filename)
+        obj.uploaded_by = user
+        obj.save()
         response = HttpResponse(
             content,
             content_type=(
@@ -158,6 +205,36 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
             f'attachment; filename="medical_exam_record_{slug}.docx"'
         )
         return response
+
+    @action(detail=True, methods=["get"], url_path="generated-documents")
+    def generated_documents(self, request, pk=None):
+        from processes.models import ProcessRunDocument
+
+        company = self.get_object()
+        prds = (
+            ProcessRunDocument.objects.filter(
+                Q(process_run__process_binding__employee__client_company_id=company.id)
+                | Q(process_run__process_binding__equipment_item__client_company_id=company.id)
+                | Q(process_run__process_binding__client_company_id=company.id)
+            )
+            .select_related(
+                "document_file",
+                "process_run",
+                "process_run__process_type",
+                "process_run__process_binding",
+                "process_run__process_binding__employee",
+                "process_run__process_binding__equipment_item",
+                "process_run__process_binding__client_company",
+            )
+            .order_by("-document_file__uploaded_at", "-id")
+        )
+        rows = []
+        for prd in prds:
+            row = _run_document_row(prd, request)
+            row["subject_label"] = _binding_subject_label(
+                prd.process_run.process_binding)
+            rows.append(row)
+        return Response(rows)
 
     @action(
         detail=True,
@@ -349,6 +426,25 @@ class EmployeeViewSet(viewsets.ModelViewSet):
                 | Q(job_role__risk_level_id=risk_level_id)
             )
         return queryset
+
+    @action(detail=True, methods=["get"], url_path="documents")
+    def documents(self, request, pk=None):
+        from processes.models import ProcessRunDocument
+
+        employee = self.get_object()
+        prds = (
+            ProcessRunDocument.objects.filter(
+                process_run__process_binding__employee_id=employee.id,
+            )
+            .select_related(
+                "document_file",
+                "process_run",
+                "process_run__process_type",
+            )
+            .order_by("-document_file__uploaded_at", "-id")
+        )
+        rows = [_run_document_row(prd, request) for prd in prds]
+        return Response(rows)
 
 
 class EquipmentItemViewSet(viewsets.ModelViewSet):

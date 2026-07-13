@@ -9,10 +9,14 @@ import {
     Chip,
     CircularProgress,
     Divider,
+    FormControl,
+    InputLabel,
     List,
     ListItem,
     ListItemText,
+    MenuItem,
     Paper,
+    Select,
     Typography,
 } from "@mui/material";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
@@ -62,6 +66,7 @@ interface State {
     loading: boolean;
     error: string | null;
     retryingId: number | null;
+    companyFilter: string;
 }
 
 class DanasPageInner extends Component<Props, State> {
@@ -73,6 +78,7 @@ class DanasPageInner extends Component<Props, State> {
         loading: true,
         error: null,
         retryingId: null,
+        companyFilter: "",
     };
 
     componentDidMount(): void {
@@ -156,6 +162,7 @@ class DanasPageInner extends Component<Props, State> {
             loading,
             error,
             retryingId,
+            companyFilter,
         } = this.state;
 
         if (loading) {
@@ -166,9 +173,62 @@ class DanasPageInner extends Component<Props, State> {
             );
         }
 
+        const companyNames = Array.from(
+            new Set(
+                [
+                    ...overdue.map((r) => r.client_company_name),
+                    ...soon.map((r) => r.client_company_name),
+                    ...failedOutbox.map((r) => r.company_name),
+                    ...pendingOutbox.map((r) => r.company_name),
+                ].filter((name): name is string => Boolean(name)),
+            ),
+        ).sort((a, b) => a.localeCompare(b));
+
+        const overdueFiltered = companyFilter
+            ? overdue.filter((r) => r.client_company_name === companyFilter)
+            : overdue;
+        const soonFiltered = companyFilter
+            ? soon.filter((r) => r.client_company_name === companyFilter)
+            : soon;
+        const failedOutboxFiltered = companyFilter
+            ? failedOutbox.filter((r) => r.company_name === companyFilter)
+            : failedOutbox;
+        const pendingOutboxFiltered = companyFilter
+            ? pendingOutbox.filter((r) => r.company_name === companyFilter)
+            : pendingOutbox;
+
         return (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <Typography variant="h6">Danas</Typography>
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: 2,
+                    }}
+                >
+                    <Typography variant="h6">Danas</Typography>
+                    <FormControl size="small" sx={{ minWidth: 220 }}>
+                        <InputLabel>Firma</InputLabel>
+                        <Select
+                            value={companyFilter}
+                            label="Firma"
+                            onChange={(e) =>
+                                this.setState({
+                                    companyFilter: e.target.value as string,
+                                })
+                            }
+                        >
+                            <MenuItem value="">Sve firme</MenuItem>
+                            {companyNames.map((name) => (
+                                <MenuItem key={name} value={name}>
+                                    {name}
+                                </MenuItem>
+                            ))}
+                        </Select>
+                    </FormControl>
+                </Box>
                 {error && <Alert severity="error">{error}</Alert>}
 
                 <Paper>
@@ -189,9 +249,9 @@ class DanasPageInner extends Component<Props, State> {
                         >
                             Kasni
                         </Typography>
-                        {overdue.length > 0 && (
+                        {overdueFiltered.length > 0 && (
                             <Chip
-                                label={overdue.length}
+                                label={overdueFiltered.length}
                                 color="error"
                                 size="small"
                                 sx={{ ml: "auto" }}
@@ -199,11 +259,11 @@ class DanasPageInner extends Component<Props, State> {
                         )}
                     </Box>
                     <Divider />
-                    {overdue.length === 0 ? (
+                    {overdueFiltered.length === 0 ? (
                         <EmptyState message="Nema zakaslelih aktivnosti." />
                     ) : (
                         <List disablePadding>
-                            {overdue.map((row, idx) => (
+                            {overdueFiltered.map((row, idx) => (
                                 <Box key={row.run_id}>
                                     {idx > 0 && <Divider component="li" />}
                                     <ListItem
@@ -290,9 +350,9 @@ class DanasPageInner extends Component<Props, State> {
                         <Typography variant="caption" color="text.secondary">
                             (narednih {SOON_DAYS} dana)
                         </Typography>
-                        {soon.length > 0 && (
+                        {soonFiltered.length > 0 && (
                             <Chip
-                                label={soon.length}
+                                label={soonFiltered.length}
                                 color="warning"
                                 size="small"
                                 sx={{ ml: "auto" }}
@@ -300,11 +360,11 @@ class DanasPageInner extends Component<Props, State> {
                         )}
                     </Box>
                     <Divider />
-                    {soon.length === 0 ? (
+                    {soonFiltered.length === 0 ? (
                         <EmptyState message="Nema predstojecih rokova u narednih 14 dana." />
                     ) : (
                         <List disablePadding>
-                            {soon.map((row, idx) => (
+                            {soonFiltered.map((row, idx) => (
                                 <Box key={row.run_id}>
                                     {idx > 0 && <Divider component="li" />}
                                     <ListItem
@@ -405,9 +465,9 @@ class DanasPageInner extends Component<Props, State> {
                         >
                             Neuspela slanja
                         </Typography>
-                        {failedOutbox.length > 0 && (
+                        {failedOutboxFiltered.length > 0 && (
                             <Chip
-                                label={failedOutbox.length}
+                                label={failedOutboxFiltered.length}
                                 color="error"
                                 size="small"
                                 sx={{ ml: "auto" }}
@@ -415,11 +475,11 @@ class DanasPageInner extends Component<Props, State> {
                         )}
                     </Box>
                     <Divider />
-                    {failedOutbox.length === 0 ? (
+                    {failedOutboxFiltered.length === 0 ? (
                         <EmptyState message="Nema neuspelih slanja." />
                     ) : (
                         <List disablePadding>
-                            {failedOutbox.map((row, idx) => {
+                            {failedOutboxFiltered.map((row, idx) => {
                                 const meta = outboxStatusMeta(row.status);
                                 return (
                                     <Box key={row.id}>
@@ -513,9 +573,9 @@ class DanasPageInner extends Component<Props, State> {
                         <Typography variant="subtitle1" fontWeight={600}>
                             Slanja narednih 7 dana
                         </Typography>
-                        {pendingOutbox.length > 0 && (
+                        {pendingOutboxFiltered.length > 0 && (
                             <Chip
-                                label={pendingOutbox.length}
+                                label={pendingOutboxFiltered.length}
                                 color="primary"
                                 size="small"
                                 sx={{ ml: "auto" }}
@@ -523,11 +583,11 @@ class DanasPageInner extends Component<Props, State> {
                         )}
                     </Box>
                     <Divider />
-                    {pendingOutbox.length === 0 ? (
+                    {pendingOutboxFiltered.length === 0 ? (
                         <EmptyState message="Nema zakazanih slanja u narednih 7 dana." />
                     ) : (
                         <List disablePadding>
-                            {pendingOutbox.map((row, idx) => (
+                            {pendingOutboxFiltered.map((row, idx) => (
                                 <Box key={row.id}>
                                     {idx > 0 && <Divider component="li" />}
                                     <ListItem sx={{ flexWrap: "wrap" }}>

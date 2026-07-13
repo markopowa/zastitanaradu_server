@@ -18,7 +18,7 @@ from partners.management.commands.seed_compliance_finding_types import (
 )
 from partners.management.commands.seed_obligation_catalog import CATALOG
 from partners.models import ComplianceFindingType, RiskLevel
-from processes.models import ProcessType
+from processes.models import ProcessType, ProcessTemplate
 
 UPUT_TEMPLATE_NAME = "Uput za lekarski pregled"
 UPUT_CATEGORY_NAME = "Lekarski pregledi"
@@ -29,15 +29,27 @@ DOCUMENT_CATEGORIES = [
     "Lična zaštitna oprema",
 ]
 
+OBRAZAC6_CELL_MAP = {
+    "mode": "DOCX_CELL_MAP",
+    "cells": [
+        {"table": 0, "row": 0, "col": 2, "fieldKey": "employee.full_name"},
+        {"table": 0, "row": 6, "col": 0, "fieldKey": "performed_at"},
+        {"table": 0, "row": 6, "col": 1, "fieldKey": "performed_at"},
+        {"table": 0, "row": 6, "col": 2, "fieldKey": "performed_at"},
+        {"table": 0, "row": 6, "col": 3, "fieldKey": "performed_at"},
+    ],
+}
+
 DOCUMENT_TEMPLATE_SHELLS = [
     {
         "name": "Obrazac 6 — evidencija o osposobljenosti za bezbedan rad",
         "context_type": DocumentTemplate.CONTEXT_EMPLOYEE,
         "category": "Osposobljavanje i obuke",
         "description": (
-            "Blanko obrazac 6 (osposobljavanje). Dodati .docx/.pdf fajl i "
-            "obeležiti polja (generation_config mode VISUAL)."
+            "Blanko obrazac 6 (osposobljavanje). Blanko po radnom mestu se "
+            "kači na JobRole; popunjava se imenom i datumima u ćelije."
         ),
+        "generation_config": OBRAZAC6_CELL_MAP,
     },
     {
         "name": "Karton zaduženja LZO (revers)",
@@ -74,6 +86,12 @@ ROLE_ADMIN = "Admin"
 ROLE_OPERATIVA = "Operativa"
 ROLE_PREGLED = "Pregled"
 ROLE_NAMES = [ROLE_ADMIN, ROLE_OPERATIVA, ROLE_PREGLED]
+
+GENERATION_WIRING = [
+    ("OSPOSOBLJAVANJE_BZR",
+     "Obrazac 6 — evidencija o osposobljenosti za bezbedan rad"),
+    ("LZO_ZADUZENJE", "Karton zaduženja LZO (revers)"),
+]
 
 
 def _role_permissions(name):
@@ -132,10 +150,12 @@ class Command(BaseCommand):
             shells_created = self._create_template_shells()
             self._link_uput_category()
             roles_created = self._create_roles()
+            wiring_created = self._wire_generation()
 
         self.stdout.write(self.style.SUCCESS(
             f"Setup injected. {categories_created} document categories, "
-            f"{shells_created} template shells, {roles_created} roles created "
+            f"{shells_created} template shells, {roles_created} roles, "
+            f"{wiring_created} generation wirings created "
             "(add template files and mark fields afterwards). Run with "
             "--dry-run to review, or see manual.md for the manual steps."
         ))
@@ -158,7 +178,7 @@ class Command(BaseCommand):
                     "context_type": tpl["context_type"],
                     "description": tpl["description"],
                     "category": category,
-                    "generation_config": {},
+                    "generation_config": tpl.get("generation_config") or {},
                 },
             )
             created += int(was_created)
@@ -180,6 +200,25 @@ class Command(BaseCommand):
             if was_created:
                 group.permissions.set(_role_permissions(name))
                 created += 1
+        return created
+
+    def _wire_generation(self):
+        created = 0
+        for pt_code, doc_name in GENERATION_WIRING:
+            pt = ProcessType.objects.filter(code=pt_code).first()
+            doc = DocumentTemplate.objects.filter(name=doc_name).first()
+            if pt is None or doc is None:
+                continue
+            obj, was_created = ProcessTemplate.objects.get_or_create(
+                process_type=pt,
+                trigger=ProcessTemplate.TRIGGER_ON_COMPLETED,
+                document_template=doc,
+                defaults={"generate_document": True},
+            )
+            if not obj.generate_document:
+                obj.generate_document = True
+                obj.save(update_fields=["generate_document"])
+            created += int(was_created)
         return created
 
     def _dry_run(self):

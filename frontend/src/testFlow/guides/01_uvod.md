@@ -33,13 +33,13 @@ Suština koju treba reći u videu: *cilj je da se ništa ne propusti i da u svak
 - [ ] Danas i Firme se otvaraju bez greške, prazni.
 
 ## Šta reći u videu (predlog naracije)
-> „Dobar dan. Ovo je aplikacija u kojoj na jednom mestu vodimo sve obaveze bezbednosti na radu i zaštite od požara za vaše firme — ono što se do sad vodilo po sveskama, fasciklama i Excel tabelama. Problem sa tim starim načinom je što se lako nešto previdi i probije rok; ova aplikacija postoji baš da se to ne dešava. Da vam prvo pokažem kako je podeljena, pa onda ulazimo u svaki deo.
+> „Dobar dan. Ovo je aplikacija u kojoj vodimo sve obaveze bezbednosti na radu i zaštite od požara za vaše firme — na jednom mestu, umesto po sveskama i Excel tabelama. Da vam prvo pokažem raspored, pa onda ulazimo u rad.
 >
-> Čim se ulogujete, otvara se ekran **Danas** — vaša početna tabla. Zamislite je kao komandnu tablu u kolima: ne morate ništa da tražite, ona vam sama izbaci šta gori — šta je već probilo rok, šta stiže uskoro, koji mejl nije uspeo da ode, i šta će se poslati narednih sedam dana. Zato svako jutro počinjete odavde: ako je Danas čisto, znate da ništa ne visi.
+> Posle prijave otvara se **Danas** — dnevni pregled: šta kasni, šta stiže uskoro, koji mejl nije poslat, i šta ide narednih sedam dana. Odavde krećete svako jutro.
 >
-> Levo je meni, podeljen u tri celine. Gore su **Firme, Zaposleni i Oprema** — stvari iz stvarnog sveta sa kojima radite. Ispod, pod **Operativa**, su **Aktivnosti** (konkretni poslovi u toku, npr. jedan lekarski koji treba obaviti) i **Slanja** (svaki mejl koji je otišao ili čeka — da uvek imate trag ko je i kada obavešten). Na dnu je **Administracija** — podešavanja koja se nameste jednom na početku i posle se ne diraju; baš o tome priča sledeći video.
+> Meni levo ima tri celine. Gore su **Firme, Zaposleni i Oprema** — entiteti sa kojima radite. Pod **Operativa** su **Aktivnosti**, konkretni poslovi u toku, i **Slanja**, pregled poslatih i zakazanih mejlova. Na dnu je **Administracija** — podešeno jednom na početku, o tome sledeći video.
 >
-> Za sada je sve prazno jer još nismo uneli nijednu firmu. Upravo to radimo u nastavku — korak po korak, onako kako biste radili u praksi."
+> Za sada je sve prazno, firmu tek unosimo — to radimo u sledećem koraku."
 
 ## Video
 - Status: **postoji** (`01_uvod.webm`), ali stariji — dosnimiti kratku turu menija (3 zone) i ovu rečenicu-dve o tome šta app radi.

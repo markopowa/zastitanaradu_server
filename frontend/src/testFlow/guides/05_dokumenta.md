@@ -34,15 +34,15 @@ Dve posebnosti vredne pomena u videu:
 - [ ] Blanko šabloni (obrazac 6 / revers / potvrda) se kače po radnom mestu.
 
 ## Šta reći u videu (predlog naracije)
-> „Ovde stoje svi papiri firme — ugovor, akt o proceni rizika, pravilnici, programi obuke, stručni nalazi. Prvo da razjasnim stvar koja zna da zbuni: dokument nije isto što i obaveza. Obaveza je radnja koja se ponavlja (pregled, obuka); dokument je papir koji firma drži. Zato dokumenti stoje ovde, a ne u spisku obaveza.
+> „Ovde stoje svi papiri firme — akt o proceni rizika, pravilnici, programi obuke, stručni nalazi. Prvo bitna razlika: obaveza je radnja koja se ponavlja, dokument je papir koji firma drži. Zato dokumenti stoje ovde, a ne u spisku obaveza.
 >
-> Kod **obavezne dokumentacije**, pored svake stavke je dugme za prilaganje. Kliknem, izaberem Word fajl sa računara — i vidite, aplikacija ga sama pretvori u PDF, da svi dokumenti budu u istom, urednom formatu. Gore raste brojač koliko je od potrebnih dokumenata priloženo, da odmah vidite šta još fali.
+> Kod **obavezne dokumentacije** kliknem na stavku, priložim Word fajl — aplikacija ga sama pretvori u PDF, svi dokumenti ostaju u istom formatu. Brojač gore pokazuje koliko je priloženo od potrebnog.
 >
-> **Akt o proceni rizika** je poseban jer je živ dokument: upišem datum, priložim sekcije (uvod, procene po radnom mestu, zaključak) i mogu da ih objedinim u jedan PDF. Bitno: kad se nešto u firmi promeni — novo radno mesto, nova oprema — ne menjam i ne brišem stari akt, nego dodam **izmenu i dopunu**: kliknem **Dodaj izmenu**, upišem naslov i napomenu, priložim fajl, i ona stoji pored akta kao ravnopravan dokument. Tako ostaje istorija — vidi se šta je i kad menjano.
+> **Akt o proceni rizika** je živ dokument: upišem datum, priložim sekcije — uvod, procene po radnom mestu, zaključak — i objedinim u jedan PDF. Kad se nešto promeni, staru verziju ne brišem nego dodam **izmenu i dopunu**: naslov, napomena, fajl — stoji pored akta kao istorija promena.
 >
-> **Stručni nalaz** (na primer pregled opreme) priložim isto tako, samo upišem datum — a aplikacija dalje sama prati do kad važi i javi kad ističe, da ne morate vi da pamtite.
+> **Stručni nalaz** priložim isto, upišem datum — aplikacija sama prati rok i javlja kad ističe.
 >
-> Na tabu radnih mesta su i **blanko obrasci** (obrazac 6, revers za zaštitnu opremu, potvrda) — to su praznine koje preuzmem, popunim, potpišu se i vrate; ostaju u Word formatu baš zato što se popunjavaju rukom."
+> Na tabu radnih mesta su **blanko obrasci** — obrazac 6, revers za opremu, potvrda — preuzmu se, popune, potpišu i vrate; ostaju u Word formatu jer se popunjavaju rukom."
 
 ## Video
 - Status: **presnimiti**. `04_dokumenta...webm` pokriva osnovu, ali nema: Word→PDF konverziju, izmene/dopune Akta, objedinjen PDF, blanko šablone po radnom mestu.

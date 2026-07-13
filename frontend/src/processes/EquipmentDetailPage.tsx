@@ -159,6 +159,8 @@ class EquipmentDetailPageInner extends Component<
                         <dd>{item.inventory_number ?? "—"}</dd>
                         <dt>Lokacija</dt>
                         <dd>{item.location ?? "—"}</dd>
+                        <dt>Vrsta obaveze servisa/pregleda</dt>
+                        <dd>{item.service_process_type_name ?? "—"}</dd>
                         {item.notes && (
                             <>
                                 <dt>Beleške</dt>
@@ -177,6 +179,7 @@ class EquipmentDetailPageInner extends Component<
                     bindings={bindings}
                     runs={runs}
                     onRefresh={() => this.loadProcessData(item.id)}
+                    navigate={navigate}
                 />
             </Box>
         );

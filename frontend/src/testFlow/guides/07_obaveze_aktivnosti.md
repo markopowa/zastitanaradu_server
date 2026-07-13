@@ -32,11 +32,11 @@ Svaka aktivnost prolazi kroz tok: zakazana → (šalje se uput/obaveštenje) →
 - [ ] Po završetku se zatvore/otkažu preostali podsetnici te aktivnosti.
 
 ## Šta reći u videu (predlog naracije)
-> „Da prvo razjasnim dve reči koje stalno koristimo, jer ljudi ih mešaju. **Obaveza** je opšti pojam — na primer „lekarski pregled". **Aktivnost** je konkretan slučaj te obaveze — „lekarski za Petra Petrovića, rok 1. septembra". Na aktivnostima radimo svakog dana; obaveza je samo vrsta, a aktivnost je stvarni zadatak sa imenom i datumom.
+> „Dve reči koje koristimo: **obaveza** je opšti pojam, „lekarski pregled"; **aktivnost** je konkretan slučaj — „lekarski za Petra Petrovića, rok 1. septembar". Na aktivnostima radimo svakog dana.
 >
-> Aktivnosti otvorim levo i mogu da ih filtriram: šta kasni, šta stiže uskoro, šta je otvoreno — tako se ne gubim u gomili. Otvorim jednu i vidim sve o njoj: kad je zakazana, koji su dokumenti, koji mejlovi su već otišli.
+> Aktivnosti filtriram: kasni, stiže uskoro, otvoreno. Otvorim jednu — zakazano, dokumenti, poslati mejlovi.
 >
-> Kad je pregled obavljen, otvorim tu aktivnost, upišem datum pregleda i podatke iz nalaza, priložim PDF nalaza i kliknem **Završi**. Sad pazite šta aplikacija uradi sama: ova aktivnost pređe u „završeno", a istog trena se **otvori sledeći lekarski** sa novim rokom — i tako u krug, godinama. To je ključ: nijedna obaveza ne može da „ispadne" iz evidencije, jer čim jednu zatvorite, sledeća je već zakazana. Vi ne morate ništa da pamtite niti da prepisujete u kalendar."
+> Kad je pregled obavljen, otvorim aktivnost, upišem datum i nalaz, priložim PDF, **Završi**. Aktivnost prelazi u „završeno", a odmah se **otvori sledeći lekarski** sa novim rokom — i tako godinama, ciklično. Nijedna obaveza ne ispadne iz evidencije: čim zatvorite jednu, sledeća je već zakazana."
 
 ## Video
 - Status: **snimiti** (motor, filteri i lančanje nisu pokazani u starim videima).

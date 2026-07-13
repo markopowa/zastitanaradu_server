@@ -253,6 +253,7 @@ class CompanyDocument(models.Model):
     KIND_PLAN_EVAKUACIJE = "PLAN_EVAKUACIJE"
     KIND_DECISION_ZOP = "DECISION_ZOP"
     KIND_OCENA_MEDICINE_RADA = "OCENA_MEDICINE_RADA"
+    KIND_OBRAZAC1 = "OBRAZAC1"
     KIND_CHOICES = (
         (KIND_CONTRACT, "Ugovor"),
         (KIND_DECISION, "Odluka o imenovanju lica za BZNR"),
@@ -266,6 +267,7 @@ class CompanyDocument(models.Model):
         (KIND_PLAN_EVAKUACIJE, "Plan evakuacije"),
         (KIND_DECISION_ZOP, "Odluka o imenovanju lica za ZOP"),
         (KIND_OCENA_MEDICINE_RADA, "Ocena medicine rada"),
+        (KIND_OBRAZAC1, "Obrazac 1 — evidencija lekarskih pregleda"),
     )
 
     client_company = models.ForeignKey(

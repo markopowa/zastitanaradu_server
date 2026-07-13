@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import BlockIcon from "@mui/icons-material/Block";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 
 import { updateProcessBinding } from "../api/processes";
 import { AddProcessBindingDialog } from "./AddProcessBindingDialog";
@@ -79,6 +80,15 @@ export class EntityProcessBindingsPanel extends Component<
             });
     };
 
+    openRunForBinding = (bindingId: number) => {
+        const { runs } = this.props;
+        return runs.find(
+            (r) =>
+                r.process_binding === bindingId &&
+                (r.status === "PENDING" || r.status === "SENT"),
+        );
+    };
+
     render() {
         const {
             subjectKind,
@@ -89,6 +99,7 @@ export class EntityProcessBindingsPanel extends Component<
             bindings,
             runs,
             onRefresh,
+            navigate,
         } = this.props;
         const { dialogOpen, savingStartDateBindingId, deactivatingBindingId } =
             this.state;
@@ -167,31 +178,62 @@ export class EntityProcessBindingsPanel extends Component<
                                             )}
                                         </TableCell>
                                         <TableCell align="right">
-                                            <RowActionsMenu
-                                                actions={[
-                                                    {
-                                                        label:
-                                                            deactivatingBindingId ===
-                                                            b.id
-                                                                ? "Deaktiviram..."
-                                                                : "Deaktiviraj",
-                                                        icon: (
-                                                            <BlockIcon fontSize="small" />
-                                                        ),
-                                                        permission:
-                                                            "processes.change_processbinding",
-                                                        color: "warning",
-                                                        hidden: !b.has_open_run,
-                                                        disabled:
-                                                            deactivatingBindingId ===
+                                            <Box
+                                                sx={{
+                                                    display: "flex",
+                                                    gap: 1,
+                                                    justifyContent: "flex-end",
+                                                    alignItems: "center",
+                                                }}
+                                            >
+                                                {(() => {
+                                                    const openRun =
+                                                        this.openRunForBinding(
                                                             b.id,
-                                                        onClick: () =>
-                                                            this.handleDeactivate(
-                                                                b.id,
+                                                        );
+                                                    return openRun ? (
+                                                        <Button
+                                                            size="small"
+                                                            variant="outlined"
+                                                            startIcon={
+                                                                <CheckCircleIcon fontSize="small" />
+                                                            }
+                                                            onClick={() =>
+                                                                navigate(
+                                                                    `/processes/runs/${openRun.id}`,
+                                                                )
+                                                            }
+                                                        >
+                                                            Završi
+                                                        </Button>
+                                                    ) : null;
+                                                })()}
+                                                <RowActionsMenu
+                                                    actions={[
+                                                        {
+                                                            label:
+                                                                deactivatingBindingId ===
+                                                                b.id
+                                                                    ? "Deaktiviram..."
+                                                                    : "Deaktiviraj",
+                                                            icon: (
+                                                                <BlockIcon fontSize="small" />
                                                             ),
-                                                    },
-                                                ]}
-                                            />
+                                                            permission:
+                                                                "processes.change_processbinding",
+                                                            color: "warning",
+                                                            hidden: !b.has_open_run,
+                                                            disabled:
+                                                                deactivatingBindingId ===
+                                                                b.id,
+                                                            onClick: () =>
+                                                                this.handleDeactivate(
+                                                                    b.id,
+                                                                ),
+                                                        },
+                                                    ]}
+                                                />
+                                            </Box>
                                         </TableCell>
                                     </TableRow>
                                 ))
@@ -210,20 +252,23 @@ export class EntityProcessBindingsPanel extends Component<
                                 <TableCell>Tip</TableCell>
                                 <TableCell>Važi do</TableCell>
                                 <TableCell>Status</TableCell>
+                                <TableCell align="right" />
                             </TableRow>
                         </TableHead>
                         <TableBody>
                             {runs.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={3} align="center">
+                                    <TableCell colSpan={4} align="center">
                                         Nema zapisa.
                                     </TableCell>
                                 </TableRow>
                             ) : (
                                 runs.slice(0, 20).map((r) => {
+                                    const isOpen =
+                                        r.status === "PENDING" ||
+                                        r.status === "SENT";
                                     const isOverdue =
-                                        (r.status === "PENDING" ||
-                                            r.status === "SENT") &&
+                                        isOpen &&
                                         isScheduledOverdue(r.scheduled_for);
                                     return (
                                         <TableRow
@@ -249,6 +294,26 @@ export class EntityProcessBindingsPanel extends Component<
                                                     status={r.status}
                                                     isOverdue={isOverdue}
                                                 />
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                {isOpen && (
+                                                    <Button
+                                                        size="small"
+                                                        variant="outlined"
+                                                        startIcon={
+                                                            <CheckCircleIcon fontSize="small" />
+                                                        }
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            e.stopPropagation();
+                                                            navigate(
+                                                                `/processes/runs/${r.id}`,
+                                                            );
+                                                        }}
+                                                    >
+                                                        Završi
+                                                    </Button>
+                                                )}
                                             </TableCell>
                                         </TableRow>
                                     );

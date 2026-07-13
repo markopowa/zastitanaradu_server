@@ -28,22 +28,19 @@ Korisno reći: matični broj je veza ka **APR-u** — kasnije će podaci moći a
 
 ## Šta reći u videu (predlog naracije)
 
-> „Odradili smo podešavanja prema mejlovima koje ste poslali. Ono što ostaje je
-> korišćenje aplikacije i sada ću to da vam pokažem. Prva stvar je unos klijenata
-> sa kojima radite. Iz mejlova sam video da želimo da testiramo na firmi **UKRAS
-> DOO Veliki Popović** — pa hajde da nju unesemo."
+> „Podešavanja smo završili prema vašim mejlovima. Dalje je korišćenje aplikacije, i to sad pokazujem. Prvi korak je unos klijenata — počinjemo sa firmom **UKRAS DOO Veliki Popović**."
 >
-> „Sad unosimo novu firmu — klijenta. Kliknem levo na **Firme**, pa gore na **Dodaj firmu**. Otvara se čarobnjak — prozor koji me vodi korak po korak, baš zato da ništa ne preskočim; bolje da me aplikacija pita nego da se kasnije ispostavi da fali podatak.
+> „Kliknem na **Firme**, pa **Dodaj firmu** — otvara se čarobnjak koji vodi kroz sve korake, da ništa ne preskočimo.
 >
-> Prvi korak je **lična karta firme**: naziv, PIB, adresa, telefon. Da ne kucam sve ručno i ne grešim, ovde gore upišem **matični broj** i kliknem **Uvezi** — aplikacija ode u APR i sama povuče zvanične podatke firme. (Ako uvoz baš ne radi, sve mogu i ručno.) **Sledeći**.
+> Prvi korak je lična karta firme: naziv, PIB, adresa, telefon. Upišem **matični broj** i kliknem **Uvezi** — podaci se povuku direktno iz APR-a. Ako uvoz ne radi, unosim ručno. **Sledeći**.
 >
-> Drugi korak je obavezna dokumentacija — to radimo detaljno kasnije, sad samo **Sledeći**.
+> Drugi korak, dokumentacija, radimo kasnije — sad **Sledeći**.
 >
-> Treći korak su **radna mesta**. Kliknem **Dodaj radno mesto**, upišem naziv, na primer „Viljuškarista", i — ovo je najvažnije polje — izaberem **nivo rizika**. Zašto je toliko bitno: od rizika radnog mesta kasnije zavisi šta se radniku automatski otvara. Ako je mesto sa povećanim rizikom, radnik dobija i lekarske preglede; ako nije — ne dobija. Zato ovde ne biram nasumično. **Sledeći**.
+> Treći korak su **radna mesta**: **Dodaj radno mesto**, upišem naziv — recimo „Viljuškarista" — i izaberem **nivo rizika**. Ovo polje je ključno: povećan rizik automatski znači i lekarski pregledi za radnika, bez njega ne. **Sledeći**.
 >
-> Četvrti korak su **zaposleni**: **Dodaj zaposlenog**, upišem podatke, vežem za radno mesto, **Sačuvaj**, pa **Sledeći**. Peti korak je prvi lekarski — upišem i **Dodaj**.
+> Četvrti korak, **zaposleni**: dodam podatke, vežem za radno mesto, **Sačuvaj**, **Sledeći**. Peti korak, prvi lekarski: upišem i **Dodaj**.
 >
-> Na kraju **Završi** i aplikacija me odmah ubaci u karton firme, na tab **Pregled**. Firma je u sistemu i od ovog trenutka aplikacija počinje da prati njene rokove."
+> **Završi** — aplikacija me prebaci na tab **Pregled** firme. Firma je u sistemu i od sad joj se prate rokovi."
 
 ## Video
 - Status: **presnimiti**. `03_unos_firme.webm` je blizu, ali: čarobnjak više nema korak „Stručni nalazi"; završetak vodi na **Pregled** (ne Usklađenost); profil firme (ZOP/instalacije) se sad postavlja na Ličnoj karti (vidi `04`).

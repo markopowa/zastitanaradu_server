@@ -2,10 +2,22 @@ import { Component, type ReactElement } from "react";
 import { useParams } from "react-router-dom";
 import { connect } from "react-redux";
 
-import { Box, CircularProgress, Button, Link, Stack } from "@mui/material";
+import {
+    Box,
+    CircularProgress,
+    Button,
+    Link,
+    Stack,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableRow,
+} from "@mui/material";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
 import ContactsIcon from "@mui/icons-material/Contacts";
+import DescriptionIcon from "@mui/icons-material/Description";
 import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
 import SendIcon from "@mui/icons-material/Send";
@@ -13,6 +25,7 @@ import { enqueueSnackbar } from "notistack";
 
 import {
     getEmployee,
+    getEmployeeDocuments,
     getProcessBindings,
     getProcessRuns,
     sendNowForEmployee,
@@ -34,7 +47,7 @@ import {
     ensureProcessTypes,
 } from "../store/processesSlice";
 import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
-import { formatDateDisplay } from "../utils/date";
+import { formatDateDisplay, formatDateTimeDisplay } from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
 import type { Employee } from "../types/processes";
@@ -52,6 +65,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         item: null,
         bindings: [],
         runs: [],
+        documents: [],
         loading: true,
         error: null,
         editDialogOpen: false,
@@ -64,9 +78,15 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         Promise.all([
             getProcessBindings({ employee_id: id }),
             getProcessRuns({ employee_id: id }),
+            getEmployeeDocuments(id),
         ])
-            .then(([bindings, runs]) => {
-                this.setState((prev) => ({ ...prev, bindings, runs }));
+            .then(([bindings, runs, documents]) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    bindings,
+                    runs,
+                    documents,
+                }));
             })
             .catch(() => {
                 enqueueSnackbar("Greška pri učitavanju obaveza.", {
@@ -223,7 +243,8 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
     };
 
     render() {
-        const { item, bindings, runs, loading, error } = this.state;
+        const { item, bindings, runs, documents, loading, error } =
+            this.state;
         const { editDialogOpen, sendDialogOpen, sendProcessTypeId, sending } =
             this.state;
         const { navigate, clientCompanies, processTypes } = this.props;
@@ -412,6 +433,67 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                             />
                         </DetailFieldGrid>
                     </DetailCard>
+                    <DetailCard
+                        title="Dokumenti"
+                        icon={
+                            <DescriptionIcon
+                                fontSize="small"
+                                color="action"
+                            />
+                        }
+                    >
+                        {documents.length === 0 ? (
+                            <Box
+                                sx={{
+                                    color: "text.secondary",
+                                    fontSize: "0.875rem",
+                                }}
+                            >
+                                Nema generisanih dokumenata.
+                            </Box>
+                        ) : (
+                            <Box sx={{ overflow: "auto" }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Naziv</TableCell>
+                                            <TableCell>Vrsta obaveze</TableCell>
+                                            <TableCell>Datum</TableCell>
+                                            <TableCell align="right">
+                                                Akcije
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {documents.map((doc) => (
+                                            <TableRow key={doc.id}>
+                                                <TableCell>
+                                                    {doc.name}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {doc.process_type_name}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatDateTimeDisplay(
+                                                        doc.created_at,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    <Link
+                                                        href={doc.file_url}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                    >
+                                                        Preuzmi
+                                                    </Link>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        )}
+                    </DetailCard>
                 </Stack>
 
                 <EntityProcessBindingsPanel
@@ -421,6 +503,7 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                     bindings={bindings}
                     runs={runs}
                     onRefresh={() => this.loadProcessData(item.id)}
+                    navigate={navigate}
                 />
 
                 <EmployeeFormDialog

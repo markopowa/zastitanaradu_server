@@ -35,11 +35,11 @@ Ključna finesa za video — **pravi primalac zavisi od vrste i faze obaveze**: 
 - [ ] Tekst je po kategoriji (naruči/organizuj/uput/potvrda), ne generički; prikazuje datum, bez pogrešnog „za N dana".
 
 ## Šta reći u videu (predlog naracije)
-> „Ovo je suština cele priče — da vas aplikacija sama opominje na vreme, umesto da vi jurite rokove. Za svaku obavezu je podešeno kad se javlja: na primer trideset dana pre roka da stigne da se organizuje, na sam dan, pa opet ako se rok probije. Aplikacija te mejlove spremi unapred i pošalje kad dođe dan, i sve ostane zabeleženo — uvek se zna šta je, kome i kada poslato.
+> „Ovo je razlog zašto aplikacija postoji — sama opominje na vreme, vi ne jurite rokove. Za svaku obavezu je podešeno kad se javlja: trideset dana pre roka, na sam dan, pa ponovo ako rok probije. Mejlovi se spreme unapred i pošalju kad dođe vreme, sa punim tragom ko je i kad obavešten.
 >
-> Na ekranu **Danas** vidim šta kasni, šta stiže, koji mejl nije uspeo (sa dugmetom da pokušam ponovo) i šta će otići narednih sedam dana. Na ekranu **Slanja** vidim spisak svih mejlova — kome, kad, sa kojim statusom — i mogu da otvorim i pročitam svaki, čak i one koji tek treba da odu.
+> Na **Danas** vidim šta kasni, šta stiže, koji mejl nije uspeo — sa dugmetom da pokušam ponovo — i šta ide narednih sedam dana. Na **Slanja** je spisak svih mejlova sa statusom, mogu da otvorim i pročitam svaki.
 >
-> A sad ono najvažnije i najpametnije: **pravu poruku dobija prava strana**, jer ne radi svako isti posao. Podsetnik za lekarski stiže nama u MAK — jer mi pripremamo uput. Sam uput onda ide poslodavcu — jer on šalje radnika na pregled. Potvrda da je obavljeno ide firmi za njihovu evidenciju. A kad nešto kasni, opomena stiže samo nama, da mi pritisnemo. Tekst svakog mejla je prilagođen toj situaciji — nije isti šablon za sve, nego baš ono što ta strana treba da uradi."
+> Bitno: pravu poruku dobija prava strana. Podsetnik za lekarski ide nama u MAK, jer mi pripremamo uput. Uput ide poslodavcu, jer on šalje radnika. Potvrda po obavljanju ide firmi. Kad nešto kasni, opomena ide samo nama. Tekst je prilagođen svakoj situaciji, ne generički."
 
 ## Video
 - Status: **snimiti** (Danas i Slanja su novi, nema videa).

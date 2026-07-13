@@ -258,6 +258,7 @@ def build_preview_context() -> dict:
         "employee": {
             "first_name": "Marko",
             "last_name": "Marković",
+            "full_name": "Marko Marković",
             "org_unit": "Proizvodnja",
             "position": "Operater mašine",
             "email": "marko.markovic@example.rs",

@@ -31,6 +31,7 @@ import { enqueueSnackbar } from "notistack";
 
 import { PermissionGate } from "../components/PermissionGate";
 import { withNavigation } from "../hocs/withNavigation";
+import { getProcessTypes } from "../api/processes";
 import {
     addEquipmentItem,
     ensureClientCompanies,
@@ -59,6 +60,8 @@ class EquipmentListPageInner extends Component<
         location: "",
         notes: "",
         new_client_company_id: "",
+        service_process_type: "",
+        equipmentProcessTypes: [],
     };
 
     load = (): void => {
@@ -80,7 +83,20 @@ class EquipmentListPageInner extends Component<
             location: "",
             notes: "",
             new_client_company_id: prev.client_company_id,
+            service_process_type: "",
         }));
+        if (this.state.equipmentProcessTypes.length === 0) {
+            getProcessTypes()
+                .then((types) =>
+                    this.setState((prev) => ({
+                        ...prev,
+                        equipmentProcessTypes: types.filter(
+                            (t) => t.subject_kind === "EQUIPMENT",
+                        ),
+                    })),
+                )
+                .catch(() => undefined);
+        }
     };
 
     closeDialog = (): void => {
@@ -95,6 +111,7 @@ class EquipmentListPageInner extends Component<
             location,
             notes,
             new_client_company_id,
+            service_process_type,
         } = this.state;
         if (!name.trim() || !new_client_company_id) return;
         const payload: Partial<EquipmentItem> = {
@@ -103,6 +120,9 @@ class EquipmentListPageInner extends Component<
             inventory_number: inventory_number.trim() || undefined,
             location: location.trim() || undefined,
             notes: notes.trim() || undefined,
+            service_process_type: service_process_type
+                ? Number(service_process_type)
+                : null,
             client_company: Number(new_client_company_id),
             is_active: true,
         };
@@ -145,6 +165,8 @@ class EquipmentListPageInner extends Component<
             location,
             notes,
             new_client_company_id,
+            service_process_type,
+            equipmentProcessTypes,
         } = this.state;
         const { navigate } = this.props;
 
@@ -353,6 +375,32 @@ class EquipmentListPageInner extends Component<
                                 }))
                             }
                         />
+                        <FormControl fullWidth margin="dense">
+                            <InputLabel id="eq-list-service-pt-label">
+                                Vrsta obaveze servisa/pregleda
+                            </InputLabel>
+                            <Select
+                                labelId="eq-list-service-pt-label"
+                                label="Vrsta obaveze servisa/pregleda"
+                                value={service_process_type}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        service_process_type: e.target
+                                            .value as string,
+                                    }))
+                                }
+                            >
+                                <MenuItem value="">
+                                    <em>— bez obaveze —</em>
+                                </MenuItem>
+                                {equipmentProcessTypes.map((pt) => (
+                                    <MenuItem key={pt.id} value={String(pt.id)}>
+                                        {pt.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog}>Odustani</Button>

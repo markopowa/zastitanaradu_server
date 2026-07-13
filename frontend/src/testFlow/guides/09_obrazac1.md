@@ -22,7 +22,7 @@ Poenta za video: pošto se podaci o pregledima ionako unose kroz aktivnosti (`07
 - [ ] Polja (ocena/datum/sledeći/izveštaj/mere) tačno iz `result_data` aktivnosti.
 
 ## Šta reći u videu (predlog naracije)
-> „**Obrazac 1** je propisana evidencija lekarskih pregleda za radnike na mestima sa povećanim rizikom — papir koji firma po zakonu mora da ima i da pokaže inspekciji. Obično se kuca ručno i lako zastari. Kod nas je drugačije: pošto smo sve podatke o pregledima već uneli kad smo zatvarali aktivnosti, aplikacija ima sve što joj treba. Otvorim firmu i kliknem **Generiši Obrazac 1** — i ona sama sastavi ceo dokument: ko je pregledan, kog datuma, ocena sposobnosti, broj izveštaja, kad je sledeći termin, sa zaglavljem firme. Pošto se puni iz onoga što već vodimo, uvek je tačan i ažuran — ne morate ništa da prepisujete niti da brinete da li je neko ispao."
+> „**Obrazac 1** je propisana evidencija lekarskih pregleda za radnike na mestima sa povećanim rizikom — firma mora da je ima za inspekciju. Obično se kuca ručno i brzo zastari. Kod nas su podaci već uneti kroz zatvorene aktivnosti, pa aplikacija ima sve što joj treba. Otvorim firmu, kliknem **Generiši Obrazac 1** — sastavi ceo dokument: ko je pregledan, kog datuma, ocena, broj izveštaja, sledeći termin, zaglavlje firme. Puni se iz podataka koje već vodimo, pa je uvek tačan."
 
 ## Video
 - Status: **snimiti** — tek kad se generisanje potvrdi/dovrši.

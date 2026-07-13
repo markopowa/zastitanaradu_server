@@ -85,6 +85,7 @@ import {
 } from "../components/JobRoleFormFields";
 import type { JobRoleFormValues } from "../components/JobRoleFormFields";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
+import { GeneratedDocumentsPanel } from "../components/GeneratedDocumentsPanel";
 import { CompanyObligationPlanPanel } from "../components/CompanyObligationPlanPanel";
 import { JobRoleTemplatesPanel } from "../components/JobRoleTemplatesPanel";
 import { AppButton } from "../design/AppButton";
@@ -1548,6 +1549,10 @@ class ClientCompanyDetailPageInner extends Component<
 
                 {activeTab === "documents" && (
                     <ComplianceFindingsPanel clientCompanyId={item.id} />
+                )}
+
+                {activeTab === "documents" && (
+                    <GeneratedDocumentsPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "job_roles" && (
