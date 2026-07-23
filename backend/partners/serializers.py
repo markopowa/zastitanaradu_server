@@ -2,21 +2,39 @@ import os
 
 from rest_framework import serializers
 
+from .validators import (
+    validate_birth_date,
+    validate_jmbg,
+    validate_maticni_broj,
+    validate_not_future,
+    validate_pib,
+)
 from .models import (
     ClientCompany,
+    ClientIntakeLink,
+    ClientIntakeSubmission,
     CompanyComplianceFinding,
     CompanyDocument,
+    CompanyDocumentKind,
     CompanyObligationExclusion,
     ComplianceFindingType,
     ContactPerson,
     Employee,
+    EmployeeTraining,
     EquipmentItem,
+    Hazard,
     JobRole,
+    JobRoleHazard,
+    JobRoleLZO,
+    RoleLzoTemplate,
+    KinneyScaleOption,
     RiskAssessmentAct,
     RiskAssessmentActAmendment,
     RiskAssessmentSection,
     RiskAssessmentSectionRevision,
     RiskLevel,
+    TrainingType,
+    WorkInjury,
 )
 
 
@@ -87,6 +105,12 @@ class ClientCompanySerializer(serializers.ModelSerializer):
         )
         read_only_fields = ("risk_assessment_act_file",)
 
+    def validate_tax_id(self, value):
+        return validate_pib(value)
+
+    def validate_registration_number(self, value):
+        return validate_maticni_broj(value)
+
     def get_risk_assessment_act_name(self, obj):
         f = obj.risk_assessment_act_file
         if not f:
@@ -131,6 +155,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "risk_level_override_detail",
             "effective_risk_level",
         )
+
+    def validate_national_id(self, value):
+        return validate_jmbg(value)
+
+    def validate_date_of_birth(self, value):
+        return validate_birth_date(value)
 
 
 class ContactPersonSerializer(serializers.ModelSerializer):
@@ -179,6 +209,74 @@ class CompanyDocumentSerializer(serializers.ModelSerializer):
         base = os.path.basename(obj.file.name)
         name, _ = os.path.splitext(base)
         return name
+
+
+class CompanyDocumentKindSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyDocumentKind
+        fields = (
+            "id",
+            "code",
+            "name",
+            "optional",
+            "order",
+            "is_active",
+        )
+
+
+class TrainingTypeSerializer(serializers.ModelSerializer):
+    client_company_name = serializers.CharField(
+        source="client_company.name", read_only=True)
+
+    class Meta:
+        model = TrainingType
+        fields = (
+            "id",
+            "client_company",
+            "client_company_name",
+            "name",
+            "description",
+            "potvrda_template",
+            "is_active",
+        )
+
+
+class EmployeeTrainingSerializer(serializers.ModelSerializer):
+    employee_name = serializers.CharField(
+        source="employee.__str__", read_only=True)
+    training_type_name = serializers.CharField(
+        source="training_type.name", read_only=True)
+
+    class Meta:
+        model = EmployeeTraining
+        fields = (
+            "id",
+            "employee",
+            "employee_name",
+            "training_type",
+            "training_type_name",
+            "completed_at",
+            "valid_until",
+            "certificate_file",
+            "created_at",
+        )
+        read_only_fields = ("created_at",)
+
+    def validate_completed_at(self, value):
+        return validate_not_future(value, "Datum završetka obuke")
+
+    def validate(self, attrs):
+        completed_at = attrs.get("completed_at")
+        if completed_at is None and self.instance is not None:
+            completed_at = self.instance.completed_at
+        valid_until = attrs.get("valid_until")
+        if valid_until is None and self.instance is not None:
+            valid_until = self.instance.valid_until
+        if completed_at and valid_until and valid_until < completed_at:
+            raise serializers.ValidationError(
+                {"valid_until": "Datum isteka ne može biti pre datuma "
+                                "završetka obuke."})
+        return attrs
 
 
 class ComplianceFindingTypeSerializer(serializers.ModelSerializer):
@@ -363,6 +461,7 @@ class EquipmentItemSerializer(serializers.ModelSerializer):
         fields = (
             "id",
             "client_company",
+            "client_company_name",
             "name",
             "category",
             "inventory_number",
@@ -375,6 +474,33 @@ class EquipmentItemSerializer(serializers.ModelSerializer):
         extra_kwargs = {
             "service_process_type": {"allow_null": True, "required": False},
         }
+
+
+class WorkInjurySerializer(serializers.ModelSerializer):
+    client_company_name = serializers.CharField(
+        source="client_company.name", read_only=True)
+    employee_name = serializers.CharField(
+        source="employee.__str__", read_only=True)
+
+    class Meta:
+        model = WorkInjury
+        fields = (
+            "id",
+            "client_company",
+            "client_company_name",
+            "employee",
+            "employee_name",
+            "date",
+            "severity",
+            "description",
+            "report_file",
+            "created_at",
+            "created_by",
+        )
+        read_only_fields = ("created_at", "created_by")
+
+    def validate_date(self, value):
+        return validate_not_future(value, "Datum povrede")
 
 
 class CompanyObligationExclusionSerializer(serializers.ModelSerializer):
@@ -391,9 +517,167 @@ class CompanyObligationExclusionSerializer(serializers.ModelSerializer):
         read_only_fields = ("client_company", "created_by", "created_at")
 
 
+class ClientIntakeLinkSerializer(serializers.ModelSerializer):
+    client_company_name = serializers.CharField(
+        source="client_company.name", read_only=True)
+    public_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ClientIntakeLink
+        fields = (
+            "id",
+            "client_company",
+            "client_company_name",
+            "token",
+            "public_url",
+            "created_at",
+            "expires_at",
+            "is_active",
+        )
+        read_only_fields = ("token", "created_at")
+
+    def get_public_url(self, obj):
+        request = self.context.get("request")
+        path = f"/intake/{obj.token}/"
+        if request is not None:
+            return request.build_absolute_uri(path)
+        return path
+
+
+class ClientIntakeSubmissionSerializer(serializers.ModelSerializer):
+    client_company = serializers.IntegerField(
+        source="link.client_company_id", read_only=True)
+    client_company_name = serializers.CharField(
+        source="link.client_company.name", read_only=True)
+    kind_display = serializers.CharField(
+        source="get_kind_display", read_only=True)
+    status_display = serializers.CharField(
+        source="get_status_display", read_only=True)
+    reviewed_by_username = serializers.CharField(
+        source="reviewed_by.username", read_only=True)
+
+    class Meta:
+        model = ClientIntakeSubmission
+        fields = (
+            "id",
+            "link",
+            "client_company",
+            "client_company_name",
+            "kind",
+            "kind_display",
+            "data",
+            "status",
+            "status_display",
+            "created_at",
+            "reviewed_by",
+            "reviewed_by_username",
+            "reviewed_at",
+        )
+        read_only_fields = (
+            "link",
+            "kind",
+            "data",
+            "status",
+            "created_at",
+            "reviewed_by",
+            "reviewed_at",
+        )
+
+
 class ObligationPlanRowSerializer(serializers.Serializer):
     process_type = serializers.DictField()
     applicable = serializers.BooleanField()
     excluded = serializers.BooleanField()
     exclusion_reason = serializers.CharField(allow_blank=True)
     status = serializers.CharField()
+
+
+class HazardSerializer(serializers.ModelSerializer):
+    kind_display = serializers.CharField(
+        source="get_kind_display", read_only=True)
+
+    class Meta:
+        model = Hazard
+        fields = (
+            "id",
+            "code",
+            "label",
+            "kind",
+            "kind_display",
+            "description",
+            "order",
+            "is_active",
+        )
+
+
+class KinneyScaleOptionSerializer(serializers.ModelSerializer):
+    factor_display = serializers.CharField(
+        source="get_factor_display", read_only=True)
+
+    class Meta:
+        model = KinneyScaleOption
+        fields = (
+            "id",
+            "factor",
+            "factor_display",
+            "value",
+            "label",
+            "order",
+        )
+
+
+class JobRoleHazardSerializer(serializers.ModelSerializer):
+    hazard_label = serializers.CharField(
+        source="hazard.label", read_only=True)
+    hazard_kind = serializers.CharField(
+        source="hazard.kind", read_only=True)
+    risk_category_label = serializers.SerializerMethodField()
+
+    class Meta:
+        model = JobRoleHazard
+        fields = (
+            "id",
+            "job_role",
+            "hazard",
+            "hazard_label",
+            "hazard_kind",
+            "verovatnoca",
+            "izlozenost",
+            "posledica",
+            "rizik",
+            "risk_category",
+            "risk_category_label",
+            "mere",
+            "order",
+        )
+        read_only_fields = ("rizik", "risk_category")
+
+    def get_risk_category_label(self, obj):
+        from .kinney import category_label
+        return category_label(obj.risk_category)
+
+
+class JobRoleLZOSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = JobRoleLZO
+        fields = (
+            "id",
+            "job_role",
+            "name",
+            "standard",
+            "interval_months",
+            "order",
+        )
+
+
+class RoleLzoTemplateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoleLzoTemplate
+        fields = (
+            "id",
+            "role_name",
+            "name",
+            "standard",
+            "interval_months",
+            "order",
+        )

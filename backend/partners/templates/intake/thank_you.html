@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hvala — {{ company.name }}</title>
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f2f4f7;
+    margin: 0;
+    padding: 16px;
+    color: #1f2937;
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+  }
+  .card {
+    max-width: 480px;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 32px 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+    text-align: center;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 12px 0;
+  }
+  p {
+    color: #4b5563;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Hvala!</h1>
+    <p>Prijava je uspešno poslata za firmu <strong>{{ company.name }}</strong>.</p>
+    <p>Vaš konsultant će pregledati podatke i obraditi ih u najkraćem roku.</p>
+  </div>
+</body>
+</html>

@@ -143,6 +143,37 @@ export interface CompanyDocument {
     uploaded_at?: string;
 }
 
+export interface CompanyDocumentKindDef {
+    id: number;
+    code: string;
+    name: string;
+    optional: boolean;
+    order: number;
+    is_active: boolean;
+}
+
+export interface TrainingType {
+    id: number;
+    client_company: number;
+    client_company_name?: string;
+    name: string;
+    description?: string;
+    potvrda_template: string | null;
+    is_active: boolean;
+}
+
+export interface EmployeeTraining {
+    id: number;
+    employee: number;
+    employee_name?: string;
+    training_type: number;
+    training_type_name?: string;
+    completed_at?: string | null;
+    valid_until?: string | null;
+    certificate_file?: string | null;
+    created_at?: string;
+}
+
 export interface RiskLevel {
     id: number;
     code: string;
@@ -217,6 +248,52 @@ export interface EquipmentItem {
     is_active: boolean;
     service_process_type?: number | null;
     service_process_type_name?: string | null;
+}
+
+export type WorkInjurySeverity = "LAKA" | "TESKA" | "SMRTNA" | "KOLEKTIVNA";
+
+export interface WorkInjury {
+    id: number;
+    client_company: number;
+    client_company_name?: string;
+    employee: number;
+    employee_name?: string;
+    date: string;
+    severity: WorkInjurySeverity;
+    description?: string;
+    report_file?: string | null;
+    created_at?: string;
+    created_by?: number | null;
+}
+
+export interface ClientIntakeLink {
+    id: number;
+    client_company: number;
+    client_company_name?: string;
+    token: string;
+    public_url: string;
+    created_at: string;
+    expires_at?: string | null;
+    is_active: boolean;
+}
+
+export type ClientIntakeSubmissionKind = "EMPLOYEE" | "EQUIPMENT";
+export type ClientIntakeSubmissionStatus = "PENDING" | "APPROVED" | "REJECTED";
+
+export interface ClientIntakeSubmission {
+    id: number;
+    link: number;
+    client_company: number;
+    client_company_name?: string;
+    kind: ClientIntakeSubmissionKind;
+    kind_display?: string;
+    data: Record<string, string | null | undefined>;
+    status: ClientIntakeSubmissionStatus;
+    status_display?: string;
+    created_at: string;
+    reviewed_by?: number | null;
+    reviewed_by_username?: string;
+    reviewed_at?: string | null;
 }
 
 export interface ProcessType {
@@ -453,4 +530,31 @@ export interface CompanyObligationExclusion {
     reason: string;
     created_by: number | null;
     created_at: string;
+}
+
+export interface TestQuestionChoice {
+    key: string;
+    text: string;
+}
+
+export interface TestQuestion {
+    id: number;
+    text: string;
+    choices: TestQuestionChoice[];
+    order: number;
+}
+
+export interface TestAttemptPayload {
+    employee: number;
+    answers: Record<string, string>;
+}
+
+export interface TestAttempt {
+    id: number;
+    employee: number;
+    created_at: string;
+    score_pct: number;
+    passed: boolean;
+    answers: Record<string, string>;
+    run: number | null;
 }

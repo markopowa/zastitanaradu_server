@@ -30,6 +30,7 @@ import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import BuildIcon from "@mui/icons-material/Build";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { enqueueSnackbar } from "notistack";
 
@@ -716,6 +717,12 @@ function RowActions({
     onTemplateUpdated: (updated: DocumentTemplate) => void;
 }) {
     const [structureOpen, setStructureOpen] = useState(false);
+    const generationMode = (
+        template.generation_config as { mode?: string } | null | undefined
+    )?.mode;
+    const isAutoFill =
+        generationMode === "DOCX_CELL_MAP" ||
+        generationMode === "DOCX_PLACEHOLDER";
 
     return (
         <>
@@ -728,11 +735,32 @@ function RowActions({
                         onClick: onEdit,
                     },
                     {
+                        label: "Preuzmi fajl",
+                        icon: <FileDownloadIcon fontSize="small" />,
+                        permission: "documents.view_documenttemplate",
+                        hidden: !template.template_file,
+                        onClick: () => {
+                            if (template.template_file) {
+                                window.open(template.template_file, "_blank");
+                            }
+                        },
+                    },
+                    {
                         label: "Uredi polja",
                         icon: <BuildIcon fontSize="small" />,
                         permission: "documents.change_documenttemplate",
                         hidden: !template.template_file,
                         onClick: () => setStructureOpen(true),
+                    },
+                    {
+                        label: "Popunjava se automatski",
+                        icon: <BuildIcon fontSize="small" />,
+                        permission: "documents.change_documenttemplate",
+                        hidden: !isAutoFill,
+                        disabled: true,
+                        disabledTitle:
+                            "Popunjava se automatski preko oznaka u fajlu. Izgled menjaš tako što preuzmeš fajl, urediš ga u Wordu (oznake ostavi gde treba da se upiše) i vratiš kroz Izmeni.",
+                        onClick: () => {},
                     },
                     {
                         label: "Obriši",

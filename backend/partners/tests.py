@@ -777,33 +777,227 @@ class SeedObligationCatalogProofKindTest(TestCase):
             ).exists()
         )
 
-    def test_uput_process_template_created_for_prethodni(self):
+    def test_uput_prethodni_document_template_created(self):
+        from django.core.management import call_command
+        from documents.models import DocumentTemplate
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        self.assertTrue(
+            DocumentTemplate.objects.filter(
+                name="Uput za prethodni lekarski pregled"
+            ).exists()
+        )
+
+    def test_uput_templates_mirror_official_obrasci(self):
+        from django.core.management import call_command
+        from documents.models import DocumentTemplate
+
+        call_command("seed_obligation_catalog", verbosity=0)
+
+        prethodni = DocumentTemplate.objects.get(
+            name="Uput za prethodni lekarski pregled"
+        )
+        self.assertIn(
+            "UPUT ZA PRETHODNI LEKARSKI PREGLED ZAPOSLENOG(E)",
+            prethodni.template_body,
+        )
+        self.assertIn("Upućuje se na PRETHODNI pregled", prethodni.template_body)
+        self.assertIn(
+            "utvrđeno kao radno mesto sa povećanim rizikom",
+            prethodni.template_body,
+        )
+        self.assertIn("Matični broj", prethodni.template_body)
+        self.assertIn("Šifra delatnosti", prethodni.template_body)
+        self.assertNotIn("last_exam_date", prethodni.template_body)
+
+        periodicni = DocumentTemplate.objects.get(name="Uput za lekarski pregled")
+        self.assertIn(
+            "UPUT ZA PERIODIČNI LEKARSKI PREGLED ZAPOSLENOG",
+            periodicni.template_body,
+        )
+        self.assertIn(
+            "Upućuje se na PERIODIČNI/KONTROLNI pregled", periodicni.template_body
+        )
+        self.assertIn("{{ last_exam_date }}", periodicni.template_body)
+        self.assertNotEqual(prethodni.template_body, periodicni.template_body)
+
+        for template in (prethodni, periodicni):
+            self.assertIn("Kratak opis poslova na radnom mestu", template.template_body)
+            self.assertIn(
+                "Procenjeni rizici na radnom mestu", template.template_body
+            )
+            self.assertIn(
+                "Posebni zdravstveni uslovi utvrđeni Aktom o proceni rizika",
+                template.template_body,
+            )
+
+    def test_uput_process_templates_wired_to_matching_obrazac(self):
         from django.core.management import call_command
         from processes.models import ProcessTemplate
 
         call_command("seed_obligation_catalog", verbosity=0)
-        pt = ProcessType.objects.get(code="PRETHODNI_LEKARSKI")
-        self.assertTrue(
-            ProcessTemplate.objects.filter(
-                process_type=pt,
-                trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
-                generate_document=True,
-            ).exists()
+
+        prethodni_pt = ProcessType.objects.get(code="PRETHODNI_LEKARSKI")
+        periodicni_pt = ProcessType.objects.get(code="LEKARSKI_PREGLED")
+
+        prethodni_template = ProcessTemplate.objects.get(
+            process_type=prethodni_pt,
+            trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+            generate_document=True,
+        )
+        periodicni_template = ProcessTemplate.objects.get(
+            process_type=periodicni_pt,
+            trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
+            generate_document=True,
+        )
+        self.assertEqual(
+            prethodni_template.document_template.name,
+            "Uput za prethodni lekarski pregled",
+        )
+        self.assertEqual(
+            periodicni_template.document_template.name, "Uput za lekarski pregled"
         )
 
-    def test_uput_process_template_created_for_lekarski(self):
+    def test_reconcile_syncs_stale_uput_document_template_body(self):
+        from django.core.management import call_command
+        from documents.models import DocumentTemplate
+
+        call_command("seed_obligation_catalog", verbosity=0)
+
+        periodicni = DocumentTemplate.objects.get(name="Uput za lekarski pregled")
+        periodicni.template_body = "stale body"
+        periodicni.save(update_fields=["template_body"])
+
+        call_command("reconcile_obligation_catalog", verbosity=0)
+
+        periodicni.refresh_from_db()
+        self.assertIn(
+            "UPUT ZA PERIODIČNI LEKARSKI PREGLED ZAPOSLENOG",
+            periodicni.template_body,
+        )
+
+    def test_hidranti_ispitivanje_interval_is_annual(self):
+        from django.core.management import call_command
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="HIDRANTI_ISPITIVANJE")
+        self.assertEqual(pt.default_period_months, 12)
+        self.assertIn("30/91", pt.legal_basis)
+
+    def test_sdp_pregled_interval_is_semiannual(self):
+        from django.core.management import call_command
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="SDP_PREGLED")
+        self.assertEqual(pt.default_period_months, 6)
+        self.assertIn("čl. 44", pt.legal_basis)
+
+    def test_pp_aparati_hidrostaticko_created_with_correct_fields(self):
+        from django.core.management import call_command
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="PP_APARATI_HIDROSTATICKO")
+        self.assertEqual(pt.name, "PP aparati — hidrostatičko ispitivanje")
+        self.assertEqual(pt.subject_kind, ProcessType.SUBJECT_EQUIPMENT)
+        self.assertEqual(pt.domain, ProcessType.DOMAIN_ZOP)
+        self.assertEqual(pt.default_period_months, 60)
+        self.assertEqual(pt.legal_basis, "Zakon o ZOP čl. 44; Pravilnik 52/2015")
+
+    def test_pp_aparati_hidrostaticko_reminder_templates_created(self):
         from django.core.management import call_command
         from processes.models import ProcessTemplate
 
         call_command("seed_obligation_catalog", verbosity=0)
-        pt = ProcessType.objects.get(code="LEKARSKI_PREGLED")
+        pt = ProcessType.objects.get(code="PP_APARATI_HIDROSTATICKO")
         self.assertTrue(
             ProcessTemplate.objects.filter(
-                process_type=pt,
-                trigger=ProcessTemplate.TRIGGER_ON_SCHEDULED,
-                generate_document=True,
+                process_type=pt, trigger=ProcessTemplate.TRIGGER_ON_LEAD
             ).exists()
         )
+        self.assertTrue(
+            ProcessTemplate.objects.filter(
+                process_type=pt, trigger=ProcessTemplate.TRIGGER_ON_OVERDUE
+            ).exists()
+        )
+
+    def test_prva_pomoc_obuka_created_with_correct_fields(self):
+        from django.core.management import call_command
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        pt = ProcessType.objects.get(code="PRVA_POMOC_OBUKA")
+        self.assertEqual(pt.name, "Osposobljavanje za pružanje prve pomoći")
+        self.assertEqual(pt.subject_kind, ProcessType.SUBJECT_EMPLOYEE)
+        self.assertEqual(pt.domain, ProcessType.DOMAIN_BZNR)
+        self.assertEqual(pt.default_period_months, 60)
+        self.assertEqual(
+            pt.legal_basis,
+            "Pravilnik o načinu pružanja prve pomoći (Sl. glasnik RS 109/2016) čl. 13",
+        )
+
+    def test_prva_pomoc_obuka_not_auto_provisioned_on_hire(self):
+        from django.core.management import call_command
+
+        from partners.employee_bindings import ensure_default_bindings_for_employee
+
+        call_command("seed_obligation_catalog", verbosity=0)
+        company = make_company()
+        employee = Employee.objects.create(
+            client_company=company, first_name="Mira", last_name="Mirić"
+        )
+        ensure_default_bindings_for_employee(employee)
+        pt = ProcessType.objects.get(code="PRVA_POMOC_OBUKA")
+        self.assertFalse(
+            ProcessBinding.objects.filter(
+                process_type=pt, employee=employee
+            ).exists()
+        )
+
+
+class SeedComplianceFindingTypesGromobranTest(TestCase):
+    def test_gromobran_default_period_is_24_months(self):
+        from django.core.management import call_command
+
+        call_command("seed_compliance_finding_types", verbosity=0)
+        pt = ProcessType.objects.get(code="STRUCNI_NALAZ_GROMOBRANSKA")
+        self.assertEqual(pt.default_period_months, 24)
+        self.assertEqual(pt.legal_basis, "Pravilnik 76/2024 čl. 9")
+
+    def test_gromobran_finding_type_validity_is_24_months(self):
+        from django.core.management import call_command
+
+        from partners.models import ComplianceFindingType
+
+        call_command("seed_compliance_finding_types", verbosity=0)
+        ft = ComplianceFindingType.objects.get(code="LIGHTNING_PROTECTION")
+        self.assertEqual(ft.default_validity_months, 24)
+        self.assertIn("24", ft.description)
+
+
+class ReconcileObligationCatalogSyncTest(TestCase):
+    def test_reconcile_updates_stale_gromobran_values(self):
+        from django.core.management import call_command
+
+        call_command("seed_compliance_finding_types", verbosity=0)
+        call_command("seed_obligation_catalog", verbosity=0)
+
+        pt = ProcessType.objects.get(code="STRUCNI_NALAZ_GROMOBRANSKA")
+        pt.default_period_months = 36
+        pt.legal_basis = ""
+        pt.save(update_fields=["default_period_months", "legal_basis"])
+
+        from partners.models import ComplianceFindingType
+
+        ft = ComplianceFindingType.objects.get(code="LIGHTNING_PROTECTION")
+        ft.default_validity_months = 36
+        ft.save(update_fields=["default_validity_months"])
+
+        call_command("reconcile_obligation_catalog", verbosity=0)
+
+        pt.refresh_from_db()
+        ft.refresh_from_db()
+        self.assertEqual(pt.default_period_months, 24)
+        self.assertEqual(pt.legal_basis, "Pravilnik 76/2024 čl. 9")
+        self.assertEqual(ft.default_validity_months, 24)
 
 
 class LzoZaduzenjeAutoSpawnTest(TestCase):

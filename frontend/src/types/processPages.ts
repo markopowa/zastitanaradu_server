@@ -11,6 +11,7 @@ import type {
     Employee,
     EmployeeDocumentRow,
     EmployeeSummary,
+    EmployeeTraining,
     EquipmentItem,
     JobRole,
     ProcessBinding,
@@ -19,6 +20,7 @@ import type {
     ProcessRunNote,
     ProcessType,
     RiskLevel,
+    TrainingType,
 } from "./processes";
 
 export interface ProcessTypesListPageStateProps {
@@ -232,6 +234,7 @@ export interface ClientCompanyDetailPageState {
     error: string | null;
     generatingDoc: boolean;
     docError: string | null;
+    generatingInspectionBundle: boolean;
     editing: boolean;
     saving: boolean;
     saveError: string | null;
@@ -365,6 +368,20 @@ export interface ClientCompanyEmployeesDetailPageState {
     sendDialogOpen: boolean;
     sendProcessTypeId: string;
     sending: boolean;
+    generatingObrazac6: boolean;
+    generatingLzoRevers: boolean;
+    trainingTypes: TrainingType[];
+    trainings: EmployeeTraining[];
+    potvrdaDialogOpen: boolean;
+    potvrdaTrainingTypeId: string;
+    generatingPotvrda: boolean;
+    trainingDialogOpen: boolean;
+    trainingFormTypeId: string;
+    trainingFormCompletedAt: string;
+    trainingFormValidUntil: string;
+    savingTraining: boolean;
+    trainingDeleteId: number | null;
+    deletingTraining: boolean;
 }
 
 export interface EmployeeFormDialogProps {
@@ -454,4 +471,22 @@ export interface EntityProcessBindingsPanelState {
     dialogOpen: boolean;
     savingStartDateBindingId: number | null;
     deactivatingBindingId: number | null;
+}
+
+export interface TrainingTestPageDispatchProps {
+    setLastPath: (path: string) => void;
+    setBreadcrumbs: (items: { label: string; path?: string }[]) => void;
+}
+
+export type TrainingTestPageProps = TrainingTestPageDispatchProps &
+    WithNavigationProps & { employeeId: string };
+
+export interface TrainingTestPageState {
+    employee: Employee | null;
+    questions: import("./processes").TestQuestion[];
+    answers: Record<number, string>;
+    loading: boolean;
+    error: string | null;
+    submitting: boolean;
+    result: import("./processes").TestAttempt | null;
 }

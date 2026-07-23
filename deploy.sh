@@ -368,6 +368,15 @@ server {
         proxy_set_header X-Pznr-Proxy "$PZNR_NGINX_PROXY_SECRET";
         proxy_cookie_path / "/; HTTPOnly; Secure; SameSite=Lax";
     }
+    location /intake/ {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-Pznr-Proxy "$PZNR_NGINX_PROXY_SECRET";
+        proxy_cookie_path / "/; HTTPOnly; Secure; SameSite=Lax";
+    }
     location /admin/ {
         proxy_pass http://127.0.0.1:8000;
         proxy_set_header Host \$host;

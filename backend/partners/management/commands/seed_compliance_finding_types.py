@@ -84,6 +84,12 @@ FINDING_TYPE_PROCESS_TYPES = [
         "code": "LIGHTNING_PROTECTION",
         "name": "Stručni nalaz o pregledu i proveri gromobranskih instalacija",
         "order": 5,
+        "default_validity_months": 24,
+        "description": (
+            "Pravilnik 76/2024 čl. 9: rok je 24 meseca za nivo zaštite od "
+            "groma 1-2, a 48 meseci za nivo 3-4. Podrazumevano se koristi "
+            "stroži rok od 24 meseca."
+        ),
         "process_type": {
             "code": "STRUCNI_NALAZ_GROMOBRANSKA",
             "name": "Stručni nalaz — gromobranske instalacije",
@@ -91,7 +97,8 @@ FINDING_TYPE_PROCESS_TYPES = [
             "domain": ProcessType.DOMAIN_BZNR,
             "shape": ProcessType.SHAPE_PERIODIC,
             "proof_kind": ProcessType.PROOF_UPLOAD,
-            "default_period_months": 36,
+            "default_period_months": 24,
+            "legal_basis": "Pravilnik 76/2024 čl. 9",
             "reminder_offsets": [-30, 7, 15, 30],
             "applicability_rule": {"requires_installation": "LIGHTNING_PROTECTION"},
             "include_in_medical_exam_record": False,
@@ -138,6 +145,7 @@ class Command(BaseCommand):
                     "shape": pt_data["shape"],
                     "proof_kind": pt_data["proof_kind"],
                     "default_period_months": pt_data["default_period_months"],
+                    "legal_basis": pt_data.get("legal_basis", ""),
                     "reminder_offsets": pt_data["reminder_offsets"],
                     "applicability_rule": pt_data["applicability_rule"],
                     "is_active": True,
@@ -151,7 +159,8 @@ class Command(BaseCommand):
                 code=data["code"],
                 defaults={
                     "name": data["name"],
-                    "default_validity_months": 36,
+                    "description": data.get("description", ""),
+                    "default_validity_months": data.get("default_validity_months", 36),
                     "is_active": True,
                     "order": data["order"],
                     "process_type": pt,

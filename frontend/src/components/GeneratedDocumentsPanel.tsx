@@ -2,6 +2,8 @@ import { Component } from "react";
 
 import {
     Box,
+    Button,
+    CircularProgress,
     Link,
     Table,
     TableBody,
@@ -9,9 +11,13 @@ import {
     TableHead,
     TableRow,
 } from "@mui/material";
+import DownloadIcon from "@mui/icons-material/Download";
 import { enqueueSnackbar } from "notistack";
 
-import { getCompanyGeneratedDocuments } from "../api/processes";
+import {
+    generateCompanyObrazac6All,
+    getCompanyGeneratedDocuments,
+} from "../api/processes";
 import { EmptyState, LoadingState, SectionCard } from "../design";
 import { formatDateTimeDisplay } from "../utils/date";
 
@@ -25,6 +31,7 @@ interface State {
     rows: CompanyGeneratedDocumentRow[];
     loading: boolean;
     error: boolean;
+    generatingObrazac6All: boolean;
 }
 
 export class GeneratedDocumentsPanel extends Component<Props, State> {
@@ -32,6 +39,7 @@ export class GeneratedDocumentsPanel extends Component<Props, State> {
         rows: [],
         loading: true,
         error: false,
+        generatingObrazac6All: false,
     };
 
     componentDidMount(): void {
@@ -57,11 +65,50 @@ export class GeneratedDocumentsPanel extends Component<Props, State> {
             });
     };
 
+    handleGenerateObrazac6All = (): void => {
+        const { clientCompanyId } = this.props;
+        this.setState({ generatingObrazac6All: true });
+        generateCompanyObrazac6All(clientCompanyId)
+            .then(() => {
+                this.setState({ generatingObrazac6All: false });
+                enqueueSnackbar("Generisano — preuzimanje u toku.", {
+                    variant: "success",
+                });
+                this.load();
+            })
+            .catch((err: { message?: string }) => {
+                this.setState({ generatingObrazac6All: false });
+                enqueueSnackbar(
+                    err.message ?? "Greška pri generisanju dokumenta.",
+                    { variant: "error" },
+                );
+            });
+    };
+
     render() {
-        const { rows, loading, error } = this.state;
+        const { rows, loading, error, generatingObrazac6All } = this.state;
 
         return (
-            <SectionCard title="Generisani dokumenti">
+            <SectionCard
+                title="Generisani dokumenti"
+                action={
+                    <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={
+                            generatingObrazac6All ? (
+                                <CircularProgress size={16} />
+                            ) : (
+                                <DownloadIcon />
+                            )
+                        }
+                        disabled={generatingObrazac6All}
+                        onClick={this.handleGenerateObrazac6All}
+                    >
+                        Generiši Obrazac 6 — svi zaposleni
+                    </Button>
+                }
+            >
                 {loading ? (
                     <LoadingState />
                 ) : error ? (

@@ -1,16 +1,27 @@
-import { api } from "./client";
+import {
+    api,
+    apiBaseUrl,
+    filenameFromResponse,
+    triggerBlobDownload,
+} from "./client";
+import type { VisualPlaceholder } from "./documents";
 import type {
     ActivityLog,
     ActivityLogEventType,
     ClientCompany,
+    ClientIntakeLink,
+    ClientIntakeSubmission,
+    ClientIntakeSubmissionStatus,
     CompanyDocument,
     CompanyDocumentKind,
+    CompanyDocumentKindDef,
     CompanyGeneratedDocumentRow,
     CompanyObligationExclusion,
     ContactPerson,
     Employee,
     EmployeeDocumentRow,
     EmployeeSummary,
+    EmployeeTraining,
     EquipmentItem,
     JobRole,
     JobRoleTemplateKey,
@@ -29,7 +40,13 @@ import type {
     RiskAssessmentActAmendment,
     RiskAssessmentSectionType,
     RiskLevel,
+    TestAttempt,
+    TestAttemptPayload,
+    TestQuestion,
+    TrainingType,
     UpcomingDeadline,
+    WorkInjury,
+    WorkInjurySeverity,
 } from "../types/processes";
 
 type ListResponse<T> = T[] | { results?: T[] };
@@ -736,6 +753,20 @@ export async function getUpcomingDeadlines(params?: {
     return asList(data);
 }
 
+export async function generateHighRiskRegistry(
+    clientId: number,
+): Promise<void> {
+    const response = await api.get(
+        `/api/partners/client-companies/${clientId}/high-risk-registry/`,
+        { responseType: "blob" },
+    );
+    triggerBlobDownload(
+        response.data as BlobPart,
+        filenameFromResponse(
+            response.headers, `high_risk_registry_${clientId}.docx`),
+    );
+}
+
 export async function generateMedicalExamRecord(
     clientId: number,
 ): Promise<void> {
@@ -743,16 +774,107 @@ export async function generateMedicalExamRecord(
         `/api/partners/client-companies/${clientId}/medical-exam-record/`,
         { responseType: "blob" },
     );
-    const url = window.URL.createObjectURL(
-        new Blob([response.data as BlobPart]),
+    triggerBlobDownload(
+        response.data as BlobPart,
+        filenameFromResponse(
+            response.headers, `medical_exam_record_${clientId}.docx`),
     );
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `medical_exam_record_${clientId}.docx`);
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.URL.revokeObjectURL(url);
+}
+
+export async function generateInspectionBundle(
+    clientId: number,
+): Promise<void> {
+    try {
+        const response = await api.get(
+            `/api/partners/client-companies/${clientId}/inspection-bundle/`,
+            { responseType: "blob" },
+        );
+        triggerBlobDownload(
+            response.data as BlobPart,
+            filenameFromResponse(
+                response.headers, `inspekcija_${clientId}.pdf`),
+        );
+    } catch (err) {
+        throw new Error(await extractBlobErrorDetail(err));
+    }
+}
+
+async function extractBlobErrorDetail(err: unknown): Promise<string> {
+    const axiosErr = err as {
+        response?: { data?: unknown };
+        message?: string;
+    };
+    const data = axiosErr.response?.data;
+    if (data instanceof Blob) {
+        try {
+            const text = await data.text();
+            const parsed = JSON.parse(text) as { detail?: string };
+            if (typeof parsed.detail === "string") {
+                return parsed.detail;
+            }
+        } catch {
+            return axiosErr.message ?? "Greška prilikom generisanja dokumenta.";
+        }
+    }
+    return axiosErr.message ?? "Greška prilikom generisanja dokumenta.";
+}
+
+export async function generateEmployeeDocument(
+    employeeId: number,
+    kind: "OBRAZAC6" | "LZO_REVERS" | "POTVRDA_CLAN5",
+    options?: { training_type_id?: number },
+): Promise<void> {
+    try {
+        const response = await api.post(
+            `/api/partners/employees/${employeeId}/generate-document/`,
+            {
+                kind,
+                ...(options?.training_type_id != null
+                    ? { training_type_id: options.training_type_id }
+                    : {}),
+            },
+            { responseType: "blob" },
+        );
+        const url = window.URL.createObjectURL(
+            new Blob([response.data as BlobPart]),
+        );
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute(
+            "download",
+            `${kind.toLowerCase()}_${employeeId}.docx`,
+        );
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        throw new Error(await extractBlobErrorDetail(err));
+    }
+}
+
+export async function generateCompanyObrazac6All(
+    companyId: number,
+): Promise<void> {
+    try {
+        const response = await api.post(
+            `/api/partners/client-companies/${companyId}/generate-obrazac6-all/`,
+            {},
+            { responseType: "blob" },
+        );
+        const url = window.URL.createObjectURL(
+            new Blob([response.data as BlobPart]),
+        );
+        const link = document.createElement("a");
+        link.href = url;
+        link.setAttribute("download", `obrazac6_svi_zaposleni_${companyId}.pdf`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (err) {
+        throw new Error(await extractBlobErrorDetail(err));
+    }
 }
 
 export async function getContactPersons(params: {
@@ -821,6 +943,107 @@ export async function uploadCompanyDocument(
 
 export async function deleteCompanyDocument(id: number): Promise<void> {
     await api.delete(`/api/partners/company-documents/${id}/`);
+}
+
+export async function getWorkInjuries(params: {
+    client_company_id: number;
+}): Promise<WorkInjury[]> {
+    const search = new URLSearchParams();
+    search.set("client_company_id", String(params.client_company_id));
+    const { data } = await api.get<ListResponse<WorkInjury>>(
+        `/api/partners/work-injuries/?${search.toString()}`,
+    );
+    return asList(data);
+}
+
+export async function createWorkInjury(payload: {
+    client_company: number;
+    employee: number;
+    date: string;
+    severity: WorkInjurySeverity;
+    description?: string;
+    report_file?: File | null;
+}): Promise<WorkInjury> {
+    const form = new FormData();
+    form.append("client_company", String(payload.client_company));
+    form.append("employee", String(payload.employee));
+    form.append("date", payload.date);
+    form.append("severity", payload.severity);
+    if (payload.description) form.append("description", payload.description);
+    if (payload.report_file) form.append("report_file", payload.report_file);
+    const { data } = await api.post<WorkInjury>(
+        "/api/partners/work-injuries/",
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
+export async function deleteWorkInjury(id: number): Promise<void> {
+    await api.delete(`/api/partners/work-injuries/${id}/`);
+}
+
+export async function getIntakeLinks(params: {
+    client_company_id: number;
+}): Promise<ClientIntakeLink[]> {
+    const search = new URLSearchParams();
+    search.set("client_company_id", String(params.client_company_id));
+    const { data } = await api.get<ListResponse<ClientIntakeLink>>(
+        `/api/partners/intake-links/?${search.toString()}`,
+    );
+    return asList(data);
+}
+
+export async function createIntakeLink(
+    clientCompanyId: number,
+): Promise<ClientIntakeLink> {
+    const { data } = await api.post<ClientIntakeLink>(
+        "/api/partners/intake-links/",
+        { client_company: clientCompanyId },
+    );
+    return data;
+}
+
+export async function sendIntakeLink(
+    id: number,
+    to?: string,
+): Promise<{ detail: string; to: string }> {
+    const { data } = await api.post<{ detail: string; to: string }>(
+        `/api/partners/intake-links/${id}/send/`,
+        to ? { to } : {},
+    );
+    return data;
+}
+
+export async function getIntakeSubmissions(params: {
+    client_company_id: number;
+    status?: ClientIntakeSubmissionStatus;
+}): Promise<ClientIntakeSubmission[]> {
+    const search = new URLSearchParams();
+    search.set("client_company_id", String(params.client_company_id));
+    if (params.status) search.set("status", params.status);
+    const { data } = await api.get<ListResponse<ClientIntakeSubmission>>(
+        `/api/partners/intake-submissions/?${search.toString()}`,
+    );
+    return asList(data);
+}
+
+export async function approveIntakeSubmission(
+    id: number,
+): Promise<ClientIntakeSubmission> {
+    const { data } = await api.post<ClientIntakeSubmission>(
+        `/api/partners/intake-submissions/${id}/approve/`,
+    );
+    return data;
+}
+
+export async function rejectIntakeSubmission(
+    id: number,
+): Promise<ClientIntakeSubmission> {
+    const { data } = await api.post<ClientIntakeSubmission>(
+        `/api/partners/intake-submissions/${id}/reject/`,
+    );
+    return data;
 }
 
 export interface RegistryLookupResult {
@@ -955,4 +1178,179 @@ export async function deleteObligationExclusion(
     await api.delete(
         `/api/partners/client-companies/${companyId}/obligation-plan/${processTypeId}/exclusion/`,
     );
+}
+
+export async function getTrainingTypes(params?: {
+    client_company_id?: number;
+}): Promise<TrainingType[]> {
+    const search = new URLSearchParams();
+    if (params?.client_company_id != null)
+        search.set("client_company_id", String(params.client_company_id));
+    const qs = search.toString();
+    const url = qs
+        ? `/api/partners/training-types/?${qs}`
+        : "/api/partners/training-types/";
+    const { data } = await api.get<ListResponse<TrainingType>>(url);
+    return asList(data);
+}
+
+export async function createTrainingType(
+    payload: Partial<TrainingType>,
+): Promise<TrainingType> {
+    const { data } = await api.post<TrainingType>(
+        "/api/partners/training-types/",
+        payload,
+    );
+    return data;
+}
+
+export async function updateTrainingType(
+    id: number,
+    payload: Partial<TrainingType>,
+): Promise<TrainingType> {
+    const { data } = await api.patch<TrainingType>(
+        `/api/partners/training-types/${id}/`,
+        payload,
+    );
+    return data;
+}
+
+export async function deleteTrainingType(id: number): Promise<void> {
+    await api.delete(`/api/partners/training-types/${id}/`);
+}
+
+export async function uploadTrainingTypeTemplate(
+    id: number,
+    file: File,
+): Promise<TrainingType> {
+    const form = new FormData();
+    form.append("potvrda_template", file);
+    const { data } = await api.patch<TrainingType>(
+        `/api/partners/training-types/${id}/`,
+        form,
+        { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+}
+
+export async function clearTrainingTypeTemplate(
+    id: number,
+): Promise<TrainingType> {
+    const { data } = await api.patch<TrainingType>(
+        `/api/partners/training-types/${id}/`,
+        { potvrda_template: null },
+    );
+    return data;
+}
+
+export type BlankTemplateTarget =
+    | "job-role-obrazac6"
+    | "job-role-lzo"
+    | "training-type-potvrda";
+
+export function blankTemplatePagesStreamUrl(
+    target: BlankTemplateTarget,
+    id: number,
+): string {
+    return `${apiBaseUrl}/api/partners/blank-templates/${target}/${id}/pages/stream/`;
+}
+
+export async function regenerateBlankTemplatePages(
+    target: BlankTemplateTarget,
+    id: number,
+): Promise<void> {
+    await api.post(
+        `/api/partners/blank-templates/${target}/${id}/regenerate-pages/`,
+    );
+}
+
+export async function getBlankTemplateFields(
+    target: BlankTemplateTarget,
+    id: number,
+): Promise<{
+    placeholders: VisualPlaceholder[];
+    master_placeholders: VisualPlaceholder[];
+}> {
+    const { data } = await api.get<{
+        placeholders: VisualPlaceholder[];
+        master_placeholders: VisualPlaceholder[];
+    }>(`/api/partners/blank-templates/${target}/${id}/fields/`);
+    return data;
+}
+
+export async function saveBlankTemplateFields(
+    target: BlankTemplateTarget,
+    id: number,
+    placeholders: VisualPlaceholder[],
+): Promise<VisualPlaceholder[]> {
+    const { data } = await api.post<{ placeholders: VisualPlaceholder[] }>(
+        `/api/partners/blank-templates/${target}/${id}/fields/`,
+        { placeholders },
+    );
+    return data.placeholders;
+}
+
+export async function getEmployeeTrainings(params: {
+    employee_id?: number;
+    client_company_id?: number;
+}): Promise<EmployeeTraining[]> {
+    const search = new URLSearchParams();
+    if (params.employee_id != null)
+        search.set("employee_id", String(params.employee_id));
+    if (params.client_company_id != null)
+        search.set("client_company_id", String(params.client_company_id));
+    const qs = search.toString();
+    const url = qs
+        ? `/api/partners/employee-trainings/?${qs}`
+        : "/api/partners/employee-trainings/";
+    const { data } = await api.get<ListResponse<EmployeeTraining>>(url);
+    return asList(data);
+}
+
+export async function createEmployeeTraining(
+    payload: Partial<EmployeeTraining>,
+): Promise<EmployeeTraining> {
+    const { data } = await api.post<EmployeeTraining>(
+        "/api/partners/employee-trainings/",
+        payload,
+    );
+    return data;
+}
+
+export async function deleteEmployeeTraining(id: number): Promise<void> {
+    await api.delete(`/api/partners/employee-trainings/${id}/`);
+}
+
+export async function getCompanyDocumentKinds(): Promise<
+    CompanyDocumentKindDef[]
+> {
+    const { data } = await api.get<ListResponse<CompanyDocumentKindDef>>(
+        "/api/partners/company-document-kinds/",
+    );
+    return asList(data);
+}
+
+export async function getTestQuestions(
+    clientCompanyId?: number | null,
+): Promise<TestQuestion[]> {
+    const search = new URLSearchParams();
+    if (clientCompanyId != null) {
+        search.set("client_company_id", String(clientCompanyId));
+    }
+    const qs = search.toString();
+    const url = qs
+        ? `/api/testing/questions/?${qs}`
+        : "/api/testing/questions/";
+    const { data } = await api.get<ListResponse<TestQuestion>>(url);
+    return asList(data);
+}
+
+export async function submitTestAttempt(
+    payload: TestAttemptPayload,
+): Promise<TestAttempt> {
+    const { data } = await api.post<TestAttempt>(
+        "/api/testing/attempts/",
+        payload,
+    );
+    return data;
 }

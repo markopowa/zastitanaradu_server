@@ -1,5 +1,8 @@
+import uuid
+
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class RiskLevel(models.Model):
@@ -39,11 +42,13 @@ class JobRole(models.Model):
         null=True,
         blank=True,
     )
+    obrazac6_fields = models.JSONField(default=list, blank=True)
     lzo_revers_template = models.FileField(
         upload_to="job_role_templates/lzo/",
         null=True,
         blank=True,
     )
+    lzo_revers_fields = models.JSONField(default=list, blank=True)
     potvrda_clan5_template = models.FileField(
         upload_to="job_role_templates/potvrda_clan5/",
         null=True,
@@ -204,6 +209,61 @@ class Employee(models.Model):
         return None
 
 
+class TrainingType(models.Model):
+    client_company = models.ForeignKey(
+        "ClientCompany",
+        on_delete=models.CASCADE,
+        related_name="training_types",
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    potvrda_template = models.FileField(
+        upload_to="training_types/potvrda/",
+        null=True,
+        blank=True,
+    )
+    potvrda_fields = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Vrsta obuke"
+        verbose_name_plural = "Vrste obuka"
+        ordering = ("client_company", "name")
+        unique_together = ("client_company", "name")
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class EmployeeTraining(models.Model):
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name="trainings",
+    )
+    training_type = models.ForeignKey(
+        TrainingType,
+        on_delete=models.PROTECT,
+        related_name="employee_trainings",
+    )
+    completed_at = models.DateField(null=True, blank=True)
+    valid_until = models.DateField(null=True, blank=True)
+    certificate_file = models.FileField(
+        upload_to="training_certificates/",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Obuka zaposlenog"
+        verbose_name_plural = "Obuke zaposlenih"
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.training_type} — {self.employee}"
+
+
 class ContactPerson(models.Model):
     ROLE_DIRECTOR = "DIRECTOR"
     ROLE_SAFETY_OFFICER = "SAFETY_OFFICER"
@@ -254,6 +314,7 @@ class CompanyDocument(models.Model):
     KIND_DECISION_ZOP = "DECISION_ZOP"
     KIND_OCENA_MEDICINE_RADA = "OCENA_MEDICINE_RADA"
     KIND_OBRAZAC1 = "OBRAZAC1"
+    KIND_HIGH_RISK_REGISTRY = "HIGH_RISK_REGISTRY"
     KIND_CHOICES = (
         (KIND_CONTRACT, "Ugovor"),
         (KIND_DECISION, "Odluka o imenovanju lica za BZNR"),
@@ -268,14 +329,16 @@ class CompanyDocument(models.Model):
         (KIND_DECISION_ZOP, "Odluka o imenovanju lica za ZOP"),
         (KIND_OCENA_MEDICINE_RADA, "Ocena medicine rada"),
         (KIND_OBRAZAC1, "Obrazac 1 — evidencija lekarskih pregleda"),
+        (KIND_HIGH_RISK_REGISTRY, "Evidencija radnih mesta sa povećanim rizikom"),
     )
+    KIND_LABELS = dict(KIND_CHOICES)
 
     client_company = models.ForeignKey(
         "ClientCompany",
         on_delete=models.CASCADE,
         related_name="company_documents",
     )
-    kind = models.CharField(max_length=32, choices=KIND_CHOICES)
+    kind = models.CharField(max_length=32)
     file = models.FileField(upload_to="company_documents/")
     uploaded_at = models.DateTimeField(auto_now_add=True)
     uploaded_by = models.ForeignKey(
@@ -294,6 +357,28 @@ class CompanyDocument(models.Model):
 
     def __str__(self) -> str:
         return f"{self.get_kind_display()} ({self.client_company_id})"
+
+    def get_kind_display(self) -> str:
+        if self.kind in self.KIND_LABELS:
+            return self.KIND_LABELS[self.kind]
+        entry = CompanyDocumentKind.objects.filter(code=self.kind).first()
+        return entry.name if entry else self.kind
+
+
+class CompanyDocumentKind(models.Model):
+    code = models.CharField(max_length=32, unique=True)
+    name = models.CharField(max_length=255)
+    optional = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Vrsta dokumenta firme"
+        verbose_name_plural = "Vrste dokumenata firme"
+        ordering = ("order", "name")
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class RiskAssessmentAct(models.Model):
@@ -615,3 +700,355 @@ class CompanyRegistryEntry(models.Model):
 
     def __str__(self) -> str:
         return f"{self.registration_number} {self.name}"
+
+
+class WorkInjury(models.Model):
+    SEVERITY_LAKA = "LAKA"
+    SEVERITY_TESKA = "TESKA"
+    SEVERITY_SMRTNA = "SMRTNA"
+    SEVERITY_KOLEKTIVNA = "KOLEKTIVNA"
+    SEVERITY_CHOICES = (
+        (SEVERITY_LAKA, "Laka povreda"),
+        (SEVERITY_TESKA, "Teška povreda"),
+        (SEVERITY_SMRTNA, "Smrtna povreda"),
+        (SEVERITY_KOLEKTIVNA, "Kolektivna povreda"),
+    )
+
+    client_company = models.ForeignKey(
+        ClientCompany,
+        on_delete=models.CASCADE,
+        related_name="work_injuries",
+    )
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name="work_injuries",
+    )
+    date = models.DateField()
+    severity = models.CharField(max_length=16, choices=SEVERITY_CHOICES)
+    description = models.TextField(blank=True)
+    report_file = models.FileField(
+        upload_to="injuries/",
+        null=True,
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_work_injuries",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "Povreda na radu"
+        verbose_name_plural = "Povrede na radu"
+        ordering = ("-date",)
+
+    def __str__(self) -> str:
+        return f"{self.employee} – {self.date}"
+
+
+SEVERE_WORK_INJURY_SEVERITIES = (
+    WorkInjury.SEVERITY_TESKA,
+    WorkInjury.SEVERITY_SMRTNA,
+    WorkInjury.SEVERITY_KOLEKTIVNA,
+)
+
+
+def notify_severe_work_injury(injury: "WorkInjury") -> None:
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    if injury.severity not in SEVERE_WORK_INJURY_SEVERITIES:
+        return
+
+    try:
+        _send_severe_work_injury_alert(injury, logger)
+    except Exception:
+        logger.exception(
+            "Failed to process severe work injury alert for injury id=%s",
+            injury.pk,
+        )
+
+
+def _send_severe_work_injury_alert(injury: "WorkInjury", logger) -> None:
+    from processes.activity_log import log_activity
+    from processes.date_format import format_date_display
+    from processes.models import ActivityLog
+    from processes.utils import internal_mak_recipients
+
+    employee_name = f"{injury.employee.first_name} {injury.employee.last_name}".strip()
+    company_name = injury.client_company.name
+    severity_label = injury.get_severity_display()
+    date_display = format_date_display(injury.date)
+
+    subject = f"HITNO: {severity_label} na radu – {company_name}"
+    body = (
+        f"Prijavljena je {severity_label.lower()} na radu.\n\n"
+        f"Zaposleni: {employee_name}\n"
+        f"Firma: {company_name}\n"
+        f"Datum: {date_display}\n"
+        f"Težina: {severity_label}\n\n"
+        f"Prijaviti inspekciji rada odmah, najkasnije u roku od 24 časa — "
+        f"usmeno i pismeno. Pravni osnov: Zakon o BZR čl. 50."
+    )
+
+    recipients = list(internal_mak_recipients())
+    company_email = (injury.client_company.email or "").strip()
+    if company_email and company_email not in recipients:
+        recipients.append(company_email)
+
+    sent = False
+    if recipients:
+        try:
+            from core.email_sender import get_email_sender
+
+            sent = bool(
+                get_email_sender().send(
+                    recipients=recipients,
+                    subject=subject,
+                    body=body,
+                    fail_silently=True,
+                )
+            )
+        except Exception:
+            logger.exception(
+                "Failed to send severe work injury alert for injury id=%s",
+                injury.pk,
+            )
+
+    log_activity(
+        ActivityLog.EVENT_RUN_SENT,
+        (
+            f"Prijava povrede na radu ({severity_label}): {employee_name} – "
+            f"{company_name}, {date_display}."
+        ),
+        extra_data={
+            "work_injury_id": injury.pk,
+            "severity": injury.severity,
+            "recipients": recipients,
+            "email_sent": sent,
+        },
+    )
+
+
+def _generate_intake_token() -> str:
+    return uuid.uuid4().hex
+
+
+class ClientIntakeLink(models.Model):
+    client_company = models.ForeignKey(
+        ClientCompany,
+        on_delete=models.CASCADE,
+        related_name="intake_links",
+    )
+    token = models.CharField(
+        max_length=32,
+        unique=True,
+        default=_generate_intake_token,
+        editable=False,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Link za upitnik klijenta"
+        verbose_name_plural = "Linkovi za upitnik klijenta"
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.client_company} — {self.token}"
+
+    @property
+    def is_valid(self) -> bool:
+        if not self.is_active:
+            return False
+        if self.expires_at and timezone.now() > self.expires_at:
+            return False
+        return True
+
+
+class ClientIntakeSubmission(models.Model):
+    KIND_EMPLOYEE = "EMPLOYEE"
+    KIND_EQUIPMENT = "EQUIPMENT"
+    KIND_CHOICES = (
+        (KIND_EMPLOYEE, "Novi zaposleni"),
+        (KIND_EQUIPMENT, "Nova oprema"),
+    )
+
+    STATUS_PENDING = "PENDING"
+    STATUS_APPROVED = "APPROVED"
+    STATUS_REJECTED = "REJECTED"
+    STATUS_CHOICES = (
+        (STATUS_PENDING, "Na čekanju"),
+        (STATUS_APPROVED, "Odobreno"),
+        (STATUS_REJECTED, "Odbijeno"),
+    )
+
+    link = models.ForeignKey(
+        ClientIntakeLink,
+        on_delete=models.CASCADE,
+        related_name="submissions",
+    )
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    data = models.JSONField(default=dict)
+    status = models.CharField(
+        max_length=16,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name="reviewed_intake_submissions",
+        null=True,
+        blank=True,
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Prijava upitnika klijenta"
+        verbose_name_plural = "Prijave upitnika klijenta"
+        ordering = ("-created_at",)
+
+    def __str__(self) -> str:
+        return f"{self.get_kind_display()} ({self.link.client_company_id}) — {self.status}"
+
+
+class Hazard(models.Model):
+    KIND_OPASNOST = "OPASNOST"
+    KIND_STETNOST = "STETNOST"
+    KIND_CHOICES = (
+        (KIND_OPASNOST, "Opasnost"),
+        (KIND_STETNOST, "Štetnost"),
+    )
+
+    code = models.CharField(max_length=32, unique=True)
+    label = models.CharField(max_length=255)
+    kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Opasnost/štetnost"
+        verbose_name_plural = "Opasnosti i štetnosti"
+        ordering = ("kind", "order", "label")
+
+    def __str__(self) -> str:
+        return f"{self.label} ({self.get_kind_display()})"
+
+
+class KinneyScaleOption(models.Model):
+    FACTOR_VEROVATNOCA = "V"
+    FACTOR_IZLOZENOST = "I"
+    FACTOR_POSLEDICA = "P"
+    FACTOR_CHOICES = (
+        (FACTOR_VEROVATNOCA, "Verovatnoća"),
+        (FACTOR_IZLOZENOST, "Izloženost"),
+        (FACTOR_POSLEDICA, "Posledica"),
+    )
+
+    factor = models.CharField(max_length=1, choices=FACTOR_CHOICES)
+    value = models.FloatField()
+    label = models.CharField(max_length=255)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Skala procene rizika (opcija)"
+        verbose_name_plural = "Skala procene rizika (opcije)"
+        ordering = ("factor", "order", "value")
+        unique_together = ("factor", "value")
+
+    def __str__(self) -> str:
+        return f"{self.get_factor_display()}: {self.value} ({self.label})"
+
+
+class JobRoleHazard(models.Model):
+    job_role = models.ForeignKey(
+        JobRole,
+        on_delete=models.CASCADE,
+        related_name="hazards",
+    )
+    hazard = models.ForeignKey(
+        Hazard,
+        on_delete=models.PROTECT,
+        related_name="job_role_hazards",
+    )
+    verovatnoca = models.FloatField(default=1.0)
+    izlozenost = models.FloatField(default=1.0)
+    posledica = models.FloatField(default=1.0)
+    rizik = models.FloatField(default=0.0)
+    risk_category = models.CharField(max_length=16, blank=True)
+    mere = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Procena rizika radnog mesta"
+        verbose_name_plural = "Procene rizika radnih mesta"
+        ordering = ("job_role", "order", "id")
+        unique_together = ("job_role", "hazard")
+
+    def save(self, *args, **kwargs):
+        from .kinney import categorize, compute_rizik
+
+        self.rizik = compute_rizik(
+            self.verovatnoca, self.izlozenost, self.posledica)
+        self.risk_category = categorize(self.rizik)[0]
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.job_role.name} — {self.hazard.label} (R={self.rizik})"
+
+
+class JobRoleLZO(models.Model):
+    job_role = models.ForeignKey(
+        JobRole,
+        on_delete=models.CASCADE,
+        related_name="lzo_items",
+    )
+    name = models.CharField(max_length=255)
+    standard = models.CharField(max_length=255, blank=True)
+    interval_months = models.PositiveIntegerField(null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Sredstvo lične zaštite po radnom mestu"
+        verbose_name_plural = "Sredstva lične zaštite po radnom mestu"
+        ordering = ("job_role", "order", "id")
+
+    def __str__(self) -> str:
+        return f"{self.job_role.name}: {self.name}"
+
+
+def normalize_role_name(name: str) -> str:
+    import re
+    text = (name or "").lower().strip()
+    text = re.sub(r"[^0-9a-zšđčćžŠĐČĆŽ]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+class RoleLzoTemplate(models.Model):
+    role_name = models.CharField(max_length=255)
+    role_key = models.CharField(max_length=255, db_index=True)
+    name = models.CharField(max_length=255)
+    standard = models.CharField(max_length=255, blank=True)
+    interval_months = models.PositiveIntegerField(null=True, blank=True)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = "Tipska LZO po radnom mestu"
+        verbose_name_plural = "Tipska LZO po radnom mestu"
+        ordering = ("role_name", "order", "id")
+
+    def save(self, *args, **kwargs):
+        self.role_key = normalize_role_name(self.role_name)
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.role_name}: {self.name}"

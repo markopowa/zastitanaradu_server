@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     "partners",
     "ai_processing",
     "processes",
+    "testing",
 ]
 
 MIDDLEWARE = [
@@ -170,3 +171,5 @@ LOGGING = {
 
 DOCUMENT_CONVERTIBLE_SUFFIXES = frozenset(
     {".docx", ".doc", ".odt", ".rtf", ".xlsx", ".pptx"})
+
+OPERATOR_NAME = os.environ.get("OPERATOR_NAME", "Zaštita na radu")

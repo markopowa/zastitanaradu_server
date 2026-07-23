@@ -44,6 +44,7 @@ type FieldGroups = {
 };
 
 const EMPLOYEE_FIELDS: TemplateField[] = [
+    { key: "employee.full_name", label: "Ime i prezime zaposlenog" },
     { key: "employee.first_name", label: "Ime zaposlenog" },
     { key: "employee.last_name", label: "Prezime zaposlenog" },
     { key: "employee.org_unit", label: "Organizaciona jedinica" },
@@ -96,6 +97,7 @@ const PROCESS_FIELDS: TemplateField[] = [
     { key: "instruction_number", label: "Broj uputa" },
     { key: "last_exam_date", label: "Datum prethodnog pregleda" },
     { key: "year_of_birth", label: "Godina rođenja" },
+    { key: "date_of_birth", label: "Datum rođenja" },
 ];
 
 const FIXED_TEXT_FIELD: TemplateField = {
@@ -132,6 +134,27 @@ function fieldsForContext(
 const MARKER_W = 12;
 const MARKER_H = 2.2;
 
+const ALL_KNOWN_FIELDS: TemplateField[] = [
+    FIXED_TEXT_FIELD,
+    ...EMPLOYEE_FIELDS,
+    ...EQUIPMENT_FIELDS,
+    ...CLIENT_FIELDS,
+    ...PROCESS_FIELDS,
+];
+
+function labelForKey(key: string, available: TemplateField[]): string {
+    return (
+        available.find((f) => f.key === key)?.label ??
+        ALL_KNOWN_FIELDS.find((f) => f.key === key)?.label ??
+        key
+    );
+}
+
+function widthForLabel(label: string): number {
+    const perChar = 0.95;
+    return Math.min(92, Math.max(6, label.length * perChar + 1.5));
+}
+
 const GRID_STEP_OPTIONS = [0.5, 1, 2, 5];
 
 interface Props {
@@ -139,6 +162,17 @@ interface Props {
     template: DocumentTemplate;
     onClose: () => void;
     onSaved: (updated: DocumentTemplate) => void;
+    // Overrides that let this dialog edit a firm blank's own placement JSON
+    // (JobRole.obrazac6_fields / lzo_revers_fields, TrainingType.potvrda_fields)
+    // instead of a DocumentTemplate's generation_config. When provided, the
+    // dialog streams pages from `streamUrl` and reads/writes fields through
+    // `loadFields`/`saveFields` rather than the documents/ endpoints.
+    streamUrl?: string;
+    loadFields?: () => Promise<{
+        placeholders: VisualPlaceholder[];
+        master_placeholders?: VisualPlaceholder[];
+    }>;
+    saveFields?: (placeholders: VisualPlaceholder[]) => Promise<unknown>;
 }
 
 type MenuAnchor = { el: Element; page: number; xPct: number; yPct: number };
@@ -244,13 +278,18 @@ export default class TemplateStructureEditorDialog extends Component<
     componentDidUpdate(prevProps: Props): void {
         const { open, template } = this.props;
         const opened = !prevProps.open && open;
-        const idChanged = prevProps.template.id !== template.id;
+        const urlChanged =
+            this.resolveStreamUrl(prevProps) !== this.resolveStreamUrl(this.props);
         const configChanged =
+            !this.props.loadFields &&
             prevProps.template.generation_config !== template.generation_config;
-        if (open && (opened || idChanged || configChanged)) {
+        if (open && (opened || urlChanged || configChanged)) {
             this.loadEditorData();
         }
     }
+
+    private resolveStreamUrl = (props: Props): string =>
+        props.streamUrl ?? documentTemplatePagesStreamUrl(props.template.id);
 
     componentWillUnmount(): void {
         if (this.activeDrag) {
@@ -277,15 +316,7 @@ export default class TemplateStructureEditorDialog extends Component<
     };
 
     private loadEditorData = (): void => {
-        const { template } = this.props;
-        const config = (template.generation_config ?? {}) as Record<
-            string,
-            unknown
-        >;
-        const initialPlaceholders: VisualPlaceholder[] =
-            config.mode === "VISUAL" && Array.isArray(config.placeholders)
-                ? (config.placeholders as VisualPlaceholder[])
-                : [];
+        const { template, loadFields } = this.props;
 
         this.closePagesStream();
         this.setState((prev) => ({
@@ -294,23 +325,54 @@ export default class TemplateStructureEditorDialog extends Component<
             loading: true,
             generating: false,
             pageUrls: [],
-            placeholders: initialPlaceholders,
+            placeholders: [],
         }));
 
-        this.openPagesStream(template.id);
+        if (loadFields) {
+            loadFields()
+                .then(({ placeholders, master_placeholders }) => {
+                    const initial =
+                        placeholders.length > 0
+                            ? placeholders
+                            : (master_placeholders ?? []);
+                    this.setState((prev) => ({
+                        ...prev,
+                        placeholders: initial,
+                    }));
+                })
+                .catch(() =>
+                    this.setState((prev) => ({
+                        ...prev,
+                        error: "Greška pri učitavanju polja.",
+                        loading: false,
+                    })),
+                );
+        } else {
+            const config = (template.generation_config ?? {}) as Record<
+                string,
+                unknown
+            >;
+            const initialPlaceholders: VisualPlaceholder[] =
+                config.mode === "VISUAL" && Array.isArray(config.placeholders)
+                    ? (config.placeholders as VisualPlaceholder[])
+                    : [];
+            this.setState((prev) => ({
+                ...prev,
+                placeholders: initialPlaceholders,
+            }));
+        }
+
+        this.openPagesStream(this.resolveStreamUrl(this.props));
     };
 
     // Subscribe to the backend SSE stream. The server pushes a `done` event with
     // the page URLs the moment rendering finishes — no client-side polling. If
     // the connection drops mid-generation, EventSource reconnects on its own.
-    private openPagesStream = (templateId: number): void => {
+    private openPagesStream = (url: string): void => {
         const isStale = (): boolean =>
-            !this.props.open || this.props.template.id !== templateId;
+            !this.props.open || this.resolveStreamUrl(this.props) !== url;
 
-        const stream = new EventSource(
-            documentTemplatePagesStreamUrl(templateId),
-            { withCredentials: true },
-        );
+        const stream = new EventSource(url, { withCredentials: true });
         this.pagesStream = stream;
         this.setState((prev) => ({
             ...prev,
@@ -329,9 +391,13 @@ export default class TemplateStructureEditorDialog extends Component<
             } catch {
                 pages = [];
             }
+            const cb = Date.now();
+            const busted = pages.map(
+                (u) => u + (u.includes("?") ? "&" : "?") + "cb=" + cb,
+            );
             this.setState((prev) => ({
                 ...prev,
-                pageUrls: pages,
+                pageUrls: busted,
                 loading: false,
                 generating: false,
             }));
@@ -456,6 +522,14 @@ export default class TemplateStructureEditorDialog extends Component<
     };
 
     private handleFieldSelect = (fieldKey: string): void => {
+        const avail = fieldsForContext(
+            this.props.template.context_type,
+            this.state.fieldGroups ?? FALLBACK_GROUPS,
+        );
+        const newWidth =
+            fieldKey === FIXED_TEXT_KEY
+                ? MARKER_W
+                : widthForLabel(labelForKey(fieldKey, avail));
         this.setState((prev) => {
             if (prev.editingPhId) {
                 return {
@@ -482,7 +556,7 @@ export default class TemplateStructureEditorDialog extends Component<
                     page: prev.menuAnchor.page,
                     xPct: prev.menuAnchor.xPct,
                     yPct: prev.menuAnchor.yPct,
-                    widthPct: MARKER_W,
+                    widthPct: newWidth,
                     heightPct: MARKER_H,
                     fontSize: 10,
                     ...(fieldKey === FIXED_TEXT_KEY ? { fixedText: "" } : {}),
@@ -626,15 +700,20 @@ export default class TemplateStructureEditorDialog extends Component<
             enqueueSnackbar(err, { variant: "error" });
             return;
         }
-        const { template, onSaved, onClose } = this.props;
+        const { template, onSaved, onClose, saveFields } = this.props;
         const { placeholders } = this.state;
         this.setState((prev) => ({ ...prev, saving: true }));
         try {
-            const updated = await saveVisualPlaceholders(
-                template.id,
-                placeholders,
-            );
-            onSaved(updated);
+            if (saveFields) {
+                await saveFields(placeholders);
+                onSaved(template);
+            } else {
+                const updated = await saveVisualPlaceholders(
+                    template.id,
+                    placeholders,
+                );
+                onSaved(updated);
+            }
             enqueueSnackbar("Polja su sačuvana.", { variant: "success" });
             onClose();
         } catch {
@@ -787,12 +866,6 @@ export default class TemplateStructureEditorDialog extends Component<
                                         {placeholders
                                             .filter((ph) => ph.page === pageIdx)
                                             .map((ph) => {
-                                                const field =
-                                                    availableFields.find(
-                                                        (f) =>
-                                                            f.key ===
-                                                            ph.fieldKey,
-                                                    );
                                                 return (
                                                     <Box
                                                         key={ph.id}
@@ -815,18 +888,18 @@ export default class TemplateStructureEditorDialog extends Component<
                                                             top: `${ph.yPct}%`,
                                                             width: `${ph.widthPct}%`,
                                                             height: `${ph.heightPct}%`,
-                                                            minHeight: 18,
+                                                            containerType:
+                                                                "size",
                                                             backgroundColor:
-                                                                "rgba(46,125,50,0.18)",
-                                                            border: "2px solid rgba(46,125,50,0.7)",
+                                                                dragState?.phId ===
+                                                                ph.id
+                                                                    ? "rgba(102,187,106,0.6)"
+                                                                    : "rgba(102,187,106,0.42)",
+                                                            border: "1px solid #2e7d32",
                                                             borderRadius: "3px",
                                                             display: "flex",
                                                             alignItems:
-                                                                "flex-end",
-                                                            justifyContent:
-                                                                "flex-start",
-                                                            px: "4px",
-                                                            pb: "1px",
+                                                                "center",
                                                             cursor:
                                                                 dragState?.phId ===
                                                                 ph.id
@@ -834,9 +907,7 @@ export default class TemplateStructureEditorDialog extends Component<
                                                                     : "grab",
                                                             "&:hover": {
                                                                 backgroundColor:
-                                                                    "rgba(46,125,50,0.3)",
-                                                                borderColor:
-                                                                    "rgba(46,125,50,1)",
+                                                                    "rgba(102,187,106,0.6)",
                                                             },
                                                             transition:
                                                                 "background-color 0.1s",
@@ -850,17 +921,14 @@ export default class TemplateStructureEditorDialog extends Component<
                                                         <Typography
                                                             sx={{
                                                                 fontSize:
-                                                                    ph.fontSize ??
-                                                                    10,
+                                                                    "clamp(11px, 95cqh, 26px)",
                                                                 fontWeight: 600,
                                                                 color: "#1b5e20",
-                                                                lineHeight: 1.2,
+                                                                lineHeight: 1,
                                                                 whiteSpace:
                                                                     "nowrap",
                                                                 overflow:
-                                                                    "hidden",
-                                                                textOverflow:
-                                                                    "ellipsis",
+                                                                    "visible",
                                                                 pointerEvents:
                                                                     "none",
                                                             }}
@@ -869,8 +937,10 @@ export default class TemplateStructureEditorDialog extends Component<
                                                             FIXED_TEXT_KEY
                                                                 ? ph.fixedText ||
                                                                   "Unos teksta"
-                                                                : (field?.label ??
-                                                                  ph.fieldKey)}
+                                                                : labelForKey(
+                                                                      ph.fieldKey,
+                                                                      availableFields,
+                                                                  )}
                                                         </Typography>
                                                     </Box>
                                                 );
@@ -1073,9 +1143,6 @@ export default class TemplateStructureEditorDialog extends Component<
                                     }}
                                 >
                                     {placeholders.map((ph) => {
-                                        const field = availableFields.find(
-                                            (f) => f.key === ph.fieldKey,
-                                        );
                                         return (
                                             <Box
                                                 key={ph.id}
@@ -1121,8 +1188,10 @@ export default class TemplateStructureEditorDialog extends Component<
                                                             ? ph.fixedText
                                                                 ? `Unos teksta: ${ph.fixedText}`
                                                                 : "Unos teksta"
-                                                            : (field?.label ??
-                                                              ph.fieldKey)}
+                                                            : labelForKey(
+                                                                  ph.fieldKey,
+                                                                  availableFields,
+                                                              )}
                                                     </Typography>
                                                     <Typography
                                                         variant="caption"
@@ -1159,12 +1228,14 @@ export default class TemplateStructureEditorDialog extends Component<
                     <Button onClick={onClose} disabled={saving}>
                         Odustani
                     </Button>
-                    <Button
-                        onClick={() => void this.handlePreview()}
-                        disabled={saving || loading || previewLoading}
-                    >
-                        Pregled rezultata
-                    </Button>
+                    {!this.props.saveFields && (
+                        <Button
+                            onClick={() => void this.handlePreview()}
+                            disabled={saving || loading || previewLoading}
+                        >
+                            Pregled rezultata
+                        </Button>
+                    )}
                     <Button
                         onClick={() => void this.handleSave()}
                         variant="contained"

@@ -6,7 +6,15 @@ import {
     Box,
     CircularProgress,
     Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    FormControl,
+    InputLabel,
     Link,
+    MenuItem,
+    Select,
     Stack,
     Table,
     TableBody,
@@ -14,22 +22,33 @@ import {
     TableHead,
     TableRow,
 } from "@mui/material";
+import AddIcon from "@mui/icons-material/Add";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
 import ContactsIcon from "@mui/icons-material/Contacts";
+import DeleteIcon from "@mui/icons-material/Delete";
 import DescriptionIcon from "@mui/icons-material/Description";
+import DownloadIcon from "@mui/icons-material/Download";
 import EditIcon from "@mui/icons-material/Edit";
 import PersonIcon from "@mui/icons-material/Person";
+import QuizIcon from "@mui/icons-material/Quiz";
+import SchoolIcon from "@mui/icons-material/School";
 import SendIcon from "@mui/icons-material/Send";
 import { enqueueSnackbar } from "notistack";
 
 import {
+    createEmployeeTraining,
+    deleteEmployeeTraining,
+    generateEmployeeDocument,
     getEmployee,
     getEmployeeDocuments,
+    getEmployeeTrainings,
     getProcessBindings,
     getProcessRuns,
+    getTrainingTypes,
     sendNowForEmployee,
 } from "../api/processes";
+import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import {
     DetailCard,
     DetailField,
@@ -39,15 +58,20 @@ import {
 import { EmployeeFormDialog } from "../components/EmployeeFormDialog";
 import { EntityProcessBindingsPanel } from "../components/EntityProcessBindingsPanel";
 import { PermissionGate } from "../components/PermissionGate";
+import RowActionsMenu from "../components/RowActionsMenu";
 import { SendNowDialog } from "../components/SendNowDialog";
-import { ErrorState, RiskBadge } from "../design";
+import { ConfirmDialog, ErrorState, RiskBadge } from "../design";
 import { withNavigation } from "../hocs/withNavigation";
 import {
     ensureClientCompanies,
     ensureProcessTypes,
 } from "../store/processesSlice";
 import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
-import { formatDateDisplay, formatDateTimeDisplay } from "../utils/date";
+import {
+    displayDateToIso,
+    formatDateDisplay,
+    formatDateTimeDisplay,
+} from "../utils/date";
 
 import type { AppDispatch, RootState } from "../store";
 import type { Employee } from "../types/processes";
@@ -72,6 +96,20 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         sendDialogOpen: false,
         sendProcessTypeId: "",
         sending: false,
+        generatingObrazac6: false,
+        generatingLzoRevers: false,
+        trainingTypes: [],
+        trainings: [],
+        potvrdaDialogOpen: false,
+        potvrdaTrainingTypeId: "",
+        generatingPotvrda: false,
+        trainingDialogOpen: false,
+        trainingFormTypeId: "",
+        trainingFormCompletedAt: "",
+        trainingFormValidUntil: "",
+        savingTraining: false,
+        trainingDeleteId: null,
+        deletingTraining: false,
     };
 
     loadProcessData = (id: number): void => {
@@ -95,6 +133,30 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
             });
     };
 
+    loadTrainings = (id: number): void => {
+        getEmployeeTrainings({ employee_id: id })
+            .then((trainings) => this.setState({ trainings }))
+            .catch(() => {
+                enqueueSnackbar("Greška pri učitavanju obuka.", {
+                    variant: "error",
+                });
+            });
+    };
+
+    loadTrainingTypes = (clientCompanyId: number | null): void => {
+        if (clientCompanyId == null) {
+            this.setState({ trainingTypes: [] });
+            return;
+        }
+        getTrainingTypes({ client_company_id: clientCompanyId })
+            .then((trainingTypes) => this.setState({ trainingTypes }))
+            .catch(() => {
+                enqueueSnackbar("Greška pri učitavanju vrsta obuka.", {
+                    variant: "error",
+                });
+            });
+    };
+
     loadById = (id: number): void => {
         getEmployee(id)
             .then((item) => {
@@ -106,6 +168,8 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                 }));
                 this.updateBreadcrumbs(item);
                 this.loadProcessData(id);
+                this.loadTrainings(id);
+                this.loadTrainingTypes(item.client_company ?? null);
             })
             .catch(() =>
                 this.setState((prev) => ({
@@ -242,11 +306,196 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
             );
     };
 
+    refreshDocuments = (): void => {
+        const { item } = this.state;
+        if (!item) return;
+        getEmployeeDocuments(item.id)
+            .then((documents) => this.setState({ documents }))
+            .catch(() => {
+                enqueueSnackbar("Greška pri učitavanju dokumenata.", {
+                    variant: "error",
+                });
+            });
+    };
+
+    setGeneratingState = (
+        kind: "OBRAZAC6" | "LZO_REVERS",
+        value: boolean,
+    ): void => {
+        if (kind === "OBRAZAC6") {
+            this.setState({ generatingObrazac6: value });
+        } else {
+            this.setState({ generatingLzoRevers: value });
+        }
+    };
+
+    handleGenerateDocument = (kind: "OBRAZAC6" | "LZO_REVERS"): void => {
+        const { item } = this.state;
+        if (!item) return;
+        this.setGeneratingState(kind, true);
+        generateEmployeeDocument(item.id, kind)
+            .then(() => {
+                this.setGeneratingState(kind, false);
+                enqueueSnackbar("Dokument generisan.", {
+                    variant: "success",
+                });
+                this.refreshDocuments();
+            })
+            .catch((err: { message?: string }) => {
+                this.setGeneratingState(kind, false);
+                enqueueSnackbar(
+                    err.message ?? "Greška pri generisanju dokumenta.",
+                    { variant: "error" },
+                );
+            });
+    };
+
+    openPotvrdaDialog = (): void => {
+        const { trainingTypes } = this.state;
+        this.setState({
+            potvrdaDialogOpen: true,
+            potvrdaTrainingTypeId: trainingTypes[0]
+                ? String(trainingTypes[0].id)
+                : "",
+        });
+    };
+
+    closePotvrdaDialog = (): void => {
+        this.setState({ potvrdaDialogOpen: false, potvrdaTrainingTypeId: "" });
+    };
+
+    handleGeneratePotvrda = (): void => {
+        const { item, potvrdaTrainingTypeId } = this.state;
+        if (!item || !potvrdaTrainingTypeId) return;
+        this.setState({ generatingPotvrda: true });
+        generateEmployeeDocument(item.id, "POTVRDA_CLAN5", {
+            training_type_id: Number(potvrdaTrainingTypeId),
+        })
+            .then(() => {
+                this.setState({
+                    generatingPotvrda: false,
+                    potvrdaDialogOpen: false,
+                });
+                enqueueSnackbar("Dokument generisan.", {
+                    variant: "success",
+                });
+                this.refreshDocuments();
+            })
+            .catch((err: { message?: string }) => {
+                this.setState({ generatingPotvrda: false });
+                enqueueSnackbar(
+                    err.message ?? "Greška pri generisanju dokumenta.",
+                    { variant: "error" },
+                );
+            });
+    };
+
+    openTrainingDialog = (): void => {
+        const { trainingTypes } = this.state;
+        this.setState({
+            trainingDialogOpen: true,
+            trainingFormTypeId: trainingTypes[0]
+                ? String(trainingTypes[0].id)
+                : "",
+            trainingFormCompletedAt: "",
+            trainingFormValidUntil: "",
+        });
+    };
+
+    closeTrainingDialog = (): void => {
+        this.setState({ trainingDialogOpen: false, savingTraining: false });
+    };
+
+    saveTraining = (): void => {
+        const { item, trainingFormTypeId, trainingFormCompletedAt } =
+            this.state;
+        const { trainingFormValidUntil } = this.state;
+        if (!item || !trainingFormTypeId) return;
+        this.setState({ savingTraining: true });
+        createEmployeeTraining({
+            employee: item.id,
+            training_type: Number(trainingFormTypeId),
+            completed_at:
+                displayDateToIso(trainingFormCompletedAt) ?? undefined,
+            valid_until:
+                displayDateToIso(trainingFormValidUntil) ?? undefined,
+        })
+            .then((saved) => {
+                this.setState((prev) => ({
+                    trainings: [saved, ...prev.trainings],
+                    savingTraining: false,
+                    trainingDialogOpen: false,
+                }));
+                enqueueSnackbar("Obuka je dodata.", { variant: "success" });
+            })
+            .catch(
+                (
+                    err:
+                        | { message?: string }
+                        | { response?: { data?: { detail?: string } } },
+                ) => {
+                    const msg =
+                        (err as { response?: { data?: { detail?: string } } })
+                            .response?.data?.detail ??
+                        (err as { message?: string }).message ??
+                        "Greška pri čuvanju obuke.";
+                    enqueueSnackbar(msg, { variant: "error" });
+                    this.setState({ savingTraining: false });
+                },
+            );
+    };
+
+    confirmDeleteTraining = (id: number): void => {
+        this.setState({ trainingDeleteId: id });
+    };
+
+    cancelDeleteTraining = (): void => {
+        this.setState({ trainingDeleteId: null, deletingTraining: false });
+    };
+
+    executeDeleteTraining = (): void => {
+        const { trainingDeleteId } = this.state;
+        if (trainingDeleteId == null) return;
+        this.setState({ deletingTraining: true });
+        deleteEmployeeTraining(trainingDeleteId)
+            .then(() => {
+                this.setState((prev) => ({
+                    trainings: prev.trainings.filter(
+                        (x) => x.id !== trainingDeleteId,
+                    ),
+                    trainingDeleteId: null,
+                    deletingTraining: false,
+                }));
+                enqueueSnackbar("Obuka je obrisana.", { variant: "success" });
+            })
+            .catch(() => {
+                enqueueSnackbar("Greška pri brisanju obuke.", {
+                    variant: "error",
+                });
+                this.setState({ deletingTraining: false });
+            });
+    };
+
     render() {
         const { item, bindings, runs, documents, loading, error } =
             this.state;
         const { editDialogOpen, sendDialogOpen, sendProcessTypeId, sending } =
             this.state;
+        const { generatingObrazac6, generatingLzoRevers } = this.state;
+        const {
+            trainingTypes,
+            trainings,
+            potvrdaDialogOpen,
+            potvrdaTrainingTypeId,
+            generatingPotvrda,
+            trainingDialogOpen,
+            trainingFormTypeId,
+            trainingFormCompletedAt,
+            trainingFormValidUntil,
+            savingTraining,
+            trainingDeleteId,
+            deletingTraining,
+        } = this.state;
         const { navigate, clientCompanies, processTypes } = this.props;
 
         if (loading) {
@@ -311,6 +560,68 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                                         Izmeni
                                     </Button>
                                 </PermissionGate>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={
+                                        generatingObrazac6 ? (
+                                            <CircularProgress size={16} />
+                                        ) : (
+                                            <DownloadIcon />
+                                        )
+                                    }
+                                    disabled={generatingObrazac6}
+                                    onClick={() =>
+                                        this.handleGenerateDocument(
+                                            "OBRAZAC6",
+                                        )
+                                    }
+                                >
+                                    Obrazac 6
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={
+                                        generatingLzoRevers ? (
+                                            <CircularProgress size={16} />
+                                        ) : (
+                                            <DownloadIcon />
+                                        )
+                                    }
+                                    disabled={generatingLzoRevers}
+                                    onClick={() =>
+                                        this.handleGenerateDocument(
+                                            "LZO_REVERS",
+                                        )
+                                    }
+                                >
+                                    Revers LZO
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<DownloadIcon />}
+                                    disabled={trainingTypes.length === 0}
+                                    title={
+                                        trainingTypes.length === 0
+                                            ? "Firma nema definisane vrste obuka."
+                                            : undefined
+                                    }
+                                    onClick={this.openPotvrdaDialog}
+                                >
+                                    Potvrda (čl. 5)
+                                </Button>
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<QuizIcon />}
+                                    onClick={() =>
+                                        navigate(`/testing/${item.id}`)
+                                    }
+                                >
+                                    Test obuke
+                                </Button>
                                 <PermissionGate permission="processes.add_processrun">
                                     <Button
                                         size="small"
@@ -494,6 +805,89 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                             </Box>
                         )}
                     </DetailCard>
+                    <DetailCard
+                        title="Obuke"
+                        icon={
+                            <SchoolIcon fontSize="small" color="action" />
+                        }
+                        action={
+                            <PermissionGate permission="partners.add_employeetraining">
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    startIcon={<AddIcon />}
+                                    disabled={trainingTypes.length === 0}
+                                    onClick={this.openTrainingDialog}
+                                >
+                                    Dodaj obuku
+                                </Button>
+                            </PermissionGate>
+                        }
+                    >
+                        {trainings.length === 0 ? (
+                            <Box
+                                sx={{
+                                    color: "text.secondary",
+                                    fontSize: "0.875rem",
+                                }}
+                            >
+                                Nema evidentiranih obuka.
+                            </Box>
+                        ) : (
+                            <Box sx={{ overflow: "auto" }}>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Vrsta</TableCell>
+                                            <TableCell>Završena</TableCell>
+                                            <TableCell>Važi do</TableCell>
+                                            <TableCell align="right">
+                                                Akcije
+                                            </TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {trainings.map((tr) => (
+                                            <TableRow key={tr.id}>
+                                                <TableCell>
+                                                    {tr.training_type_name}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatDateDisplay(
+                                                        tr.completed_at,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell>
+                                                    {formatDateDisplay(
+                                                        tr.valid_until,
+                                                    )}
+                                                </TableCell>
+                                                <TableCell align="right">
+                                                    <RowActionsMenu
+                                                        actions={[
+                                                            {
+                                                                label: "Obriši",
+                                                                icon: (
+                                                                    <DeleteIcon fontSize="small" />
+                                                                ),
+                                                                permission:
+                                                                    "partners.delete_employeetraining",
+                                                                color: "error",
+                                                                onClick: () =>
+                                                                    this.confirmDeleteTraining(
+                                                                        tr.id,
+                                                                    ),
+                                                            },
+                                                        ]}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        )}
+                    </DetailCard>
                 </Stack>
 
                 <EntityProcessBindingsPanel
@@ -527,6 +921,128 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                     }
                     onClose={this.closeSendDialog}
                     onSend={this.handleSend}
+                />
+
+                <Dialog
+                    open={potvrdaDialogOpen}
+                    onClose={this.closePotvrdaDialog}
+                    maxWidth="xs"
+                    fullWidth
+                >
+                    <DialogTitle>Potvrda po članu 5</DialogTitle>
+                    <DialogContent>
+                        <FormControl margin="dense" fullWidth size="small">
+                            <InputLabel>Vrsta obuke</InputLabel>
+                            <Select
+                                label="Vrsta obuke"
+                                value={potvrdaTrainingTypeId}
+                                onChange={(e) =>
+                                    this.setState({
+                                        potvrdaTrainingTypeId:
+                                            e.target.value,
+                                    })
+                                }
+                            >
+                                {trainingTypes.map((tt) => (
+                                    <MenuItem key={tt.id} value={String(tt.id)}>
+                                        {tt.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={this.closePotvrdaDialog}
+                            disabled={generatingPotvrda}
+                        >
+                            Odustani
+                        </Button>
+                        <Button
+                            variant="contained"
+                            disabled={
+                                generatingPotvrda || !potvrdaTrainingTypeId
+                            }
+                            onClick={this.handleGeneratePotvrda}
+                        >
+                            {generatingPotvrda
+                                ? "Generišem..."
+                                : "Generiši dokument"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <Dialog
+                    open={trainingDialogOpen}
+                    onClose={this.closeTrainingDialog}
+                    maxWidth="xs"
+                    fullWidth
+                >
+                    <DialogTitle>Nova obuka</DialogTitle>
+                    <DialogContent>
+                        <FormControl margin="dense" fullWidth size="small">
+                            <InputLabel>Vrsta obuke</InputLabel>
+                            <Select
+                                label="Vrsta obuke"
+                                value={trainingFormTypeId}
+                                onChange={(e) =>
+                                    this.setState({
+                                        trainingFormTypeId: e.target.value,
+                                    })
+                                }
+                            >
+                                {trainingTypes.map((tt) => (
+                                    <MenuItem key={tt.id} value={String(tt.id)}>
+                                        {tt.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <DateTextFieldWithPicker
+                            label="Datum završetka"
+                            value={trainingFormCompletedAt}
+                            allowPast
+                            onChange={(value) =>
+                                this.setState({
+                                    trainingFormCompletedAt: value,
+                                })
+                            }
+                        />
+                        <DateTextFieldWithPicker
+                            label="Važi do"
+                            value={trainingFormValidUntil}
+                            allowPast
+                            onChange={(value) =>
+                                this.setState({
+                                    trainingFormValidUntil: value,
+                                })
+                            }
+                        />
+                    </DialogContent>
+                    <DialogActions>
+                        <Button
+                            onClick={this.closeTrainingDialog}
+                            disabled={savingTraining}
+                        >
+                            Odustani
+                        </Button>
+                        <Button
+                            variant="contained"
+                            disabled={savingTraining || !trainingFormTypeId}
+                            onClick={this.saveTraining}
+                        >
+                            {savingTraining ? "Čuvam..." : "Sačuvaj"}
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+
+                <ConfirmDialog
+                    open={trainingDeleteId != null}
+                    title="Obriši obuku"
+                    message="Da li si siguran da želiš da obrišeš ovu obuku?"
+                    loading={deletingTraining}
+                    onConfirm={this.executeDeleteTraining}
+                    onClose={this.cancelDeleteTraining}
                 />
             </Box>
         );

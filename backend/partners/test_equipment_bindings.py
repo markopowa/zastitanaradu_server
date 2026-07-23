@@ -1,10 +1,14 @@
 import uuid
 
+from django.contrib.auth import get_user_model
 from django.test import TestCase
+from rest_framework.test import APITestCase
 
 from partners.equipment_bindings import ensure_default_bindings_for_equipment
 from partners.models import ClientCompany, EquipmentItem
 from processes.models import ProcessBinding, ProcessRun, ProcessType
+
+User = get_user_model()
 
 
 def make_company(**kwargs):
@@ -82,3 +86,32 @@ class AutoSpawnEquipmentBindingsTest(TestCase):
             equipment_item=equipment,
         )
         self.assertEqual(bindings.count(), 0)
+
+
+class EquipmentApiTest(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_superuser(
+            "eqapi", "eqapi@example.com", "pass12345")
+        self.client.force_authenticate(user=self.user)
+        self.company = make_company()
+
+    def test_list_with_existing_row_returns_200(self):
+        EquipmentItem.objects.create(
+            client_company=self.company, name="Viljuškar", category="transport")
+        r = self.client.get("/api/partners/equipment/")
+        self.assertEqual(r.status_code, 200, r.content)
+        self.assertGreaterEqual(len(r.data["results"]), 1)
+        self.assertIn("client_company_name", r.data["results"][0])
+
+    def test_create_and_detail_return_expected(self):
+        r = self.client.post(
+            "/api/partners/equipment/",
+            {"client_company": self.company.id, "name": "Kran",
+             "category": "dizalica"},
+            format="json")
+        self.assertEqual(r.status_code, 201, r.content)
+        item_id = r.data["id"]
+        self.assertEqual(r.data["client_company_name"], self.company.name)
+        d = self.client.get(f"/api/partners/equipment/{item_id}/")
+        self.assertEqual(d.status_code, 200, d.content)
+        self.assertEqual(d.data["name"], "Kran")

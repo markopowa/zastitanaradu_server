@@ -48,6 +48,15 @@ from .utils import (
 logger = logging.getLogger(__name__)
 
 
+def versioned_media_url(request, rel_path):
+    url = request.build_absolute_uri(f"{settings.MEDIA_URL}{rel_path}")
+    try:
+        version = int((Path(settings.MEDIA_ROOT) / rel_path).stat().st_mtime)
+    except OSError:
+        version = 0
+    return f"{url}?v={version}"
+
+
 class DocumentCategoryViewSet(viewsets.ModelViewSet):
     queryset = DocumentCategory.objects.all().order_by("id")
     serializer_class = DocumentCategorySerializer
@@ -72,8 +81,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
 
     def _page_urls_response(self, request, rel_paths):
-        urls = [request.build_absolute_uri(
-            f"{settings.MEDIA_URL}{p}") for p in rel_paths]
+        urls = [versioned_media_url(request, p) for p in rel_paths]
         out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
         return Response(out.data)
 
@@ -126,10 +134,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         template_id = instance.pk
 
         def media_urls(rel_paths):
-            return [
-                request.build_absolute_uri(f"{settings.MEDIA_URL}{p}")
-                for p in rel_paths
-            ]
+            return [versioned_media_url(request, p) for p in rel_paths]
 
         def event_stream():
             # Hint the browser's reconnect delay (ms).

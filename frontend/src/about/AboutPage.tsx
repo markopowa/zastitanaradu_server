@@ -14,6 +14,7 @@ import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import DescriptionIcon from "@mui/icons-material/Description";
 import GroupsIcon from "@mui/icons-material/Groups";
 import SecurityIcon from "@mui/icons-material/Security";
+import { OPERATOR_NAME, getOperatorDomain, getOperatorEmail } from "../operator";
 
 const PRIMARY = "#4A6FA5";
 const PRIMARY_DARK = "#2e4a75";
@@ -40,7 +41,7 @@ export default function AboutPage() {
                         fontWeight={700}
                         letterSpacing={0.5}
                     >
-                        MAK Total Safety
+                        {OPERATOR_NAME}
                     </Typography>
                 </Box>
                 <Link
@@ -246,12 +247,12 @@ export default function AboutPage() {
                             { label: "Adresa", value: "[Adresa sedišta]" },
                             {
                                 label: "Email",
-                                value: "info@mak-total-safety.pznr.in.rs",
+                                value: getOperatorEmail(),
                                 isEmail: true,
                             },
                             {
                                 label: "Web",
-                                value: "mak-total-safety.pznr.in.rs",
+                                value: getOperatorDomain(),
                             },
                         ].map((item) => (
                             <Grid item xs={12} sm={6} md={4} key={item.label}>
@@ -294,7 +295,7 @@ export default function AboutPage() {
                 }}
             >
                 <Typography variant="body2">
-                    © {new Date().getFullYear()} MAK Total Safety. Sva prava
+                    © {new Date().getFullYear()} {OPERATOR_NAME}. Sva prava
                     zadržana.
                 </Typography>
             </Box>

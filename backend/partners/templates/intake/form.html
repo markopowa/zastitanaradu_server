@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Upitnik — {{ company.name }}</title>
+<style>
+  body {
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f2f4f7;
+    margin: 0;
+    padding: 16px;
+    color: #1f2937;
+  }
+  .card {
+    max-width: 560px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 4px 0;
+  }
+  p.subtitle {
+    margin: 0 0 20px 0;
+    color: #6b7280;
+    font-size: 14px;
+  }
+  .choice-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .choice-group label {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .choice-group input {
+    margin-right: 6px;
+  }
+  fieldset {
+    border: none;
+    padding: 0;
+    margin: 0;
+    display: none;
+  }
+  fieldset.active {
+    display: block;
+  }
+  .field {
+    margin-bottom: 14px;
+  }
+  label.field-label {
+    display: block;
+    font-size: 13px;
+    margin-bottom: 4px;
+    font-weight: bold;
+  }
+  input[type=text], input[type=email], input[type=date] {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  button {
+    width: 100%;
+    padding: 14px;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  button:active {
+    background: #1d4ed8;
+  }
+  .error {
+    background: #fee2e2;
+    color: #991b1b;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>{{ company.name }}</h1>
+    <p class="subtitle">Popunite podatke ispod. Prijava se šalje na pregled i odobrenje.</p>
+
+    {% if error %}
+      <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="">
+      {% csrf_token %}
+
+      <div class="choice-group">
+        <label>
+          <input type="radio" name="kind" value="EMPLOYEE" onclick="showKind('EMPLOYEE')" {% if kind == "EMPLOYEE" %}checked{% endif %}>
+          Novi zaposleni
+        </label>
+        <label>
+          <input type="radio" name="kind" value="EQUIPMENT" onclick="showKind('EQUIPMENT')" {% if kind == "EQUIPMENT" %}checked{% endif %}>
+          Nova oprema
+        </label>
+      </div>
+
+      <fieldset id="fieldset-EMPLOYEE" class="{% if kind == 'EMPLOYEE' %}active{% endif %}">
+        <div class="field">
+          <label class="field-label">Ime *</label>
+          <input type="text" name="first_name" value="{{ values.first_name }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Prezime *</label>
+          <input type="text" name="last_name" value="{{ values.last_name }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Radno mesto</label>
+          <input type="text" name="position" value="{{ values.position }}">
+        </div>
+        <div class="field">
+          <label class="field-label">JMBG</label>
+          <input type="text" name="national_id" value="{{ values.national_id }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Datum rođenja</label>
+          <input type="date" name="date_of_birth" value="{{ values.date_of_birth }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Email</label>
+          <input type="email" name="email" value="{{ values.email }}">
+        </div>
+      </fieldset>
+
+      <fieldset id="fieldset-EQUIPMENT" class="{% if kind == 'EQUIPMENT' %}active{% endif %}">
+        <div class="field">
+          <label class="field-label">Naziv *</label>
+          <input type="text" name="name" value="{{ values.name }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Kategorija</label>
+          <input type="text" name="category" value="{{ values.category }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Inventarski broj</label>
+          <input type="text" name="inventory_number" value="{{ values.inventory_number }}">
+        </div>
+        <div class="field">
+          <label class="field-label">Lokacija</label>
+          <input type="text" name="location" value="{{ values.location }}">
+        </div>
+      </fieldset>
+
+      <button type="submit">Pošalji prijavu</button>
+    </form>
+  </div>
+
+  <script>
+    function showKind(kind) {
+      document.getElementById("fieldset-EMPLOYEE").classList.remove("active");
+      document.getElementById("fieldset-EQUIPMENT").classList.remove("active");
+      document.getElementById("fieldset-" + kind).classList.add("active");
+    }
+  </script>
+</body>
+</html>

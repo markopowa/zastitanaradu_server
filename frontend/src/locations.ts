@@ -21,6 +21,7 @@ export const paths = {
     processUpcoming: "/processes/upcoming",
     processOutbox: "/processes/outbox",
     processRunDetail: (id: number) => `/processes/runs/${id}`,
+    trainingTest: (employeeId: number) => `/testing/${employeeId}`,
 } as const;
 
 const pathToTitle: Record<string, string> = {
@@ -48,5 +49,6 @@ export function getPageTitle(pathname: string): string {
     if (pathname.startsWith("/client-companies/")) return "Firma";
     if (pathname.startsWith("/equipment/")) return "Oprema";
     if (pathname.startsWith("/processes/runs/")) return "Aktivnost";
+    if (pathname.startsWith("/testing/")) return "Test obuke";
     return pathToTitle[pathname] ?? "Zaštita na radu";
 }

@@ -3,7 +3,7 @@ from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.generic import RedirectView
 from django.views.static import serve
-from .views import serve_media_attachment
+from .views import operator_info_view, serve_media_attachment
 
 admin.site.site_header = "Protivpozarna zastita i zastita na radu"
 admin.site.site_title = "Protivpozarna zastita i zastita na radu"
@@ -16,6 +16,7 @@ urlpatterns = [
                              "favicon.ico", permanent=True),
     ),
     path("admin/", admin.site.urls),
+    path("api/operator-info/", operator_info_view, name="operator-info"),
     path("auth/", include(("authentication.urls", "authentication"), namespace="auth")),
     path(
         "api/documents/",
@@ -29,6 +30,14 @@ urlpatterns = [
     path(
         "api/processes/",
         include(("processes.urls", "processes"), namespace="processes"),
+    ),
+    path(
+        "api/testing/",
+        include(("testing.urls", "testing"), namespace="testing"),
+    ),
+    path(
+        "intake/",
+        include(("partners.urls_public", "partners_public"), namespace="partners_public"),
     ),
 ]
 

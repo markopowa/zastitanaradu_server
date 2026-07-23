@@ -1,0 +1,1038 @@
+{
+ "obrazac6_direktor.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 81.35
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 81.35
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 81.35
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 81.35
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_finansijski_direktor.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 91.98
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 91.98
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 91.98
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 91.98
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_knjigovoa_administrativni_radnik.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 79.82
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 79.82
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 79.82
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 79.82
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_magacioner.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 72.15
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 72.15
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 72.15
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 72.15
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_pomocni_radnik.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 52.45
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 52.45
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 52.45
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 52.45
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_poslovoa.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 70.51
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 70.51
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 70.51
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 70.51
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_predstavnik_rukovodstva.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 67.66
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 67.66
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 67.66
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 67.66
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_prodavac.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 81.63
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 81.63
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 81.63
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 81.63
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_radnik_na_odrzavanju.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 76.78
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 76.78
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 76.78
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 76.78
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_radnik_u_proizvodnji_primarna_obrada.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 62.07
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 62.07
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 62.07
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 62.07
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_radnik_u_proizvodnji_zavrsna_obrada.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 59.03
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 59.03
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 59.03
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 59.03
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_tehnicki_direktor.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 90.08
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 90.08
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 90.08
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 90.08
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_viljuskarista.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 62.0
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 62.0
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 62.0
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 62.0
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ],
+ "obrazac6_vozac_teretnog_vozila.docx": [
+  {
+   "fieldKey": "employee.full_name",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 11.31,
+   "xPct": 45.68,
+   "yPct": 19.33
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 5.48,
+   "yPct": 72.22
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 24.52,
+   "yPct": 72.22
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 45.68,
+   "yPct": 72.22
+  },
+  {
+   "fieldKey": "performed_at",
+   "fontSize": 12.2,
+   "heightPct": 1.67,
+   "page": 0,
+   "widthPct": 14.88,
+   "xPct": 71.38,
+   "yPct": 72.22
+  },
+  {
+   "fieldKey": "client.name",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 10.99,
+   "widthPct": 34.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.address",
+   "page": 0,
+   "xPct": 76.06,
+   "yPct": 10.99,
+   "widthPct": 22.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  },
+  {
+   "fieldKey": "client.tax_id",
+   "page": 0,
+   "xPct": 4.78,
+   "yPct": 12.51,
+   "widthPct": 12.0,
+   "heightPct": 1.52,
+   "fontSize": 9
+  }
+ ]
+}

@@ -1,6 +1,8 @@
+import copy
 import json
 import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -10,7 +12,10 @@ import unicodedata
 from datetime import date
 from pathlib import Path
 
+import docx
 import fitz
+from docx.enum.text import WD_COLOR_INDEX
+from docx.oxml.ns import qn
 from pdf2image import convert_from_path
 
 from django.conf import settings
@@ -127,6 +132,144 @@ def _resolve_file_path(path: Path) -> Path:
     return path
 
 
+_DISPLAY_TAG_RE = re.compile(r"\{\{\s*([^{}]+?)\s*\}\}")
+
+
+def _iter_table_paragraphs(table):
+    for row in table.rows:
+        for cell in row.cells:
+            for para in cell.paragraphs:
+                yield para
+            for nested_table in cell.tables:
+                yield from _iter_table_paragraphs(nested_table)
+
+
+def _iter_all_paragraphs(doc):
+    for para in doc.paragraphs:
+        yield para
+    for table in doc.tables:
+        yield from _iter_table_paragraphs(table)
+
+
+def _load_field_label_catalog() -> dict:
+    from .models import TemplateFieldDefinition
+
+    return dict(
+        TemplateFieldDefinition.objects.filter(
+            is_active=True).values_list("key", "label")
+    )
+
+
+def _humanize_field_name(field: str) -> str:
+    last_segment = field.rsplit(".", 1)[-1]
+    words = last_segment.replace("_", " ").strip()
+    if not words:
+        return field
+    return words[:1].upper() + words[1:]
+
+
+def _display_label_for_key(key: str, catalog: dict) -> str:
+    if key.startswith("r."):
+        field = key[2:]
+        return catalog.get(field) or _humanize_field_name(field)
+    return catalog.get(key) or _humanize_field_name(key)
+
+
+def _copy_run_format(run, source_rpr) -> None:
+    if source_rpr is None:
+        return
+    run._element.insert(0, copy.deepcopy(source_rpr))
+
+
+def _rebuild_paragraph_with_badges(para, catalog: dict) -> bool:
+    text = para.text or ""
+    if "{{" not in text:
+        return False
+    matches = list(_DISPLAY_TAG_RE.finditer(text))
+    if not matches:
+        return False
+
+    base_rpr = None
+    if para.runs:
+        base_rpr = para.runs[0]._element.find(qn("w:rPr"))
+
+    para.clear()
+
+    pos = 0
+    for match in matches:
+        if match.start() > pos:
+            segment = text[pos:match.start()]
+            if segment:
+                run = para.add_run(segment)
+                _copy_run_format(run, base_rpr)
+        label = _display_label_for_key(match.group(1), catalog)
+        badge_run = para.add_run(f" {label} ")
+        _copy_run_format(badge_run, base_rpr)
+        badge_run.font.bold = True
+        badge_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+        pos = match.end()
+    if pos < len(text):
+        segment = text[pos:]
+        if segment:
+            run = para.add_run(segment)
+            _copy_run_format(run, base_rpr)
+    return True
+
+
+def _strip_tags_in_paragraph(para) -> bool:
+    text = para.text or ""
+    if "{{" not in text:
+        return False
+    cleaned = _DISPLAY_TAG_RE.sub("", text)
+    base_rpr = None
+    if para.runs:
+        base_rpr = para.runs[0]._element.find(qn("w:rPr"))
+    para.clear()
+    if cleaned:
+        run = para.add_run(cleaned)
+        _copy_run_format(run, base_rpr)
+    return True
+
+
+def make_clean_copy(docx_path: Path) -> Path:
+    """Return the path to a temp copy of docx_path with `{{ key }}` tags
+    removed (no badge, no highlight). Used as the plain background for the
+    visual field editor so the interactive markers are the only overlay."""
+    document = docx.Document(_path_str(docx_path))
+    changed = False
+    for para in _iter_all_paragraphs(document):
+        if _strip_tags_in_paragraph(para):
+            changed = True
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="template_clean_"))
+    tmp_path = tmp_dir / docx_path.name
+    if changed:
+        document.save(_path_str(tmp_path))
+    else:
+        shutil.copy2(_path_str(docx_path), _path_str(tmp_path))
+    return tmp_path
+
+
+def make_display_copy(docx_path: Path) -> Path:
+    """Return the path to a temp copy of docx_path with `{{ key }}` tags
+    replaced by green highlighted badges showing the human field label.
+    The original file is never modified."""
+    catalog = _load_field_label_catalog()
+    document = docx.Document(_path_str(docx_path))
+    changed = False
+    for para in _iter_all_paragraphs(document):
+        if _rebuild_paragraph_with_badges(para, catalog):
+            changed = True
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="template_display_"))
+    tmp_path = tmp_dir / docx_path.name
+    if changed:
+        document.save(_path_str(tmp_path))
+    else:
+        shutil.copy2(_path_str(docx_path), _path_str(tmp_path))
+    return tmp_path
+
+
 def generate_page_images(template_id: int, source_path: Path) -> list[str]:
     pages_dir = Path(settings.MEDIA_ROOT) / "template_pages" / str(template_id)
     pages_dir.mkdir(parents=True, exist_ok=True)
@@ -138,26 +281,38 @@ def generate_page_images(template_id: int, source_path: Path) -> list[str]:
         ]
 
     resolved_path = _resolve_file_path(source_path)
-    pdf_path = convert_document_to_pdf(resolved_path)
 
-    paths: list[str] = []
-    with tempfile.TemporaryDirectory() as tmp:
-        ascii_pdf = Path(tmp) / "document.pdf"
-        shutil.copy2(_path_str(pdf_path), str(ascii_pdf))
-        image_paths = convert_from_path(
-            str(ascii_pdf),
-            dpi=150,
-            poppler_path=settings.POPPLER_PATH,
-            output_folder=tmp,
-            fmt="png",
-            paths_only=True,
-        )
-        for i, src in enumerate(image_paths):
-            name = f"page_{i}.png"
-            shutil.move(_path_str(Path(src)), _path_str(pages_dir / name))
-            paths.append(f"template_pages/{template_id}/{name}")
+    render_path = resolved_path
+    display_tmp_dir: Path | None = None
+    if resolved_path.suffix.lower() == ".docx":
+        display_path = make_clean_copy(resolved_path)
+        display_tmp_dir = display_path.parent
+        render_path = display_path
 
-    return paths
+    try:
+        pdf_path = convert_document_to_pdf(render_path)
+
+        paths: list[str] = []
+        with tempfile.TemporaryDirectory() as tmp:
+            ascii_pdf = Path(tmp) / "document.pdf"
+            shutil.copy2(_path_str(pdf_path), str(ascii_pdf))
+            image_paths = convert_from_path(
+                str(ascii_pdf),
+                dpi=150,
+                poppler_path=settings.POPPLER_PATH,
+                output_folder=tmp,
+                fmt="png",
+                paths_only=True,
+            )
+            for i, src in enumerate(image_paths):
+                name = f"page_{i}.png"
+                shutil.move(_path_str(Path(src)), _path_str(pages_dir / name))
+                paths.append(f"template_pages/{template_id}/{name}")
+
+        return paths
+    finally:
+        if display_tmp_dir is not None:
+            shutil.rmtree(_path_str(display_tmp_dir), ignore_errors=True)
 
 
 def invalidate_page_images(template_id: int) -> None:
@@ -304,16 +459,117 @@ def build_preview_context() -> dict:
     }
 
 
+def _draw_text_at_pct(
+    page: fitz.Page,
+    x_pct: float,
+    y_pct: float,
+    height_pct: float,
+    font_size: float,
+    value: str,
+) -> None:
+    rect = page.rect
+    x = rect.width * x_pct / 100.0
+    y_bottom = rect.height * (y_pct + height_pct) / 100.0
+    descender = font_size * 0.2
+    point = fitz.Point(x, y_bottom - descender)
+    page.insert_text(
+        point,
+        value,
+        fontsize=font_size,
+        fontname=PDF_UNICODE_FONT_NAME,
+    )
+
+
+def _draw_series_placeholder(
+    doc: fitz.Document,
+    ph: dict,
+    context: dict,
+    entity,
+    pages_with_font: set[int],
+) -> None:
+    from processes.series_sources import get_series_source
+
+    series_key = ph.get("seriesSource")
+    columns = ph.get("columns") or []
+    if not series_key or not columns:
+        return
+
+    source_fn = get_series_source(series_key)
+    if source_fn is None or entity is None:
+        return
+    rows = source_fn(entity, context) or []
+    if not rows:
+        return
+
+    page_num = int(ph.get("page", 0))
+    if page_num >= len(doc):
+        return
+    page = doc[page_num]
+    _ensure_page_unicode_font(page, pages_with_font)
+
+    y_start = float(ph.get("yPct", 0))
+    row_height = float(ph.get("rowHeightPct", 0))
+    default_font_size = float(ph.get("fontSize", 10))
+    max_rows = ph.get("maxRowsPerPage")
+    max_rows = int(max_rows) if max_rows not in (None, "") else None
+
+    for i, row in enumerate(rows):
+        if max_rows is not None and i >= max_rows:
+            logger.warning(
+                "Series '%s' has %d rows but maxRowsPerPage is %d; "
+                "remaining rows were not drawn (v1 does not paginate).",
+                series_key, len(rows), max_rows,
+            )
+            break
+        row_y_pct = y_start + i * row_height
+        if row_height > 0 and row_y_pct + row_height > 100.0:
+            logger.warning(
+                "Series '%s' row %d falls past the page bottom; "
+                "remaining rows were clamped (v1 does not paginate).",
+                series_key, i,
+            )
+            break
+
+        row_data = dict(row) if isinstance(row, dict) else {}
+        row_data.setdefault("rbr", i + 1)
+        row_context = dict(context)
+        row_context["r"] = row_data
+
+        for col in columns:
+            fixed_text = col.get("fixedText") or col.get("staticText")
+            if fixed_text is not None and str(fixed_text).strip():
+                value = str(fixed_text).strip()
+            else:
+                field = col.get("field", "")
+                value = _resolve_field_value(field, row_context) if field else ""
+            if not value:
+                continue
+            font_size = float(col.get("fontSize", default_font_size))
+            _draw_text_at_pct(
+                page,
+                float(col.get("xPct", 0)),
+                row_y_pct,
+                row_height,
+                font_size,
+                value,
+            )
+
+
 def fill_pdf_at_coordinates(
     pdf_path: Path,
     placeholders: list[dict],
     context: dict,
+    entity=None,
 ) -> bytes:
     pdf_path = convert_document_to_pdf(pdf_path)
     doc = fitz.open(_path_str(pdf_path))
     pages_with_font: set[int] = set()
 
     for ph in placeholders:
+        if ph.get("seriesSource"):
+            _draw_series_placeholder(doc, ph, context, entity, pages_with_font)
+            continue
+
         fixed_text = ph.get("fixedText") or ph.get("staticText")
         if fixed_text is not None and str(fixed_text).strip():
             value = str(fixed_text).strip()
@@ -330,23 +586,15 @@ def fill_pdf_at_coordinates(
             continue
         page = doc[page_num]
         _ensure_page_unicode_font(page, pages_with_font)
-        rect = page.rect
-
-        x_pct = float(ph.get("xPct", 0))
-        y_pct = float(ph.get("yPct", 0))
-        height_pct = float(ph.get("heightPct", 0))
-
-        x = rect.width * x_pct / 100.0
-        y_bottom = rect.height * (y_pct + height_pct) / 100.0
 
         font_size = float(ph.get("fontSize", 10))
-        descender = font_size * 0.2
-        point = fitz.Point(x, y_bottom - descender)
-        page.insert_text(
-            point,
+        _draw_text_at_pct(
+            page,
+            float(ph.get("xPct", 0)),
+            float(ph.get("yPct", 0)),
+            float(ph.get("heightPct", 0)),
+            font_size,
             value,
-            fontsize=font_size,
-            fontname=PDF_UNICODE_FONT_NAME,
         )
 
     result = doc.tobytes()
@@ -354,15 +602,60 @@ def fill_pdf_at_coordinates(
     return result
 
 
+def resolve_visual_fill(
+    doc_template,
+    blank_file=None,
+    blank_placements=None,
+):
+    """Resolve which file to fill and which placement list to use for VISUAL
+    mode generation: the role/training blank (file + its own JSON placements)
+    takes priority over the master DocumentTemplate when both are set."""
+    generation_config = getattr(doc_template, "generation_config", None) or {}
+    master_placements = generation_config.get("placeholders") or []
+    fill_file = blank_file if blank_file else getattr(
+        doc_template, "template_file", None)
+    placements = (
+        blank_placements if blank_placements else master_placements
+    )
+    return fill_file, placements
+
+
+def generate_visual_pdf(
+    doc_template,
+    context: dict,
+    blank_file=None,
+    blank_placements=None,
+    entity=None,
+) -> bytes:
+    fill_file, placements = resolve_visual_fill(
+        doc_template, blank_file, blank_placements)
+    if not fill_file:
+        raise ValueError(
+            "Nema fajla za popunjavanje (ni blanko obrazac ni master šablon "
+            "nemaju otpremljen fajl)."
+        )
+    file_path = Path(fill_file.path)
+    return fill_pdf_at_coordinates(file_path, placements, context, entity=entity)
+
+
 def merge_section_files_to_pdf(file_paths: list[Path]) -> bytes:
     result = fitz.open()
     try:
         for raw_path in file_paths:
             path = Path(_path_str(raw_path))
-            pdf_path = convert_document_to_pdf(path)
-            src = fitz.open(_path_str(pdf_path))
+            try:
+                pdf_path = convert_document_to_pdf(path)
+                src = fitz.open(_path_str(pdf_path))
+            except Exception:
+                logger.warning(
+                    "merge_section_files_to_pdf: skipping unreadable file %s",
+                    path,
+                )
+                continue
             result.insert_pdf(src)
             src.close()
+        if result.page_count == 0:
+            result.new_page()
         return result.tobytes()
     finally:
         result.close()

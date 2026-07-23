@@ -9,6 +9,34 @@ export const api = axios.create({
     withCredentials: true,
 });
 
+export function filenameFromResponse(
+    headers: unknown,
+    fallback: string,
+): string {
+    const cd =
+        (headers as Record<string, string> | undefined)?.[
+            "content-disposition"
+        ] ?? "";
+    const match = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+    if (!match) return fallback;
+    try {
+        return decodeURIComponent(match[1]);
+    } catch {
+        return match[1];
+    }
+}
+
+export function triggerBlobDownload(data: BlobPart, filename: string): void {
+    const url = window.URL.createObjectURL(new Blob([data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+}
+
 let isRefreshing = false;
 let failedQueue: Array<{
     resolve: (value: unknown) => void;

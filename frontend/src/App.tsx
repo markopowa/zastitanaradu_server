@@ -62,6 +62,9 @@ const IntegrationTestsPage = lazy(
 );
 const DanasPage = lazy(() => import("./processes/DanasPage"));
 const OutboxPage = lazy(() => import("./processes/OutboxPage"));
+const TrainingTestPage = lazy(
+    () => import("./processes/TrainingTestPage"),
+);
 
 const routeFallback = (
     <Box
@@ -168,6 +171,10 @@ class App extends Component {
                         <Route
                             path="documents/templates"
                             element={<DocumentTemplatesListPage />}
+                        />
+                        <Route
+                            path="testing/:employeeId"
+                            element={<TrainingTestPage />}
                         />
                     </Route>
                     <Route path="*" element={<RedirectComponent />} />

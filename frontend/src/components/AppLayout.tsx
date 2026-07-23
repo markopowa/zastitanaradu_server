@@ -47,10 +47,11 @@ import {
     ensureClientCompanies,
     ensureProcessTypes,
 } from "../store/processesSlice";
+import { OPERATOR_NAME } from "../operator";
 
 const SIDEBAR_WIDTH = 260;
 const MOBILE_BREAKPOINT = 600;
-const APP_TITLE = "Zaštita na radu";
+const APP_TITLE = OPERATOR_NAME;
 
 type NavGroup = "top" | "operations" | "admin";
 
@@ -372,7 +373,7 @@ class AppLayoutInner extends Component<Props, State> {
                         >
                             <img
                                 src="/favicon.svg"
-                                alt="MAK Total Safety"
+                                alt={OPERATOR_NAME}
                                 style={{
                                     width: 30,
                                     height: 30,

@@ -1,4 +1,5 @@
-import { Component } from "react";
+import { Component, createRef } from "react";
+import type { RefObject } from "react";
 import { connect } from "react-redux";
 import { Link } from "react-router-dom";
 
@@ -39,7 +40,7 @@ import type { AppDispatch } from "../store";
 import type { UpcomingDeadline, NotificationOutbox } from "../types/processes";
 import type { OutboxParams } from "../api/processes";
 
-const SOON_DAYS = 14;
+const SOON_DAYS = 30;
 const OUTBOX_DAYS = 7;
 
 function isoDateNowPlus(days: number): string {
@@ -70,6 +71,9 @@ interface State {
 }
 
 class DanasPageInner extends Component<Props, State> {
+    kasniSectionRef = createRef<HTMLDivElement>();
+    stizeSectionRef = createRef<HTMLDivElement>();
+
     state: State = {
         overdue: [],
         soon: [],
@@ -138,6 +142,10 @@ class DanasPageInner extends Component<Props, State> {
             .catch(() => {
                 this.setState({ retryingId: null });
             });
+    };
+
+    scrollToSection = (ref: RefObject<HTMLDivElement | null>): void => {
+        ref.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
     formatDaysLate = (row: UpcomingDeadline): string => {
@@ -231,7 +239,42 @@ class DanasPageInner extends Component<Props, State> {
                 </Box>
                 {error && <Alert severity="error">{error}</Alert>}
 
-                <Paper>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                    <Chip
+                        icon={<ErrorOutlineIcon />}
+                        label={`Kasni: ${overdueFiltered.length}`}
+                        color="error"
+                        variant={
+                            overdueFiltered.length > 0 ? "filled" : "outlined"
+                        }
+                        onClick={() =>
+                            this.scrollToSection(this.kasniSectionRef)
+                        }
+                        sx={{ fontWeight: 600, cursor: "pointer" }}
+                    />
+                    <Chip
+                        icon={<EventIcon />}
+                        label={`Stiže (≤${SOON_DAYS} dana): ${soonFiltered.length}`}
+                        color="warning"
+                        variant={
+                            soonFiltered.length > 0 ? "filled" : "outlined"
+                        }
+                        onClick={() =>
+                            this.scrollToSection(this.stizeSectionRef)
+                        }
+                        sx={{ fontWeight: 600, cursor: "pointer" }}
+                    />
+                    {overdueFiltered.length === 0 &&
+                        soonFiltered.length === 0 && (
+                            <Chip
+                                label="Sve ostalo u redu"
+                                color="success"
+                                sx={{ fontWeight: 600 }}
+                            />
+                        )}
+                </Box>
+
+                <Paper ref={this.kasniSectionRef}>
                     <Box
                         sx={{
                             p: 2,
@@ -333,7 +376,7 @@ class DanasPageInner extends Component<Props, State> {
                     )}
                 </Paper>
 
-                <Paper>
+                <Paper ref={this.stizeSectionRef}>
                     <Box
                         sx={{
                             p: 2,

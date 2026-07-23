@@ -170,8 +170,8 @@ class ProcessTemplate(models.Model):
         (EMAIL_TO_EMPLOYEE, "Email zaposlenog"),
         (EMAIL_TO_INTERNAL_ROLE, "Interna uloga"),
         (EMAIL_TO_CUSTOM, "Prilagođena adresa"),
-        (EMAIL_TO_CLIENT_AND_MAK, "Klijent i MAK tim"),
-        (EMAIL_TO_MAK, "MAK tim"),
+        (EMAIL_TO_CLIENT_AND_MAK, "Klijent i naš tim"),
+        (EMAIL_TO_MAK, "Naš tim"),
     )
 
     process_type = models.ForeignKey(

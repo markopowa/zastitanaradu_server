@@ -5,6 +5,7 @@ from django.db.models import Exists, OuterRef, Prefetch, Q
 
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -364,7 +365,14 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        binding = serializer.validated_data["process_binding"]
+        binding_id = self.request.data.get("process_binding")
+        if binding_id in (None, ""):
+            raise ValidationError({"process_binding": "Obavezno polje."})
+        try:
+            binding = ProcessBinding.objects.get(pk=binding_id)
+        except (ProcessBinding.DoesNotExist, ValueError, TypeError):
+            raise ValidationError(
+                {"process_binding": "Nepostojeća obaveza (binding)."})
         run = serializer.save(
             process_type=binding.process_type,
             subject_snapshot=binding_subject_snapshot(binding),

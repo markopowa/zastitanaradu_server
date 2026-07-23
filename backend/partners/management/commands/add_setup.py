@@ -1,4 +1,9 @@
+import json
+from pathlib import Path
+
+from django.conf import settings
 from django.contrib.auth.models import Group, Permission
+from django.core.files import File
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -13,14 +18,18 @@ from documents.models import (
     DocumentTemplate,
     TemplateFieldDefinition,
 )
+from documents.utils import invalidate_page_images
 from partners.management.commands.seed_compliance_finding_types import (
     FINDING_TYPE_PROCESS_TYPES,
 )
 from partners.management.commands.seed_obligation_catalog import CATALOG
-from partners.models import ComplianceFindingType, RiskLevel
+from partners.models import CompanyDocument, CompanyDocumentKind, ComplianceFindingType, RiskLevel
 from processes.models import ProcessType, ProcessTemplate
 
-UPUT_TEMPLATE_NAME = "Uput za lekarski pregled"
+UPUT_TEMPLATE_NAMES = (
+    "Uput za lekarski pregled",
+    "Uput za prethodni lekarski pregled",
+)
 UPUT_CATEGORY_NAME = "Lekarski pregledi"
 
 DOCUMENT_CATEGORIES = [
@@ -29,16 +38,7 @@ DOCUMENT_CATEGORIES = [
     "Lična zaštitna oprema",
 ]
 
-OBRAZAC6_CELL_MAP = {
-    "mode": "DOCX_CELL_MAP",
-    "cells": [
-        {"table": 0, "row": 0, "col": 2, "fieldKey": "employee.full_name"},
-        {"table": 0, "row": 6, "col": 0, "fieldKey": "performed_at"},
-        {"table": 0, "row": 6, "col": 1, "fieldKey": "performed_at"},
-        {"table": 0, "row": 6, "col": 2, "fieldKey": "performed_at"},
-        {"table": 0, "row": 6, "col": 3, "fieldKey": "performed_at"},
-    ],
-}
+DOCX_PLACEHOLDER_CONFIG = {"mode": "DOCX_PLACEHOLDER"}
 
 DOCUMENT_TEMPLATE_SHELLS = [
     {
@@ -47,29 +47,84 @@ DOCUMENT_TEMPLATE_SHELLS = [
         "category": "Osposobljavanje i obuke",
         "description": (
             "Blanko obrazac 6 (osposobljavanje). Blanko po radnom mestu se "
-            "kači na JobRole; popunjava se imenom i datumima u ćelije."
+            "kači na JobRole; popunjava se tagovima {{ }} u fajlu."
         ),
-        "generation_config": OBRAZAC6_CELL_MAP,
+        "generation_config": DOCX_PLACEHOLDER_CONFIG,
     },
     {
         "name": "Karton zaduženja LZO (revers)",
         "context_type": DocumentTemplate.CONTEXT_EMPLOYEE,
         "category": "Lična zaštitna oprema",
         "description": (
-            "Blanko revers za ličnu zaštitnu opremu. Dodati fajl i "
-            "obeležiti polja."
+            "Blanko revers za ličnu zaštitnu opremu. Popunjava se tagovima "
+            "{{ }} u fajlu."
         ),
+        "generation_config": DOCX_PLACEHOLDER_CONFIG,
     },
     {
         "name": "Potvrda po članu 5",
         "context_type": DocumentTemplate.CONTEXT_EMPLOYEE,
         "category": "Osposobljavanje i obuke",
-        "description": "Blanko potvrda po članu 5. Dodati fajl i obeležiti polja.",
+        "description": (
+            "Blanko potvrda po članu 5. Popunjava se tagovima {{ }} u fajlu."
+        ),
+        "generation_config": DOCX_PLACEHOLDER_CONFIG,
+    },
+    {
+        "name": "Obrazac 1 — evidencija lekarskih pregleda",
+        "context_type": DocumentTemplate.CONTEXT_CLIENT_COMPANY,
+        "category": "Lekarski pregledi",
+        "description": (
+            "Obrazac 1 — evidencija o radnim mestima sa povećanim rizikom i "
+            "lekarskim pregledima zaposlenih. Red tabele se ponavlja po "
+            "završenom lekarskom pregledu (izvor: "
+            "completed_medical_exams_for_company)."
+        ),
+        "generation_config": {
+            "mode": "DOCX_PLACEHOLDER",
+            "series": [
+                {"source": "completed_medical_exams_for_company", "table": 0},
+            ],
+        },
+    },
+    {
+        "name": "Evidencija radnih mesta sa povećanim rizikom",
+        "context_type": DocumentTemplate.CONTEXT_CLIENT_COMPANY,
+        "category": "Lekarski pregledi",
+        "description": (
+            "Evidencija radnih mesta sa povećanim rizikom. Red tabele se "
+            "ponavlja po zaposlenom na radnom mestu sa povećanim rizikom "
+            "(izvor: high_risk_employees_for_company)."
+        ),
+        "generation_config": {
+            "mode": "DOCX_PLACEHOLDER",
+            "series": [
+                {"source": "high_risk_employees_for_company", "table": 0},
+            ],
+        },
     },
 ]
 
-RELEVANT_APPS = ("auth", "documents", "partners", "processes")
-WORK_APPS = ("documents", "partners", "processes")
+MASTER_TEMPLATE_GENERATION_CONFIG = {
+    tpl["name"]: tpl["generation_config"]
+    for tpl in DOCUMENT_TEMPLATE_SHELLS
+    if tpl.get("generation_config")
+}
+
+MASTER_TEMPLATE_DIR_NAME = "master_templates"
+
+MASTER_TEMPLATE_FILES = {
+    "Uput za prethodni lekarski pregled": "uput_prethodni.docx",
+    "Uput za lekarski pregled": "uput_periodicni.docx",
+    "Obrazac 6 — evidencija o osposobljenosti za bezbedan rad": "obrazac6_master.docx",
+    "Karton zaduženja LZO (revers)": "lzo_revers_master.docx",
+    "Potvrda po članu 5": "potvrda_clan5_master.docx",
+    "Obrazac 1 — evidencija lekarskih pregleda": "obrazac1_master.docx",
+    "Evidencija radnih mesta sa povećanim rizikom": "registar_rm_master.docx",
+}
+
+RELEVANT_APPS = ("auth", "documents", "partners", "processes", "testing")
+WORK_APPS = ("documents", "partners", "processes", "testing")
 SETUP_MODELS = {
     "documenttemplate",
     "documentcategory",
@@ -92,6 +147,12 @@ GENERATION_WIRING = [
      "Obrazac 6 — evidencija o osposobljenosti za bezbedan rad"),
     ("LZO_ZADUZENJE", "Karton zaduženja LZO (revers)"),
 ]
+
+OPTIONAL_COMPANY_DOCUMENT_KINDS = {
+    CompanyDocument.KIND_OCENA_MEDICINE_RADA,
+    CompanyDocument.KIND_OBRAZAC1,
+    CompanyDocument.KIND_HIGH_RISK_REGISTRY,
+}
 
 
 def _role_permissions(name):
@@ -146,19 +207,38 @@ class Command(BaseCommand):
             call_command("fill_initial_template_fields_and_risk_levels")
             call_command("seed_obligation_catalog")
             call_command("seed_compliance_finding_types")
+            call_command("seed_role_lzo_templates")
             categories_created = self._create_categories()
             shells_created = self._create_template_shells()
             self._link_uput_category()
             roles_created = self._create_roles()
             wiring_created = self._wire_generation()
+            kinds_created = self._seed_company_document_kinds()
+            masters_attached, masters_synced = self._attach_master_templates()
+            previews_refreshed = self._refresh_template_previews()
 
         self.stdout.write(self.style.SUCCESS(
             f"Setup injected. {categories_created} document categories, "
             f"{shells_created} template shells, {roles_created} roles, "
-            f"{wiring_created} generation wirings created "
+            f"{wiring_created} generation wirings, "
+            f"{kinds_created} company document kinds created, "
+            f"{masters_attached} master template(s) attached, "
+            f"{masters_synced} generation config(s) synced (VISUAL where a "
+            "placements.json sidecar exists, DOCX_PLACEHOLDER otherwise), "
+            f"{previews_refreshed} template preview cache(s) invalidated "
             "(add template files and mark fields afterwards). Run with "
             "--dry-run to review, or see manual.md for the manual steps."
         ))
+
+    def _refresh_template_previews(self):
+        templates = DocumentTemplate.objects.exclude(
+            template_file=""
+        ).exclude(template_file__isnull=True)
+        count = 0
+        for tpl in templates:
+            invalidate_page_images(tpl.pk)
+            count += 1
+        return count
 
     def _create_categories(self):
         created = 0
@@ -190,16 +270,15 @@ class Command(BaseCommand):
         if category is None:
             return
         DocumentTemplate.objects.filter(
-            name=UPUT_TEMPLATE_NAME, category__isnull=True
+            name__in=UPUT_TEMPLATE_NAMES, category__isnull=True
         ).update(category=category)
 
     def _create_roles(self):
         created = 0
         for name in ROLE_NAMES:
             group, was_created = Group.objects.get_or_create(name=name)
-            if was_created:
-                group.permissions.set(_role_permissions(name))
-                created += 1
+            group.permissions.set(_role_permissions(name))
+            created += int(was_created)
         return created
 
     def _wire_generation(self):
@@ -221,6 +300,64 @@ class Command(BaseCommand):
             created += int(was_created)
         return created
 
+    def _seed_company_document_kinds(self):
+        created = 0
+        for order, (code, name) in enumerate(CompanyDocument.KIND_CHOICES):
+            obj, was_created = CompanyDocumentKind.objects.get_or_create(
+                code=code,
+                defaults={
+                    "name": name,
+                    "order": order,
+                    "optional": code in OPTIONAL_COMPANY_DOCUMENT_KINDS,
+                    "is_active": True,
+                },
+            )
+            created += int(was_created)
+        return created
+
+    def _load_master_placements_sidecar(self, master_dir):
+        sidecar_path = master_dir / "placements.json"
+        if not sidecar_path.is_file():
+            return {}
+        try:
+            return json.loads(sidecar_path.read_text())
+        except (ValueError, OSError):
+            return {}
+
+    def _attach_master_templates(self):
+        master_dir = Path(settings.BASE_DIR) / MASTER_TEMPLATE_DIR_NAME
+        placements_sidecar = self._load_master_placements_sidecar(master_dir)
+        attached = 0
+        synced = 0
+        for name, filename in MASTER_TEMPLATE_FILES.items():
+            doc_tpl = DocumentTemplate.objects.filter(name=name).first()
+            if doc_tpl is None:
+                continue
+            desired_config = placements_sidecar.get(name) or MASTER_TEMPLATE_GENERATION_CONFIG.get(
+                name, DOCX_PLACEHOLDER_CONFIG,
+            )
+            has_file = bool(doc_tpl.template_file)
+            file_attached_now = False
+            if not has_file:
+                master_path = master_dir / filename
+                if master_path.is_file():
+                    with open(master_path, "rb") as fh:
+                        doc_tpl.template_file.save(
+                            filename, File(fh), save=False,
+                        )
+                    has_file = True
+                    file_attached_now = True
+                    attached += 1
+            if not has_file:
+                continue
+            mode_synced = doc_tpl.generation_config != desired_config
+            if mode_synced:
+                doc_tpl.generation_config = dict(desired_config)
+                synced += 1
+            if file_attached_now or mode_synced:
+                doc_tpl.save()
+        return attached, synced
+
     def _dry_run(self):
         risk_codes = [item["code"] for item in RISK_LEVELS]
         field_keys = [key for key, _label, _cat in TEMPLATE_FIELDS]
@@ -230,6 +367,7 @@ class Command(BaseCommand):
         ]
         finding_codes = [item["code"] for item in FINDING_TYPE_PROCESS_TYPES]
         shell_names = [tpl["name"] for tpl in DOCUMENT_TEMPLATE_SHELLS]
+        kind_codes = [code for code, _name in CompanyDocument.KIND_CHOICES]
 
         rows = [
             ("Risk levels", risk_codes, _missing(
@@ -255,6 +393,9 @@ class Command(BaseCommand):
                 shell_names)),
             ("Roles", ROLE_NAMES, _missing(
                 Group.objects.values_list("name", flat=True), ROLE_NAMES)),
+            ("Company document kinds", kind_codes, _missing(
+                CompanyDocumentKind.objects.values_list("code", flat=True),
+                kind_codes)),
         ]
 
         self.stdout.write("Dry run — would create the missing items below:")
@@ -264,9 +405,15 @@ class Command(BaseCommand):
             for code in missing:
                 self.stdout.write(f"      + {code}")
 
-        uput_exists = DocumentTemplate.objects.filter(
-            name=UPUT_TEMPLATE_NAME).exists()
+        uput_existing = set(
+            DocumentTemplate.objects.filter(
+                name__in=UPUT_TEMPLATE_NAMES
+            ).values_list("name", flat=True)
+        )
+        uput_missing = [
+            name for name in UPUT_TEMPLATE_NAMES if name not in uput_existing
+        ]
         self.stdout.write(
-            f"  Medical referral template ('{UPUT_TEMPLATE_NAME}'): "
-            f"{'exists' if uput_exists else 'would be created'}"
+            f"  Medical referral templates: {len(uput_missing)} missing of "
+            f"{len(UPUT_TEMPLATE_NAMES)}"
         )

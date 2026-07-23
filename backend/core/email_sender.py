@@ -30,6 +30,36 @@ def get_email_sender():
     return _sender
 
 
+class ConsoleEmailSender:
+    def __init__(self, *, from_email: str | None = None):
+        self._from_email = from_email or getattr(
+            settings, "EMAIL_FROM_ADDRESS", "") or "noreply@localhost"
+
+    def send(
+        self,
+        *,
+        recipients: Sequence[str],
+        subject: str,
+        body: str,
+        html_body: str | None = None,
+        from_email: str | None = None,
+        attachments: Sequence[tuple[str, bytes]] | None = None,
+        fail_silently: bool = True,
+    ) -> bool:
+        if not recipients:
+            return False
+        names = [a[0] for a in (attachments or [])]
+        logger.info(
+            "MOCK EMAIL | from=%s | to=%s | subject=%s | attachments=%s\n%s",
+            from_email or self._from_email,
+            ", ".join(recipients),
+            subject,
+            names,
+            body,
+        )
+        return True
+
+
 class SMTPEmailSender:
     def __init__(self, *, from_email: str | None = None):
         self._from_email = (

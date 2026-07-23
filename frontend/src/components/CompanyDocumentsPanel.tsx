@@ -19,6 +19,7 @@ import { enqueueSnackbar } from "notistack";
 
 import {
     deleteCompanyDocument,
+    getCompanyDocumentKinds,
     getCompanyDocuments,
     uploadCompanyDocument,
 } from "../api/processes";
@@ -32,12 +33,25 @@ const PDF_ONLY_ACCEPT = ".pdf,application/pdf";
 const WORD_OR_PDF_ACCEPT =
     ".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
-export const COMPANY_DOCUMENT_KINDS: {
+const PDF_ONLY_KIND_CODES = new Set<string>([
+    "CONTRACT",
+    "DECISION",
+    "DECISION_ZOP",
+    "OCENA_MEDICINE_RADA",
+    "OBRAZAC1",
+]);
+
+const acceptForKind = (code: string): string =>
+    PDF_ONLY_KIND_CODES.has(code) ? PDF_ONLY_ACCEPT : WORD_OR_PDF_ACCEPT;
+
+interface DocKindSlot {
     kind: CompanyDocumentKind;
     label: string;
     accept: string;
     optional?: boolean;
-}[] = [
+}
+
+const FALLBACK_KINDS: DocKindSlot[] = [
     { kind: "CONTRACT", label: "Ugovor", accept: PDF_ONLY_ACCEPT },
     {
         kind: "DECISION",
@@ -103,10 +117,6 @@ export const COMPANY_DOCUMENT_KINDS: {
     },
 ];
 
-export const COMPANY_DOCUMENT_KIND_COUNT = COMPANY_DOCUMENT_KINDS.filter(
-    (s) => !s.optional,
-).length;
-
 interface CompanyDocumentsPanelProps {
     clientCompanyId: number;
     embedded?: boolean;
@@ -120,6 +130,7 @@ interface CompanyDocumentsPanelState {
     deleteId: number | null;
     deleting: boolean;
     previewDoc: CompanyDocument | null;
+    kinds: DocKindSlot[];
 }
 
 export class CompanyDocumentsPanel extends Component<
@@ -134,10 +145,12 @@ export class CompanyDocumentsPanel extends Component<
         deleteId: null,
         deleting: false,
         previewDoc: null,
+        kinds: FALLBACK_KINDS,
     };
 
     componentDidMount(): void {
         this.load();
+        this.loadKinds();
     }
 
     componentDidUpdate(prevProps: CompanyDocumentsPanelProps): void {
@@ -145,6 +158,25 @@ export class CompanyDocumentsPanel extends Component<
             this.load();
         }
     }
+
+    loadKinds = (): void => {
+        getCompanyDocumentKinds()
+            .then((rows) => {
+                const active = rows.filter((r) => r.is_active);
+                if (active.length === 0) return;
+                const kinds: DocKindSlot[] = active
+                    .slice()
+                    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name))
+                    .map((r) => ({
+                        kind: r.code as CompanyDocumentKind,
+                        label: r.name,
+                        accept: acceptForKind(r.code),
+                        optional: r.optional,
+                    }));
+                this.setState({ kinds });
+            })
+            .catch(() => undefined);
+    };
 
     load = (): void => {
         const { clientCompanyId } = this.props;
@@ -238,7 +270,7 @@ export class CompanyDocumentsPanel extends Component<
     };
 
     renderTableBody = (): ReactNode => {
-        const { loading, error, uploadingKind, deleting } = this.state;
+        const { loading, error, uploadingKind, deleting, kinds } = this.state;
         if (loading) {
             return <LoadingState />;
         }
@@ -266,7 +298,7 @@ export class CompanyDocumentsPanel extends Component<
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {COMPANY_DOCUMENT_KINDS.map((slot) => {
+                        {kinds.map((slot) => {
                             const doc = this.docByKind(slot.kind);
                             const hasFile = Boolean(doc?.file);
                             return (
@@ -398,10 +430,8 @@ export class CompanyDocumentsPanel extends Component<
 
     render() {
         const { embedded } = this.props;
-        const { items, deleteId, deleting, previewDoc } = this.state;
-        const mandatoryKinds = COMPANY_DOCUMENT_KINDS.filter(
-            (s) => !s.optional,
-        );
+        const { items, deleteId, deleting, previewDoc, kinds } = this.state;
+        const mandatoryKinds = kinds.filter((s) => !s.optional);
         const attachedCount = mandatoryKinds.filter((s) =>
             items.some((d) => d.kind === s.kind),
         ).length;
@@ -453,9 +483,8 @@ export class CompanyDocumentsPanel extends Component<
                     >
                         <DialogTitle>
                             {previewDoc.kind_display ??
-                                COMPANY_DOCUMENT_KINDS.find(
-                                    (s) => s.kind === previewDoc.kind,
-                                )?.label}
+                                kinds.find((s) => s.kind === previewDoc.kind)
+                                    ?.label}
                         </DialogTitle>
                         <DialogContent>
                             <FilePreviewContent

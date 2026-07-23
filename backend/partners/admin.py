@@ -2,19 +2,30 @@ from django.contrib import admin
 
 from .models import (
     ClientCompany,
+    ClientIntakeLink,
+    ClientIntakeSubmission,
     CompanyComplianceFinding,
     CompanyDocument,
+    CompanyDocumentKind,
     CompanyObligationExclusion,
     ComplianceFindingType,
     ContactPerson,
     Employee,
+    EmployeeTraining,
     EquipmentItem,
+    Hazard,
     JobRole,
+    JobRoleHazard,
+    JobRoleLZO,
+    KinneyScaleOption,
+    RoleLzoTemplate,
     RiskAssessmentAct,
     RiskAssessmentActAmendment,
     RiskAssessmentSection,
     RiskAssessmentSectionRevision,
     RiskLevel,
+    TrainingType,
+    WorkInjury,
 )
 
 
@@ -88,6 +99,28 @@ class CompanyDocumentAdmin(admin.ModelAdmin):
     list_filter = ("kind", "client_company")
 
 
+@admin.register(CompanyDocumentKind)
+class CompanyDocumentKindAdmin(admin.ModelAdmin):
+    list_display = ("order", "code", "name", "optional", "is_active")
+    list_filter = ("optional", "is_active")
+    search_fields = ("code", "name")
+
+
+@admin.register(TrainingType)
+class TrainingTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "client_company", "is_active")
+    search_fields = ("name",)
+    list_filter = ("client_company", "is_active")
+
+
+@admin.register(EmployeeTraining)
+class EmployeeTrainingAdmin(admin.ModelAdmin):
+    list_display = ("employee", "training_type",
+                    "completed_at", "valid_until")
+    list_filter = ("training_type",)
+    search_fields = ("employee__first_name", "employee__last_name")
+
+
 @admin.register(ComplianceFindingType)
 class ComplianceFindingTypeAdmin(admin.ModelAdmin):
     list_display = (
@@ -143,6 +176,29 @@ class EquipmentItemAdmin(admin.ModelAdmin):
     list_filter = ("client_company", "is_active")
 
 
+@admin.register(WorkInjury)
+class WorkInjuryAdmin(admin.ModelAdmin):
+    list_display = ("employee", "client_company", "date", "severity")
+    search_fields = ("employee__first_name", "employee__last_name")
+    list_filter = ("client_company", "severity")
+
+
+@admin.register(ClientIntakeLink)
+class ClientIntakeLinkAdmin(admin.ModelAdmin):
+    list_display = ("client_company", "token", "is_active",
+                    "created_at", "expires_at")
+    list_filter = ("is_active", "client_company")
+    search_fields = ("token", "client_company__name")
+
+
+@admin.register(ClientIntakeSubmission)
+class ClientIntakeSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("link", "kind", "status",
+                     "created_at", "reviewed_by", "reviewed_at")
+    list_filter = ("kind", "status")
+    raw_id_fields = ("link", "reviewed_by")
+
+
 @admin.register(CompanyObligationExclusion)
 class CompanyObligationExclusionAdmin(admin.ModelAdmin):
     list_display = ("client_company", "process_type",
@@ -150,3 +206,38 @@ class CompanyObligationExclusionAdmin(admin.ModelAdmin):
     search_fields = ("client_company__name", "process_type__code", "reason")
     list_filter = ("process_type",)
     raw_id_fields = ("client_company", "process_type", "created_by")
+
+
+@admin.register(Hazard)
+class HazardAdmin(admin.ModelAdmin):
+    list_display = ("label", "kind", "code", "order", "is_active")
+    list_filter = ("kind", "is_active")
+    search_fields = ("code", "label")
+
+
+@admin.register(KinneyScaleOption)
+class KinneyScaleOptionAdmin(admin.ModelAdmin):
+    list_display = ("factor", "value", "label", "order")
+    list_filter = ("factor",)
+
+
+@admin.register(JobRoleHazard)
+class JobRoleHazardAdmin(admin.ModelAdmin):
+    list_display = (
+        "job_role", "hazard", "verovatnoca", "izlozenost",
+        "posledica", "rizik", "risk_category")
+    list_filter = ("risk_category",)
+    search_fields = ("job_role__name", "hazard__label")
+
+
+@admin.register(JobRoleLZO)
+class JobRoleLZOAdmin(admin.ModelAdmin):
+    list_display = ("job_role", "name", "standard", "interval_months", "order")
+    search_fields = ("job_role__name", "name")
+
+
+@admin.register(RoleLzoTemplate)
+class RoleLzoTemplateAdmin(admin.ModelAdmin):
+    list_display = ("role_name", "name", "standard", "interval_months", "order")
+    search_fields = ("role_name", "name")
+    list_filter = ("role_name",)

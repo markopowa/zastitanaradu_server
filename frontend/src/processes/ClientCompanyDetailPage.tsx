@@ -65,6 +65,8 @@ import {
     deleteClientCompany,
     deleteJobRole,
     generateMedicalExamRecord,
+    generateHighRiskRegistry,
+    generateInspectionBundle,
     getClientCompany,
     getEmployees,
     getEquipment,
@@ -87,12 +89,18 @@ import type { JobRoleFormValues } from "../components/JobRoleFormFields";
 import { CompanyDocumentsPanel } from "../components/CompanyDocumentsPanel";
 import { GeneratedDocumentsPanel } from "../components/GeneratedDocumentsPanel";
 import { CompanyObligationPlanPanel } from "../components/CompanyObligationPlanPanel";
-import { JobRoleTemplatesPanel } from "../components/JobRoleTemplatesPanel";
+import { TrainingTypesPanel } from "../components/TrainingTypesPanel";
 import { AppButton } from "../design/AppButton";
 import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
+import { ClientIntakePanel } from "../components/ClientIntakePanel";
+import { WorkInjuriesPanel } from "../components/WorkInjuriesPanel";
 import { ComplianceFindingsPanel } from "../components/ComplianceFindingsPanel";
 import { RiskAssessmentActPanel } from "../components/RiskAssessmentActPanel";
+import { WorkplaceRiskAssessmentPanel } from "../components/WorkplaceRiskAssessmentPanel";
+import { JobRoleLZOPanel } from "../components/JobRoleLZOPanel";
+import { generateRiskAssessmentActDoc } from "../api/riskAssessment";
+import { BzrDocumentsPanel } from "../components/BzrDocumentsPanel";
 import RowActionsMenu from "../components/RowActionsMenu";
 import { withNavigation } from "../hocs/withNavigation";
 import { setBreadcrumbs, setLastPath } from "../store/locationSlice";
@@ -192,6 +200,7 @@ class ClientCompanyDetailPageInner extends Component<
         error: null,
         generatingDoc: false,
         docError: null,
+        generatingInspectionBundle: false,
         editing: false,
         saving: false,
         saveError: null,
@@ -459,12 +468,6 @@ class ClientCompanyDetailPageInner extends Component<
             );
     };
 
-    handleRoleUpdated = (role: JobRole): void => {
-        this.setState((prev) => ({
-            jobRoles: prev.jobRoles.map((r) => (r.id === role.id ? role : r)),
-        }));
-    };
-
     saveRole = (): void => {
         const companyId = Number(this.props.id);
         const { editingRoleId, role_name, role_risk_level, role_description } =
@@ -669,6 +672,71 @@ class ClientCompanyDetailPageInner extends Component<
             );
     };
 
+    handleGenerateHighRiskRegistry = (): void => {
+        const id = Number(this.props.id);
+        this.setState((prev) => ({
+            ...prev,
+            generatingDoc: true,
+            docError: null,
+        }));
+        generateHighRiskRegistry(id)
+            .then(() =>
+                this.setState((prev) => ({ ...prev, generatingDoc: false })),
+            )
+            .catch(() =>
+                this.setState((prev) => ({
+                    ...prev,
+                    generatingDoc: false,
+                    docError: "Greška pri generisanju registra.",
+                })),
+            );
+    };
+
+    handleGenerateRiskAssessmentAct = (): void => {
+        const id = Number(this.props.id);
+        this.setState((prev) => ({
+            ...prev,
+            generatingDoc: true,
+            docError: null,
+        }));
+        generateRiskAssessmentActDoc(id)
+            .then(() =>
+                this.setState((prev) => ({ ...prev, generatingDoc: false })),
+            )
+            .catch(() =>
+                this.setState((prev) => ({
+                    ...prev,
+                    generatingDoc: false,
+                    docError: "Greška pri generisanju Akta o proceni rizika.",
+                })),
+            );
+    };
+
+    handleGenerateInspectionBundle = (): void => {
+        const id = Number(this.props.id);
+        this.setState((prev) => ({
+            ...prev,
+            generatingInspectionBundle: true,
+        }));
+        generateInspectionBundle(id)
+            .then(() =>
+                this.setState((prev) => ({
+                    ...prev,
+                    generatingInspectionBundle: false,
+                })),
+            )
+            .catch((err: Error) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    generatingInspectionBundle: false,
+                }));
+                enqueueSnackbar(
+                    err.message || "Greška pri pripremi paketa za inspekciju.",
+                    { variant: "error" },
+                );
+            });
+    };
+
     loadExtra = (id: number): void => {
         Promise.all([
             getEmployees({ client_company_id: id }),
@@ -690,6 +758,11 @@ class ClientCompanyDetailPageInner extends Component<
                 }));
             },
         );
+    };
+
+    handleIntakeApproved = (): void => {
+        const { item } = this.state;
+        if (item) this.loadExtra(item.id);
     };
 
     handleBindingStartDateChange = (
@@ -959,6 +1032,7 @@ class ClientCompanyDetailPageInner extends Component<
             error,
             generatingDoc,
             docError,
+            generatingInspectionBundle,
             editing,
             saving,
             saveError,
@@ -1058,6 +1132,20 @@ class ClientCompanyDetailPageInner extends Component<
                                 {generatingDoc
                                     ? "Generiše se…"
                                     : "Generiši Obrazac 1"}
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                onClick={this.handleGenerateHighRiskRegistry}
+                                disabled={generatingDoc}
+                            >
+                                Registar radnih mesta sa povećanim rizikom
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                onClick={this.handleGenerateRiskAssessmentAct}
+                                disabled={generatingDoc}
+                            >
+                                Generiši Akt o proceni rizika
                             </Button>
                         </Box>
                         {docError && (
@@ -1536,11 +1624,55 @@ class ClientCompanyDetailPageInner extends Component<
                         </DetailCard>
 
                         <ContactPersonsPanel clientCompanyId={item.id} />
+
+                        <ClientIntakePanel
+                            clientCompanyId={item.id}
+                            clientCompanyEmail={item.email}
+                            onSubmissionApproved={this.handleIntakeApproved}
+                        />
                     </Stack>
                 )}
 
                 {activeTab === "documents" && (
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                            }}
+                        >
+                            <Button
+                                variant="contained"
+                                onClick={this.handleGenerateInspectionBundle}
+                                disabled={generatingInspectionBundle}
+                                startIcon={
+                                    generatingInspectionBundle ? (
+                                        <CircularProgress size={16} />
+                                    ) : undefined
+                                }
+                            >
+                                {generatingInspectionBundle
+                                    ? "Priprema se…"
+                                    : "Za inspekciju (PDF)"}
+                            </Button>
+                        </Box>
+                    </Box>
+                )}
+
+                {activeTab === "documents" && (
                     <RiskAssessmentActPanel clientCompanyId={item.id} />
+                )}
+
+                {activeTab === "documents" && (
+                    <SectionCard title="BZR dokumenti (nacrti)">
+                        <BzrDocumentsPanel clientCompanyId={item.id} />
+                    </SectionCard>
                 )}
 
                 {activeTab === "documents" && (
@@ -1650,12 +1782,19 @@ class ClientCompanyDetailPageInner extends Component<
                 )}
 
                 {activeTab === "job_roles" && (
-                    <SectionCard title="Blanko šabloni po radnom mestu">
-                        <JobRoleTemplatesPanel
-                            jobRoles={jobRoles}
-                            onRoleUpdated={this.handleRoleUpdated}
-                        />
+                    <SectionCard title="Procena rizika po radnom mestu">
+                        <WorkplaceRiskAssessmentPanel jobRoles={jobRoles} />
                     </SectionCard>
+                )}
+
+                {activeTab === "job_roles" && (
+                    <SectionCard title="Lična zaštitna oprema po radnom mestu">
+                        <JobRoleLZOPanel jobRoles={jobRoles} />
+                    </SectionCard>
+                )}
+
+                {activeTab === "job_roles" && (
+                    <TrainingTypesPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "employees" && (
@@ -1795,6 +1934,13 @@ class ClientCompanyDetailPageInner extends Component<
                                 </TableBody>
                             </Table>
                         </Paper>
+
+                        <Box sx={{ mt: 2 }}>
+                            <WorkInjuriesPanel
+                                clientCompanyId={item.id}
+                                employees={employees}
+                            />
+                        </Box>
                     </Fragment>
                 )}
 

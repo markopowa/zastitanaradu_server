@@ -1,0 +1,768 @@
+{
+  "Evidencija radnih mesta sa povećanim rizikom": {
+    "mode": "VISUAL",
+    "placeholders": [
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.85,
+        "xPct": 7.58,
+        "yPct": 11.8
+      },
+      {
+        "fieldKey": "client.address",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 8.01,
+        "xPct": 46.1,
+        "yPct": 11.8
+      },
+      {
+        "fieldKey": "client.tax_id",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 6.13,
+        "xPct": 79.94,
+        "yPct": 11.8
+      },
+      {
+        "columns": [
+          {
+            "field": "r.rbr",
+            "widthPct": 3.7,
+            "xPct": 15.3
+          },
+          {
+            "field": "r.job_role_name",
+            "widthPct": 14.03,
+            "xPct": 29.11
+          },
+          {
+            "field": "r.employee_name",
+            "widthPct": 15.87,
+            "xPct": 50.64
+          },
+          {
+            "field": "r.risk_label",
+            "widthPct": 9.98,
+            "xPct": 72.16
+          }
+        ],
+        "fontSize": 11.2,
+        "page": 0,
+        "rowHeightPct": 1.63,
+        "seriesSource": "high_risk_employees_for_company",
+        "yPct": 23.46
+      }
+    ]
+  },
+  "Karton zaduženja LZO (revers)": {
+    "mode": "VISUAL",
+    "placeholders": [
+      {
+        "fieldKey": "employee.full_name",
+        "fontSize": 11.1,
+        "heightPct": 1.62,
+        "page": 0,
+        "widthPct": 9.94,
+        "xPct": 36.67,
+        "yPct": 14.97
+      },
+      {
+        "fieldKey": "employee.position",
+        "fontSize": 11.1,
+        "heightPct": 1.62,
+        "page": 0,
+        "widthPct": 8.22,
+        "xPct": 31.63,
+        "yPct": 17.4
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.1,
+        "heightPct": 1.62,
+        "page": 0,
+        "widthPct": 5.59,
+        "xPct": 41.02,
+        "yPct": 14.97
+      }
+    ]
+  },
+  "Obrazac 1 — evidencija lekarskih pregleda": {
+    "mode": "VISUAL",
+    "placeholders": [
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 2.11,
+        "page": 0,
+        "widthPct": 4.52,
+        "xPct": 4.07,
+        "yPct": 20.63
+      },
+      {
+        "fieldKey": "client.address",
+        "fontSize": 11.2,
+        "heightPct": 2.11,
+        "page": 0,
+        "widthPct": 6.19,
+        "xPct": 33.84,
+        "yPct": 20.63
+      },
+      {
+        "fieldKey": "client.tax_id",
+        "fontSize": 11.2,
+        "heightPct": 2.11,
+        "page": 0,
+        "widthPct": 4.74,
+        "xPct": 59.99,
+        "yPct": 20.63
+      },
+      {
+        "columns": [
+          {
+            "field": "r.rbr",
+            "widthPct": 2.86,
+            "xPct": 6.87
+          },
+          {
+            "field": "r.job_role_name",
+            "widthPct": 6.59,
+            "xPct": 14.38
+          },
+          {
+            "field": "r.employee_name",
+            "widthPct": 8.0,
+            "xPct": 24.7
+          },
+          {
+            "field": "r.interval_months",
+            "widthPct": 6.63,
+            "xPct": 35.01
+          },
+          {
+            "field": "r.performed_at",
+            "widthPct": 8.72,
+            "xPct": 45.33
+          },
+          {
+            "field": "r.next_exam_date",
+            "widthPct": 8.67,
+            "xPct": 55.65
+          },
+          {
+            "field": "r.report_number",
+            "widthPct": 5.79,
+            "xPct": 65.97
+          },
+          {
+            "field": "r.fitness_assessment",
+            "widthPct": 6.09,
+            "xPct": 76.28
+          },
+          {
+            "field": "r.measures",
+            "widthPct": 7.5,
+            "xPct": 86.6
+          }
+        ],
+        "fontSize": 11.2,
+        "page": 0,
+        "rowHeightPct": 2.11,
+        "seriesSource": "completed_medical_exams_for_company",
+        "yPct": 38.4
+      }
+    ]
+  },
+  "Obrazac 6 — evidencija o osposobljenosti za bezbedan rad": {
+    "mode": "VISUAL",
+    "placeholders": [
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.1,
+        "heightPct": 1.52,
+        "page": 0,
+        "widthPct": 5.97,
+        "xPct": 5.42,
+        "yPct": 10.99
+      },
+      {
+        "fieldKey": "client.address",
+        "fontSize": 11.1,
+        "heightPct": 1.52,
+        "page": 0,
+        "widthPct": 8.44,
+        "xPct": 48.05,
+        "yPct": 10.99
+      },
+      {
+        "fieldKey": "client.tax_id",
+        "fontSize": 11.1,
+        "heightPct": 1.52,
+        "page": 0,
+        "widthPct": 6.3,
+        "xPct": 85.43,
+        "yPct": 10.99
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 12.2,
+        "heightPct": 1.67,
+        "page": 0,
+        "widthPct": 6.18,
+        "xPct": 50.81,
+        "yPct": 17.81
+      },
+      {
+        "fieldKey": "client.address",
+        "fontSize": 11.1,
+        "heightPct": 1.52,
+        "page": 1,
+        "widthPct": 8.44,
+        "xPct": 48.05,
+        "yPct": 37.59
+      },
+      {
+        "fieldKey": "client.tax_id",
+        "fontSize": 11.1,
+        "heightPct": 1.52,
+        "page": 1,
+        "widthPct": 6.3,
+        "xPct": 85.43,
+        "yPct": 37.59
+      },
+      {
+        "fieldKey": "employee.full_name",
+        "fontSize": 12.2,
+        "heightPct": 1.67,
+        "page": 0,
+        "widthPct": 11.31,
+        "xPct": 45.68,
+        "yPct": 17.81
+      },
+      {
+        "fieldKey": "employee.position",
+        "fontSize": 11.1,
+        "heightPct": 1.52,
+        "page": 0,
+        "widthPct": 8.46,
+        "xPct": 66.21,
+        "yPct": 21.75
+      },
+      {
+        "fieldKey": "performed_at",
+        "fontSize": 12.2,
+        "heightPct": 1.67,
+        "page": 0,
+        "widthPct": 14.88,
+        "xPct": 5.48,
+        "yPct": 31.17
+      },
+      {
+        "fieldKey": "performed_at",
+        "fontSize": 12.2,
+        "heightPct": 1.67,
+        "page": 0,
+        "widthPct": 14.88,
+        "xPct": 24.52,
+        "yPct": 31.17
+      },
+      {
+        "fieldKey": "performed_at",
+        "fontSize": 12.2,
+        "heightPct": 1.67,
+        "page": 0,
+        "widthPct": 14.88,
+        "xPct": 45.68,
+        "yPct": 31.17
+      },
+      {
+        "fieldKey": "performed_at",
+        "fontSize": 12.2,
+        "heightPct": 1.67,
+        "page": 0,
+        "widthPct": 14.88,
+        "xPct": 71.38,
+        "yPct": 31.17
+      }
+    ]
+  },
+  "Potvrda po članu 5": {
+    "mode": "VISUAL",
+    "placeholders": [
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.85,
+        "xPct": 47.4,
+        "yPct": 9.09
+      },
+      {
+        "fieldKey": "client.address",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 8.01,
+        "xPct": 46.31,
+        "yPct": 11.72
+      },
+      {
+        "fieldKey": "client.tax_id",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 6.13,
+        "xPct": 35.59,
+        "yPct": 14.35
+      },
+      {
+        "fieldKey": "client.registration_number",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 21.02,
+        "xPct": 48.45,
+        "yPct": 14.35
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.85,
+        "xPct": 26.04,
+        "yPct": 23.31
+      },
+      {
+        "fieldKey": "employee.full_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 10.08,
+        "xPct": 45.29,
+        "yPct": 40.07
+      },
+      {
+        "fieldKey": "employee.full_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 10.08,
+        "xPct": 25.36,
+        "yPct": 45.31
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.51,
+        "xPct": 49.86,
+        "yPct": 40.07
+      },
+      {
+        "fieldKey": "employee.place_of_birth",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 13.67,
+        "xPct": 29.66,
+        "yPct": 50.57
+      },
+      {
+        "fieldKey": "employee.date_of_birth",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 12.93,
+        "xPct": 30.12,
+        "yPct": 53.2
+      },
+      {
+        "fieldKey": "employee.national_id",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 11.23,
+        "xPct": 21.83,
+        "yPct": 55.84
+      },
+      {
+        "fieldKey": "training.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.85,
+        "xPct": 47.4,
+        "yPct": 9.09
+      },
+      {
+        "fieldKey": "performed_at",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 13.35,
+        "xPct": 36.96,
+        "yPct": 72.66
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.51,
+        "xPct": 29.93,
+        "yPct": 45.31
+      }
+    ]
+  },
+  "Uput za lekarski pregled": {
+    "mode": "VISUAL",
+    "placeholders": [
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.85,
+        "xPct": 26.7,
+        "yPct": 17.24
+      },
+      {
+        "fieldKey": "client.registration_number",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 21.02,
+        "xPct": 49.76,
+        "yPct": 19.11
+      },
+      {
+        "fieldKey": "client.address",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 8.01,
+        "xPct": 22.88,
+        "yPct": 20.99
+      },
+      {
+        "fieldKey": "client.activity_code",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 12.91,
+        "xPct": 30.53,
+        "yPct": 22.86
+      },
+      {
+        "fieldKey": "scheduled_for",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 14.02,
+        "xPct": 22.61,
+        "yPct": 26.59
+      },
+      {
+        "fieldKey": "instruction_number",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 19.83,
+        "xPct": 26.17,
+        "yPct": 28.47
+      },
+      {
+        "fieldKey": "employee.first_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 10.88,
+        "xPct": 61.4,
+        "yPct": 32.2
+      },
+      {
+        "fieldKey": "employee.father_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 7.29,
+        "xPct": 74.1,
+        "yPct": 32.2
+      },
+      {
+        "fieldKey": "employee.last_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 10.41,
+        "xPct": 22.04,
+        "yPct": 34.08
+      },
+      {
+        "fieldKey": "date_of_birth",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 12.93,
+        "xPct": 43.19,
+        "yPct": 34.08
+      },
+      {
+        "fieldKey": "employee.place_of_birth",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 13.67,
+        "xPct": 59.68,
+        "yPct": 34.08
+      },
+      {
+        "fieldKey": "employee.national_id",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 11.22,
+        "xPct": 14.72,
+        "yPct": 35.95
+      },
+      {
+        "fieldKey": "employee.occupation",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 11.49,
+        "xPct": 41.12,
+        "yPct": 35.95
+      },
+      {
+        "fieldKey": "employee.high_risk_position_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 24.37,
+        "xPct": 21.48,
+        "yPct": 37.83
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.51,
+        "xPct": 66.77,
+        "yPct": 32.2
+      },
+      {
+        "fieldKey": "client.risk_assessment_act_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 26.43,
+        "xPct": 47.17,
+        "yPct": 41.56
+      },
+      {
+        "fieldKey": "client.risk_assessment_act_date",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.06,
+        "xPct": 76.01,
+        "yPct": 41.56
+      },
+      {
+        "fieldKey": "last_exam_date",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 15.18,
+        "xPct": 62.04,
+        "yPct": 47.16
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.51,
+        "xPct": 14.72,
+        "yPct": 34.08
+      }
+    ]
+  },
+  "Uput za prethodni lekarski pregled": {
+    "mode": "VISUAL",
+    "placeholders": [
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.85,
+        "xPct": 26.7,
+        "yPct": 17.24
+      },
+      {
+        "fieldKey": "client.registration_number",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 21.02,
+        "xPct": 49.76,
+        "yPct": 19.11
+      },
+      {
+        "fieldKey": "client.address",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 8.01,
+        "xPct": 22.88,
+        "yPct": 20.99
+      },
+      {
+        "fieldKey": "client.activity_code",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 12.91,
+        "xPct": 30.53,
+        "yPct": 22.86
+      },
+      {
+        "fieldKey": "scheduled_for",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 14.02,
+        "xPct": 22.61,
+        "yPct": 26.59
+      },
+      {
+        "fieldKey": "instruction_number",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 19.83,
+        "xPct": 26.17,
+        "yPct": 28.47
+      },
+      {
+        "fieldKey": "employee.first_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 10.88,
+        "xPct": 48.87,
+        "yPct": 32.2
+      },
+      {
+        "fieldKey": "employee.father_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 12.8,
+        "xPct": 61.58,
+        "yPct": 32.2
+      },
+      {
+        "fieldKey": "employee.last_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 4.89,
+        "xPct": 76.2,
+        "yPct": 32.2
+      },
+      {
+        "fieldKey": "date_of_birth",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 12.93,
+        "xPct": 30.97,
+        "yPct": 34.08
+      },
+      {
+        "fieldKey": "employee.place_of_birth",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 13.67,
+        "xPct": 47.46,
+        "yPct": 34.08
+      },
+      {
+        "fieldKey": "employee.national_id",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 11.23,
+        "xPct": 69.42,
+        "yPct": 34.08
+      },
+      {
+        "fieldKey": "employee.occupation",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 11.49,
+        "xPct": 25.31,
+        "yPct": 35.95
+      },
+      {
+        "fieldKey": "employee.high_risk_position_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 10.07,
+        "xPct": 74.54,
+        "yPct": 35.95
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.51,
+        "xPct": 54.24,
+        "yPct": 32.2
+      },
+      {
+        "fieldKey": "client.risk_assessment_act_name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 26.43,
+        "xPct": 23.08,
+        "yPct": 41.56
+      },
+      {
+        "fieldKey": "client.risk_assessment_act_date",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 25.31,
+        "xPct": 51.92,
+        "yPct": 41.56
+      },
+      {
+        "fieldKey": "client.name",
+        "fontSize": 11.2,
+        "heightPct": 1.63,
+        "page": 0,
+        "widthPct": 5.51,
+        "xPct": 68.86,
+        "yPct": 32.2
+      }
+    ]
+  }
+}

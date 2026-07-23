@@ -16,6 +16,8 @@ RISK_LEVELS = [
 ]
 
 TEMPLATE_FIELDS = [
+    ("employee.full_name", "Ime i prezime",
+     TemplateFieldDefinition.CATEGORY_EMPLOYEE),
     ("employee.first_name", "Ime zaposlenog",
      TemplateFieldDefinition.CATEGORY_EMPLOYEE),
     ("employee.last_name", "Prezime zaposlenog",
@@ -68,6 +70,8 @@ TEMPLATE_FIELDS = [
     ("last_exam_date", "Datum prethodnog pregleda",
      TemplateFieldDefinition.CATEGORY_PROCESS),
     ("year_of_birth", "Godina rođenja", TemplateFieldDefinition.CATEGORY_PROCESS),
+    ("date_of_birth", "Datum rođenja", TemplateFieldDefinition.CATEGORY_PROCESS),
+    ("training.name", "Naziv obuke", TemplateFieldDefinition.CATEGORY_PROCESS),
     ("client.director_name", "Direktor — ime i prezime",
      TemplateFieldDefinition.CATEGORY_CLIENT_COMPANY),
     ("client.director_phone", "Telefon direktora",
@@ -80,19 +84,6 @@ TEMPLATE_FIELDS = [
      TemplateFieldDefinition.CATEGORY_CLIENT_COMPANY),
     ("client.contact_email", "Email kontakt osobe",
      TemplateFieldDefinition.CATEGORY_CLIENT_COMPANY),
-    ("training.case_code", "Slučaj/razlog obuke",
-     TemplateFieldDefinition.CATEGORY_PROCESS),
-    ("training.theory_date", "Datum teorijske obuke",
-     TemplateFieldDefinition.CATEGORY_PROCESS),
-    ("training.practical_date", "Datum praktične obuke",
-     TemplateFieldDefinition.CATEGORY_PROCESS),
-    ("training.check_theory_date", "Datum teorijske provere",
-     TemplateFieldDefinition.CATEGORY_PROCESS),
-    ("training.check_practical_date", "Datum praktične provere",
-     TemplateFieldDefinition.CATEGORY_PROCESS),
-    ("ppe.item_name", "Naziv LZO", TemplateFieldDefinition.CATEGORY_PROCESS),
-    ("ppe.training_date", "Datum obuke za LZO",
-     TemplateFieldDefinition.CATEGORY_PROCESS),
 ]
 
 
