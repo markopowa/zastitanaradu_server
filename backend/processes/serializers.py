@@ -376,6 +376,8 @@ class SendNowResponseSerializer(serializers.Serializer):
 class TaskAssignmentSerializer(serializers.ModelSerializer):
     process_run_id = serializers.IntegerField(
         source="process_run.id", read_only=True)
+    assigned_to_username = serializers.CharField(
+        source="assigned_to.username", read_only=True)
 
     class Meta:
         model = TaskAssignment
@@ -384,6 +386,7 @@ class TaskAssignmentSerializer(serializers.ModelSerializer):
             "process_run",
             "process_run_id",
             "assigned_to",
+            "assigned_to_username",
             "title",
             "description",
             "due_date",

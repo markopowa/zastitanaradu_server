@@ -28,6 +28,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import { enqueueSnackbar } from "notistack";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
+import { TaskAssignmentsPanel } from "../components/TaskAssignmentsPanel";
 import { withNavigation } from "../hocs/withNavigation";
 import { StatusBadge, triggerLabel } from "../design";
 import {
@@ -715,6 +716,13 @@ class ProcessRunDetailPageInner extends Component<
                             {uploading ? "Otpremam..." : "Dodaj prilog"}
                         </Button>
                     </Box>
+                </Paper>
+
+                <Paper sx={{ p: 2 }}>
+                    <Typography variant="subtitle1" gutterBottom>
+                        Zadaci
+                    </Typography>
+                    <TaskAssignmentsPanel processRunId={run.id} />
                 </Paper>
 
                 <Paper sx={{ p: 2 }}>

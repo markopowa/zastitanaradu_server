@@ -38,12 +38,10 @@ Osposobljenost se može proveriti i **testom**: zaposleni odgovara na pitanja, i
 15. Kartica **Dokumenti** na zaposlenom: lista svih generisanih dokumenata za tog zaposlenog (Naziv / Vrsta obaveze / Datum / Preuzmi).
 
 ## Koraci — upitnik klijentu (alternativni unos zaposlenog)
-16. Zamisao: umesto da konsultant ručno unosi novog zaposlenog, klijent (firma) sam prijavi podatke kroz javnu formu, konsultant samo odobri. Konsultant na firmi kreira link za upitnik, šalje ga klijentu mejlom; klijent otvara `/intake/<token>/`, bira „Novi zaposleni" ili „Nova oprema" i popunjava; prijava stiže konsultantu na čekanju; **Odobri** kreira zaposlenog (ili opremu) i otvara mu obaveze kao da je ručno unet, **Odbij** je odbacuje.
-17. **Status u ovom build-u**: backend je gotov (`intake-links`, `intake-submissions`, javna stranica `/intake/<token>/`), ali na tabu **Lična karta** firme još nema vidljivog panela „Upitnik klijentu" u React aplikaciji — ne snimati dok se ne pojavi dugme za kreiranje/slanje linka i lista prijava sa Odobri/Odbij.
+16. Tab **Lična karta** → panel **Upitnik klijentu**: kreiraj link, pošalji klijentu, lista prijava sa **Odobri** / **Odbij**. Javna forma: `/intake/<token>/`.
 
 ## Koraci — povrede na radu
-18. Zamisao: na tabu **Zaposleni**, panel „Povrede na radu" — tabela povreda (zaposleni, datum, težina, opis, izveštaj) i dugme **Dodaj** koje otvara dijalog: zaposleni, datum, težina (Laka / Teška / Smrtna / Kolektivna), opis, fajl izveštaja.
-19. **Status u ovom build-u**: backend je gotov (`work-injuries` endpoint), ali panel na tabu Zaposleni još nije vidljiv u React aplikaciji — ne snimati dok se ne pojavi.
+17. Tab **Zaposleni** → panel **Povrede na radu**: tabela povreda, **Dodaj** (zaposleni, datum, težina, opis, izveštaj).
 
 ## Provera (checklist)
 - [ ] Povećan rizik → prethodni lekarski + obuke/ZOP/LZO automatski; nizak rizik → bez lekarskog.
@@ -55,7 +53,7 @@ Osposobljenost se može proveriti i **testom**: zaposleni odgovara na pitanja, i
 - [ ] Potvrda (čl. 5) onemogućena bez vrsta obuka na firmi; sa njima — bira vrstu, generiše dokument.
 - [ ] Test obuke: ispod 75% ne prolazi i nudi ponovni pokušaj; od 75% naviše prolazi, upisuje obuku i sam generiše Obrazac 6.
 - [ ] Dodaj obuku (ručno) i lista Dokumenti rade na zaposlenom.
-- [ ] Upitnik klijentu i Povrede na radu — proveriti pre snimanja da li su panel(i) već vidljivi u aplikaciji.
+- [ ] Upitnik klijentu (Lična karta) i Povrede na radu (Zaposleni) rade.
 
 ## Šta reći u videu
 > Prošao sam kroz zaposlene. Prvo radna mesta, pa zaposleni, pa papiri koji im idu uz obuku.

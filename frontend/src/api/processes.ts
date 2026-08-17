@@ -34,6 +34,7 @@ import type {
     ProcessRunDocument,
     ProcessTemplate,
     ProcessType,
+    TaskAssignment,
     CompanyComplianceFindingRow,
     ComplianceFindingType,
     RiskAssessmentAct,
@@ -1103,6 +1104,46 @@ export async function previewOutboxRow(
         `/api/processes/outbox/${id}/preview/`,
     );
     return data;
+}
+
+export async function getTaskAssignments(
+    processRunId: number,
+): Promise<TaskAssignment[]> {
+    const { data } = await api.get<ListResponse<TaskAssignment>>(
+        `/api/processes/task-assignments/?process_run_id=${processRunId}`,
+    );
+    return asList(data);
+}
+
+export async function createTaskAssignment(payload: {
+    process_run: number;
+    assigned_to: number;
+    title: string;
+    description?: string;
+    due_date?: string | null;
+}): Promise<TaskAssignment> {
+    const { data } = await api.post<TaskAssignment>(
+        "/api/processes/task-assignments/",
+        payload,
+    );
+    return data;
+}
+
+export async function updateTaskAssignment(
+    id: number,
+    payload: Partial<
+        Pick<TaskAssignment, "title" | "description" | "due_date" | "status">
+    >,
+): Promise<TaskAssignment> {
+    const { data } = await api.patch<TaskAssignment>(
+        `/api/processes/task-assignments/${id}/`,
+        payload,
+    );
+    return data;
+}
+
+export async function deleteTaskAssignment(id: number): Promise<void> {
+    await api.delete(`/api/processes/task-assignments/${id}/`);
 }
 
 export async function createRiskAssessmentActAmendment(

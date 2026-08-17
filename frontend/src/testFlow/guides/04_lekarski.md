@@ -28,8 +28,7 @@ Kad **prethodni lekarski** (otvoren automatski pri zaposlenju na radno mesto pov
 7. Očekivano: preuzima se dokument sa tabelom — zaposleni na mestima s povećanim rizikom, vrsta pregleda, datum, sledeći termin, broj izveštaja, ocena sposobnosti, mere — popunjeno iz završenih aktivnosti. Dokument se čuva i vidi se na tabu **Dokumentacija**, u „Obavezna dokumentacija", kao stavka **Obrazac 1 — evidencija lekarskih pregleda** (opciona stavka, ne ulazi u brojač).
 
 ## Koraci — evidencija radnih mesta sa povećanim rizikom (registar)
-8. Na tabu **Dokumentacija → Obavezna dokumentacija** postoji i opciona stavka **Evidencija radnih mesta sa povećanim rizikom** — isti princip kao Obrazac 1: dokument koji firma treba da poseduje.
-9. U ovom build-u nema vidljivog dugmeta „Generiši registar" na tabu Pregled (backend endpoint `high-risk-registry` postoji, generiše .docx sa svim radnim mestima povećanog rizika, ali nije povezan ni na jedno dugme u React aplikaciji) — proveriti pre snimanja da li je dugme stiglo; ako nije, ovaj korak se ne snima, stavka ostaje „nema"/ručno se prilaže gotov fajl kao i svaki drugi dokument.
+8. Tab **Pregled** → dugme **Registar radnih mesta sa povećanim rizikom** (pored Generiši Obrazac 1) → preuzima .docx, čuva se u Dokumentaciji kao opciona stavka.
 
 ## Provera (checklist)
 - [ ] Aktivnosti imaju filtere Kasni/Stiže uskoro/Otvorene/Sve.
@@ -37,7 +36,7 @@ Kad **prethodni lekarski** (otvoren automatski pri zaposlenju na radno mesto pov
 - [ ] Završetak periodičnog otvara sledeći periodični.
 - [ ] Po završetku se zatvore preostali podsetnici te aktivnosti.
 - [ ] Generiši Obrazac 1 radi i u dokumentu su samo zaposleni sa završenim pregledom; dokument se pojavljuje na tabu Dokumentacija.
-- [ ] Evidencija radnih mesta sa povećanim rizikom — proveriti da li već postoji dugme za generisanje pre snimanja; ako ne, samo pomenuti da je stavka opciona u dokumentaciji.
+- [ ] Registar radnih mesta sa povećanim rizikom — dugme na tabu Pregled generiše .docx.
 
 ## Šta reći u videu
 > Prošao sam kroz ceo tok lekarskog. Dve reči koje koristim: obaveza je opšti pojam, „lekarski pregled"; aktivnost je konkretan slučaj, „lekarski za Petra Petrovića, rok 1. septembar". Na aktivnostima radim svakog dana.

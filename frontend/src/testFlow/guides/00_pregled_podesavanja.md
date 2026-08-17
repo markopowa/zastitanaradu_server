@@ -5,11 +5,13 @@ i svaku sledeću firmu — ne pamtiš, štrikliraš.
 
 ## Komande setupa (posle svakog većeg deploya)
 ```bash
-docker exec zastitanaradu_server-backend-1 python manage.py add_setup
-docker exec zastitanaradu_server-backend-1 python manage.py reconcile_obligation_catalog
-docker exec zastitanaradu_server-backend-1 python manage.py seed_default_test
-docker exec zastitanaradu_server-backend-1 python manage.py seed_preliminary_users --password '...'
+cd /var/www/zastitanaradu_server
+docker compose exec -T backend python manage.py add_setup < /dev/null
+docker compose exec -T backend python manage.py reconcile_obligation_catalog < /dev/null
+docker compose exec -T backend python manage.py seed_default_test < /dev/null
+docker compose exec -T backend python manage.py seed_preliminary_users --password '...' < /dev/null
 ```
+Posle izmene `backend.env`: `docker compose up -d backend` (ne samo restart).
 Po unosu radnih mesta pilot firme: `attach_obrazac6_blanks --company <ime> --kind all`.
 
 ## Šta Administracija mora da ima

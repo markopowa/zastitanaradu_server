@@ -429,6 +429,7 @@ export interface TaskAssignment {
     process_run: number;
     process_run_id: number;
     assigned_to: number;
+    assigned_to_username?: string;
     title: string;
     description?: string;
     due_date?: string | null;

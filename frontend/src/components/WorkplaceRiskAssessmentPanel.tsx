@@ -140,7 +140,7 @@ export function WorkplaceRiskAssessmentPanel({ jobRoles }: Props) {
 
     const addRow = async (roleId: number) => {
         if (!draft.hazard || !draft.v || !draft.i || !draft.p) {
-            enqueueSnackbar("Izaberi opasnost i sve tri vrednosti (V, I, P).", {
+            enqueueSnackbar("Izaberi opasnost i tri vrednosti procene rizika.", {
                 variant: "warning",
             });
             return;
@@ -242,13 +242,13 @@ export function WorkplaceRiskAssessmentPanel({ jobRoles }: Props) {
                                                     Opasnost / štetnost
                                                 </TableCell>
                                                 <TableCell sx={{ width: "8%" }}>
-                                                    V
+                                                    Verov.
                                                 </TableCell>
                                                 <TableCell sx={{ width: "8%" }}>
-                                                    I
+                                                    Izlož.
                                                 </TableCell>
                                                 <TableCell sx={{ width: "8%" }}>
-                                                    P
+                                                    Posled.
                                                 </TableCell>
                                                 <TableCell sx={{ width: "15%" }}>
                                                     Rizik

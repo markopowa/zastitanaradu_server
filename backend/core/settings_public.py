@@ -123,6 +123,8 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
 
+REMINDER_INTERNAL_GROUP = os.environ.get("REMINDER_INTERNAL_GROUP", "Operativa")
+
 AWS_REGION = os.environ.get("AWS_REGION", "") or os.environ.get(
     "AWS_DEFAULT_REGION", "eu-central-1"
 )
