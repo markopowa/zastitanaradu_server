@@ -66,6 +66,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.CorrelationIdMiddleware",
+    "core.middleware.SuppressEmailMiddleware",
     "core.middleware.PageNotFoundMiddleware",
     "core.middleware.ErrorLoggingMiddleware",
 ]
@@ -122,6 +123,8 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
+EMAIL_DRY_RUN = os.environ.get("EMAIL_DRY_RUN", "false").lower() == "true"
+E2E_SUPPRESS_EMAIL_SECRET = os.environ.get("E2E_SUPPRESS_EMAIL_SECRET", "")
 
 REMINDER_INTERNAL_GROUP = os.environ.get("REMINDER_INTERNAL_GROUP", "Operativa")
 

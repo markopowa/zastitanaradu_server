@@ -112,3 +112,30 @@ class CorrelationIdMiddleware:
         response = self.get_response(request)
         response.headers["X-Request-ID"] = correlation_id
         return response
+
+
+class SuppressEmailMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        from .email_context import reset_suppress_email, set_suppress_email
+
+        token = None
+        if _request_wants_suppressed_email(request):
+            token = set_suppress_email(True)
+        try:
+            return self.get_response(request)
+        finally:
+            if token is not None:
+                reset_suppress_email(token)
+
+
+def _request_wants_suppressed_email(request) -> bool:
+    if request.META.get("HTTP_X_SUPPRESS_EMAIL") != "1":
+        return False
+    secret = getattr(settings, "E2E_SUPPRESS_EMAIL_SECRET", "") or ""
+    if not secret:
+        return False
+    token = request.META.get("HTTP_X_E2E_SUPPRESS_TOKEN", "")
+    return token == secret

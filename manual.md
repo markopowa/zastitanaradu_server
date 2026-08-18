@@ -35,3 +35,5 @@ EMAIL_FROM_ADDRESS=noreply@mak-total-safety.pznr.in.rs
 ```
 
 Zatim: `docker compose up -d backend`.
+
+E2E / Playwright protiv produkcije (bez slanja mejlova): u `backend.env` dodaj `E2E_SUPPRESS_EMAIL_SECRET=<nasumičan string>`; isti string u `instructions/e2e/.env` kao `E2E_SUPPRESS_EMAIL_TOKEN`. Samo za test skripte — normalni korisnici i tajmeri i dalje šalju mejlove.

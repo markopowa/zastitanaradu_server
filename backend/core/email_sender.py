@@ -10,9 +10,46 @@ from botocore.exceptions import ClientError
 
 from django.conf import settings
 
+from .email_context import is_email_suppressed, log_suppressed_send
+
 logger = logging.getLogger(__name__)
 
 _sender = None
+
+
+class SuppressAwareEmailSender:
+    def __init__(self, inner):
+        self._inner = inner
+
+    def send(
+        self,
+        *,
+        recipients: Sequence[str],
+        subject: str,
+        body: str,
+        html_body: str | None = None,
+        from_email: str | None = None,
+        attachments: Sequence[tuple[str, bytes]] | None = None,
+        fail_silently: bool = True,
+    ) -> bool:
+        if is_email_suppressed():
+            if recipients:
+                log_suppressed_send(
+                    recipients=recipients,
+                    subject=subject,
+                    body=body,
+                    attachments=attachments,
+                )
+            return True
+        return self._inner.send(
+            recipients=recipients,
+            subject=subject,
+            body=body,
+            html_body=html_body,
+            from_email=from_email,
+            attachments=attachments,
+            fail_silently=fail_silently,
+        )
 
 
 def get_email_sender():
@@ -26,7 +63,7 @@ def get_email_sender():
         module_path, _, class_name = backend_path.rpartition(".")
         mod = importlib.import_module(module_path)
         cls = getattr(mod, class_name)
-        _sender = cls()
+        _sender = SuppressAwareEmailSender(cls())
     return _sender
 
 
