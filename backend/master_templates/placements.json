@@ -295,130 +295,94 @@
     "mode": "VISUAL",
     "placeholders": [
       {
-        "fieldKey": "client.name",
-        "fontSize": 11.2,
-        "heightPct": 1.63,
-        "page": 0,
-        "widthPct": 5.85,
-        "xPct": 47.4,
-        "yPct": 9.09
-      },
-      {
-        "fieldKey": "client.address",
-        "fontSize": 11.2,
-        "heightPct": 1.63,
-        "page": 0,
-        "widthPct": 8.01,
-        "xPct": 46.31,
-        "yPct": 11.72
-      },
-      {
         "fieldKey": "client.tax_id",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 6.13,
-        "xPct": 35.59,
-        "yPct": 14.35
+        "widthPct": 7.66,
+        "xPct": 41.51,
+        "yPct": 14.32
       },
       {
         "fieldKey": "client.registration_number",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 21.02,
-        "xPct": 48.45,
-        "yPct": 14.35
+        "widthPct": 7.66,
+        "xPct": 55.9,
+        "yPct": 14.32
       },
       {
         "fieldKey": "client.name",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 5.85,
+        "widthPct": 7.66,
         "xPct": 26.04,
-        "yPct": 23.31
+        "yPct": 23.28
       },
       {
         "fieldKey": "employee.full_name",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 10.08,
-        "xPct": 45.29,
-        "yPct": 40.07
-      },
-      {
-        "fieldKey": "employee.full_name",
-        "fontSize": 11.2,
-        "heightPct": 1.63,
-        "page": 0,
-        "widthPct": 10.08,
+        "widthPct": 7.66,
         "xPct": 25.36,
-        "yPct": 45.31
+        "yPct": 45.27
       },
       {
         "fieldKey": "client.name",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 5.51,
-        "xPct": 49.86,
-        "yPct": 40.07
+        "widthPct": 7.66,
+        "xPct": 28.03,
+        "yPct": 47.9
       },
       {
         "fieldKey": "employee.place_of_birth",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 13.67,
+        "widthPct": 7.66,
         "xPct": 29.66,
-        "yPct": 50.57
+        "yPct": 50.53
       },
       {
         "fieldKey": "employee.date_of_birth",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 12.93,
+        "widthPct": 7.66,
         "xPct": 30.12,
-        "yPct": 53.2
+        "yPct": 53.17
       },
       {
         "fieldKey": "employee.national_id",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 11.23,
+        "widthPct": 7.66,
         "xPct": 21.83,
-        "yPct": 55.84
+        "yPct": 55.8
       },
       {
         "fieldKey": "training.name",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 5.85,
-        "xPct": 47.4,
-        "yPct": 9.09
+        "widthPct": 7.66,
+        "xPct": 27.5,
+        "yPct": 58.43
       },
       {
         "fieldKey": "performed_at",
         "fontSize": 11.2,
         "heightPct": 1.63,
         "page": 0,
-        "widthPct": 13.35,
-        "xPct": 36.96,
-        "yPct": 72.66
-      },
-      {
-        "fieldKey": "client.name",
-        "fontSize": 11.2,
-        "heightPct": 1.63,
-        "page": 0,
-        "widthPct": 5.51,
-        "xPct": 29.93,
-        "yPct": 45.31
+        "widthPct": 7.66,
+        "xPct": 39.16,
+        "yPct": 72.62
       }
     ]
   },
@@ -427,165 +391,165 @@
     "placeholders": [
       {
         "fieldKey": "client.name",
-        "page": 0,
-        "xPct": 26.7,
-        "yPct": 17.24,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 26.7,
+        "yPct": 17.24
       },
       {
         "fieldKey": "client.registration_number",
-        "page": 0,
-        "xPct": 49.76,
-        "yPct": 19.11,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 49.76,
+        "yPct": 19.11
       },
       {
         "fieldKey": "client.address",
-        "page": 0,
-        "xPct": 22.88,
-        "yPct": 20.99,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 22.88,
+        "yPct": 20.99
       },
       {
         "fieldKey": "client.activity_code",
-        "page": 0,
-        "xPct": 30.53,
-        "yPct": 22.86,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 30.53,
+        "yPct": 22.86
       },
       {
         "fieldKey": "scheduled_for",
-        "page": 0,
-        "xPct": 22.61,
-        "yPct": 26.59,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 22.61,
+        "yPct": 26.59
       },
       {
         "fieldKey": "instruction_number",
-        "page": 0,
-        "xPct": 26.17,
-        "yPct": 28.47,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 26.17,
+        "yPct": 28.47
       },
       {
         "fieldKey": "employee.first_name",
-        "page": 0,
-        "xPct": 61.4,
-        "yPct": 32.2,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 61.4,
+        "yPct": 32.2
       },
       {
         "fieldKey": "employee.father_name",
-        "page": 0,
-        "xPct": 70.87,
-        "yPct": 32.2,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 70.87,
+        "yPct": 32.2
       },
       {
         "fieldKey": "employee.last_name",
-        "page": 0,
-        "xPct": 14.72,
-        "yPct": 34.08,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 14.72,
+        "yPct": 34.08
       },
       {
         "fieldKey": "date_of_birth",
-        "page": 0,
-        "xPct": 33.12,
-        "yPct": 34.08,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 33.12,
+        "yPct": 34.08
       },
       {
         "fieldKey": "employee.place_of_birth",
-        "page": 0,
-        "xPct": 44.33,
-        "yPct": 34.08,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 44.33,
+        "yPct": 34.08
       },
       {
         "fieldKey": "employee.national_id",
-        "page": 0,
-        "xPct": 60.27,
-        "yPct": 34.08,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 60.27,
+        "yPct": 34.08
       },
       {
         "fieldKey": "employee.occupation",
-        "page": 0,
-        "xPct": 14.72,
-        "yPct": 35.95,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 14.72,
+        "yPct": 35.95
       },
       {
         "fieldKey": "employee.high_risk_position_name",
-        "page": 0,
-        "xPct": 60.11,
-        "yPct": 35.95,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 60.11,
+        "yPct": 35.95
       },
       {
         "fieldKey": "client.name",
-        "page": 0,
-        "xPct": 14.72,
-        "yPct": 37.83,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 14.72,
+        "yPct": 37.83
       },
       {
         "fieldKey": "client.risk_assessment_act_name",
-        "page": 0,
-        "xPct": 16.04,
-        "yPct": 41.56,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 16.04,
+        "yPct": 41.56
       },
       {
         "fieldKey": "client.risk_assessment_act_date",
-        "page": 0,
-        "xPct": 26.09,
-        "yPct": 41.56,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 26.09,
+        "yPct": 41.56
       },
       {
         "fieldKey": "last_exam_date",
-        "page": 0,
-        "xPct": 62.04,
-        "yPct": 45.29,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 62.04,
+        "yPct": 45.29
       }
     ]
   },
@@ -594,156 +558,156 @@
     "placeholders": [
       {
         "fieldKey": "client.name",
-        "page": 0,
-        "xPct": 26.7,
-        "yPct": 17.24,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 26.7,
+        "yPct": 17.24
       },
       {
         "fieldKey": "client.registration_number",
-        "page": 0,
-        "xPct": 49.76,
-        "yPct": 19.11,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 49.76,
+        "yPct": 19.11
       },
       {
         "fieldKey": "client.address",
-        "page": 0,
-        "xPct": 22.88,
-        "yPct": 20.99,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 22.88,
+        "yPct": 20.99
       },
       {
         "fieldKey": "client.activity_code",
-        "page": 0,
-        "xPct": 30.53,
-        "yPct": 22.86,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 30.53,
+        "yPct": 22.86
       },
       {
         "fieldKey": "scheduled_for",
-        "page": 0,
-        "xPct": 22.61,
-        "yPct": 26.59,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 22.61,
+        "yPct": 26.59
       },
       {
         "fieldKey": "instruction_number",
-        "page": 0,
-        "xPct": 26.17,
-        "yPct": 28.47,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 26.17,
+        "yPct": 28.47
       },
       {
         "fieldKey": "employee.first_name",
-        "page": 0,
-        "xPct": 48.87,
-        "yPct": 32.2,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 48.87,
+        "yPct": 32.2
       },
       {
         "fieldKey": "employee.father_name",
-        "page": 0,
-        "xPct": 58.35,
-        "yPct": 32.2,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 58.35,
+        "yPct": 32.2
       },
       {
         "fieldKey": "employee.last_name",
-        "page": 0,
-        "xPct": 67.83,
-        "yPct": 32.2,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 67.83,
+        "yPct": 32.2
       },
       {
         "fieldKey": "date_of_birth",
-        "page": 0,
-        "xPct": 14.72,
-        "yPct": 34.08,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 14.72,
+        "yPct": 34.08
       },
       {
         "fieldKey": "employee.place_of_birth",
-        "page": 0,
-        "xPct": 25.92,
-        "yPct": 34.08,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 25.92,
+        "yPct": 34.08
       },
       {
         "fieldKey": "employee.national_id",
-        "page": 0,
-        "xPct": 41.86,
-        "yPct": 34.08,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 41.86,
+        "yPct": 34.08
       },
       {
         "fieldKey": "employee.occupation",
-        "page": 0,
-        "xPct": 64.69,
-        "yPct": 34.08,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 64.69,
+        "yPct": 34.08
       },
       {
         "fieldKey": "employee.high_risk_position_name",
-        "page": 0,
-        "xPct": 44.34,
-        "yPct": 35.95,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 44.34,
+        "yPct": 35.95
       },
       {
         "fieldKey": "client.name",
-        "page": 0,
-        "xPct": 68.41,
-        "yPct": 35.95,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 68.41,
+        "yPct": 35.95
       },
       {
         "fieldKey": "client.risk_assessment_act_name",
-        "page": 0,
-        "xPct": 65.96,
-        "yPct": 39.68,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 65.96,
+        "yPct": 39.68
       },
       {
         "fieldKey": "client.risk_assessment_act_date",
-        "page": 0,
-        "xPct": 76.0,
-        "yPct": 39.68,
-        "widthPct": 7.66,
+        "fontSize": 11.2,
         "heightPct": 1.63,
-        "fontSize": 11.2
+        "page": 0,
+        "widthPct": 7.66,
+        "xPct": 76.0,
+        "yPct": 39.68
       }
     ]
   }
