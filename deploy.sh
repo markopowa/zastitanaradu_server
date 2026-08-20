@@ -76,6 +76,11 @@ loadBackendEnv() {
     export PZNR_POSTGRES_PASSWORD="$(readEnvVar PZNR_POSTGRES_PASSWORD postgres)"
 }
 
+exportComposeEnv() {
+    loadBackendEnv
+    export PZNR_DB_NAME PZNR_DB_USER PZNR_DB_PASSWORD PZNR_POSTGRES_PASSWORD
+}
+
 escapeSqlLiteral() {
     printf "%s" "$1" | sed "s/'/''/g"
 }
@@ -211,7 +216,7 @@ initialSetup() {
 }
 
 setupDatabase() {
-    loadBackendEnv
+    exportComposeEnv
     if [ -z "$PZNR_DB_PASSWORD" ]; then
         echo "ERROR: PZNR_DB_PASSWORD is empty in $ENV_FILE" >&2
         exit 1
@@ -282,7 +287,7 @@ reloadCodeDependantServices() {
 }
 
 setupDockerQuick() {
-    loadBackendEnv
+    exportComposeEnv
     mkdir -p "$LOG_DIR/backend"
     chown -R 33:33 "$LOG_DIR/backend" 2>/dev/null || true
     makeMigrations
@@ -295,7 +300,7 @@ setupDockerQuick() {
 }
 
 setupDocker() {
-    loadBackendEnv
+    exportComposeEnv
     mkdir -p "$LOG_DIR/backend"
     chown -R 33:33 "$LOG_DIR/backend" 2>/dev/null || true
     makeMigrations
@@ -315,8 +320,8 @@ setupDocker() {
     fi
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
     cd "$APP_DIR"
-    docker compose exec -T backend python manage.py migrate --noinput
-    docker compose exec -T backend python manage.py collectstatic --noinput 2>/dev/null || true
+    docker compose exec -T backend python manage.py migrate --noinput < /dev/null
+    docker compose exec -T backend python manage.py collectstatic --noinput < /dev/null 2>/dev/null || true
     mkdir -p "$STATIC_DIR"
     docker compose cp backend:/app/staticfiles/. "$STATIC_DIR/"
     chown -R www-data:www-data "$STATIC_DIR" 2>/dev/null || true
@@ -638,6 +643,16 @@ EOF
     echo "Task runner: pznr-run-due-processes.timer (daily 06:00), pznr-run-process-reminders.timer (daily 07:00 and 13:00), pznr-process-ai-document-queue.timer (every 5 min), pznr-sync-company-registry.timer (monthly 7th 03:00). Logs: $LOG_DIR/run_due_processes.log, $LOG_DIR/run_process_reminders.log, $LOG_DIR/process_ai_document_queue.log, $LOG_DIR/sync_company_registry.log"
 }
 
+seedFreshDatabase() {
+    echo "NUCLEAR: seeding fresh database..."
+    cd "$APP_DIR"
+    docker compose exec -T backend python manage.py add_setup < /dev/null
+    docker compose exec -T backend python manage.py reconcile_obligation_catalog < /dev/null
+    docker compose exec -T backend python manage.py seed_default_test < /dev/null
+    docker compose exec -T backend python manage.py seed_preliminary_users < /dev/null
+    echo "Fresh database seeded (bogdan/anita/zoran — temp password MakSafety2026!)."
+}
+
 runAll() {
     maybeResetBeforeRunAll
     if [ "$CLEAN_LOGS" -eq 1 ]; then
@@ -649,6 +664,9 @@ runAll() {
         setupDockerQuick
     else
         setupDocker
+    fi
+    if [ "$DEPLOY_FLAG" = "--nuclear" ]; then
+        seedFreshDatabase
     fi
     setupNginx
     setupSsl
@@ -671,6 +689,7 @@ case "$DEPLOY_TARGET" in
     setupLogrotate)   setupLogrotate ;;
     cleanLogs)        cleanLogs ;;
     setupTaskRunner)  setupTaskRunner ;;
+    seedFreshDatabase) seedFreshDatabase ;;
     all)              runAll ;;
-    *)                echo "Unknown target: $DEPLOY_TARGET. Use: ensureSwap|initialSetup|setupDatabase|setupDocker|setupDockerQuick|setupNginx|setupSsl|setupFirewall|setupCron|setupLogrotate|cleanLogs|setupTaskRunner|all"; exit 1 ;;
+    *)                echo "Unknown target: $DEPLOY_TARGET. Use: ensureSwap|initialSetup|setupDatabase|setupDocker|setupDockerQuick|setupNginx|setupSsl|setupFirewall|setupCron|setupLogrotate|cleanLogs|setupTaskRunner|seedFreshDatabase|all"; exit 1 ;;
 esac
