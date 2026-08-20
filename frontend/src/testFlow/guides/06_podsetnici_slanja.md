@@ -37,16 +37,18 @@ Ključno: pravi primalac zavisi od vrste i faze obaveze. Podsetnik za lekarski u
 - [ ] Prekoračen rok (bilo šta) → samo MAK.
 
 ## Šta reći u videu
-> Prošao sam kroz podsetnike i slanja. Ovo je razlog zašto aplikacija postoji — sama opominje na vreme, ne jurim rokove ručno.
+> Ovo je suština aplikacije, ne dodatak: ona sama pazi na rokove, ja ne moram da vodim tabelu u glavi ko kad ima lekarski ili servis.
 >
-> Otvorim Danas. Gore su semafor-čipovi — koliko kasni, koliko stiže u narednih 30 dana, i ako je sve u redu, zeleni čip mi to i kaže. Kliknem na čip i skroluje me do te sekcije. Ispod vidim šta kasni, šta stiže, koji mejl nije uspeo — tu imam dugme Ponovi — i šta ide narednih sedam dana. Mogu i da filtriram sve po firmi.
+> Kako to radi: svakog dana u 6 ujutru sistem prođe kroz sve firme i otvori ono što je dospelo. U 7 i u 13 časova pošalje mejlove koji su na redu tog dana. Znači, ne šalje se u trenutku kad nešto istekne, nego po unapred zadatom rasporedu, svaki dan.
 >
-> Otvorim Slanja. Ovo je spisak svih mejlova sa statusom. Filtriram po statusu, firmi, datumu. Otvorim jedan, Pregled — vidim naslov, tekst i ko su primaoci.
+> Kome ide mejl zavisi od toga gde je obaveza u svom toku — i to je fiksno, ne biram ja svaki put ručno. Kad se lekarskom bliži rok, prvi mejl ide nama, u MAK — 30 dana unapred, da stignemo da pripremimo uput. Sam uput, kad dođe dan, ide poslodavcu — on je taj koji šalje radnika na pregled. Kad se pregled obavi i ja upišem nalaz, potvrda ide firmi. A ako nešto probije rok — bilo šta, lekarski, servis opreme, obuka — ta opomena ide samo nama. Klijent ne vidi da kasni, mi to rešavamo interno.
 >
-> Bitno je ko dobija koju poruku. Podsetnik za lekarski unapred ide nama u MAK, jer mi pripremamo uput. Sam uput ide poslodavcu, jer on šalje radnika. Potvrda po obavljanju ide firmi. Kad nešto kasni, opomena ide samo nama — klijent to ne vidi.
+> Sve to se vidi unapred, pre nego što je poslato — to je Danas. Gore su tri broja: koliko kasni, koliko stiže u narednih 30 dana, i ako su oba nula, piše mi da je sve u redu. Kliknem na broj i odem pravo na tu listu. Ispod toga vidim i šta ide narednih sedam dana, i da li je neki mejl pukao — ako jeste, tu je dugme Ponovi, ne moram da kopam po logovima.
+>
+> Slanja je istorija — svaki mejl koji je ikad otišao ili čeka da ode, sa statusom. Otvorim jedan, vidim tačno šta piše u naslovu i telu, i ko su primaoci. Ovo mi treba kad me klijent pita „jel meni nešto stiglo" — proverim ovde, ne pretražujem inbox.
 
 ## Video
 - Status: **snimiti**.
 
 ## Otvoreno / TODO
-- Ako MAK tim nije skup svih staff korisnika nego posebna grupa → podesiti `REMINDER_INTERNAL_GROUP`.
+- Nema. Interni tim (primalac kad ide „samo nama") = korisnici u grupi Operativa (`REMINDER_INTERNAL_GROUP`, podrazumevano "Operativa") — bogdan, anita, zoran su u toj grupi.

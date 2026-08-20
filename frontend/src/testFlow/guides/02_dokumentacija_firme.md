@@ -25,15 +25,13 @@ Pored obaveza koje se ponavljaju (pregledi, ispitivanja — to je proces `04`), 
 - [ ] Izmena i dopuna Akta ide kao zaseban dokument u listi.
 
 ## Šta reći u videu
-> Prošao sam kroz dokumentaciju firme. Idem na tab Dokumentacija.
+> Dokumentacija je odvojena od obaveza namerno: obaveza je radnja koja se ponavlja i ima rok — pregled, obuka. Dokument je papir koji firma mora da poseduje, tačka. Zato stoje na posebnom tabu, ne mešaju se sa aktivnostima.
 >
-> Prvo Obavezna dokumentacija. Kliknem na stavku, recimo Pravilnik o BZNR, dugme Priloži, izaberem Word fajl. Aplikacija ga sama pretvori u PDF — piše mi to ispod dugmeta. Brojač gore pokazuje koliko je priloženo od potrebnog.
+> Na Obaveznoj dokumentaciji, za svaku stavku — recimo Pravilnik o BZNR — kliknem Priloži. Ako je Word, aplikacija ga sama prebaci u PDF, ne moram ja ručno da konvertujem i ponovo otpremam. Brojač gore mi pokazuje koliko fali do kompletnog seta — to mi treba kad me klijent pita „šta mi još treba".
 >
-> Zašto dokument nije isto što i obaveza: obaveza je radnja koja se ponavlja, dokument je papir koji firma drži. Zato su odvojeno.
+> Akt o proceni rizika je poseban jer se menja tokom vremena, ne piše se jednom. Upišem datum donošenja, priložim sekcije. Kad menjam sekciju koja već postoji, aplikacija traži razlog izmene — ne pušta me dalje bez njega, jer to je nešto što inspekcija može da pita: zašto je ovo promenjeno. Kad su sve sekcije unutra, jednim klikom ih spojim u jedan PDF.
 >
-> Sad Akt o proceni rizika. Kliknem Dodaj Akt, upišem datum donošenja. Prilažem sekcije. Kad menjam sekciju koja već postoji, moram da upišem razlog izmene — bez toga ne ide dalje. Kad su sve sekcije tu, kliknem Objedini u PDF i dobijem jedan spojen dokument.
->
-> Kad se nešto u firmi promeni, staru verziju akta ne brišem nego dodam izmenu i dopunu: kliknem Dodaj izmenu, upišem naslov i napomenu, priložim fajl. Stoji u listi pored akta, kao istorija promena.
+> Kad firma kasnije promeni nešto bitno — novu opremu, novo radno mesto — ne prepravljam stari akt, dodajem izmenu i dopunu: naslov, napomena, fajl. Stoji u listi pored akta kao trag šta se i kad menjalo, ne gubi se istorija.
 
 ## Video
 - Status: **presnimiti**. Stari snimak pokriva osnovu, ali ne i Word→PDF napomenu na ekranu, objedinjen PDF i izmene/dopune Akta.

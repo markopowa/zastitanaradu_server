@@ -39,17 +39,15 @@ Kad **prethodni lekarski** (otvoren automatski pri zaposlenju na radno mesto pov
 - [ ] Registar radnih mesta sa povećanim rizikom — dugme na tabu Pregled generiše .docx.
 
 ## Šta reći u videu
-> Prošao sam kroz ceo tok lekarskog. Dve reči koje koristim: obaveza je opšti pojam, „lekarski pregled"; aktivnost je konkretan slučaj, „lekarski za Petra Petrovića, rok 1. septembar". Na aktivnostima radim svakog dana.
+> Dve reči koje koristim stalno: obaveza je opšte pravilo, „lekarski pregled na povećanom riziku"; aktivnost je konkretan slučaj sa rokom — „lekarski za Petra Petrovića, 1. septembar". Na aktivnostima radim svaki dan, ne na obavezama.
 >
-> Filtriram aktivnosti: kasni, stiže uskoro, otvoreno. Otvorim prethodni lekarski jednog radnika — vidim da je uput već poslat poslodavcu, to je stiglo samo od sebe kad je dospeo rok.
+> Filtriram: kasni, stiže uskoro, otvoreno. Otvorim prethodni lekarski jednog radnika i vidim da je uput već otišao poslodavcu — nisam ja to slao, otišlo je samo kad je došao rok.
 >
-> Kad je pregled obavljen, otvorim tu aktivnost, kliknem Završi aktivnost. Upišem datum izvršenja, broj izveštaja, ocenu sposobnosti, mere, i do kad važi. Priložim nalaz, kliknem Završi.
+> Kad se pregled obavi, otvorim tu aktivnost i kliknem Završi. Upišem datum, broj izveštaja, ocenu sposobnosti, mere, do kad važi, i priložim nalaz.
 >
-> Odmah se otvori sledeći, periodični lekarski, sa novim rokom. Zašto je ovo bitno: periodični se ne pravi kad zaposlim radnika, nego tek kad se prethodni završi, jer njegov rok zavisi od nalaza. Kad se i periodični završi, otvori se sledeći — i tako godinama, ciklično, ništa ne ispadne iz evidencije.
+> Tu se dešava nešto bitno: čim završim, sam se otvori sledeći, periodični lekarski, sa novim rokom. Namerno se ne pravi unapred kad zaposlim radnika — rok periodičnog zavisi od ocene lekara, ne od datuma zaposlenja, pa se pravi tek kad znam tu ocenu. Kad se i periodični završi, otvori se sledeći — ide ukrug, godinama, niko ne ispadne iz evidencije jer neko zaboravi da zakaže.
 >
-> Na kraju, Obrazac 1. To je propisana evidencija lekarskih pregleda za radnike na mestima s povećanim rizikom. Otvorim firmu, tab Pregled, kliknem Generiši Obrazac 1 — sastavi mi ceo dokument iz podataka koje sam već uneo kroz završene aktivnosti: ko je pregledan, kad, ocena, sledeći termin. Ništa ne prepisujem ručno. Taj dokument se posle vidi i na tabu Dokumentacija.
->
-> Postoji i evidencija radnih mesta sa povećanim rizikom, kao posebna opciona stavka u dokumentaciji — isti princip kao Obrazac 1.
+> Na kraju, Obrazac 1 — propisana evidencija lekarskih pregleda za povećan rizik. Ne pravim ga ručno: kliknem Generiši na tabu Pregled i dobijem tabelu iz svega što sam već uneo kroz završene aktivnosti — ko, kad, ocena, sledeći termin. Isti princip važi za registar radnih mesta sa povećanim rizikom, drugo dugme pored.
 
 ## Video
 - Status: **snimiti**. Motor (filteri, lančanje) i Obrazac 1 nisu ranije snimljeni zajedno u jednom toku.

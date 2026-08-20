@@ -19,11 +19,9 @@ Zašto: korisnici koji su staff i imaju upisan email automatski dobijaju interna
 - [ ] Dozvole stvarno sakrivaju akcije u UI-ju kad se korisnik prijavi.
 
 ## Šta reći u videu
-> Idem na **Korisnici**, kliknem **Dodaj korisnika**. Upišem username, ime, prezime, email, i u polju **Role** izaberem ulogu koju taj čovek treba da ima. **Sačuvaj**.
+> Tri uloge, i razlika je namerna. Operativa radi ceo dnevni posao — firme, zaposleni, oprema, aktivnosti, slanja — ali ne dira podešavanja: vrste obaveza, šablone, nivoe rizika. Pregled dodaje na to samo mogućnost da se ta podešavanja i vide, bez prava da se menjaju — za nekog ko treba da zna kako je sistem podešen, a ne da ga podešava. Korisnike i uloge vidi samo Admin — to nije nešto što se menja svaki dan.
 >
-> Uloge pravim na **Uloge**, dugme **Dodaj rolu**. Upišem naziv role i čekiram koje permisije ima — na primer, ko sme da menja firme, ko da završava aktivnosti. **Sačuvaj**.
->
-> Kad se taj korisnik prijavi, vidi i radi samo ono za šta ima dozvolu. Dugmad za koja nema pravo mu se ni ne prikazuju.
+> Kad pravim korisnika, upišem osnovne podatke i dodelim mu ulogu iz padajuće liste. Kad se on prijavi, vidi tačno onoliko koliko mu uloga dozvoljava — dugme za koje nema pravo mu se ni ne pojavljuje, ne mora da nagađa šta sme.
 
 ## Video
 - Status: **opciono** — administrativno, snima se samo ako treba uputstvo za podešavanje tima.

@@ -33,25 +33,21 @@ Podešavanje (katalog obaveza, šabloni podsetnika, nivoi rizika, šabloni dokum
 - [ ] „Nije primenljivo" traži razlog i može da se vrati.
 
 ## Šta reći u videu
-> Prošao sam kroz unos nove firme. Idem na **Firme**, pa **Dodaj firmu** — otvori se čarobnjak sa pet koraka, da ništa ne preskočim.
+> Kad primim novog klijenta, sve počinje na jednom mestu — **Firme, Dodaj firmu**. Čarobnjak me vodi kroz pet koraka, ne mogu ništa da preskočim ni da zaboravim.
 >
-> U prvom koraku upišem matični broj i kliknem **Uvezi** — podaci se povuku iz javnog registra. Ako uvoz ne uspe, upišem ručno naziv, PIB, adresu, telefon. Kliknem **Sledeći**.
+> Prvi korak: upišem matični broj i kliknem **Uvezi** — naziv, PIB, adresa se povuku same iz javnog registra, ne prekucavam ih. Ako uvoz ne uspe, upišem ručno.
 >
-> Drugi korak je dokumentacija — nju ostavljam praznu ovde, radim je posle, kao poseban proces. **Sledeći**.
+> Dokumentaciju u drugom koraku preskačem — to radim posle, kao zaseban proces, jer papiri firme (akt, pravilnik) nisu isto što i obaveze koje se ponavljaju.
 >
-> Treći korak su radna mesta. Kliknem **Dodaj radno mesto**, upišem naziv i moram da izaberem nivo rizika — obavezno polje. **Sledeći**.
+> Treći korak: radna mesta. Ovde moram da izaberem nivo rizika za svako — obavezno je, jer od njega zavisi koje obaveze zaposleni na tom mestu automatski dobija.
 >
-> Četvrti korak su zaposleni. Kliknem **Dodaj zaposlenog**, upišem podatke, vežem za radno mesto, **Sačuvaj**, **Sledeći**.
+> Četvrti: zaposleni, vezan za radno mesto. Peti: prvi lekarski pregled, ako ga firma već ima zakazanog.
 >
-> Peti korak je prvi lekarski pregled. Upišem podatke i kliknem **Dodaj**.
+> Kliknem **Završi** i odmah me izbaci na tab **Pregled** — to je suština, ne čekam da neko drugi napravi izveštaj. Tu su sve obaveze firme, podeljene na bezbednost na radu i zaštitu od požara, svaka sa statusom i pravnim osnovom — vidim odmah šta firma treba da ima.
 >
-> Na kraju kliknem **Završi** — aplikacija me prebaci na tab **Pregled** te firme. Tu vidim sve obaveze firme na jednom mestu, podeljene na bezbednost na radu i zaštitu od požara, svaka sa statusom i pravnim osnovom.
+> Ali statusi su tačni tek kad kažem aplikaciji šta firma stvarno poseduje. Idem na **Lična karta, Izmeni podatke** — ZOP kategorija, da li je delatnost povećanog rizika, koje instalacije ima (recimo hidrantska mreža). Čim to sačuvam, obaveze vezane za te instalacije prestaju da budu „nije primenljivo" i dobijaju pravi rok. Ono što firma nema — ostaje neprimenljivo, ne izmišljam obavezu koja joj ne treba.
 >
-> Da bi statusi bili tačni, moram da kažem aplikaciji šta firma ima. Idem na tab **Lična karta**, **Izmeni podatke**, upišem ZOP kategoriju, da li je delatnost povećanog rizika, i koje instalacije firma ima — recimo aparate za gašenje požara i hidrantsku mrežu. **Sačuvaj**.
->
-> Tu isto dodam kontakt-lice — direktora ili lice za bezbednost, sa telefonom i mejlom.
->
-> Vratim se na **Pregled** — obaveze vezane za te instalacije su sad dobile pravi status; ono što firma nema ostaje „nije primenljivo". Ako nešto stvarno ne važi za firmu, kliknem tri tačke, **Nije primenljivo**, upišem razlog — red posivi, i uvek mogu da ga vratim dugmetom **Vrati**.
+> Ako nešto stvarno ne važi za konkretnu firmu, obeležim ga ručno kao neprimenljivo, ali moram da upišem razlog — bez razloga ne prolazi, jer to je nešto što posle neko treba da može da proveri. I uvek mogu da vratim ako se predomislim.
 
 ## Video
 - Status: **presnimiti**. Stari `03_unos_firme.webm` je blizu, ali čarobnjak više nema korak „Stručni nalazi", a završetak vodi na **Pregled**, ne na staru „Usklađenost".

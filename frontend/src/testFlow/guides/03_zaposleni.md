@@ -56,23 +56,17 @@ Osposobljenost se može proveriti i **testom**: zaposleni odgovara na pitanja, i
 - [ ] Upitnik klijentu (Lična karta) i Povrede na radu (Zaposleni) rade.
 
 ## Šta reći u videu
-> Prošao sam kroz zaposlene. Prvo radna mesta, pa zaposleni, pa papiri koji im idu uz obuku.
+> Zaposleni su ti koji nose obaveze, pa krećem od radnog mesta na koje ga vezujem, pa tek onda radnik.
 >
-> Na tabu Radna mesta i rizik dodam radno mesto, upišem naziv i nivo rizika. Ovde otpremim i blanko šablone: Blanko obrazac 6, Blanko revers LZO, Blanko potvrda po članu 5 — to su prazni obrasci koje ćemo posle popunjavati po zaposlenom. Zašto ovde: obrasci su specifični za radno mesto, ne za firmu.
+> Na radnom mestu upišem naziv i nivo rizika, i tu otpremim blanko obrasce — Obrazac 6, revers LZO, potvrdu po članu 5. To su prazni šabloni te firme za to radno mesto, jednom otpremljeni, koriste se za svakog radnika koji dođe na to mesto. Vrste obuka stoje odvojeno od radnog mesta, jer ista obuka — recimo rad na visini — može da važi za ljude sa različitih radnih mesta.
 >
-> Ispod toga su Vrste obuka — ovo je posebno od radnih mesta, jer jedna vrsta obuke (recimo rad na visini) može da važi za zaposlene sa različitih radnih mesta. Dodam vrstu, otpremim joj blanko potvrdu.
+> Kad dodam zaposlenog i vežem ga za radno mesto s povećanim rizikom, ne radim ništa više — aplikacija mu sama otvori sve što po zakonu ide uz to mesto: osposobljavanje za bezbedan rad, ZOP obuku, zaduženje LZO, i prethodni lekarski. Periodični lekarski se ne otvara odmah, njega pravi lančano tek kad se prethodni završi — to je sledeći video. Radnik bez povećanog rizika dobija sve osim lekarskog. Ako mi zatreba izuzetak — neko na „niskom" mestu ipak treba lekarski — to menjam ručno na samom radniku, bez diranja radnog mesta.
 >
-> Idem na Zaposleni, Dodaj zaposlenog, vežem ga za radno mesto s povećanim rizikom, Sačuvam. Otvorim ga — već su mu otvorene obaveze: osposobljavanje za bezbedan rad, ZOP obuka, zaduženje LZO, i prethodni lekarski, jer je rizik povećan. Periodični lekarski se ne otvara odmah — o tome sledeći video.
+> Kad je obuka gotova, ne kucam papir ručno. Kliknem Obrazac 6 na radniku, aplikacija uzme blanko sa njegovog radnog mesta, upiše njegove podatke i odmah mi da gotov fajl. Isto za revers LZO. Za potvrdu po članu 5 samo biram koju vrstu obuke potvrđujem.
 >
-> Radnik bez povećanog rizika dobija obuke, ali ne i lekarski. Ako treba, mogu ručno da mu promenim rizik — polje Rizik — izuzetak, nezavisno od radnog mesta.
+> A ako hoću da provera bude stvarna, ne samo formalnost — pustim radnika da polaže test. Ako prođe sa 75 ili više, aplikacija sama upiše da je obuka odrađena i sama generiše Obrazac 6, ja ne diram ništa. Ispod 75 — nudi mu ponovni pokušaj.
 >
-> Sad papiri. Na stranici zaposlenog kliknem Obrazac 6 — aplikacija uzme blanko šablon s radnog mesta, popuni ga podacima ovog zaposlenog i odmah mi ga preuzme. Isto Revers LZO za karton zaduženja, i Potvrda po članu 5 — tu prvo biram koju vrstu obuke potvrđujem.
->
-> Umesto da ja sam upišem da je obuka odrađena, mogu da pustim zaposlenog da polaže test — kliknem Test obuke, on odgovara na pitanja, i ako prođe sa 75% ili više, aplikacija sama upiše obuku i sama generiše Obrazac 6. Ne moram ništa ručno da diram. Ako ne prođe, nudi mu se da pokuša ponovo.
->
-> Sve obuke zaposlenog vidim na kartici Obuke — i one sa testa, i one koje sam ručno dodao. Kartica Dokumenti pokazuje sve što je za njega generisano.
->
-> Ako mi treba za sve zaposlene odjednom, idem na firmu, tab Dokumentacija, dugme Generiši Obrazac 6 — svi zaposleni — jedan klik za celu firmu, i taj isti panel mi pokazuje istoriju svega generisanog za zaposlene te firme.
+> Sve što je radnik prošao vidim na njegovoj kartici Obuke, a sve što mu je generisano na kartici Dokumenti. Kad mi treba za celu firmu odjednom, na firmi kliknem Generiši Obrazac 6 — svi zaposleni — i dobijem jedan fajl za sve, umesto da otvaram svakog pojedinačno.
 
 ## Video
 - Status: **snimiti**. Generisanje Obrazac 6 / Revers LZO / Potvrda na dugme, test obuke, i evidencija obuka su nove funkcije. Upitnik klijentu (Lična karta) i Povrede na radu (Zaposleni) imaju panele i snimaju se.

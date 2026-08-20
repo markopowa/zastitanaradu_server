@@ -25,11 +25,9 @@ Oprema je, kao i zaposleni, nosilac obaveza: dodam PP aparat, aplikacija otvori 
 - [ ] Pregled/Promeni fajl/Obriši rade na nalazu.
 
 ## Šta reći u videu
-> Prošao sam kroz opremu i stručne nalaze.
+> Oprema nosi obavezu isto kao zaposleni, samo umesto obuke ima servis ili pregled. Dodam opremu — naziv, kategorija, inventarski broj, lokacija — i biram koja vrsta obaveze joj ide. Čim sačuvam, oprema ima otvoren rok, ne pravim obavezu ručno posle.
 >
-> Idem na Oprema, Dodaj opremu. Upišem naziv, kategoriju, inventarski broj, lokaciju, i biram vrstu obaveze servisa ili pregleda za tu opremu. Sačuvam — oprema je u listi, i odmah ima otvorenu obavezu servisa sa rokom, isto kao kod zaposlenih.
->
-> Sad stručni nalazi, na tabu Dokumentacija. Za tip, recimo oprema za rad, otvorim upload, upišem datum izdavanja, priložim fajl. Nalaz stoji sa rokom važenja i statusom — kad istekne, javlja mi se. Mogu da ga pregledam, promenim fajl ili obrišem.
+> Stručni nalazi su druga vrsta papira firme — nalazi ispitivanja, recimo za opremu za rad ili električne instalacije. Za svaki tip upišem datum izdavanja i priložim fajl. Rok važenja i status računa sistem sam; kad istekne, javi mi se, ne moram da pamtim datume po tipovima.
 
 ## Video
 - Status: **snimiti**.
