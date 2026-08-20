@@ -102,8 +102,27 @@ class ClientCompanySerializer(serializers.ModelSerializer):
             "zop_category",
             "high_risk_activity",
             "installations",
+            "email_test_mode",
         )
         read_only_fields = ("risk_assessment_act_file",)
+
+    def _user_can_manage_email_test_mode(self) -> bool:
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is None:
+            return False
+        return user.is_superuser or user.has_perm("auth.view_user")
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if not self._user_can_manage_email_test_mode():
+            data.pop("email_test_mode", None)
+        return data
+
+    def validate(self, attrs):
+        if "email_test_mode" in attrs and not self._user_can_manage_email_test_mode():
+            attrs.pop("email_test_mode")
+        return attrs
 
     def validate_tax_id(self, value):
         return validate_pib(value)

@@ -11,6 +11,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 
+from core.email_context import company_email_test_mode
 from core.email_sender import get_email_sender
 from documents.models import DocumentCategory, DocumentFile
 from documents.utils import _resolve_field_value, generate_visual_pdf
@@ -548,12 +549,15 @@ def _generate_document_for_run(
             if _tname.startswith("Obrazac 6"):
                 from partners.obrazac6 import generate_obrazac6
                 content_bytes = generate_obrazac6(
-                    emp, context, doc_template.template_file,
-                    generation_config.get("placeholders") or [])
-                ext = ".pdf"
+                    emp, context, doc_template.template_file)
+                ext = ".docx"
             elif _tname.startswith("Karton zaduženja LZO"):
                 from partners.lzo_revers import generate_lzo_revers
-                content_bytes = generate_lzo_revers(emp)
+                content_bytes = generate_lzo_revers(
+                    emp,
+                    context=context,
+                    template_file=doc_template.template_file,
+                )
                 ext = ".docx"
         except Exception as e:
             logger.warning(
@@ -788,13 +792,14 @@ def send_generic_reminder(
                 "Nema primaoca za podsetnik (firma bez mejla i nema internih korisnika)."
             )
         return False, [], subject, body
-    sent = get_email_sender().send(
-        recipients=recipients,
-        subject=subject,
-        body=body,
-        attachments=None,
-        fail_silently=fail_silently,
-    )
+    with company_email_test_mode(_binding_company(binding)):
+        sent = get_email_sender().send(
+            recipients=recipients,
+            subject=subject,
+            body=body,
+            attachments=None,
+            fail_silently=fail_silently,
+        )
     if not sent and not fail_silently:
         raise RuntimeError("Slanje podsetnika nije uspelo.")
     return bool(sent), recipients, subject, body
@@ -883,13 +888,14 @@ def _send_email_for_template(
         )
         attachments = collected if collected else None
     try:
-        sent = get_email_sender().send(
-            recipients=recipients,
-            subject=subject,
-            body=body,
-            attachments=attachments,
-            fail_silently=fail_silently,
-        )
+        with company_email_test_mode(_binding_company(binding)):
+            sent = get_email_sender().send(
+                recipients=recipients,
+                subject=subject,
+                body=body,
+                attachments=attachments,
+                fail_silently=fail_silently,
+            )
         if not sent:
             logger.warning(
                 "Email send returned False for ProcessTemplate id=%s",

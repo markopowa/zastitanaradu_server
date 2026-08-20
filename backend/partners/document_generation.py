@@ -122,12 +122,15 @@ def generate_employee_document(
             employee,
             context,
             doc_template.template_file,
-            generation_config.get("placeholders") or [],
         )
-        extension = "pdf"
+        extension = "docx"
     elif kind == KIND_LZO_REVERS:
         from .lzo_revers import generate_lzo_revers
-        content_bytes = generate_lzo_revers(employee)
+        content_bytes = generate_lzo_revers(
+            employee,
+            context=context,
+            template_file=doc_template.template_file,
+        )
         extension = "docx"
     elif mode == "VISUAL":
         content_bytes = generate_visual_pdf(

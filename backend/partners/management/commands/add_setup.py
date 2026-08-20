@@ -47,7 +47,7 @@ DOCUMENT_TEMPLATE_SHELLS = [
         "category": "Osposobljavanje i obuke",
         "description": (
             "Evidencija da je zaposleni osposobljen za bezbedan i zdrav rad. "
-            "Popunjava se automatski, iz blanko obrasca njegovog radnog mesta."
+            "Popunjava se automatski iz podataka radnog mesta i zaposlenog."
         ),
         "generation_config": DOCX_PLACEHOLDER_CONFIG,
     },
@@ -57,8 +57,8 @@ DOCUMENT_TEMPLATE_SHELLS = [
         "category": "Lična zaštitna oprema",
         "description": (
             "Potvrda da je zaposlenom uručena lična zaštitna oprema, sa "
-            "spiskom zaduženih komada. Popunjava se automatski, iz blanko "
-            "obrasca njegovog radnog mesta."
+            "spiskom zaduženih komada. Popunjava se automatski iz LZO "
+            "propisane za radno mesto."
         ),
         "generation_config": DOCX_PLACEHOLDER_CONFIG,
     },

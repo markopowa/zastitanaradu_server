@@ -13,6 +13,7 @@ def build_intake_public_url(link: ClientIntakeLink, request) -> str:
 
 
 def send_intake_link_email(link: ClientIntakeLink, to_email: str, request=None) -> bool:
+    from core.email_context import company_email_test_mode
     from core.email_sender import get_email_sender
 
     url = build_intake_public_url(link, request)
@@ -24,11 +25,12 @@ def send_intake_link_email(link: ClientIntakeLink, to_email: str, request=None) 
         f"{url}\n\n"
         f"Hvala."
     )
-    return get_email_sender().send(
-        recipients=[to_email],
-        subject=subject,
-        body=body,
-    )
+    with company_email_test_mode(link.client_company):
+        return get_email_sender().send(
+            recipients=[to_email],
+            subject=subject,
+            body=body,
+        )
 
 
 def _parse_date(value):

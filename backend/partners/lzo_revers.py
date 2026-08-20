@@ -1,103 +1,96 @@
+import io
+
 import docx
 
-from .bzr_docx_common import (
-    new_doc,
-    title,
-    subtitle,
-    heading,
-    para,
-    bullet,
-    numbered,
-    spacer,
-    company_header,
-    signatures,
-    director_name,
-    finalize,
-)
+
+def _set_paragraph_text(para, text):
+    for r in list(para.runs):
+        r._element.getparent().remove(r._element)
+    para.add_run(text)
 
 
-def generate_lzo_revers(employee) -> bytes:
-    doc = new_doc()
+def _fill_labeled_paragraphs(doc, labels_to_values):
+    for para in doc.paragraphs:
+        text = (para.text or "").strip()
+        for label, value in labels_to_values.items():
+            if text.startswith(label):
+                suffix = (value or "").strip()
+                new_text = f"{label} {suffix}".rstrip() if suffix else label
+                _set_paragraph_text(para, new_text)
+                break
 
-    company = getattr(employee, "client_company", None)
-    if company is not None:
-        company_header(doc, company)
-        spacer(doc)
 
-    title(doc, "KARTON ZADUŽENJA LIČNOM ZAŠTITNOM OPREMOM")
-    subtitle(doc, "(revers)")
-    spacer(doc)
-
-    first_name = getattr(employee, "first_name", "") or ""
-    last_name = getattr(employee, "last_name", "") or ""
-    full_name = " ".join(part for part in [first_name, last_name] if part).strip()
-    national_id = getattr(employee, "national_id", "") or ""
-
-    role = getattr(employee, "job_role", None)
-    role_name = getattr(role, "name", "") if role is not None else ""
-
-    para(
-        doc,
-        "Zaposleni {name}, JMBG {jmbg}, radno mesto {role}.".format(
-            name=full_name or "(nije uneto)",
-            jmbg=national_id or "(nije uneto)",
-            role=role_name or "(nije uneto)",
-        ),
-    )
-    spacer(doc)
-
-    if role is not None:
-        lzo_items = list(role.lzo_items.all())
-    else:
-        lzo_items = []
-
-    if lzo_items:
-        headers = [
-            "Redni broj",
-            "Naziv sredstva i opreme LZO",
-            "Standard (SRPS EN)",
-            "Rok upotrebe (meseci)",
-            "Datum zaduženja",
-            "Potpis",
+def _fill_lzo_table(doc, lzo_items):
+    if not doc.tables:
+        return
+    table = doc.tables[0]
+    while len(table.rows) > 1:
+        tr = table.rows[-1]._tr
+        tr.getparent().remove(tr)
+    for index, item in enumerate(lzo_items, start=1):
+        row = table.add_row()
+        cells = row.cells
+        values = [
+            str(index),
+            getattr(item, "name", "") or "",
+            getattr(item, "standard", "") or "",
+            (
+                str(item.interval_months)
+                if getattr(item, "interval_months", None) is not None
+                else ""
+            ),
+            "",
+            "",
+            "",
+            "",
         ]
-        table = doc.add_table(rows=1, cols=len(headers))
-        table.style = "Table Grid"
-        header_cells = table.rows[0].cells
-        for cell, text in zip(header_cells, headers):
-            cell.text = ""
-            run = cell.paragraphs[0].add_run(text)
-            run.bold = True
+        for cell, value in zip(cells, values):
+            cell.text = value
 
-        for index, item in enumerate(lzo_items, start=1):
-            name = getattr(item, "name", "") or ""
-            standard = getattr(item, "standard", "") or ""
-            interval_months = getattr(item, "interval_months", None)
-            interval_text = str(interval_months) if interval_months is not None else ""
 
-            row_cells = table.add_row().cells
-            row_cells[0].text = str(index)
-            row_cells[1].text = name
-            row_cells[2].text = standard
-            row_cells[3].text = interval_text
-            row_cells[4].text = ""
-            row_cells[5].text = ""
-    else:
-        para(
-            doc,
-            "Za ovo radno mesto nije propisana lična zaštitna oprema.",
-        )
+def generate_lzo_revers(employee, context=None, template_file=None) -> bytes:
+    context = context or {}
+    if template_file is None:
+        from documents.models import DocumentTemplate
 
-    spacer(doc)
-    para(
+        doc_template = DocumentTemplate.objects.filter(
+            name="Karton zaduženja LZO (revers)",
+        ).first()
+        if not doc_template or not doc_template.template_file:
+            raise ValueError("Šablon „Karton zaduženja LZO (revers)” nije podešen.")
+        template_file = doc_template.template_file
+
+    with template_file.open("rb") as fh:
+        doc = docx.Document(io.BytesIO(fh.read()))
+
+    emp_ctx = context.get("employee") or {}
+    client_ctx = context.get("client") or {}
+    first = getattr(employee, "first_name", "") or ""
+    last = getattr(employee, "last_name", "") or ""
+    full_name = (emp_ctx.get("full_name") or f"{first} {last}").strip()
+    role = getattr(employee, "job_role", None)
+    role_name = (
+        emp_ctx.get("position")
+        or (getattr(role, "name", "") if role is not None else "")
+        or ""
+    )
+    company_name = (client_ctx.get("name") or "").strip()
+    if not company_name:
+        company = getattr(employee, "client_company", None)
+        company_name = getattr(company, "name", "") if company is not None else ""
+
+    _fill_labeled_paragraphs(
         doc,
-        "Lična zaštitna oprema propisana je Aktom o proceni rizika "
-        "na radnom mestu i u radnoj okolini.",
+        {
+            "Ime i prezime zaposlenog:": full_name,
+            "Naziv radnog mesta:": role_name,
+            "Naziv firme:": company_name,
+        },
     )
 
-    signatures(
-        doc,
-        left="Zaposleni (potpis)",
-        right="Lice za bezbednost i zdravlje na radu",
-    )
+    lzo_items = list(role.lzo_items.all()) if role is not None else []
+    _fill_lzo_table(doc, lzo_items)
 
-    return finalize(doc)
+    buf = io.BytesIO()
+    doc.save(buf)
+    return buf.getvalue()

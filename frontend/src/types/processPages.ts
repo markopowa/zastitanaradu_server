@@ -250,6 +250,7 @@ export interface ClientCompanyDetailPageState {
     editZop_category: string;
     editHigh_risk_activity: boolean;
     editInstallations: string[];
+    editEmailTestMode: boolean;
     registryImporting: boolean;
     riskLevels: RiskLevel[];
     jobRoles: JobRole[];

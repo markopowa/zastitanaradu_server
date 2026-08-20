@@ -216,6 +216,7 @@ class ClientCompanyDetailPageInner extends Component<
         editZop_category: "",
         editHigh_risk_activity: false,
         editInstallations: [] as string[],
+        editEmailTestMode: true,
         registryImporting: false,
         riskLevels: [],
         jobRoles: [],
@@ -541,6 +542,7 @@ class ClientCompanyDetailPageInner extends Component<
             editInstallations: Array.isArray(item.installations)
                 ? item.installations
                 : [],
+            editEmailTestMode: item.email_test_mode ?? true,
         }));
     };
 
@@ -603,6 +605,7 @@ class ClientCompanyDetailPageInner extends Component<
             editZop_category,
             editHigh_risk_activity,
             editInstallations,
+            editEmailTestMode,
         } = this.state;
         if (!editName.trim() || !editTaxId.trim()) return;
         this.setState((prev) => ({ ...prev, saving: true, saveError: null }));
@@ -619,6 +622,7 @@ class ClientCompanyDetailPageInner extends Component<
             zop_category: editZop_category || null,
             high_risk_activity: editHigh_risk_activity,
             installations: editInstallations,
+            email_test_mode: editEmailTestMode,
         })
             .then((item) => {
                 this.setState((prev) => ({
@@ -1048,6 +1052,7 @@ class ClientCompanyDetailPageInner extends Component<
             editZop_category,
             editHigh_risk_activity,
             editInstallations,
+            editEmailTestMode,
             registryImporting,
             jobRoles,
             riskLevels,
@@ -1407,6 +1412,24 @@ class ClientCompanyDetailPageInner extends Component<
                                     ))}
                                 </FormGroup>
                             </FormControl>
+                            <PermissionGate permission="auth.view_user">
+                                <FormControlLabel
+                                    sx={{ mt: 1, display: "block" }}
+                                    control={
+                                        <Switch
+                                            checked={editEmailTestMode}
+                                            onChange={(e) =>
+                                                this.setState((prev) => ({
+                                                    ...prev,
+                                                    editEmailTestMode:
+                                                        e.target.checked,
+                                                }))
+                                            }
+                                        />
+                                    }
+                                    label="Test režim slanja mejlova (mejlovi idu na internu test adresu)"
+                                />
+                            </PermissionGate>
                             <Box sx={{ display: "flex", gap: 1, mt: 1 }}>
                                 <Button
                                     variant="contained"
@@ -1442,6 +1465,22 @@ class ClientCompanyDetailPageInner extends Component<
                             title={item.name}
                             badges={
                                 <>
+                                    <PermissionGate permission="auth.view_user">
+                                        {item.email_test_mode ? (
+                                            <Chip
+                                                label="Test režim mejlova"
+                                                size="small"
+                                                color="warning"
+                                            />
+                                        ) : (
+                                            <Chip
+                                                label="Mejlovi uživo"
+                                                size="small"
+                                                color="success"
+                                                variant="outlined"
+                                            />
+                                        )}
+                                    </PermissionGate>
                                     {item.zop_category && (
                                         <Chip
                                             label={`ZOP kategorija ${item.zop_category}`}

@@ -24,6 +24,7 @@ export interface ClientCompany {
     zop_category?: string | null;
     high_risk_activity?: boolean;
     installations?: string[] | null;
+    email_test_mode?: boolean;
 }
 
 export type RiskAssessmentSectionType = "INTRO" | "ASSESSMENTS" | "CONCLUSION";

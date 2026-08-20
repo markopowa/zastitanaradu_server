@@ -182,14 +182,14 @@ class OnDemandGenerationTestCase(TestCase):
             ["Zaštitne cipele sa čeličnom kapom"],
         )
 
-    def test_service_generates_obrazac6_pdf_from_role_data(self):
+    def test_service_generates_obrazac6_docx_from_role_data(self):
         employee = self._make_employee_with_role("Marko", "Markovic")
         self._make_binding_and_run(employee, self.obrazac6_process_type)
 
         doc_file, content_bytes = generate_employee_document(employee, "OBRAZAC6")
 
         self.assertTrue(content_bytes.startswith(b"%PDF"))
-        self.assertTrue(doc_file.file.name.endswith(".pdf"))
+        self.assertTrue(doc_file.file.name.endswith(".docx"))
         self.assertTrue(
             ProcessRunDocument.objects.filter(document_file=doc_file).exists()
         )

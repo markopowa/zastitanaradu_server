@@ -124,6 +124,10 @@ class ClientCompany(models.Model):
             "LIGHTNING_PROTECTION, STABLE_EXTINGUISHING_SYSTEM, FIRE_EXTINGUISHERS."
         ),
     )
+    email_test_mode = models.BooleanField(
+        default=True,
+        verbose_name="Test režim slanja mejlova",
+    )
 
     class Meta:
         verbose_name = "Klijentska firma"
@@ -804,16 +808,18 @@ def _send_severe_work_injury_alert(injury: "WorkInjury", logger) -> None:
     sent = False
     if recipients:
         try:
+            from core.email_context import company_email_test_mode
             from core.email_sender import get_email_sender
 
-            sent = bool(
-                get_email_sender().send(
-                    recipients=recipients,
-                    subject=subject,
-                    body=body,
-                    fail_silently=True,
+            with company_email_test_mode(injury.client_company):
+                sent = bool(
+                    get_email_sender().send(
+                        recipients=recipients,
+                        subject=subject,
+                        body=body,
+                        fail_silently=True,
+                    )
                 )
-            )
         except Exception:
             logger.exception(
                 "Failed to send severe work injury alert for injury id=%s",
