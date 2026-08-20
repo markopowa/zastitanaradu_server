@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 
 from django.conf import settings
 
-from .email_context import is_email_suppressed, log_suppressed_send
+from .email_context import apply_email_redirect, is_email_suppressed, log_suppressed_send
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +41,7 @@ class SuppressAwareEmailSender:
                     attachments=attachments,
                 )
             return True
+        recipients, subject = apply_email_redirect(recipients, subject)
         return self._inner.send(
             recipients=recipients,
             subject=subject,

@@ -124,6 +124,7 @@ EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "true").lower() == "true"
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "false").lower() == "true"
 EMAIL_DRY_RUN = os.environ.get("EMAIL_DRY_RUN", "false").lower() == "true"
+EMAIL_REDIRECT_TO = os.environ.get("EMAIL_REDIRECT_TO", "")
 E2E_SUPPRESS_EMAIL_SECRET = os.environ.get("E2E_SUPPRESS_EMAIL_SECRET", "")
 
 REMINDER_INTERNAL_GROUP = os.environ.get("REMINDER_INTERNAL_GROUP", "Operativa")
