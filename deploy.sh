@@ -56,6 +56,30 @@ export PZNR_DOMAIN="$DOMAIN"
 export PZNR_CORS_ORIGIN="https://${DOMAIN}"
 export PZNR_LOG_DIR="$LOG_DIR"
 
+readEnvVar() {
+    local key="$1"
+    local default="${2:-}"
+    local val=""
+    if [ -f "$ENV_FILE" ]; then
+        val="$(grep -E "^${key}=" "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
+    fi
+    if [ -z "$val" ]; then
+        val="$default"
+    fi
+    printf '%s' "$val"
+}
+
+loadBackendEnv() {
+    export PZNR_DB_NAME="$(readEnvVar PZNR_DB_NAME pznr)"
+    export PZNR_DB_USER="$(readEnvVar PZNR_DB_USER pznr_user)"
+    export PZNR_DB_PASSWORD="$(readEnvVar PZNR_DB_PASSWORD "")"
+    export PZNR_POSTGRES_PASSWORD="$(readEnvVar PZNR_POSTGRES_PASSWORD postgres)"
+}
+
+escapeSqlLiteral() {
+    printf "%s" "$1" | sed "s/'/''/g"
+}
+
 ensureNginxProxySecret() {
     if [ -z "${PZNR_NGINX_PROXY_SECRET:-}" ] && [ -f "$ENV_FILE" ]; then
         PZNR_NGINX_PROXY_SECRET="$(grep '^PZNR_NGINX_PROXY_SECRET=' "$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2- || true)"
@@ -187,16 +211,21 @@ initialSetup() {
 }
 
 setupDatabase() {
-    source "$ENV_FILE" 2>/dev/null || true
-    export PZNR_DB_NAME="${PZNR_DB_NAME:-pznr}"
-    export PZNR_DB_USER="${PZNR_DB_USER:-pznr_user}"
-    export PZNR_DB_PASSWORD="${PZNR_DB_PASSWORD:-}"
-    export PZNR_POSTGRES_PASSWORD="${PZNR_POSTGRES_PASSWORD:-postgres}"
+    loadBackendEnv
+    if [ -z "$PZNR_DB_PASSWORD" ]; then
+        echo "ERROR: PZNR_DB_PASSWORD is empty in $ENV_FILE" >&2
+        exit 1
+    fi
+    local db_pass_sql
+    db_pass_sql="$(escapeSqlLiteral "$PZNR_DB_PASSWORD")"
     cd "$APP_DIR"
     docker compose up -d postgres
     sleep 3
-    docker compose exec -T postgres psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = '${PZNR_DB_USER}'" | grep -q 1 || \
-        docker compose exec -T postgres psql -U postgres -c "CREATE USER ${PZNR_DB_USER} WITH PASSWORD '${PZNR_DB_PASSWORD}';"
+    if docker compose exec -T postgres psql -U postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = '${PZNR_DB_USER}'" | grep -q 1; then
+        docker compose exec -T postgres psql -U postgres -c "ALTER USER ${PZNR_DB_USER} WITH PASSWORD '${db_pass_sql}';"
+    else
+        docker compose exec -T postgres psql -U postgres -c "CREATE USER ${PZNR_DB_USER} WITH PASSWORD '${db_pass_sql}';"
+    fi
     docker compose exec -T postgres psql -U postgres -tc "SELECT 1 FROM pg_database WHERE datname = '${PZNR_DB_NAME}'" | grep -q 1 || \
         docker compose exec -T postgres psql -U postgres -c "CREATE DATABASE ${PZNR_DB_NAME} OWNER ${PZNR_DB_USER};"
     docker compose exec -T postgres psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE ${PZNR_DB_NAME} TO ${PZNR_DB_USER};"
@@ -253,10 +282,7 @@ reloadCodeDependantServices() {
 }
 
 setupDockerQuick() {
-    source "$ENV_FILE" 2>/dev/null || true
-    export PZNR_DB_NAME="${PZNR_DB_NAME:-pznr}"
-    export PZNR_DB_USER="${PZNR_DB_USER:-pznr_user}"
-    export PZNR_DB_PASSWORD="${PZNR_DB_PASSWORD:-}"
+    loadBackendEnv
     mkdir -p "$LOG_DIR/backend"
     chown -R 33:33 "$LOG_DIR/backend" 2>/dev/null || true
     makeMigrations
@@ -269,10 +295,7 @@ setupDockerQuick() {
 }
 
 setupDocker() {
-    source "$ENV_FILE" 2>/dev/null || true
-    export PZNR_DB_NAME="${PZNR_DB_NAME:-pznr}"
-    export PZNR_DB_USER="${PZNR_DB_USER:-pznr_user}"
-    export PZNR_DB_PASSWORD="${PZNR_DB_PASSWORD:-}"
+    loadBackendEnv
     mkdir -p "$LOG_DIR/backend"
     chown -R 33:33 "$LOG_DIR/backend" 2>/dev/null || true
     makeMigrations
