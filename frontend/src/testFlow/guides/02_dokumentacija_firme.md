@@ -33,6 +33,15 @@ Pored obaveza koje se ponavljaju (pregledi, ispitivanja — to je proces `04`), 
 >
 > Kad firma kasnije promeni nešto bitno — novu opremu, novo radno mesto — ne prepravljam stari akt, dodajem izmenu i dopunu: naslov, napomena, fajl. Stoji u listi pored akta kao trag šta se i kad menjalo, ne gubi se istorija.
 
+## Ako pita — primer i gde da pokažeš
+| Ako kaže / pita | Ti kažeš | Otvori u app |
+|---|---|---|
+| Zašto nije u Pregledu / obavezama? | Pregled = rokove i radnje; Dokumentacija = papiri koje firma drži. | Firma → tab **Dokumentacija** vs tab **Pregled**. |
+| Primer stavke? | Pravilnik o BZNR, rešenje o licu za BZR, akt… | **Dokumentacija → Obavezna dokumentacija**. |
+| Zašto Word → PDF? | Inspekciji i arhivi šaljemo PDF; Word ostaje samo izvor. | Priloži `.docx` na stavku → vidi poruku i PDF u listi. |
+| Zašto razlog na izmeni Akta? | Da ima trag zašto je sekcija menjana (inspekcija pita). | **Akt** → izmena sekcije → polje razloga obavezno. |
+| Šta je izmena i dopuna? | Novi dokument pored akta, ne brisanje starog — istorija ostaje. | **Akt → Izmene i dopune → Dodaj**. |
+
 ## Video
 - Status: **presnimiti**. Stari snimak pokriva osnovu, ali ne i Word→PDF napomenu na ekranu, objedinjen PDF i izmene/dopune Akta.
 

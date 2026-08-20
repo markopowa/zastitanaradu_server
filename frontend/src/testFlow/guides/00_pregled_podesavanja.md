@@ -3,6 +3,8 @@
 Referentna lista: šta instanca mora da ima posle setupa. Ovim proveravaš i MAK
 i svaku sledeću firmu — ne pamtiš, štrikliraš.
 
+Za snimanje: u vodičima **01–07** posle „Šta reći u videu" stoji tabela **Ako pita — primer i gde da pokažeš** (zašto + gde klikneš u app).
+
 ## Komande setupa (posle svakog većeg deploya)
 ```bash
 cd /var/www/zastitanaradu_server

@@ -25,9 +25,17 @@ Oprema je, kao i zaposleni, nosilac obaveza: dodam PP aparat, aplikacija otvori 
 - [ ] Pregled/Promeni fajl/Obriši rade na nalazu.
 
 ## Šta reći u videu
-> Oprema nosi obavezu isto kao zaposleni, samo umesto obuke ima servis ili pregled. Dodam opremu — naziv, kategorija, inventarski broj, lokacija — i biram koja vrsta obaveze joj ide. Čim sačuvam, oprema ima otvoren rok, ne pravim obavezu ručno posle.
+> Oprema nosi obavezu isto kao zaposleni, samo umesto obuke ima servis ili pregled. Dodam opremu — naziv, kategorija, inventarski broj, lokacija — i biram koja vrsta obaveze joj ide. Primer: PP aparat → obaveza **servis PP aparata** (npr. na 6 meseci). Čim sačuvam, oprema ima otvoren rok, ne pravim obavezu ručno posle.
 >
 > Stručni nalazi su druga vrsta papira firme — nalazi ispitivanja, recimo za opremu za rad ili električne instalacije. Za svaki tip upišem datum izdavanja i priložim fajl. Rok važenja i status računa sistem sam; kad istekne, javi mi se, ne moram da pamtim datume po tipovima.
+
+## Ako pita — primer i gde da pokažeš
+| Ako kaže / pita | Ti kažeš | Otvori u app |
+|---|---|---|
+| Koja obaveza za koju opremu? | Biram pri unosu — npr. PP aparat → servis PP; hidrant → ispitivanje hidranata. | **Oprema → Dodaj** → polje **Vrsta obaveze servisa/pregleda**. |
+| Gde vidim rok posle unosa? | Na opremi / u aktivnostima / na Danas kad se bliži. | Lista **Oprema** → detalj; ili **Aktivnosti** / **Danas**. |
+| Šta je stručni nalaz? | Papir ispitivanja sa rokom (elektro, mikroklima…). | Firma → **Dokumentacija → Stručni nalazi**. |
+| Zašto zavisi od profila? | Ako firma nema hidrante, taj tip nalaza nije u fokusu. | **Lična karta** (instalacije) + **Pregled** / Stručni nalazi. |
 
 ## Video
 - Status: **snimiti**.

@@ -49,6 +49,15 @@ Kad **prethodni lekarski** (otvoren automatski pri zaposlenju na radno mesto pov
 >
 > Na kraju, Obrazac 1 — propisana evidencija lekarskih pregleda za povećan rizik. Ne pravim ga ručno: kliknem Generiši na tabu Pregled i dobijem tabelu iz svega što sam već uneo kroz završene aktivnosti — ko, kad, ocena, sledeći termin. Isti princip važi za registar radnih mesta sa povećanim rizikom, drugo dugme pored.
 
+## Ako pita — primer i gde da pokažeš
+| Ako kaže / pita | Ti kažeš | Otvori u app |
+|---|---|---|
+| Obaveza vs aktivnost? | Obaveza = tip u katalogu. Aktivnost = „Petar, lekarski, 1.9.". | **Aktivnosti** / firma → **Obaveze** → otvori jedan red (konkretan rok). Katalog tipova: **Administracija → Vrste obaveza** (ako Admin). |
+| Zašto periodični nije odmah? | Rok zavisi od nalaza; pravi se tek kad završim prethodni. | Zaposleni sa prethodnim → **Završi** → na listi se pojavi novi **periodični**. |
+| Gde je uput otišao? | Na dan roka ide poslodavcu; vidi se u Slanjima. | **Slanja** (filter firma) ili **Danas**; detalj aktivnosti status Poslato. |
+| Šta upisujem na Završi? | Važi do, izvršeno, broj izveštaja, ocena, mere, PDF nalaza. | Aktivnost → **Završi aktivnost**. |
+| Odakle Obrazac 1? | Iz završenih lekarskih — ne kucam tabelu. | Firma → **Pregled** → **Generiši Obrazac 1**; pa **Dokumentacija** (stavka Obrazac 1). |
+
 ## Video
 - Status: **snimiti**. Motor (filteri, lančanje) i Obrazac 1 nisu ranije snimljeni zajedno u jednom toku.
 

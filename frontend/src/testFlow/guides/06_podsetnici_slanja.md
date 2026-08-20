@@ -47,6 +47,16 @@ Ključno: pravi primalac zavisi od vrste i faze obaveze. Podsetnik za lekarski u
 >
 > Slanja je istorija — svaki mejl koji je ikad otišao ili čeka da ode, sa statusom. Otvorim jedan, vidim tačno šta piše u naslovu i telu, i ko su primaoci. Ovo mi treba kad me klijent pita „jel meni nešto stiglo" — proverim ovde, ne pretražujem inbox.
 
+## Ako pita — primer i gde da pokažeš
+| Ako kaže / pita | Ti kažeš | Otvori u app |
+|---|---|---|
+| Primer: lekarski, kome ide šta? | 30 dana pre → MAK; na dan → uput firmi; posle završetka → potvrda firmi; kasni → samo MAK. | **Slanja** → otvori red → primaoci; ili checklist u ovom vodiču. |
+| Gde vidim šta kasni danas? | Ekran Danas, crveni broj / sekcija Kasni. | Meni **Danas**. |
+| Gde je istorija mejlova? | Slanja — status, primaoci, Pregled tela. | Meni **Slanja**. |
+| Ko je „nama / MAK"? | Interni korisnici (Operativa) sa emailom — anita, zoran… | **Administracija → Korisnici** (Admin); mejl mora biti upisan. |
+| Šta ako mejl pukne? | Na Danas / Slanja → **Ponovi**. | **Danas → Neuspela slanja** ili **Slanja** filter FAILED. |
+| Test vs pravi primalac? | Dok je firma u test režimu, mejl ide na internu test adresu. | Firma → **Lična karta** (Admin vidi badge / switch test režima). |
+
 ## Video
 - Status: **snimiti**.
 

@@ -39,15 +39,25 @@ Podešavanje (katalog obaveza, šabloni podsetnika, nivoi rizika, šabloni dokum
 >
 > Dokumentaciju u drugom koraku preskačem — to radim posle, kao zaseban proces, jer papiri firme (akt, pravilnik) nisu isto što i obaveze koje se ponavljaju.
 >
-> Treći korak: radna mesta. Ovde moram da izaberem nivo rizika za svako — obavezno je, jer od njega zavisi koje obaveze zaposleni na tom mestu automatski dobija.
+> Treći korak: radna mesta. Ovde moram da izaberem nivo rizika za svako — obavezno je, jer od njega zavisi koje obaveze zaposleni na tom mestu automatski dobija. Primer: **Direktor** ili **Administrativni radnik** — nizak rizik, dobija obuku BZR, ZOP i LZO, ali **ne** lekarski. **Viljuškarista** ili rad na visini — povećan rizik, dobija isto plus **prethodni lekarski**. To se vidi čim sačuvam zaposlenog, na njegovoj kartici obaveza — ne kucam obaveze ručno.
 >
 > Četvrti: zaposleni, vezan za radno mesto. Peti: prvi lekarski pregled, ako ga firma već ima zakazanog.
 >
 > Kliknem **Završi** i odmah me izbaci na tab **Pregled** — to je suština, ne čekam da neko drugi napravi izveštaj. Tu su sve obaveze firme, podeljene na bezbednost na radu i zaštitu od požara, svaka sa statusom i pravnim osnovom — vidim odmah šta firma treba da ima.
 >
-> Ali statusi su tačni tek kad kažem aplikaciji šta firma stvarno poseduje. Idem na **Lična karta, Izmeni podatke** — ZOP kategorija, da li je delatnost povećanog rizika, koje instalacije ima (recimo hidrantska mreža). Čim to sačuvam, obaveze vezane za te instalacije prestaju da budu „nije primenljivo" i dobijaju pravi rok. Ono što firma nema — ostaje neprimenljivo, ne izmišljam obavezu koja joj ne treba.
+> Ali statusi su tačni tek kad kažem aplikaciji šta firma stvarno poseduje. Idem na **Lična karta, Izmeni podatke** — ZOP kategorija, da li je delatnost povećanog rizika, koje instalacije ima (recimo hidrantska mreža). Čim to sačuvam, obaveze vezane za te instalacije prestaju da budu „nije primenljivo" i dobijaju pravi rok. Ono što firma nema — ostaje neprimenljivo, ne izmišljam obavezu koja joj ne treba. Primer: bez hidranata, ispitivanje hidrantske mreže ostaje „nije primenljivo"; čim u profilu čekiram hidrante, ta obaveza dobija status.
 >
 > Ako nešto stvarno ne važi za konkretnu firmu, obeležim ga ručno kao neprimenljivo, ali moram da upišem razlog — bez razloga ne prolazi, jer to je nešto što posle neko treba da može da proveri. I uvek mogu da vratim ako se predomislim.
+
+## Ako pita — primer i gde da pokažeš
+| Ako kaže / pita | Ti kažeš (jedna rečenica) | Otvori u app |
+|---|---|---|
+| Zašto nivo rizika? | Od rizika zavisi da li zaposleni dobija i prethodni lekarski ili samo obuke. | Posle čarobnjaka: firma → tab **Zaposleni** → otvori radnika na povećanom riziku i jednog na niskom → uporedi listu obaveza. |
+| Primer niskog vs povećanog? | Nizak: direktor / kancelarija. Povećan: viljuškarista / rad na visini. | Tab **Radna mesta i rizik** → vidi nivo na mestu; pa zaposleni vezani za to mesto. |
+| Gde se biraju nivoi? | Katalog nivoa je u Administraciji; na mestu biram jedan od njih. | **Administracija → Nivoi rizika** (šta znači „povećan"); firma → **Radna mesta i rizik** (gde se veže za mesto). |
+| Zašto profil / instalacije? | Da ne teram firmu da ima hidrante ako ih nema — Pregled sakrije što nije primenljivo. | Firma → **Lična karta → Izmeni** (čekiraj/isključi hidrante) → nazad na **Pregled** → vidi kako se menja red za hidrante. |
+| Šta je Pregled? | Checklista svih zakonskih obaveza firme sa statusom i pravnim osnovom. | Firma → tab **Pregled**. |
+| Zašto „nije primenljivo" traži razlog? | Da sutra inspekcija / kolega vidi zašto je isključeno, ne da neko samo klikne. | **Pregled** → ⋮ na redu → **Nije primenljivo** → dijalog sa razlogom. |
 
 ## Video
 - Status: **presnimiti**. Stari `03_unos_firme.webm` je blizu, ali čarobnjak više nema korak „Stručni nalazi", a završetak vodi na **Pregled**, ne na staru „Usklađenost".
