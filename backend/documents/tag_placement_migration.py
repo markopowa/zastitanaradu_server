@@ -63,6 +63,12 @@ def _calibration_marker(index: int) -> str:
     return f"PZ{index:04d}"
 
 
+# Calibration replaces every tag with " PZ0000 " (space + marker + space).
+# The final blank must reflow identically, so it replaces tags with a
+# same-width blank instead of removing them outright.
+_BLANK_PLACEHOLDER = " " * len(f" {_calibration_marker(0)} ")
+
+
 def _series_row_id_set(plan: dict) -> set[tuple[int, int]]:
     return {(s["table"], s["row"]) for s in plan["series_rows"]}
 
@@ -329,9 +335,11 @@ def _replace_paragraph_text_preserve_format(para, new_text: str) -> None:
 
 
 def strip_tags_from_docx(path: Path) -> bool:
-    """Remove every `{{ ... }}` tag from `path`'s paragraphs (top-level and
-    inside tables, recursively), saving the file in place. Returns True if
-    anything changed."""
+    """Replace every `{{ ... }}` tag in `path`'s paragraphs (top-level and
+    inside tables, recursively) with a blank of the same width the
+    calibration marker occupied, saving the file in place. Keeping the width
+    consistent preserves line wrapping so derived coordinates still line up
+    with this final blank. Returns True if anything changed."""
     document = docx.Document(_path_str(path))
     changed = False
 
@@ -340,7 +348,7 @@ def strip_tags_from_docx(path: Path) -> bool:
         text = para.text or ""
         if "{{" not in text:
             return
-        new_text = TAG_RE.sub("", text)
+        new_text = TAG_RE.sub(_BLANK_PLACEHOLDER, text)
         if new_text != text:
             changed = True
             _replace_paragraph_text_preserve_format(para, new_text)
