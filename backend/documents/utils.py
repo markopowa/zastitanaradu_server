@@ -270,7 +270,9 @@ def make_display_copy(docx_path: Path) -> Path:
     return tmp_path
 
 
-def generate_page_images(template_id: int, source_path: Path) -> list[str]:
+def generate_page_images(
+    template_id: int, source_path: Path, use_badges: bool = False,
+) -> list[str]:
     pages_dir = Path(settings.MEDIA_ROOT) / "template_pages" / str(template_id)
     pages_dir.mkdir(parents=True, exist_ok=True)
 
@@ -285,7 +287,14 @@ def generate_page_images(template_id: int, source_path: Path) -> list[str]:
     render_path = resolved_path
     display_tmp_dir: Path | None = None
     if resolved_path.suffix.lower() == ".docx":
-        display_path = make_clean_copy(resolved_path)
+        # Templates without coordinate-based fields (DOCX_PLACEHOLDER) have no
+        # draggable boxes drawn on top, so show green labeled badges instead
+        # of a blank background — otherwise the preview looks unfinished.
+        display_path = (
+            make_display_copy(resolved_path)
+            if use_badges
+            else make_clean_copy(resolved_path)
+        )
         display_tmp_dir = display_path.parent
         render_path = display_path
 
@@ -377,9 +386,11 @@ def get_page_generation_status(template_id: int) -> dict:
     return data
 
 
-def _run_generation(template_id: int, source_path: Path) -> None:
+def _run_generation(
+    template_id: int, source_path: Path, use_badges: bool = False,
+) -> None:
     try:
-        generate_page_images(template_id, source_path)
+        generate_page_images(template_id, source_path, use_badges=use_badges)
         _write_generation_status(template_id, "done")
     except Exception as exc:  # noqa: BLE001 - reported back to the client
         logger.error(
@@ -392,7 +403,9 @@ def _run_generation(template_id: int, source_path: Path) -> None:
             _generation_active.discard(template_id)
 
 
-def start_page_generation(template_id: int, source_path: Path) -> None:
+def start_page_generation(
+    template_id: int, source_path: Path, use_badges: bool = False,
+) -> None:
     """Kick off page-image generation in a background thread (idempotent)."""
     with _generation_guard:
         if template_id in _generation_active:
@@ -402,6 +415,7 @@ def start_page_generation(template_id: int, source_path: Path) -> None:
     thread = threading.Thread(
         target=_run_generation,
         args=(template_id, source_path),
+        kwargs={"use_badges": use_badges},
         daemon=True,
     )
     thread.start()

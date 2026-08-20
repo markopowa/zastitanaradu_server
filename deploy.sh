@@ -275,10 +275,17 @@ syncFrontendDist() {
     chown -R www-data:www-data "$FRONTEND_BUILD_DIR" 2>/dev/null || true
 }
 
+invalidateTemplatePreviewCache() {
+    cd "$APP_DIR"
+    docker compose exec -T backend rm -rf /app/media/template_pages 2>/dev/null || true
+    echo "Template preview cache invalidated (regenerates on next view)."
+}
+
 reloadCodeDependantServices() {
     cd "$APP_DIR"
     echo "Restarting backend..."
     docker compose restart backend
+    invalidateTemplatePreviewCache
     updateNginxClientMaxBodySize
     if nginx -t >/dev/null 2>&1; then
         systemctl reload nginx 2>/dev/null || systemctl start nginx 2>/dev/null || true

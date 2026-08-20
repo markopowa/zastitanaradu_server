@@ -85,6 +85,11 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
         return Response(out.data)
 
+    @staticmethod
+    def _use_badges(instance: "DocumentTemplate") -> bool:
+        generation_config = getattr(instance, "generation_config", None) or {}
+        return generation_config.get("mode") != "VISUAL"
+
     @action(detail=True, methods=["get"], url_path="pages")
     def pages(self, request, *args, **kwargs):
         instance: DocumentTemplate = self.get_object()
@@ -110,7 +115,8 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             )
         if gen["state"] != "generating":
             path = Path(fr"{file_field.path}")
-            start_page_generation(instance.pk, path)
+            start_page_generation(
+                instance.pk, path, use_badges=self._use_badges(instance))
         return Response(
             {"status": "generating"},
             status=status.HTTP_202_ACCEPTED,
@@ -132,6 +138,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         instance: DocumentTemplate = self.get_object()
         file_field = getattr(instance, "template_file", None)
         template_id = instance.pk
+        use_badges = self._use_badges(instance)
 
         def media_urls(rel_paths):
             return [versioned_media_url(request, p) for p in rel_paths]
@@ -151,7 +158,8 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                 gen = get_page_generation_status(template_id)
                 if gen["state"] not in ("generating", "error"):
                     start_page_generation(
-                        template_id, Path(fr"{file_field.path}"))
+                        template_id, Path(fr"{file_field.path}"),
+                        use_badges=use_badges)
 
             deadline = time.monotonic() + self.SSE_MAX_DURATION_SECONDS
             while time.monotonic() < deadline:
@@ -190,7 +198,8 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             )
         invalidate_page_images(instance.pk)
         path = Path(fr"{file_field.path}")
-        start_page_generation(instance.pk, path)
+        start_page_generation(
+            instance.pk, path, use_badges=self._use_badges(instance))
         return Response(
             {"status": "generating"},
             status=status.HTTP_202_ACCEPTED,
