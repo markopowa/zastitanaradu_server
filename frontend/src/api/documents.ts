@@ -207,12 +207,20 @@ export async function getDocumentTemplatePlaceholderTags(
 export async function saveVisualPlaceholders(
     id: number,
     placeholders: VisualPlaceholder[],
+    existingConfig?: Record<string, unknown> | null,
 ): Promise<DocumentTemplate> {
+    const currentMode =
+        typeof existingConfig?.mode === "string" ? existingConfig.mode : "";
+    const mode =
+        currentMode === "DOCX_PLACEHOLDER" || currentMode === "DOCX_CELL_MAP"
+            ? currentMode
+            : "VISUAL";
     const { data } = await api.patch<DocumentTemplate>(
         `/api/documents/templates/${id}/`,
         {
             generation_config: {
-                mode: "VISUAL",
+                ...(existingConfig ?? {}),
+                mode,
                 placeholders,
             },
         },

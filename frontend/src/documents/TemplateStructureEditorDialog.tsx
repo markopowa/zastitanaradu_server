@@ -358,20 +358,26 @@ export default class TemplateStructureEditorDialog extends Component<
         return Math.round(value / gridStep) * gridStep;
     };
 
-    private isVisualPlacementMode = (): boolean => {
-        if (this.props.loadFields) return true;
+    private isVisualPlacementMode = (): boolean => true;
+
+    private generationMode = (): string => {
         const mode = (
             this.props.template.generation_config as
                 | { mode?: string }
                 | null
                 | undefined
         )?.mode;
-        return mode === "VISUAL" || !mode;
+        return mode || "VISUAL";
+    };
+
+    private isAutoFillTemplate = (): boolean => {
+        if (this.props.loadFields) return false;
+        const mode = this.generationMode();
+        return mode === "DOCX_PLACEHOLDER" || mode === "DOCX_CELL_MAP";
     };
 
     private loadEditorData = (): void => {
         const { template, loadFields } = this.props;
-        const visual = this.isVisualPlacementMode();
 
         this.closePagesStream();
         this.setState((prev) => ({
@@ -404,13 +410,13 @@ export default class TemplateStructureEditorDialog extends Component<
                         loading: false,
                     })),
                 );
-        } else if (visual) {
+        } else {
             const config = (template.generation_config ?? {}) as Record<
                 string,
                 unknown
             >;
             const initialPlaceholders = withPlaceholderIds(
-                config.mode === "VISUAL" && Array.isArray(config.placeholders)
+                Array.isArray(config.placeholders)
                     ? (config.placeholders as VisualPlaceholder[])
                     : [],
             );
@@ -418,20 +424,16 @@ export default class TemplateStructureEditorDialog extends Component<
                 ...prev,
                 placeholders: initialPlaceholders,
             }));
-        } else {
-            getDocumentTemplatePlaceholderTags(template.id)
-                .then((tags) => {
-                    this.setState((prev) => ({
-                        ...prev,
-                        documentTags: tags,
-                    }));
-                })
-                .catch(() =>
-                    this.setState((prev) => ({
-                        ...prev,
-                        error: "Greška pri učitavanju oznaka iz fajla.",
-                    })),
-                );
+            if (this.isAutoFillTemplate()) {
+                getDocumentTemplatePlaceholderTags(template.id)
+                    .then((tags) => {
+                        this.setState((prev) => ({
+                            ...prev,
+                            documentTags: tags,
+                        }));
+                    })
+                    .catch(() => undefined);
+            }
         }
 
         this.openPagesStream(this.resolveStreamUrl(this.props));
@@ -784,6 +786,10 @@ export default class TemplateStructureEditorDialog extends Component<
                 const updated = await saveVisualPlaceholders(
                     template.id,
                     placeholders,
+                    template.generation_config as
+                        | Record<string, unknown>
+                        | null
+                        | undefined,
                 );
                 onSaved(updated);
             }
@@ -819,7 +825,6 @@ export default class TemplateStructureEditorDialog extends Component<
             fieldCatalogLoadFailed,
             confirmRemovePhId,
         } = this.state;
-        const visualPlacement = this.isVisualPlacementMode();
 
         const availableFields = fieldsForContext(
             template.context_type,
@@ -838,33 +843,17 @@ export default class TemplateStructureEditorDialog extends Component<
         return (
             <Dialog open={open} onClose={onClose} maxWidth="xl" fullWidth>
                 <DialogTitle>
-                    {visualPlacement ? (
-                        <>
-                            Uredi polja šablona —{" "}
-                            <strong>{template.name}</strong>
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                component="span"
-                                sx={{ ml: 2 }}
-                            >
-                                Kliknite na dokument da postavite polje.
-                            </Typography>
-                        </>
-                    ) : (
-                        <>
-                            Pregled polja — <strong>{template.name}</strong>
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                component="span"
-                                sx={{ ml: 2 }}
-                            >
-                                Zelena mesta se popunjavaju automatski iz
-                                oznaka u Word fajlu.
-                            </Typography>
-                        </>
-                    )}
+                    Uredi polja šablona — <strong>{template.name}</strong>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        component="span"
+                        sx={{ ml: 2 }}
+                    >
+                        {this.isAutoFillTemplate()
+                            ? "Kliknite da dodate / pomerite polje. Automatsko popunjavanje ostaje preko oznaka u Wordu."
+                            : "Kliknite na dokument da postavite polje."}
+                    </Typography>
                 </DialogTitle>
 
                 <DialogContent
@@ -1081,14 +1070,40 @@ export default class TemplateStructureEditorDialog extends Component<
                                 }}
                             >
                                 <Typography variant="subtitle2" gutterBottom>
-                                    Polja (
-                                    {visualPlacement
-                                        ? placeholders.length
-                                        : documentTags.length}
-                                    )
+                                    Polja ({placeholders.length})
                                 </Typography>
-                                {visualPlacement ? (
-                                    <>
+                                {documentTags.length > 0 && (
+                                    <Box sx={{ mb: 2 }}>
+                                        <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                            sx={{ display: "block", mb: 0.75 }}
+                                        >
+                                            Oznake u Word fajlu (
+                                            {documentTags.length})
+                                        </Typography>
+                                        <Box
+                                            sx={{
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                gap: 0.5,
+                                                maxHeight: 140,
+                                                overflow: "auto",
+                                            }}
+                                        >
+                                            {documentTags.map((tag) => (
+                                                <Typography
+                                                    key={tag.key}
+                                                    variant="caption"
+                                                    noWrap
+                                                    title={`{{ ${tag.key} }}`}
+                                                >
+                                                    {tag.label}
+                                                </Typography>
+                                            ))}
+                                        </Box>
+                                    </Box>
+                                )}
                                 <FormControlLabel
                                     control={
                                         <Switch
@@ -1330,63 +1345,6 @@ export default class TemplateStructureEditorDialog extends Component<
                                         );
                                     })}
                                 </Box>
-                                    </>
-                                ) : (
-                                    <>
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{ display: "block", mb: 1 }}
-                                        >
-                                            Oznake iz Word fajla. Izgled menjaš
-                                            preuzimanjem fajla, ne prevlačenjem
-                                            ovde.
-                                        </Typography>
-                                        {documentTags.length === 0 && (
-                                            <Typography
-                                                variant="caption"
-                                                color="text.secondary"
-                                            >
-                                                Nema oznaka {"{{ ... }}"} u
-                                                fajlu.
-                                            </Typography>
-                                        )}
-                                        <Box
-                                            sx={{
-                                                display: "flex",
-                                                flexDirection: "column",
-                                                gap: 0.75,
-                                            }}
-                                        >
-                                            {documentTags.map((tag) => (
-                                                <Box
-                                                    key={tag.key}
-                                                    sx={{
-                                                        border: "1px solid",
-                                                        borderColor: "divider",
-                                                        borderRadius: 1,
-                                                        px: 1,
-                                                        py: 0.5,
-                                                    }}
-                                                >
-                                                    <Typography
-                                                        variant="body2"
-                                                        noWrap
-                                                    >
-                                                        {tag.label}
-                                                    </Typography>
-                                                    <Typography
-                                                        variant="caption"
-                                                        color="text.secondary"
-                                                        noWrap
-                                                    >
-                                                        {`{{ ${tag.key} }}`}
-                                                    </Typography>
-                                                </Box>
-                                            ))}
-                                        </Box>
-                                    </>
-                                )}
                             </Box>
                         </>
                     )}
@@ -1394,9 +1352,9 @@ export default class TemplateStructureEditorDialog extends Component<
 
                 <DialogActions>
                     <Button onClick={onClose} disabled={saving}>
-                        {visualPlacement ? "Odustani" : "Zatvori"}
+                        Odustani
                     </Button>
-                    {visualPlacement && !this.props.saveFields && (
+                    {!this.props.saveFields && (
                         <Button
                             onClick={() => void this.handlePreview()}
                             disabled={saving || loading || previewLoading}
@@ -1404,7 +1362,6 @@ export default class TemplateStructureEditorDialog extends Component<
                             Pregled rezultata
                         </Button>
                     )}
-                    {visualPlacement && (
                     <Button
                         onClick={() => void this.handleSave()}
                         variant="contained"
@@ -1412,7 +1369,6 @@ export default class TemplateStructureEditorDialog extends Component<
                     >
                         {saving ? "Čuvanje..." : "Sačuvaj polja"}
                     </Button>
-                    )}
                 </DialogActions>
 
                 <Menu
