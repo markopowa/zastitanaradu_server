@@ -150,6 +150,42 @@ function labelForKey(key: string, available: TemplateField[]): string {
     );
 }
 
+const COMPACT_MARKER_LABELS: Record<string, string> = {
+    "employee.first_name": "Ime",
+    "employee.last_name": "Prezime",
+    "employee.father_name": "Ime oca",
+    "employee.national_id": "JMBG",
+    "employee.date_of_birth": "Datum rođenja",
+    "employee.place_of_birth": "Mesto rođenja",
+    "employee.occupation": "Zanimanje",
+    "employee.high_risk_position_name": "Radno mesto",
+    "client.name": "Naziv firme",
+    "client.registration_number": "Matični broj",
+    "client.address": "Adresa firme",
+    "client.activity_code": "Šifra delatnosti",
+    "client.risk_assessment_act_name": "Akt o proceni rizika",
+    "client.risk_assessment_act_date": "Datum akta",
+    scheduled_for: "Datum zakazivanja",
+    instruction_number: "Broj uputa",
+    date_of_birth: "Datum rođenja",
+    last_exam_date: "Datum prethodnog pregleda",
+};
+
+function compactMarkerLabel(key: string, fullLabel: string): string {
+    if (key === FIXED_TEXT_KEY) return fullLabel || "Unos teksta";
+    const short = COMPACT_MARKER_LABELS[key];
+    return short ? `[${short}]` : fullLabel;
+}
+
+function withPlaceholderIds(
+    placeholders: VisualPlaceholder[],
+): VisualPlaceholder[] {
+    return placeholders.map((ph, index) => ({
+        ...ph,
+        id: ph.id?.trim() || `ph_${index}_${ph.fieldKey ?? "field"}`,
+    }));
+}
+
 function widthForLabel(label: string): number {
     const perChar = 0.95;
     return Math.min(92, Math.max(6, label.length * perChar + 1.5));
@@ -331,10 +367,11 @@ export default class TemplateStructureEditorDialog extends Component<
         if (loadFields) {
             loadFields()
                 .then(({ placeholders, master_placeholders }) => {
-                    const initial =
+                    const initial = withPlaceholderIds(
                         placeholders.length > 0
                             ? placeholders
-                            : (master_placeholders ?? []);
+                            : (master_placeholders ?? []),
+                    );
                     this.setState((prev) => ({
                         ...prev,
                         placeholders: initial,
@@ -352,10 +389,11 @@ export default class TemplateStructureEditorDialog extends Component<
                 string,
                 unknown
             >;
-            const initialPlaceholders: VisualPlaceholder[] =
+            const initialPlaceholders = withPlaceholderIds(
                 config.mode === "VISUAL" && Array.isArray(config.placeholders)
                     ? (config.placeholders as VisualPlaceholder[])
-                    : [];
+                    : [],
+            );
             this.setState((prev) => ({
                 ...prev,
                 placeholders: initialPlaceholders,
@@ -866,6 +904,20 @@ export default class TemplateStructureEditorDialog extends Component<
                                         {placeholders
                                             .filter((ph) => ph.page === pageIdx)
                                             .map((ph) => {
+                                                const fullLabel =
+                                                    ph.fieldKey ===
+                                                    FIXED_TEXT_KEY
+                                                        ? ph.fixedText ||
+                                                          "Unos teksta"
+                                                        : labelForKey(
+                                                              ph.fieldKey,
+                                                              availableFields,
+                                                          );
+                                                const markerLabel =
+                                                    compactMarkerLabel(
+                                                        ph.fieldKey,
+                                                        fullLabel,
+                                                    );
                                                 return (
                                                     <Box
                                                         key={ph.id}
@@ -890,6 +942,7 @@ export default class TemplateStructureEditorDialog extends Component<
                                                             height: `${ph.heightPct}%`,
                                                             containerType:
                                                                 "size",
+                                                            overflow: "hidden",
                                                             backgroundColor:
                                                                 dragState?.phId ===
                                                                 ph.id
@@ -917,30 +970,27 @@ export default class TemplateStructureEditorDialog extends Component<
                                                                     ? 100
                                                                     : 10,
                                                         }}
+                                                        title={fullLabel}
                                                     >
                                                         <Typography
                                                             sx={{
                                                                 fontSize:
-                                                                    "clamp(11px, 95cqh, 26px)",
+                                                                    "clamp(8px, 85cqh, 14px)",
                                                                 fontWeight: 600,
                                                                 color: "#1b5e20",
                                                                 lineHeight: 1,
                                                                 whiteSpace:
                                                                     "nowrap",
                                                                 overflow:
-                                                                    "visible",
+                                                                    "hidden",
+                                                                textOverflow:
+                                                                    "ellipsis",
+                                                                width: "100%",
                                                                 pointerEvents:
                                                                     "none",
                                                             }}
                                                         >
-                                                            {ph.fieldKey ===
-                                                            FIXED_TEXT_KEY
-                                                                ? ph.fixedText ||
-                                                                  "Unos teksta"
-                                                                : labelForKey(
-                                                                      ph.fieldKey,
-                                                                      availableFields,
-                                                                  )}
+                                                            {markerLabel}
                                                         </Typography>
                                                     </Box>
                                                 );

@@ -1,0 +1,14 @@
+=== uput_prethodni.docx ===
+0: UPUT ZA PRETHODNI LEKARSKI PREGLED ZAPOSLENOG(E)
+2: Poslodavac: 
+3: Matični broj iz jedinstvenog registra: 
+4: Adresa: 
+5: Šifra delatnosti: 
+7: Datum: 
+8: Broj uputa: 
+10: Upućuje se na PRETHODNI pregled   , rođen(a)  u , JMBG , po zanimanju , koji(a) treba da radi na radnom mestu , radi ocene ispunjenosti posebnih zdravstvenih sposobnosti za obavljanje poslova na tom radnom mestu – koje je Aktom o proceni rizika  (, ) utvrđeno kao radno mesto sa povećanim rizikom.
+12: • Kratak opis poslova na radnom mestu: _______________________________________________
+14: • Procenjeni rizici na radnom mestu i u radnoj okolini – utvrđeni Aktom o proceni rizika (opasnosti i štetnosti sa izmerenim vrednostima): _______________________________________________
+16: • Posebni zdravstveni uslovi utvrđeni Aktom o proceni rizika – koje zaposleni(a) mora ispunjavati: _______________________________________________
+18:                                                         Poslodavac
+19:                                                         (M.P.)

@@ -1,20 +1,19 @@
 import logging
 import re
 import shutil
+import tempfile
 from pathlib import Path
 
 import docx
 import fitz
+from docx.enum.text import WD_COLOR_INDEX
 from docx.oxml.ns import qn
 
 from .utils import (
     _copy_run_format,
-    _display_label_for_key,
     _iter_table_paragraphs,
-    _load_field_label_catalog,
     _path_str,
     convert_document_to_pdf,
-    make_display_copy,
 )
 
 logger = logging.getLogger(__name__)
@@ -58,6 +57,120 @@ def _row_tag_cells(row) -> list[tuple[int, str]]:
         if keys:
             cells.append((col_index, keys[0]))
     return cells
+
+
+def _calibration_marker(index: int) -> str:
+    return f"PZ{index:04d}"
+
+
+def _series_row_id_set(plan: dict) -> set[tuple[int, int]]:
+    return {(s["table"], s["row"]) for s in plan["series_rows"]}
+
+
+def _rebuild_paragraph_with_calibration_markers(
+    para,
+    keys_out: list[str],
+    marker_index: list[int],
+) -> bool:
+    text = para.text or ""
+    if "{{" not in text:
+        return False
+    matches = list(TAG_RE.finditer(text))
+    if not matches:
+        return False
+
+    base_rpr = None
+    if para.runs:
+        base_rpr = para.runs[0]._element.find(qn("w:rPr"))
+
+    para.clear()
+    pos = 0
+    for match in matches:
+        if match.start() > pos:
+            segment = text[pos:match.start()]
+            if segment:
+                run = para.add_run(segment)
+                _copy_run_format(run, base_rpr)
+        key = match.group(1).strip()
+        marker = _calibration_marker(marker_index[0])
+        marker_index[0] += 1
+        keys_out.append(key)
+        badge_run = para.add_run(f" {marker} ")
+        _copy_run_format(badge_run, base_rpr)
+        badge_run.font.bold = True
+        badge_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+        pos = match.end()
+    if pos < len(text):
+        segment = text[pos:]
+        if segment:
+            run = para.add_run(segment)
+            _copy_run_format(run, base_rpr)
+    return True
+
+
+def _replace_cell_with_calibration_marker(cell, marker: str) -> None:
+    for para in cell.paragraphs:
+        para.clear()
+    para = cell.paragraphs[0]
+    badge_run = para.add_run(f" {marker} ")
+    badge_run.font.bold = True
+    badge_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
+
+
+def make_calibration_copy(original_path: Path) -> tuple[Path, list[str], list[dict]]:
+    document = docx.Document(_path_str(original_path))
+    plan = extract_tag_plan(document)
+    series_row_ids = _series_row_id_set(plan)
+    occurrence_keys: list[str] = []
+    marker_index = [0]
+
+    for para in document.paragraphs:
+        _rebuild_paragraph_with_calibration_markers(
+            para, occurrence_keys, marker_index)
+
+    for table_index, row_index, row in _iter_table_rows(document):
+        if (table_index, row_index) in series_row_ids:
+            continue
+        for _col_index, cell in _unique_row_cells(row):
+            for para in cell.paragraphs:
+                _rebuild_paragraph_with_calibration_markers(
+                    para, occurrence_keys, marker_index)
+            for nested_table in cell.tables:
+                for para in _iter_table_paragraphs(nested_table):
+                    _rebuild_paragraph_with_calibration_markers(
+                        para, occurrence_keys, marker_index)
+
+    series_specs: list[dict] = []
+    for series in plan["series_rows"]:
+        table = document.tables[series["table"]]
+        row = table.rows[series["row"]]
+        columns: list[tuple[str, str]] = []
+        for col_index, key in series["columns"]:
+            marker = _calibration_marker(marker_index[0])
+            marker_index[0] += 1
+            _replace_cell_with_calibration_marker(row.cells[col_index], marker)
+            columns.append((key, marker))
+        series_specs.append({
+            "table": series["table"],
+            "columns": columns,
+        })
+
+    tmp_dir = Path(tempfile.mkdtemp(prefix="template_calibration_"))
+    tmp_path = tmp_dir / original_path.name
+    document.save(_path_str(tmp_path))
+    return tmp_path, occurrence_keys, series_specs
+
+
+def _search_unique_marker(
+    pdf_doc: fitz.Document,
+    marker: str,
+) -> tuple[int, fitz.Rect] | None:
+    hits = _search_label_all_pages(pdf_doc, marker)
+    if not hits:
+        return None
+    if len(hits) > 1:
+        hits.sort(key=lambda item: (item[0], item[1].y0, item[1].x0))
+    return hits[0]
 
 
 def extract_tag_plan(document: docx.Document) -> dict:
@@ -129,64 +242,50 @@ def derive_placements(
     series_source_map: dict | None = None,
     catalog: dict | None = None,
 ) -> tuple[list[dict], list[str]]:
-    """Render `original_path` (a .docx with {{ tags }}) through the existing
-    badge-preview pipeline, locate each badge's rendered position with
-    PyMuPDF, and return (placements, warnings). `series_source_map` maps a
-    table index (as used in the legacy `generation_config["series"]` list)
-    to the series source key, so a derived series row placeholder carries
-    the right `seriesSource`."""
     document = docx.Document(_path_str(original_path))
     plan = extract_tag_plan(document)
     warnings: list[str] = []
     if not plan["occurrences"] and not plan["series_rows"]:
         return [], warnings
 
-    catalog = catalog if catalog is not None else _load_field_label_catalog()
-    display_path = make_display_copy(original_path)
+    calibration_path, occurrence_keys, series_specs = make_calibration_copy(
+        original_path)
+    if occurrence_keys != plan["occurrences"]:
+        warnings.append(
+            f"{original_path.name}: calibration key order mismatch "
+            f"({len(occurrence_keys)} vs {len(plan['occurrences'])})."
+        )
+
     try:
-        pdf_path = convert_document_to_pdf(display_path)
+        pdf_path = convert_document_to_pdf(calibration_path)
         pdf_doc = fitz.open(_path_str(pdf_path))
         try:
             placeholders: list[dict] = []
 
-            occurrence_counts: dict[str, int] = {}
-            for key in plan["occurrences"]:
-                occurrence_counts[key] = occurrence_counts.get(key, 0) + 1
-
-            rects_by_key = {
-                key: _search_label_all_pages(
-                    pdf_doc, _display_label_for_key(key, catalog))
-                for key in occurrence_counts
-            }
-            consumed = {key: 0 for key in occurrence_counts}
-            for key in plan["occurrences"]:
-                rects = rects_by_key.get(key, [])
-                idx = consumed[key]
-                consumed[key] += 1
-                if idx >= len(rects):
+            for idx, key in enumerate(occurrence_keys):
+                marker = _calibration_marker(idx)
+                hit = _search_unique_marker(pdf_doc, marker)
+                if hit is None:
                     warnings.append(
-                        f"{original_path.name}: could not locate rendered "
-                        f"position #{idx + 1} for tag '{key}' "
-                        f"(found {len(rects)} occurrence(s))."
+                        f"{original_path.name}: could not locate marker "
+                        f"'{marker}' for tag '{key}'."
                     )
                     continue
-                page_num, rect = rects[idx]
+                page_num, rect = hit
                 placeholders.append(_placement_from_rect(
                     key, page_num, rect, pdf_doc[page_num].rect))
 
-            for series in plan["series_rows"]:
-                columns_plan = series["columns"]
+            for series in series_specs:
                 col_hits = []
-                for _col_index, key in columns_plan:
-                    label = _display_label_for_key(key, catalog)
-                    rects = _search_label_all_pages(pdf_doc, label)
-                    if not rects:
+                for key, marker in series["columns"]:
+                    hit = _search_unique_marker(pdf_doc, marker)
+                    if hit is None:
                         warnings.append(
                             f"{original_path.name}: could not locate series "
-                            f"column '{key}' in rendered output."
+                            f"marker '{marker}' for column '{key}'."
                         )
                         continue
-                    page_num, rect = rects[0]
+                    page_num, rect = hit
                     col_hits.append((key, page_num, rect))
                 if not col_hits:
                     continue
@@ -216,7 +315,7 @@ def derive_placements(
         finally:
             pdf_doc.close()
     finally:
-        shutil.rmtree(_path_str(display_path.parent), ignore_errors=True)
+        shutil.rmtree(_path_str(calibration_path.parent), ignore_errors=True)
 
 
 def _replace_paragraph_text_preserve_format(para, new_text: str) -> None:
