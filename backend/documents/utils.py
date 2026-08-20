@@ -216,11 +216,14 @@ def _rebuild_paragraph_with_badges(para, catalog: dict) -> bool:
     return True
 
 
+_BLANK_FIELD_UNDERSCORES = "_" * 20
+
+
 def _strip_tags_in_paragraph(para) -> bool:
     text = para.text or ""
     if "{{" not in text:
         return False
-    cleaned = _DISPLAY_TAG_RE.sub("", text)
+    cleaned = _DISPLAY_TAG_RE.sub(_BLANK_FIELD_UNDERSCORES, text)
     base_rpr = None
     if para.runs:
         base_rpr = para.runs[0]._element.find(qn("w:rPr"))

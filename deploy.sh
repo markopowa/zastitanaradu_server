@@ -333,6 +333,7 @@ setupDocker() {
     docker compose cp backend:/app/staticfiles/. "$STATIC_DIR/"
     chown -R www-data:www-data "$STATIC_DIR" 2>/dev/null || true
     docker compose restart backend
+    invalidateTemplatePreviewCache
 }
 
 setupNginx() {
@@ -424,6 +425,12 @@ server {
     location / {
         root $FRONTEND_BUILD_DIR;
         try_files \$uri \$uri/ /index.html;
+    }
+    location = /index.html {
+        root $FRONTEND_BUILD_DIR;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Pragma "no-cache";
+        expires 0;
     }
 }
 NGINX_443
