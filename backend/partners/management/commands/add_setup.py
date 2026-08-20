@@ -46,8 +46,8 @@ DOCUMENT_TEMPLATE_SHELLS = [
         "context_type": DocumentTemplate.CONTEXT_EMPLOYEE,
         "category": "Osposobljavanje i obuke",
         "description": (
-            "Blanko obrazac 6 (osposobljavanje). Blanko po radnom mestu se "
-            "kači na JobRole; popunjava se tagovima {{ }} u fajlu."
+            "Evidencija da je zaposleni osposobljen za bezbedan i zdrav rad. "
+            "Popunjava se automatski, iz blanko obrasca njegovog radnog mesta."
         ),
         "generation_config": DOCX_PLACEHOLDER_CONFIG,
     },
@@ -56,8 +56,9 @@ DOCUMENT_TEMPLATE_SHELLS = [
         "context_type": DocumentTemplate.CONTEXT_EMPLOYEE,
         "category": "Lična zaštitna oprema",
         "description": (
-            "Blanko revers za ličnu zaštitnu opremu. Popunjava se tagovima "
-            "{{ }} u fajlu."
+            "Potvrda da je zaposlenom uručena lična zaštitna oprema, sa "
+            "spiskom zaduženih komada. Popunjava se automatski, iz blanko "
+            "obrasca njegovog radnog mesta."
         ),
         "generation_config": DOCX_PLACEHOLDER_CONFIG,
     },
@@ -66,7 +67,8 @@ DOCUMENT_TEMPLATE_SHELLS = [
         "context_type": DocumentTemplate.CONTEXT_EMPLOYEE,
         "category": "Osposobljavanje i obuke",
         "description": (
-            "Blanko potvrda po članu 5. Popunjava se tagovima {{ }} u fajlu."
+            "Potvrda da je zaposleni stručno osposobljen za bezbedan rad, "
+            "za konkretnu vrstu obuke. Izdaje se na zahtev zaposlenog."
         ),
         "generation_config": DOCX_PLACEHOLDER_CONFIG,
     },
@@ -75,10 +77,9 @@ DOCUMENT_TEMPLATE_SHELLS = [
         "context_type": DocumentTemplate.CONTEXT_CLIENT_COMPANY,
         "category": "Lekarski pregledi",
         "description": (
-            "Obrazac 1 — evidencija o radnim mestima sa povećanim rizikom i "
-            "lekarskim pregledima zaposlenih. Red tabele se ponavlja po "
-            "završenom lekarskom pregledu (izvor: "
-            "completed_medical_exams_for_company)."
+            "Evidencija lekarskih pregleda zaposlenih na radnim mestima sa "
+            "povećanim rizikom: ko je pregledan, kada i sa kojom ocenom. "
+            "Sastavlja se automatski iz završenih pregleda firme."
         ),
         "generation_config": {
             "mode": "DOCX_PLACEHOLDER",
@@ -92,9 +93,9 @@ DOCUMENT_TEMPLATE_SHELLS = [
         "context_type": DocumentTemplate.CONTEXT_CLIENT_COMPANY,
         "category": "Lekarski pregledi",
         "description": (
-            "Evidencija radnih mesta sa povećanim rizikom. Red tabele se "
-            "ponavlja po zaposlenom na radnom mestu sa povećanim rizikom "
-            "(izvor: high_risk_employees_for_company)."
+            "Spisak radnih mesta u firmi ocenjenih kao povećan rizik, sa "
+            "zaposlenima koji na njima rade. Sastavlja se automatski iz "
+            "podataka firme."
         ),
         "generation_config": {
             "mode": "DOCX_PLACEHOLDER",
@@ -252,7 +253,7 @@ class Command(BaseCommand):
         for tpl in DOCUMENT_TEMPLATE_SHELLS:
             category = DocumentCategory.objects.filter(
                 name=tpl["category"]).first()
-            _, was_created = DocumentTemplate.objects.get_or_create(
+            doc_tpl, was_created = DocumentTemplate.objects.get_or_create(
                 name=tpl["name"],
                 defaults={
                     "context_type": tpl["context_type"],
@@ -262,6 +263,9 @@ class Command(BaseCommand):
                 },
             )
             created += int(was_created)
+            if not was_created and doc_tpl.description != tpl["description"]:
+                doc_tpl.description = tpl["description"]
+                doc_tpl.save(update_fields=["description"])
         return created
 
     def _link_uput_category(self):
