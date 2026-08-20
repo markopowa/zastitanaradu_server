@@ -190,6 +190,20 @@ export function documentTemplatePagesStreamUrl(id: number): string {
     return `${apiBaseUrl}/api/documents/templates/${id}/pages/stream/`;
 }
 
+export interface DocumentTemplatePlaceholderTag {
+    key: string;
+    label: string;
+}
+
+export async function getDocumentTemplatePlaceholderTags(
+    id: number,
+): Promise<DocumentTemplatePlaceholderTag[]> {
+    const { data } = await api.get<DocumentTemplatePlaceholderTag[]>(
+        `/api/documents/templates/${id}/placeholder-tags/`,
+    );
+    return Array.isArray(data) ? data : [];
+}
+
 export async function saveVisualPlaceholders(
     id: number,
     placeholders: VisualPlaceholder[],

@@ -175,6 +175,37 @@ def _display_label_for_key(key: str, catalog: dict) -> str:
     return catalog.get(key) or _humanize_field_name(key)
 
 
+def _badge_text_for_match(key: str, catalog: dict, original: str) -> str:
+    label = _display_label_for_key(key, catalog)
+    target = len(original)
+    if target <= 0:
+        return f"[{label}]"
+    inner_max = max(1, target - 2)
+    inner = label if len(label) <= inner_max else label[:inner_max]
+    badge = f"[{inner}]"
+    if len(badge) < target:
+        badge = f"{badge}{' ' * (target - len(badge))}"
+    return badge
+
+
+def list_docx_placeholder_tags(docx_path: Path) -> list[dict]:
+    catalog = _load_field_label_catalog()
+    document = docx.Document(_path_str(docx_path))
+    seen: set[str] = set()
+    out: list[dict] = []
+    for para in _iter_all_paragraphs(document):
+        for match in _DISPLAY_TAG_RE.finditer(para.text or ""):
+            key = (match.group(1) or "").strip()
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            out.append({
+                "key": key,
+                "label": _display_label_for_key(key, catalog),
+            })
+    return out
+
+
 def _copy_run_format(run, source_rpr) -> None:
     if source_rpr is None:
         return
@@ -202,8 +233,8 @@ def _rebuild_paragraph_with_badges(para, catalog: dict) -> bool:
             if segment:
                 run = para.add_run(segment)
                 _copy_run_format(run, base_rpr)
-        label = _display_label_for_key(match.group(1), catalog)
-        badge_run = para.add_run(f" {label} ")
+        label = _badge_text_for_match(match.group(1).strip(), catalog, match.group(0))
+        badge_run = para.add_run(label)
         _copy_run_format(badge_run, base_rpr)
         badge_run.font.bold = True
         badge_run.font.highlight_color = WD_COLOR_INDEX.BRIGHT_GREEN
@@ -290,9 +321,6 @@ def generate_page_images(
     render_path = resolved_path
     display_tmp_dir: Path | None = None
     if resolved_path.suffix.lower() == ".docx":
-        # Templates without coordinate-based fields (DOCX_PLACEHOLDER) have no
-        # draggable boxes drawn on top, so show green labeled badges instead
-        # of a blank background — otherwise the preview looks unfinished.
         display_path = (
             make_display_copy(resolved_path)
             if use_badges

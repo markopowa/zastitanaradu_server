@@ -42,6 +42,7 @@ from .utils import (
     fill_pdf_at_coordinates,
     get_page_generation_status,
     invalidate_page_images,
+    list_docx_placeholder_tags,
     start_page_generation,
 )
 
@@ -204,6 +205,25 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
             {"status": "generating"},
             status=status.HTTP_202_ACCEPTED,
         )
+
+    @action(detail=True, methods=["get"], url_path="placeholder-tags")
+    def placeholder_tags(self, request, *args, **kwargs):
+        instance: DocumentTemplate = self.get_object()
+        file_field = getattr(instance, "template_file", None)
+        if not file_field:
+            return Response(
+                {"detail": "Template has no file."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            tags = list_docx_placeholder_tags(Path(file_field.path))
+        except Exception as exc:
+            logger.error("placeholder-tags failed: %s", exc, exc_info=True)
+            return Response(
+                {"detail": f"Failed to read tags: {exc}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response(tags)
 
     @action(detail=True, methods=["post"], url_path="preview")
     def preview(self, request, *args, **kwargs):

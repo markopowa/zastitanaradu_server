@@ -746,7 +746,7 @@ function RowActions({
                         },
                     },
                     {
-                        label: "Uredi polja",
+                        label: isAutoFill ? "Pregled polja" : "Uredi polja",
                         icon: <BuildIcon fontSize="small" />,
                         permission: "documents.change_documenttemplate",
                         hidden: !template.template_file,

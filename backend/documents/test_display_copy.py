@@ -15,6 +15,16 @@ from .utils import (
 )
 
 
+def expected_badge(original_tag: str, label: str) -> str:
+    target = len(original_tag)
+    inner_max = max(1, target - 2)
+    inner = label if len(label) <= inner_max else label[:inner_max]
+    badge = f"[{inner}]"
+    if len(badge) < target:
+        badge = f"{badge}{' ' * (target - len(badge))}"
+    return badge
+
+
 def build_docx(build_fn) -> Path:
     doc = docx.Document()
     build_fn(doc)
@@ -50,16 +60,22 @@ class MakeDisplayCopyTests(TestCase):
         result_doc = docx.Document(str(result_path))
         para = result_doc.paragraphs[0]
 
-        self.assertEqual(para.text, "Ime:  Ime zaposlenog  kraj.")
+        tag = "{{ employee.first_name }}"
+        self.assertEqual(
+            para.text,
+            f"Ime: {expected_badge(tag, 'Ime zaposlenog')} kraj.",
+        )
 
         badge_run = next(
-            r for r in para.runs if r.text.strip() == "Ime zaposlenog"
+            r for r in para.runs if "Ime zaposlenog" in (r.text or "")
         )
         self.assertTrue(badge_run.font.bold)
         from docx.enum.text import WD_COLOR_INDEX
         self.assertEqual(badge_run.font.highlight_color, WD_COLOR_INDEX.BRIGHT_GREEN)
 
-        non_tag_runs = [r for r in para.runs if r.text.strip() != "Ime zaposlenog"]
+        non_tag_runs = [
+            r for r in para.runs if "Ime zaposlenog" not in (r.text or "")
+        ]
         for run in non_tag_runs:
             self.assertFalse(run.font.highlight_color)
 
@@ -78,7 +94,11 @@ class MakeDisplayCopyTests(TestCase):
 
         result_doc = docx.Document(str(result_path))
         para = result_doc.paragraphs[0]
-        self.assertEqual(para.text, "Pre:  Ime zaposlenog  posle.")
+        tag = "{{ employee.first_name }}"
+        self.assertEqual(
+            para.text,
+            f"Pre: {expected_badge(tag, 'Ime zaposlenog')} posle.",
+        )
 
         first_run = para.runs[0]
         self.assertEqual(first_run.text, "Pre: ")
@@ -95,7 +115,11 @@ class MakeDisplayCopyTests(TestCase):
         self.addCleanup(shutil.rmtree, src.parent, ignore_errors=True)
 
         result_doc = docx.Document(str(result_path))
-        self.assertEqual(result_doc.paragraphs[0].text, "Vrednost:  Iznos ")
+        tag = "{{ r.amount }}"
+        self.assertEqual(
+            result_doc.paragraphs[0].text,
+            f"Vrednost: {expected_badge(tag, 'Iznos')}",
+        )
 
     def test_row_scope_key_unknown_falls_back_to_humanized_field_name(self):
         src = build_docx(lambda doc: doc.add_paragraph("Vrednost: {{ r.report_number }}"))
@@ -104,7 +128,11 @@ class MakeDisplayCopyTests(TestCase):
         self.addCleanup(shutil.rmtree, src.parent, ignore_errors=True)
 
         result_doc = docx.Document(str(result_path))
-        self.assertEqual(result_doc.paragraphs[0].text, "Vrednost:  Report number ")
+        tag = "{{ r.report_number }}"
+        self.assertEqual(
+            result_doc.paragraphs[0].text,
+            f"Vrednost: {expected_badge(tag, 'Report number')}",
+        )
 
     def test_unknown_key_falls_back_to_humanized_last_segment(self):
         src = build_docx(lambda doc: doc.add_paragraph("{{ some.unknown.key }}"))
@@ -114,9 +142,10 @@ class MakeDisplayCopyTests(TestCase):
 
         result_doc = docx.Document(str(result_path))
         text = result_doc.paragraphs[0].text
-        self.assertEqual(text, " Key ")
+        tag = "{{ some.unknown.key }}"
+        self.assertEqual(text, expected_badge(tag, "Key"))
         self.assertNotIn("some.unknown.key", text)
-        self.assertNotIn(".", text)
+        self.assertNotIn("{{", text)
 
     def test_table_cell_paragraphs_handled_recursively(self):
         def build(doc):
@@ -131,7 +160,8 @@ class MakeDisplayCopyTests(TestCase):
 
         result_doc = docx.Document(str(result_path))
         cell_text = result_doc.tables[0].cell(0, 1).text
-        self.assertEqual(cell_text, " Ime zaposlenog ")
+        tag = "{{ employee.first_name }}"
+        self.assertEqual(cell_text, expected_badge(tag, "Ime zaposlenog"))
 
     def test_no_tags_copies_file_unchanged(self):
         src = build_docx(lambda doc: doc.add_paragraph("Bez tagova."))
