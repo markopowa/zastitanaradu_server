@@ -32,6 +32,8 @@ class SuppressAwareEmailSender:
         attachments: Sequence[tuple[str, bytes]] | None = None,
         fail_silently: bool = True,
     ) -> bool:
+        original = list(recipients)
+        recipients, subject = apply_email_redirect(recipients, subject)
         if is_email_suppressed():
             if recipients:
                 log_suppressed_send(
@@ -39,9 +41,9 @@ class SuppressAwareEmailSender:
                     subject=subject,
                     body=body,
                     attachments=attachments,
+                    original_recipients=original,
                 )
             return True
-        recipients, subject = apply_email_redirect(recipients, subject)
         return self._inner.send(
             recipients=recipients,
             subject=subject,

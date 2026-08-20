@@ -66,11 +66,20 @@ def apply_email_redirect(
     return [redirect], f"{prefix}{subject}"
 
 
-def log_suppressed_send(*, recipients, subject: str, body: str, attachments) -> None:
+def log_suppressed_send(
+    *,
+    recipients,
+    subject: str,
+    body: str,
+    attachments,
+    original_recipients=None,
+) -> None:
     names = [a[0] for a in (attachments or [])]
+    original = list(original_recipients) if original_recipients is not None else None
     logger.info(
-        "EMAIL SUPPRESSED | to=%s | subject=%s | attachments=%s\n%s",
+        "EMAIL SUPPRESSED | intent_to=%s | original_to=%s | subject=%s | attachments=%s\n%s",
         ", ".join(recipients),
+        ", ".join(original) if original is not None else "(same)",
         subject,
         names,
         body,

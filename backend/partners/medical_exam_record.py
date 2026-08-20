@@ -38,8 +38,53 @@ def _write(cell, text, bold=False, size=9, center=False):
     r.font.size = Pt(size)
 
 
+def _workplace_name(emp) -> str:
+    name = (getattr(emp, "high_risk_position_name", None) or "").strip()
+    if name:
+        return name
+    role = getattr(emp, "job_role", None)
+    return (getattr(role, "name", None) or "").strip() if role is not None else ""
+
+
+def _periodic_interval_months(emp, run) -> str:
+    from processes.models import ProcessBinding
+
+    if emp is not None:
+        periodic = (
+            ProcessBinding.objects.filter(
+                employee=emp,
+                is_active=True,
+                process_type__code="LEKARSKI_PREGLED",
+            )
+            .select_related("process_type")
+            .first()
+        )
+        if periodic is not None:
+            months = (
+                periodic.custom_period_months
+                or periodic.process_type.default_period_months
+            )
+            if months:
+                return str(months)
+    if run is not None:
+        binding = run.process_binding
+        months = (
+            binding.custom_period_months
+            or binding.process_type.default_period_months
+        )
+        if months:
+            return str(months)
+        if run.performed_at and run.valid_until:
+            from dateutil.relativedelta import relativedelta
+
+            delta = relativedelta(run.valid_until, run.performed_at)
+            computed = delta.years * 12 + delta.months
+            if computed > 0:
+                return str(computed)
+    return ""
+
+
 def _short_label(process_type_name: str) -> str:
-    """First word of the process type name — e.g. 'Prethodni lekarski pregled' -> 'Prethodni'."""
     return process_type_name.split()[0] if process_type_name else ""
 
 
@@ -89,6 +134,7 @@ def generate_medical_exam_record(client_id: int) -> bytes:
             "process_type",
             "process_binding",
             "process_binding__employee",
+            "process_binding__employee__job_role",
         )
         .order_by(
             "process_binding__employee__last_name",
@@ -167,19 +213,11 @@ def generate_medical_exam_record(client_id: int) -> bytes:
 
             if i == 0:
                 _write(row.cells[0], str(ordinal), center=True)
-                _write(row.cells[1], emp.high_risk_position_name or "")
+                _write(row.cells[1], _workplace_name(emp))
                 _write(row.cells[2],
                        f"{emp.first_name} {emp.last_name}".strip())
 
-            interval = ""
-            if run:
-                b = run.process_binding
-                interval = str(
-                    b.custom_period_months
-                    or b.process_type.default_period_months
-                    or ""
-                )
-            _write(row.cells[3], interval, center=True)
+            _write(row.cells[3], _periodic_interval_months(emp, run), center=True)
 
             if pt:
                 _write(row.cells[4], _short_label(pt.name))

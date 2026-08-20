@@ -19,16 +19,11 @@ Zašto: korisnici koji su staff i imaju upisan email automatski dobijaju interna
 - [ ] Dozvole stvarno sakrivaju akcije u UI-ju kad se korisnik prijavi.
 
 ## Šta reći u videu
-> Tri uloge, i razlika je namerna. Operativa radi ceo dnevni posao — firme, zaposleni, oprema, aktivnosti, slanja — ali ne dira podešavanja: vrste obaveza, šablone, nivoe rizika. Pregled dodaje na to samo mogućnost da se ta podešavanja i vide, bez prava da se menjaju — za nekog ko treba da zna kako je sistem podešen, a ne da ga podešava. Korisnike i uloge vidi samo Admin — to nije nešto što se menja svaki dan.
+> Tri uloge, razlika namerna — i to odmah pokažem: odjavim se, ulogujem kao **anita**, pa kao **admin**, uporedim levi meni.
 >
-> Kad pravim korisnika, upišem osnovne podatke i dodelim mu ulogu iz padajuće liste. Kad se on prijavi, vidi tačno onoliko koliko mu uloga dozvoljava — dugme za koje nema pravo mu se ni ne pojavljuje, ne mora da nagađa šta sme. Primer: Anita = Operativa — vidi Firme i Danas, ne vidi Administraciju. Ja kao Admin vidim i Korisnike / Uloge / Nivoe rizika.
-
-## Ako pita — primer i gde da pokažeš
-| Ako kaže / pita | Ti kažeš | Otvori u app |
-|---|---|---|
-| Ko šta sme? | Operativa = day-to-day. Pregled = + čitanje kataloga. Admin = korisnici/uloge/podešavanja. | Odjavi se → uloguj kao **anita** vs **admin** → uporedi meni levo. |
-| Zašto email na korisniku? | Interni podsetnici (MAK) idu na te mejlove. | **Korisnici** → polje email; pa **Slanja** primaoci. |
-| Gde se menjaju permisije? | Na ulozi, ne na svakom korisniku pojedinačno. | **Administracija → Uloge**. |
+> **Operativa** radi ceo dnevni posao — firme, zaposleni, oprema, aktivnosti, slanja — ali ne dira podešavanja: vrste obaveza, šablone, nivoe rizika. **Pregled** dodaje samo čitanje tih podešavanja, bez izmene. **Admin** vidi i **Korisnike / Uloge** — to nije svakodnevni posao. Permisije menjam na **Administracija → Uloge**, ne na svakom korisniku pojedinačno.
+>
+> Kad pravim korisnika u **Korisnici**, upišem podatke i ulogu. Bitno: **email** mora da stoji — interni podsetnici „nama u MAK" idu na te adrese; to se vidi i u **Slanjima** kao primalac. Kad se prijavi, vidi tačno koliko uloga dozvoljava — dugme bez prava se ni ne pojavi. Primer: Anita = Operativa — **Firme**, **Danas**, bez Administracije. Ja kao Admin — i Korisnici, Uloge, Nivoi rizika.
 
 ## Video
 - Status: **opciono** — administrativno, snima se samo ako treba uputstvo za podešavanje tima.

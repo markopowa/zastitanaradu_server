@@ -1,7 +1,9 @@
 import io
-import re
+from copy import deepcopy
 
 import docx
+from docx.oxml import OxmlElement
+from docx.text.paragraph import Paragraph
 
 CELL_MAP = [
     ("Ime i prezime zaposlenog", "employee_name"),
@@ -11,8 +13,6 @@ CELL_MAP = [
     ("Opasnosti, odnosno štetnosti", "opasnosti"),
     ("Konkretne mere", "mere"),
 ]
-
-_UNDERSCORE_RUN = re.compile(r"_+")
 
 
 def build_obrazac6_data(employee, context=None):
@@ -35,6 +35,8 @@ def build_obrazac6_data(employee, context=None):
         last = getattr(employee, "last_name", "") or ""
         full_name = f"{first} {last}".strip()
     performed = (context.get("performed_at") or "").strip()
+    if not performed:
+        performed = (context.get("scheduled_for") or "").strip()
     return {
         "employee_name": full_name,
         "role_name": role.name if role else "",
@@ -112,14 +114,32 @@ def _fill_lzo_rows(table, lzo):
         elif start is not None and label.startswith("Opasnosti"):
             end = i
             break
-    if start is None:
+    if start is None or end is None:
         return
-    if end is None:
-        end = len(rows)
-    for item, row in zip(lzo, rows[start:end]):
-        cells = _unique_cells(row)
-        if cells:
-            _set_cell(cells[0], getattr(item, "name", "") or "")
+    names = [
+        (getattr(item, "name", "") or "").strip()
+        for item in lzo
+        if (getattr(item, "name", "") or "").strip()
+    ]
+    if not names:
+        return
+    if end <= start:
+        ref = table.rows[end]._tr
+        new_tr = deepcopy(ref)
+        for tc in new_tr.iterchildren():
+            if not tc.tag.endswith("}tc"):
+                continue
+            for p in list(tc.iterchildren()):
+                if p.tag.endswith("}p"):
+                    for child in list(p):
+                        if child.tag.endswith("}r"):
+                            p.remove(child)
+        ref.addprevious(new_tr)
+        end = start + 1
+        rows = table.rows
+    cells = _unique_cells(rows[start])
+    if cells:
+        _set_cell(cells[0], "\n".join(names))
 
 
 def _set_paragraph_text(para, text):
@@ -128,37 +148,34 @@ def _set_paragraph_text(para, text):
     para.add_run(text)
 
 
+def _insert_paragraph_after(paragraph, text: str):
+    new_p = OxmlElement("w:p")
+    paragraph._p.addnext(new_p)
+    new_para = Paragraph(new_p, paragraph._parent)
+    new_para.add_run(text)
+    return new_para
+
+
 def _fill_header(doc, context):
     client = context.get("client") or {}
-    values = [
-        v
-        for v in [
-            (client.get("name") or "").strip(),
-            (client.get("address") or "").strip(),
-        ]
-        if v
-    ]
-    if not values:
+    name = (client.get("name") or "").strip()
+    address = (client.get("address") or "").strip()
+    tax_id = (client.get("tax_id") or "").strip()
+    if not (name or address or tax_id):
         return
-    value_index = 0
+    values_line = "\t".join([name, address, tax_id])
     for para in doc.paragraphs:
         text = para.text or ""
-        if value_index >= len(values) or not _UNDERSCORE_RUN.search(text):
+        if "Poslovno ime poslodavca" not in text:
             continue
-        parts = []
-        last = 0
-        for match in _UNDERSCORE_RUN.finditer(text):
-            parts.append(text[last:match.start()])
-            if value_index < len(values):
-                parts.append(values[value_index])
-                value_index += 1
-            else:
-                parts.append(match.group(0))
-            last = match.end()
-        parts.append(text[last:])
-        new_text = "".join(parts)
-        if new_text != text:
-            _set_paragraph_text(para, new_text)
+        nxt = para._p.getnext()
+        if nxt is not None and nxt.tag.endswith("}p"):
+            nxt_para = Paragraph(nxt, para._parent)
+            if not (nxt_para.text or "").strip():
+                _set_paragraph_text(nxt_para, values_line)
+                return
+        _insert_paragraph_after(para, values_line)
+        return
 
 
 def _fill_cells(doc, data):

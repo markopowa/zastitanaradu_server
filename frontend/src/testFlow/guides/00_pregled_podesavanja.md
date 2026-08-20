@@ -3,7 +3,7 @@
 Referentna lista: šta instanca mora da ima posle setupa. Ovim proveravaš i MAK
 i svaku sledeću firmu — ne pamtiš, štrikliraš.
 
-Za snimanje: u vodičima **01–07** posle „Šta reći u videu" stoji tabela **Ako pita — primer i gde da pokažeš** (zašto + gde klikneš u app).
+Za snimanje: u vodičima **01–07** sekcija **Šta reći u videu** je ceo tekst — zašto, primer i gde klikneš — sve u jednoj priči dok snimaš.
 
 ## Komande setupa (posle svakog većeg deploya)
 ```bash

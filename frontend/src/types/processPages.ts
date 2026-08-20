@@ -140,6 +140,7 @@ export interface ProcessRunDetailPageState {
     uploadTitle: string;
     uploadFile: File | null;
     uploading: boolean;
+    generatingDocument: boolean;
     showCompleteForm: boolean;
     complete_valid_until: string;
     complete_performed_at: string;

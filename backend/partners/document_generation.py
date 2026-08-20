@@ -173,7 +173,7 @@ def generate_employee_document(
     ProcessRunDocument.objects.create(
         process_run=run,
         document_file=doc_file,
-        usage_kind=ProcessRunDocument.USAGE_REPORT,
+        usage_kind=ProcessRunDocument.USAGE_CERTIFICATE,
         generated_by_template=None,
     )
 

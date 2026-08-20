@@ -80,7 +80,7 @@ def generate_high_risk_registry(client_id: int) -> bytes:
     for ordinal, emp in enumerate(rows, start=1):
         row = tbl.rows[ordinal]
         _write(row.cells[0], str(ordinal), center=True)
-        _write(row.cells[1], emp.high_risk_position_name or "")
+        _write(row.cells[1], emp.high_risk_position_name or (emp.job_role.name if emp.job_role_id else "") or "")
         _write(row.cells[2], f"{emp.first_name} {emp.last_name}".strip())
         _write(row.cells[3], emp.effective_risk_level.label)
 

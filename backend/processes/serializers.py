@@ -288,6 +288,8 @@ class ProcessRunDocumentSerializer(serializers.ModelSerializer):
         source="document_file.title", read_only=True
     )
     document_file_url = serializers.SerializerMethodField()
+    generated_by_template = serializers.PrimaryKeyRelatedField(read_only=True)
+    is_system_generated = serializers.SerializerMethodField()
 
     class Meta:
         model = ProcessRunDocument
@@ -298,6 +300,8 @@ class ProcessRunDocumentSerializer(serializers.ModelSerializer):
             "document_file_title",
             "document_file_url",
             "usage_kind",
+            "generated_by_template",
+            "is_system_generated",
         )
 
     def get_document_file_url(self, obj: ProcessRunDocument) -> str | None:
@@ -312,6 +316,9 @@ class ProcessRunDocumentSerializer(serializers.ModelSerializer):
         if request and url.startswith("/"):
             return request.build_absolute_uri(url)
         return url
+
+    def get_is_system_generated(self, obj: ProcessRunDocument) -> bool:
+        return bool(obj.generated_by_template_id)
 
 
 class ProcessRunDocumentUploadSerializer(serializers.Serializer):

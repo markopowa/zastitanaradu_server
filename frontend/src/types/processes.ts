@@ -401,6 +401,8 @@ export interface ProcessRunDocument {
     document_file_title?: string;
     document_file_url?: string | null;
     usage_kind: string;
+    generated_by_template?: number | null;
+    is_system_generated?: boolean;
 }
 
 export type ActivityLogEventType =

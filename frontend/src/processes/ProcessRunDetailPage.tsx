@@ -33,6 +33,7 @@ import { withNavigation } from "../hocs/withNavigation";
 import { StatusBadge, triggerLabel } from "../design";
 import {
     completeProcessRun,
+    generateRunDocument,
     getProcessRun,
     getProcessRunDocuments,
     getProcessRunNotes,
@@ -154,6 +155,7 @@ class ProcessRunDetailPageInner extends Component<
         uploadTitle: "",
         uploadFile: null,
         uploading: false,
+        generatingDocument: false,
         showCompleteForm: false,
         complete_valid_until: "",
         complete_performed_at: "",
@@ -282,11 +284,38 @@ class ProcessRunDetailPageInner extends Component<
     handleRemoveDocument = (docId: number): void => {
         const { run } = this.state;
         if (!run) return;
-        void removeDocumentFromRun(run.id, docId).then(() =>
-            getProcessRunDocuments(run.id).then((documents) =>
-                this.setState({ documents }),
-            ),
-        );
+        void removeDocumentFromRun(run.id, docId)
+            .then(() => getProcessRunDocuments(run.id))
+            .then((documents) => this.setState({ documents }))
+            .catch((err: { response?: { data?: { detail?: string } } }) => {
+                enqueueSnackbar(
+                    err.response?.data?.detail ?? "Greška pri brisanju.",
+                    { variant: "error" },
+                );
+            });
+    };
+
+    handleGenerateDocument = (): void => {
+        const { run } = this.state;
+        if (!run) return;
+        this.setState({ generatingDocument: true });
+        void generateRunDocument(run.id)
+            .then(() => getProcessRunDocuments(run.id))
+            .then((documents) => {
+                this.setState({ documents, generatingDocument: false });
+                enqueueSnackbar(
+                    "Dokument je generisan — možeš da ga preuzmeš.",
+                    { variant: "success" },
+                );
+            })
+            .catch((err: { response?: { data?: { detail?: string } } }) => {
+                this.setState({ generatingDocument: false });
+                enqueueSnackbar(
+                    err.response?.data?.detail ??
+                        "Generisanje dokumenta nije uspelo.",
+                    { variant: "error" },
+                );
+            });
     };
 
     handleComplete = (): void => {
@@ -345,10 +374,14 @@ class ProcessRunDetailPageInner extends Component<
 
     renderDocumentsSection(documents: ProcessRunDocument[]): React.ReactNode {
         const systemDocs = documents.filter(
-            (d) => d.usage_kind === "INVITATION",
+            (d) =>
+                d.is_system_generated ||
+                d.generated_by_template != null ||
+                d.usage_kind === "INVITATION" ||
+                d.usage_kind === "CERTIFICATE",
         );
         const otherDocs = documents.filter(
-            (d) => d.usage_kind !== "INVITATION",
+            (d) => !systemDocs.some((s) => s.id === d.id),
         );
 
         const renderList = (items: ProcessRunDocument[], deletable: boolean) =>
@@ -417,7 +450,8 @@ class ProcessRunDetailPageInner extends Component<
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <Box>
                     <Typography variant="subtitle2" gutterBottom>
-                        Sistemski dokumenti
+                        Generisani dokumenti (preuzmi, potpiši, pošalji
+                        poštom…)
                     </Typography>
                     {renderList(systemDocs, false)}
                 </Box>
@@ -442,6 +476,7 @@ class ProcessRunDetailPageInner extends Component<
             uploadTitle,
             uploadFile,
             uploading,
+            generatingDocument,
             showCompleteForm,
             complete_valid_until,
             complete_performed_at,
@@ -662,8 +697,37 @@ class ProcessRunDetailPageInner extends Component<
                 </Paper>
 
                 <Paper sx={{ p: 2 }}>
-                    <Typography variant="subtitle1" gutterBottom>
-                        Dokumenti
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                            gap: 1,
+                            mb: 1,
+                            flexWrap: "wrap",
+                        }}
+                    >
+                        <Typography variant="subtitle1">Dokumenti</Typography>
+                        <Button
+                            size="small"
+                            variant="outlined"
+                            disableElevation
+                            disabled={generatingDocument}
+                            onClick={this.handleGenerateDocument}
+                            sx={BTN_SX}
+                        >
+                            {generatingDocument
+                                ? "Generišem…"
+                                : "Generiši dokument (bez mejla)"}
+                        </Button>
+                    </Box>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mb: 1.5 }}
+                    >
+                        Dokumenti ostaju na aktivnosti za preuzimanje — mejl nije
+                        obavezan (možeš odštampati, potpisati i poslati poštom).
                     </Typography>
                     {this.renderDocumentsSection(documents)}
                     <Divider sx={{ my: 2 }} />

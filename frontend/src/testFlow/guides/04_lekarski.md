@@ -39,24 +39,15 @@ Kad **prethodni lekarski** (otvoren automatski pri zaposlenju na radno mesto pov
 - [ ] Registar radnih mesta sa povećanim rizikom — dugme na tabu Pregled generiše .docx.
 
 ## Šta reći u videu
-> Dve reči koje koristim stalno: obaveza je opšte pravilo, „lekarski pregled na povećanom riziku"; aktivnost je konkretan slučaj sa rokom — „lekarski za Petra Petrovića, 1. septembar". Na aktivnostima radim svaki dan, ne na obavezama.
+> Dve reči koje koristim stalno — i odmah ih pokažem. **Obaveza** je tip u katalogu, opšte pravilo: „lekarski pregled na povećanom riziku" — to Admin vidi u **Administracija → Vrste obaveza**. **Aktivnost** je konkretan slučaj sa rokom: „lekarski za Petra Petrovića, 1. septembar" — to je ono što otvaram na **Aktivnosti** ili na firmi u listi obaveza. Na aktivnostima radim svaki dan.
 >
-> Filtriram: kasni, stiže uskoro, otvoreno. Otvorim prethodni lekarski jednog radnika i vidim da je uput već otišao poslodavcu — nisam ja to slao, otišlo je samo kad je došao rok.
+> Filtriram: kasni, stiže uskoro, otvoreno. Otvorim **prethodni lekarski** jednog radnika. Uput je već otišao poslodavcu na dan roka — nisam ja kliknuo Pošalji; to se vidi u statusu aktivnosti i u meniju **Slanja** / **Danas**.
 >
-> Kad se pregled obavi, otvorim tu aktivnost i kliknem Završi. Upišem datum, broj izveštaja, ocenu sposobnosti, mere, do kad važi, i priložim nalaz.
+> Kad se pregled obavi, na aktivnosti kliknem **Završi aktivnost**. Upišem: važi do, izvršeno, broj izveštaja, ocenu sposobnosti, mere, i priložim PDF nalaza.
 >
-> Tu se dešava nešto bitno: čim završim, sam se otvori sledeći, periodični lekarski, sa novim rokom. Namerno se ne pravi unapred kad zaposlim radnika — rok periodičnog zavisi od ocene lekara, ne od datuma zaposlenja, pa se pravi tek kad znam tu ocenu. Kad se i periodični završi, otvori se sledeći — ide ukrug, godinama, niko ne ispadne iz evidencije jer neko zaboravi da zakaže.
+> Tu se dešava suština: čim sačuvam, na listi se **sam pojavi periodični** lekarski sa novim rokom. Namerno se ne pravi unapred kad zaposlim radnika — rok periodičnog zavisi od ocene lekara, ne od datuma zaposlenja. Zato ga pravi tek sad, kad znam nalaz. Kad se i periodični završi, otvori se sledeći — ide ukrug, godinama, niko ne ispadne jer neko zaboravi da zakaže.
 >
-> Na kraju, Obrazac 1 — propisana evidencija lekarskih pregleda za povećan rizik. Ne pravim ga ručno: kliknem Generiši na tabu Pregled i dobijem tabelu iz svega što sam već uneo kroz završene aktivnosti — ko, kad, ocena, sledeći termin. Isti princip važi za registar radnih mesta sa povećanim rizikom, drugo dugme pored.
-
-## Ako pita — primer i gde da pokažeš
-| Ako kaže / pita | Ti kažeš | Otvori u app |
-|---|---|---|
-| Obaveza vs aktivnost? | Obaveza = tip u katalogu. Aktivnost = „Petar, lekarski, 1.9.". | **Aktivnosti** / firma → **Obaveze** → otvori jedan red (konkretan rok). Katalog tipova: **Administracija → Vrste obaveza** (ako Admin). |
-| Zašto periodični nije odmah? | Rok zavisi od nalaza; pravi se tek kad završim prethodni. | Zaposleni sa prethodnim → **Završi** → na listi se pojavi novi **periodični**. |
-| Gde je uput otišao? | Na dan roka ide poslodavcu; vidi se u Slanjima. | **Slanja** (filter firma) ili **Danas**; detalj aktivnosti status Poslato. |
-| Šta upisujem na Završi? | Važi do, izvršeno, broj izveštaja, ocena, mere, PDF nalaza. | Aktivnost → **Završi aktivnost**. |
-| Odakle Obrazac 1? | Iz završenih lekarskih — ne kucam tabelu. | Firma → **Pregled** → **Generiši Obrazac 1**; pa **Dokumentacija** (stavka Obrazac 1). |
+> Na kraju firma → tab **Pregled** → **Generiši Obrazac 1**: propisana evidencija lekarskih za povećan rizik — tabela iz svega što sam već uneo kroz završene aktivnosti, ne kucam ručno. Fajl ode i u **Dokumentaciju**. Pored stoji i **Registar radnih mesta sa povećanim rizikom** — isti princip, drugo dugme.
 
 ## Video
 - Status: **snimiti**. Motor (filteri, lančanje) i Obrazac 1 nisu ranije snimljeni zajedno u jednom toku.

@@ -1427,7 +1427,11 @@ class ClientCompanyDetailPageInner extends Component<
                                             }
                                         />
                                     }
-                                    label="Test režim slanja mejlova (mejlovi idu na internu test adresu)"
+                                    label={
+                                        editEmailTestMode
+                                            ? "Test režim: svi mejlovi idu samo na EMAIL_REDIRECT_TO (backend.env), ne na firmu"
+                                            : "Uživo: mejlovi idu na firmu / MAK po šablonu (bez redirecta)"
+                                    }
                                 />
                             </PermissionGate>
                             <Box sx={{ display: "flex", gap: 1, mt: 1 }}>

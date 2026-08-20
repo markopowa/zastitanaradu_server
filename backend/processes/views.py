@@ -543,8 +543,93 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
                 {"detail": "Not found."},
                 status=status.HTTP_404_NOT_FOUND,
             )
+        if prd.generated_by_template_id:
+            return Response(
+                {"detail": "Sistemski generisan dokument se ne može obrisati."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         prd.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=["post"], url_path="generate-document")
+    def generate_document(self, request, pk=None):
+        from .utils import _generate_document_for_run, binding_subject_snapshot
+
+        run = self.get_object()
+        binding = run.process_binding
+        templates = list(
+            ProcessTemplate.objects.filter(
+                process_type_id=run.process_type_id,
+                generate_document=True,
+                document_template__isnull=False,
+            ).select_related("document_template")
+        )
+        if not templates:
+            return Response(
+                {"detail": "Za ovu obavezu nema šablona za generisanje dokumenta."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        preferred = (
+            next(
+                (
+                    t
+                    for t in templates
+                    if t.trigger == ProcessTemplate.TRIGGER_ON_SCHEDULED
+                ),
+                None,
+            )
+            or next(
+                (
+                    t
+                    for t in templates
+                    if t.trigger == ProcessTemplate.TRIGGER_ON_COMPLETED
+                ),
+                None,
+            )
+            or templates[0]
+        )
+        snapshot = binding_subject_snapshot(binding)
+        doc_file = _generate_document_for_run(run, preferred, snapshot)
+        if doc_file is None:
+            return Response(
+                {"detail": "Generisanje dokumenta nije uspelo."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        prd = (
+            ProcessRunDocument.objects.filter(
+                process_run=run,
+                document_file=doc_file,
+            )
+            .select_related("document_file")
+            .first()
+        )
+        if prd is None:
+            prd = ProcessRunDocument.objects.create(
+                process_run=run,
+                document_file=doc_file,
+                usage_kind=ProcessRunDocument.USAGE_INVITATION,
+                generated_by_template=preferred,
+            )
+        subject = (
+            run.subject_snapshot.get("name")
+            or run.subject_snapshot.get("kind")
+            or ""
+        )
+        user = getattr(request, "user", None)
+        log_activity(
+            ActivityLog.EVENT_DOCUMENT_ATTACHED,
+            f"Generisan dokument '{doc_file.title}' za aktivnost "
+            f"'{run.process_type.name}' ({subject}) — bez slanja mejla",
+            user=user if getattr(user, "is_authenticated", False) else None,
+            process_run=run,
+            process_binding=binding,
+        )
+        return Response(
+            ProcessRunDocumentSerializer(
+                prd, context={"request": request},
+            ).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 def _run_client_company(run: ProcessRun):

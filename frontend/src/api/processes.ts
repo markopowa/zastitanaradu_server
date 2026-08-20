@@ -728,6 +728,15 @@ export async function attachDocumentToRun(
     return data;
 }
 
+export async function generateRunDocument(
+    runId: number,
+): Promise<ProcessRunDocument> {
+    const { data } = await api.post<ProcessRunDocument>(
+        `/api/processes/runs/${runId}/generate-document/`,
+    );
+    return data;
+}
+
 export async function removeDocumentFromRun(
     runId: number,
     docId: number,

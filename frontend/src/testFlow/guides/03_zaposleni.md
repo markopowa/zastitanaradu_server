@@ -55,28 +55,17 @@ Osposobljenost se može proveriti i **testom**: zaposleni odgovara na pitanja, i
 - [ ] Upitnik klijentu (Lična karta) i Povrede na radu (Zaposleni) rade.
 
 ## Šta reći u videu
-> Zaposleni su ti koji nose obaveze, pa krećem od radnog mesta na koje ga vezujem, pa tek onda radnik.
+> Zaposleni su ti koji nose obaveze, pa krećem od radnog mesta na koje ga vezujem, pa tek onda radnik. Otvorim firmu → tab **Radna mesta i rizik**.
 >
-> Na radnom mestu upišem naziv i nivo rizika, i tu definišem procenu rizika i LZO. Primer: za viljuškaristu u proceni upišem opasnosti (npr. prevrtanje, buka) i mere, a u LZO šlem, zaštitne cipele — to kasnije uđe u Obrazac 6 i revers. Obrazac 6 i revers se pune iz tih podataka — ne otpremam blanko po mestu. Vrste obuka stoje odvojeno, jer ista obuka može da važi za više radnih mesta; za potvrdu po članu 5 otpremim blanko na vrsti obuke.
+> Na mestu upišem naziv i nivo rizika. Ovde, **na mestu**, ne na radniku, pišem procenu rizika i LZO — jednom za mesto, važi za sve na njemu. Primer: za **viljuškaristu** u proceni upišem opasnosti — prevrtanje, buka — i mere, a u LZO šlem, zaštitne cipele. To kasnije uđe u Obrazac 6 i revers; ne otpremam blanko po mestu. **Vrste obuka** stoje odvojeno ispod — ista obuka, npr. rad na visini, može da važi za više mesta; blanko za potvrdu po članu 5 otpremim jednom na vrsti obuke (**Otpremi blanko**), ne na svakom mestu.
 >
-> Kad dodam zaposlenog i vežem ga za radno mesto s povećanim rizikom, ne radim ništa više — aplikacija mu sama otvori sve što po zakonu ide uz to mesto: osposobljavanje za bezbedan rad, ZOP obuku, zaduženje LZO, i prethodni lekarski. Periodični lekarski se ne otvara odmah, njega pravi lančano tek kad se prethodni završi — to je sledeći video. Radnik bez povećanog rizika dobija sve osim lekarskog. Ako mi zatreba izuzetak — neko na „niskom" mestu ipak treba lekarski — to menjam ručno na samom radniku, bez diranja radnog mesta.
+> Sad dodam zaposlenog i vežem ga za mesto s **povećanim** rizikom. Ne radim ništa više — otvorim ga na tabu **Zaposleni** i na kartici vidim šta je samo otvoreno: osposobljavanje za bezbedan rad, ZOP, zaduženje LZO, i **prethodni lekarski**. Periodični se još ne otvara — pravi se lančano tek kad se prethodni završi, to je sledeći video. Odmah uporedim sa drugim radnikom na **niskom** mestu: iste obuke i LZO, **bez** lekarskog. Ako mi zatreba izuzetak — neko na niskom mestu ipak treba lekarski — na tom radniku **Izmeni → Rizik — izuzetak**, bez diranja radnog mesta.
 >
-> Kad je obuka gotova, ne kucam papir ručno. Kliknem Obrazac 6 na radniku — aplikacija upiše podatke radnog mesta i zaposlenog i odmah mi da gotov fajl. Isto za revers LZO. Za potvrdu po članu 5 biram vrstu obuke.
+> Kad je obuka gotova, ne kucam papir. Na radniku kliknem **Obrazac 6** — aplikacija upiše opasnosti/mere i LZO sa mesta plus ime radnika i odmah da gotov fajl. Isto **Revers LZO**. Za potvrdu po članu 5 biram vrstu obuke.
 >
-> A ako hoću da provera bude stvarna, ne samo formalnost — pustim radnika da polaže test. Ako prođe sa 75 ili više, aplikacija sama upiše da je obuka odrađena i sama generiše Obrazac 6, ja ne diram ništa. Ispod 75 — nudi mu ponovni pokušaj.
+> Ako hoću stvarnu proveru, ne formalnost — na kartici **Test obuke**. Prođe sa 75 ili više: sama upiše da je obuka odrađena i sama generiše Obrazac 6 — to se vidi na karticama **Obuke** i **Dokumenti**. Ispod 75 — ponovni pokušaj.
 >
-> Sve što je radnik prošao vidim na njegovoj kartici Obuke, a sve što mu je generisano na kartici Dokumenti. Kad mi treba za celu firmu odjednom, na firmi kliknem Generiši Obrazac 6 — svi zaposleni — i dobijem jedan fajl za sve, umesto da otvaram svakog pojedinačno.
-
-## Ako pita — primer i gde da pokažeš
-| Ako kaže / pita | Ti kažeš | Otvori u app |
-|---|---|---|
-| Šta tačno dobije na povećanom riziku? | Obuka BZR + ZOP + LZO + **prethodni lekarski**. Periodični još ne. | Firma → **Zaposleni** → otvori radnika → lista obaveza / aktivnosti na kartici. |
-| A na niskom? | Iste obuke i LZO, **bez** lekarskog. | Drugi zaposleni na mestu bez „povećan" → ista kartica, nema prethodni lekarski. |
-| Gde se pišu opasnosti / LZO? | Na radnom mestu, ne na radniku — jednom za mesto, važi za sve na njemu. | Firma → **Radna mesta i rizik** → mesto → paneli procene rizika i LZO. |
-| Odakle Obrazac 6 vuče tekst? | Iz opasnosti/mera i LZO sa mesta + ime radnika. | Isti tab mesta (podaci) → pa zaposleni → dugme **Obrazac 6** (rezultat). |
-| Zašto blanko potvrde na vrsti obuke? | Ista obuka (npr. rad na visini) važi za više mesta; blanko je jedan po vrsti obuke. | Firma → **Radna mesta i rizik** → sekcija **Vrste obuka** → Otpremi blanko. |
-| Šta je rizik-izuzetak? | Radnik na niskom mestu kome ipak treba lekarski (ili obrnuto) — menjam samo na njemu. | Zaposleni → **Izmeni** → polje **Rizik — izuzetak**. |
-| Gde je test obuke? | Sa kartice zaposlenog, dugme Test obuke. | Zaposleni → **Test obuke** → posle ≥75% vidi Obuke + Dokumenti. |
+> Kad mi treba za celu firmu odjednom, na firmi **Generiši Obrazac 6 — svi zaposleni** — jedan fajl za sve, umesto da otvaram svakog pojedinačno.
 
 ## Video
 - Status: **snimiti**. Generisanje Obrazac 6 / Revers LZO / Potvrda na dugme, test obuke, i evidencija obuka su nove funkcije. Upitnik klijentu (Lična karta) i Povrede na radu (Zaposleni) imaju panele i snimaju se.

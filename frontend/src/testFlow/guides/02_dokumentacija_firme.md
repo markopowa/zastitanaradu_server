@@ -25,22 +25,13 @@ Pored obaveza koje se ponavljaju (pregledi, ispitivanja — to je proces `04`), 
 - [ ] Izmena i dopuna Akta ide kao zaseban dokument u listi.
 
 ## Šta reći u videu
-> Dokumentacija je odvojena od obaveza namerno: obaveza je radnja koja se ponavlja i ima rok — pregled, obuka. Dokument je papir koji firma mora da poseduje, tačka. Zato stoje na posebnom tabu, ne mešaju se sa aktivnostima.
+> Dokumentacija je odvojena od obaveza namerno — i to odmah pokažem: tab **Pregled** su rokove i radnje koje se ponavljaju; tab **Dokumentacija** su papiri koje firma mora da poseduje, tačka. Ne mešaju se sa aktivnostima.
 >
-> Na Obaveznoj dokumentaciji, za svaku stavku — recimo Pravilnik o BZNR — kliknem Priloži. Ako je Word, aplikacija ga sama prebaci u PDF, ne moram ja ručno da konvertujem i ponovo otpremam. Brojač gore mi pokazuje koliko fali do kompletnog seta — to mi treba kad me klijent pita „šta mi još treba".
+> Idem na **Dokumentacija → Obavezna dokumentacija**. Primer stavke: **Pravilnik o BZNR**, ili rešenje o licu za BZR. Kliknem **Priloži**. Ako otpremim Word, aplikacija ga sama prebaci u PDF — to pokažem na ekranu: poruka i PDF u listi — jer inspekciji i arhivi šaljemo PDF, Word ostaje samo izvor. Brojač gore mi pokazuje koliko fali do kompletnog seta — to mi treba kad me klijent pita „šta mi još treba".
 >
-> Akt o proceni rizika je poseban jer se menja tokom vremena, ne piše se jednom. Upišem datum donošenja, priložim sekcije. Kad menjam sekciju koja već postoji, aplikacija traži razlog izmene — ne pušta me dalje bez njega, jer to je nešto što inspekcija može da pita: zašto je ovo promenjeno. Kad su sve sekcije unutra, jednim klikom ih spojim u jedan PDF.
+> **Akt o proceni rizika** je poseban jer se menja tokom vremena, ne piše se jednom. Upišem datum donošenja, priložim sekcije. Kad menjam sekciju koja već postoji, aplikacija traži **razlog izmene** — ne pušta me dalje bez njega, jer inspekcija može da pita zašto je ovo promenjeno. Kad su sve sekcije unutra, jednim klikom ih spojim u jedan PDF.
 >
-> Kad firma kasnije promeni nešto bitno — novu opremu, novo radno mesto — ne prepravljam stari akt, dodajem izmenu i dopunu: naslov, napomena, fajl. Stoji u listi pored akta kao trag šta se i kad menjalo, ne gubi se istorija.
-
-## Ako pita — primer i gde da pokažeš
-| Ako kaže / pita | Ti kažeš | Otvori u app |
-|---|---|---|
-| Zašto nije u Pregledu / obavezama? | Pregled = rokove i radnje; Dokumentacija = papiri koje firma drži. | Firma → tab **Dokumentacija** vs tab **Pregled**. |
-| Primer stavke? | Pravilnik o BZNR, rešenje o licu za BZR, akt… | **Dokumentacija → Obavezna dokumentacija**. |
-| Zašto Word → PDF? | Inspekciji i arhivi šaljemo PDF; Word ostaje samo izvor. | Priloži `.docx` na stavku → vidi poruku i PDF u listi. |
-| Zašto razlog na izmeni Akta? | Da ima trag zašto je sekcija menjana (inspekcija pita). | **Akt** → izmena sekcije → polje razloga obavezno. |
-| Šta je izmena i dopuna? | Novi dokument pored akta, ne brisanje starog — istorija ostaje. | **Akt → Izmene i dopune → Dodaj**. |
+> Kad firma kasnije promeni nešto bitno — novu opremu, novo radno mesto — ne prepravljam stari akt. Otvorim **Akt → Izmene i dopune → Dodaj**: naslov, napomena, fajl. Stoji u listi pored akta kao trag šta se i kad menjalo — istorija ostaje, stari akt se ne briše.
 
 ## Video
 - Status: **presnimiti**. Stari snimak pokriva osnovu, ali ne i Word→PDF napomenu na ekranu, objedinjen PDF i izmene/dopune Akta.

@@ -491,6 +491,17 @@ def _generate_document_for_run(
     if not doc_template:
         return None
 
+    existing_prd = (
+        ProcessRunDocument.objects.filter(
+            process_run=run,
+            generated_by_template=template,
+        )
+        .select_related("document_file")
+        .first()
+    )
+    if existing_prd and existing_prd.document_file_id:
+        return existing_prd.document_file
+
     fill_file = doc_template.template_file
     role_blank_file = None
     blank_placements: list = []
@@ -655,7 +666,15 @@ def _generate_document_for_run(
     ProcessRunDocument.objects.create(
         process_run=run,
         document_file=doc_file,
-        usage_kind=ProcessRunDocument.USAGE_REPORT,
+        usage_kind=(
+            ProcessRunDocument.USAGE_INVITATION
+            if template.trigger
+            in (
+                ProcessTemplate.TRIGGER_ON_LEAD,
+                ProcessTemplate.TRIGGER_ON_SCHEDULED,
+            )
+            else ProcessRunDocument.USAGE_CERTIFICATE
+        ),
         generated_by_template=template,
     )
     logger.info(
