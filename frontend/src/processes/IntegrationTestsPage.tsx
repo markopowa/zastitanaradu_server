@@ -446,7 +446,11 @@ class IntegrationTestsPage extends Component<
                                 color={done ? "success" : "primary"}
                                 disableElevation
                                 startIcon={done ? <CheckIcon /> : undefined}
-                                onClick={() => this.handleFill(section.id)}
+                                onClick={() => {
+                                    if (isFillSection(section.id)) {
+                                        this.handleFill(section.id);
+                                    }
+                                }}
                                 sx={{ minWidth: 88 }}
                             >
                                 Popuni
