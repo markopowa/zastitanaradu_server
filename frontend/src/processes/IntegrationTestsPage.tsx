@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, type ReactNode } from "react";
 import { connect } from "react-redux";
 import { Navigate } from "react-router-dom";
 
@@ -31,16 +31,23 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import doc01 from "../testFlow/guides/01_unos_firme.md?raw";
-import doc02 from "../testFlow/guides/02_dokumentacija_firme.md?raw";
-import doc03 from "../testFlow/guides/03_zaposleni.md?raw";
-import doc04 from "../testFlow/guides/04_lekarski.md?raw";
-import doc05 from "../testFlow/guides/05_oprema_nalazi.md?raw";
-import doc06 from "../testFlow/guides/06_podsetnici_slanja.md?raw";
-import doc07 from "../testFlow/guides/07_korisnici.md?raw";
+import doc01 from "../testFlow/guides/01_wizard.md?raw";
+import doc02 from "../testFlow/guides/02_pregled.md?raw";
+import doc03 from "../testFlow/guides/03_licna_karta.md?raw";
+import doc04 from "../testFlow/guides/04_dokumentacija.md?raw";
+import doc05 from "../testFlow/guides/05_radna_mesta.md?raw";
+import doc06 from "../testFlow/guides/06_zaposleni.md?raw";
+import doc07 from "../testFlow/guides/07_obaveze.md?raw";
+import doc08 from "../testFlow/guides/08_danas_slanja.md?raw";
+import doc09 from "../testFlow/guides/09_korisnici.md?raw";
 
 import { TEST_FLOW_PHASES, TEST_FLOW_SECTIONS } from "../testFlow/sections";
-import type { TestFlowSection, TestFlowSectionMeta } from "../testFlow/types";
+import {
+    isFillSection,
+    type TestFlowRowId,
+    type TestFlowSection,
+    type TestFlowSectionMeta,
+} from "../testFlow/types";
 import { setLastPath } from "../store/locationSlice";
 import {
     previewIntegrationTestCleanup,
@@ -59,7 +66,32 @@ const DOCS_BY_NUM: Record<string, string> = {
     "05": doc05,
     "06": doc06,
     "07": doc07,
+    "08": doc08,
+    "09": doc09,
 };
+
+function nodeText(node: ReactNode): string {
+    if (node == null || typeof node === "boolean") return "";
+    if (typeof node === "string" || typeof node === "number") {
+        return String(node);
+    }
+    if (Array.isArray(node)) {
+        return node.map(nodeText).join("");
+    }
+    if (typeof node === "object" && "props" in node) {
+        return nodeText(
+            (node as { props: { children?: ReactNode } }).props.children,
+        );
+    }
+    return "";
+}
+
+function rowMatchesGuideText(rowId: TestFlowRowId, text: string): boolean {
+    if (text.includes(rowId)) return true;
+    const label = TEST_FLOW_SECTIONS.find((s) => s.id === rowId)?.label;
+    if (label && text.includes(label)) return true;
+    return false;
+}
 
 interface StateProps {
     isStaff: boolean;
@@ -72,9 +104,10 @@ interface DispatchProps {
 interface State {
     sessionActive: boolean;
     sessionId: string | null;
-    clickedSections: Partial<Record<TestFlowSection, boolean>>;
+    doneRows: Partial<Record<TestFlowRowId, boolean>>;
     lastResults: Partial<Record<TestFlowSection, boolean>>;
     activeNum: string;
+    focusedRowId: TestFlowRowId | null;
     cleanupPreview: IntegrationTestCompanyRow[];
     cleanupConfirmOpen: boolean;
     cleanupLoading: boolean;
@@ -85,13 +118,15 @@ class IntegrationTestsPage extends Component<
     State
 > {
     private unsubscribeResults: (() => void) | null = null;
+    private guideScrollRef: HTMLDivElement | null = null;
 
     state: State = {
         sessionActive: isTestSessionActive(),
         sessionId: getTestSessionId(),
-        clickedSections: {},
+        doneRows: {},
         lastResults: {},
         activeNum: "01",
+        focusedRowId: null,
         cleanupPreview: [],
         cleanupConfirmOpen: false,
         cleanupLoading: false,
@@ -103,6 +138,10 @@ class IntegrationTestsPage extends Component<
             (section, handled) => {
                 this.setState((prev) => ({
                     lastResults: { ...prev.lastResults, [section]: handled },
+                    doneRows:
+                        handled === true
+                            ? { ...prev.doneRows, [section]: true }
+                            : prev.doneRows,
                 }));
             },
         );
@@ -180,8 +219,9 @@ class IntegrationTestsPage extends Component<
         this.setState({
             sessionActive: true,
             sessionId: id,
-            clickedSections: {},
+            doneRows: {},
             lastResults: {},
+            focusedRowId: null,
         });
     };
 
@@ -190,8 +230,9 @@ class IntegrationTestsPage extends Component<
         this.setState({
             sessionActive: false,
             sessionId: null,
-            clickedSections: {},
+            doneRows: {},
             lastResults: {},
+            focusedRowId: null,
         });
     };
 
@@ -207,89 +248,224 @@ class IntegrationTestsPage extends Component<
         window.open(`${window.location.origin}${route}${qs}`);
     };
 
-    handleFill = (section: TestFlowSection): void => {
+    markDone = (rowId: TestFlowRowId): void => {
         this.setState((prev) => ({
-            clickedSections: { ...prev.clickedSections, [section]: true },
+            doneRows: { ...prev.doneRows, [rowId]: true },
+            focusedRowId: rowId,
         }));
+        this.scrollGuideToRow(rowId);
+    };
+
+    handleFill = (section: TestFlowSection): void => {
+        this.markDone(section);
         broadcastTestFill(section);
     };
 
-    clickedCount = (): number => {
-        return Object.keys(this.state.clickedSections).length;
+    handleCheck = (rowId: TestFlowRowId): void => {
+        this.markDone(rowId);
+    };
+
+    handleFocusRow = (row: TestFlowSectionMeta): void => {
+        const num = row.phaseId.slice(0, 2);
+        this.setState({ activeNum: num, focusedRowId: row.id });
+        this.scrollGuideToRow(row.id);
+    };
+
+    scrollGuideToRow = (rowId: TestFlowRowId): void => {
+        requestAnimationFrame(() => {
+            const root = this.guideScrollRef;
+            if (!root) return;
+            const el = root.querySelector(`[data-guide-row="${rowId}"]`);
+            if (el instanceof HTMLElement) {
+                el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
+        });
+    };
+
+    doneCount = (): number => {
+        return Object.values(this.state.doneRows).filter(Boolean).length;
+    };
+
+    guideComponents = () => {
+        const { doneRows, focusedRowId } = this.state;
+        const doneIds = (
+            Object.keys(doneRows) as TestFlowRowId[]
+        ).filter((id) => doneRows[id]);
+
+        const wrapBlock = (
+            Tag: "li" | "p" | "blockquote",
+            children: ReactNode,
+        ) => {
+            const text = nodeText(children);
+            const matchedIds = doneIds.filter((id) =>
+                rowMatchesGuideText(id, text),
+            );
+            const done = matchedIds.length > 0;
+            const focused =
+                focusedRowId != null &&
+                rowMatchesGuideText(focusedRowId, text);
+            const dataRow =
+                matchedIds[0] ??
+                (focused && focusedRowId != null ? focusedRowId : undefined);
+            return (
+                <Tag
+                    data-guide-row={dataRow}
+                    style={{
+                        backgroundColor: done
+                            ? "rgba(46, 125, 50, 0.14)"
+                            : focused
+                              ? "rgba(25, 118, 210, 0.1)"
+                              : undefined,
+                        borderLeft: done
+                            ? "3px solid #2e7d32"
+                            : focused
+                              ? "3px solid #1976d2"
+                              : undefined,
+                        paddingLeft: done || focused ? 8 : undefined,
+                        borderRadius: 4,
+                        transition: "background-color 0.2s",
+                    }}
+                >
+                    {children}
+                </Tag>
+            );
+        };
+
+        return {
+            li: ({ children }: { children?: ReactNode }) =>
+                wrapBlock("li", children),
+            p: ({ children }: { children?: ReactNode }) =>
+                wrapBlock("p", children),
+            blockquote: ({ children }: { children?: ReactNode }) =>
+                wrapBlock("blockquote", children),
+        };
     };
 
     renderSectionRow = (section: TestFlowSectionMeta): React.ReactNode => {
-        const { clickedSections, lastResults } = this.state;
-        const clicked = clickedSections[section.id] === true;
-        const failed = lastResults[section.id] === false;
+        const { doneRows, lastResults, focusedRowId } = this.state;
+        const done = doneRows[section.id] === true;
+        const failed =
+            isFillSection(section.id) && lastResults[section.id] === false;
+        const focused = focusedRowId === section.id;
 
         return (
             <Box
                 key={section.id}
+                onClick={() => this.handleFocusRow(section)}
                 sx={{
                     display: "flex",
-                    alignItems: "center",
-                    gap: 1.5,
-                    py: 1,
+                    flexDirection: "column",
+                    gap: 0.75,
+                    py: 1.25,
                     px: 2,
                     borderTop: "1px solid",
                     borderColor: "divider",
-                    bgcolor: clicked ? "success.50" : undefined,
+                    bgcolor: done
+                        ? "success.50"
+                        : focused
+                          ? "action.selected"
+                          : undefined,
+                    cursor: "pointer",
                     "&:hover": {
-                        bgcolor: clicked ? "success.50" : "action.hover",
+                        bgcolor: done ? "success.50" : "action.hover",
                     },
                 }}
             >
-                <Chip
-                    label={section.badge ?? section.id}
-                    size="small"
-                    variant={clicked ? "filled" : "outlined"}
-                    color={clicked ? "success" : "default"}
-                    sx={{ minWidth: 44, fontWeight: 600, fontSize: "0.7rem" }}
-                />
-                <Tooltip
-                    title={section.hint}
-                    placement="top-start"
-                    enterDelay={400}
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 1.5,
+                    }}
                 >
+                    <Chip
+                        label={section.badge ?? section.id}
+                        size="small"
+                        variant={done ? "filled" : "outlined"}
+                        color={done ? "success" : "default"}
+                        sx={{
+                            minWidth: 52,
+                            fontWeight: 600,
+                            fontSize: "0.7rem",
+                            mt: 0.25,
+                        }}
+                    />
                     <Box sx={{ flex: 1, minWidth: 0 }}>
-                        <Typography variant="body2" fontWeight={500} noWrap>
+                        <Typography variant="body2" fontWeight={600}>
                             {section.label}
                         </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            {section.hint}
+                        </Typography>
                         {failed && (
-                            <Typography variant="caption" color="error">
-                                Forma nije primila podatke
+                            <Typography
+                                variant="caption"
+                                color="error"
+                                display="block"
+                            >
+                                Forma nije primila podatke — otvori formu u app
+                                tabu pa Popuni ponovo.
                             </Typography>
                         )}
-                    </Box>
-                </Tooltip>
-                <Stack direction="row" spacing={0.5} flexShrink={0}>
-                    {section.route && (
-                        <Tooltip
-                            title={section.routeLabel ?? "Otvori stranicu"}
+                        <Typography
+                            variant="body2"
+                            sx={{
+                                mt: 0.75,
+                                color: "text.primary",
+                                lineHeight: 1.45,
+                                whiteSpace: "pre-wrap",
+                            }}
                         >
-                            <IconButton
-                                size="small"
-                                onClick={() =>
-                                    this.handleOpenRoute(section.route!)
-                                }
-                            >
-                                <OpenInNewIcon fontSize="small" />
-                            </IconButton>
-                        </Tooltip>
-                    )}
-                    <Button
-                        size="small"
-                        variant={clicked ? "contained" : "outlined"}
-                        color={clicked ? "success" : "primary"}
-                        disableElevation
-                        startIcon={clicked ? <CheckIcon /> : undefined}
-                        onClick={() => this.handleFill(section.id)}
-                        sx={{ minWidth: 88 }}
+                            {section.say}
+                        </Typography>
+                    </Box>
+                    <Stack
+                        direction="row"
+                        spacing={0.5}
+                        flexShrink={0}
+                        onClick={(e) => e.stopPropagation()}
                     >
-                        Popuni
-                    </Button>
-                </Stack>
+                        {section.route && (
+                            <Tooltip
+                                title={section.routeLabel ?? "Otvori stranicu"}
+                            >
+                                <IconButton
+                                    size="small"
+                                    onClick={() =>
+                                        this.handleOpenRoute(section.route!)
+                                    }
+                                >
+                                    <OpenInNewIcon fontSize="small" />
+                                </IconButton>
+                            </Tooltip>
+                        )}
+                        {section.kind === "fill" && isFillSection(section.id) ? (
+                            <Button
+                                size="small"
+                                variant={done ? "contained" : "outlined"}
+                                color={done ? "success" : "primary"}
+                                disableElevation
+                                startIcon={done ? <CheckIcon /> : undefined}
+                                onClick={() => this.handleFill(section.id)}
+                                sx={{ minWidth: 88 }}
+                            >
+                                Popuni
+                            </Button>
+                        ) : (
+                            <Button
+                                size="small"
+                                variant={done ? "contained" : "outlined"}
+                                color={done ? "success" : "primary"}
+                                disableElevation
+                                startIcon={done ? <CheckIcon /> : undefined}
+                                onClick={() => this.handleCheck(section.id)}
+                                sx={{ minWidth: 88 }}
+                            >
+                                Gotovo
+                            </Button>
+                        )}
+                    </Stack>
+                </Box>
             </Box>
         );
     };
@@ -300,10 +476,19 @@ class IntegrationTestsPage extends Component<
         const sections = TEST_FLOW_SECTIONS.filter(
             (s) => s.phaseId === phase.id,
         );
-
-        const clickedInPhase = sections.filter(
-            (s) => this.state.clickedSections[s.id],
+        const doneInPhase = sections.filter(
+            (s) => this.state.doneRows[s.id],
         ).length;
+
+        const groups: { name: string; rows: TestFlowSectionMeta[] }[] = [];
+        for (const row of sections) {
+            const last = groups[groups.length - 1];
+            if (last && last.name === row.uiGroup) {
+                last.rows.push(row);
+            } else {
+                groups.push({ name: row.uiGroup, rows: [row] });
+            }
+        }
 
         return (
             <Paper
@@ -346,19 +531,32 @@ class IntegrationTestsPage extends Component<
                     </Box>
                     {this.state.sessionActive && sections.length > 0 && (
                         <Typography variant="caption" color="text.secondary">
-                            {clickedInPhase}/{sections.length}
+                            {doneInPhase}/{sections.length}
                         </Typography>
                     )}
                 </Box>
-                {sections.length === 0 ? (
-                    <Box sx={{ px: 2, py: 1.5 }}>
-                        <Typography variant="caption" color="text.secondary">
-                            Ručni/provera korak — uputstvo je u doc-u desno.
+                {groups.map((group) => (
+                    <Box key={group.name}>
+                        <Typography
+                            variant="caption"
+                            sx={{
+                                display: "block",
+                                px: 2,
+                                pt: 1.25,
+                                pb: 0.5,
+                                fontWeight: 700,
+                                color: "text.secondary",
+                                textTransform: "uppercase",
+                                letterSpacing: 0.4,
+                            }}
+                        >
+                            {group.name}
                         </Typography>
+                        {group.rows.map((section) =>
+                            this.renderSectionRow(section),
+                        )}
                     </Box>
-                ) : (
-                    sections.map((section) => this.renderSectionRow(section))
-                )}
+                ))}
             </Paper>
         );
     };
@@ -375,11 +573,9 @@ class IntegrationTestsPage extends Component<
             cleanupLoading,
         } = this.state;
         const total = TEST_FLOW_SECTIONS.length;
-        const done = this.clickedCount();
+        const done = this.doneCount();
         const progress = total > 0 ? (done / total) * 100 : 0;
-        const cleanupNames = cleanupPreview
-            .map((c) => c.name)
-            .join(", ");
+        const cleanupNames = cleanupPreview.map((c) => c.name).join(", ");
 
         return (
             <Box
@@ -395,7 +591,8 @@ class IntegrationTestsPage extends Component<
                         Integration tests
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Otvori formu u app tabu → Popuni. Zeleno = kliknuto.
+                        Red: čarobnjak → tabovi firme 1→6 → Danas/Slanja →
+                        korisnici. Skripta u redu. Zeleno = prošlo (lista + MD).
                     </Typography>
                     <Stack
                         direction="row"
@@ -447,7 +644,7 @@ class IntegrationTestsPage extends Component<
                         <Box
                             sx={{
                                 width: "100%",
-                                flex: { md: "0 0 400px" },
+                                flex: { md: "0 0 480px" },
                                 display: "flex",
                                 flexDirection: "column",
                                 gap: 2,
@@ -483,7 +680,7 @@ class IntegrationTestsPage extends Component<
                                         color="text.secondary"
                                         sx={{ ml: "auto !important" }}
                                     >
-                                        {done}/{total} kliknuto
+                                        {done}/{total} prošlo
                                     </Typography>
                                 </Stack>
                                 <LinearProgress
@@ -508,6 +705,9 @@ class IntegrationTestsPage extends Component<
                             }}
                         >
                             <Box
+                                ref={(el: HTMLDivElement | null) => {
+                                    this.guideScrollRef = el;
+                                }}
                                 sx={{
                                     p: 3,
                                     maxHeight: { md: "calc(100vh - 96px)" },
@@ -537,7 +737,10 @@ class IntegrationTestsPage extends Component<
                                     },
                                 }}
                             >
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={this.guideComponents()}
+                                >
                                     {DOCS_BY_NUM[this.state.activeNum] ||
                                         "Nema doca za ovu temu."}
                                 </ReactMarkdown>

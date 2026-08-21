@@ -55,7 +55,7 @@ const WIZARD_STEPS = [
     "Obavezna dokumentacija",
     "Radna mesta i rizik",
     "Zaposleni",
-    "Lekarski pregledi",
+    "Obaveze",
 ] as const;
 
 interface DispatchProps {
