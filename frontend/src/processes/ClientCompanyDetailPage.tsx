@@ -990,15 +990,29 @@ class ClientCompanyDetailPageInner extends Component<
             setupTestFill(
                 "P_PROFIL",
                 () => {
-                    if (!this.state.editing) {
+                    const { item } = this.state;
+                    if (!item) {
                         return false;
                     }
                     const p = TEST_FLOW.companyProfile;
-                    this.setState({
+                    this.setState((prev) => ({
+                        ...prev,
+                        editing: true,
+                        saveError: null,
+                        editName: item.name,
+                        editTaxId: item.tax_id,
+                        editRegistration_number: item.registration_number ?? "",
+                        editAddress: item.address ?? "",
+                        editPhone: item.phone ?? "",
+                        editEmail: item.email ?? "",
+                        editWebsite: item.website ?? "",
+                        editNotes: item.notes ?? "",
+                        editActivity_code: item.activity_code ?? "",
                         editZop_category: p.zop_category,
                         editHigh_risk_activity: p.high_risk_activity,
                         editInstallations: [...p.installations],
-                    });
+                        editEmailTestMode: item.email_test_mode ?? true,
+                    }));
                     return true;
                 },
                 () =>
@@ -1440,8 +1454,8 @@ class ClientCompanyDetailPageInner extends Component<
                                     }
                                     label={
                                         editEmailTestMode
-                                            ? "Test režim: svi mejlovi idu samo na EMAIL_REDIRECT_TO (backend.env), ne na firmu"
-                                            : "Uživo: mejlovi idu na firmu / MAK po šablonu (bez redirecta)"
+                                            ? "Test režim: mejlovi ne idu klijentu — samo na internu test adresu"
+                                            : "Uživo: mejlovi idu na firmu / MAK po šablonu"
                                     }
                                 />
                             </PermissionGate>

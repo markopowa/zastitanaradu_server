@@ -18,8 +18,8 @@ Podešavanje (katalog obaveza, šabloni podsetnika, nivoi rizika, šabloni dokum
 5. Korak **Zaposleni**: **Dodaj zaposlenog** → **F1 → Popuni** → **Sačuvaj** → **Sledeći**.
 6. Korak **Lekarski pregledi**: **J1 → Popuni** → **Dodaj** → **Sledeći**.
 7. **Završi** → aplikacija me prebaci na tab **Pregled** firme — checklista svih obaveza (Bezbednost i zdravlje na radu i Zaštita od požara), svaka sa statusom (U redu / Uskoro dospeva / Kasni / Nedostaje / Nije primenljivo) i pravnim osnovom.
-8. Tab **Lična karta** → **Izmeni podatke** → **P_PROFIL → Popuni** → postavim ZOP kategoriju, „Delatnost visokog rizika", instalacije (aparati za gašenje požara, hidrantska mreža…) → **Sačuvaj**.
-9. Na Ličnoj karti → **Dodaj kontakt-lice** → **B → Popuni** → **Sačuvaj**.
+8. Tab **Lična karta** (ne Pregled): klikni **Izmeni podatke** — pojave se polja **ZOP kategorija**, **Delatnost visokog rizika**, **Instalacije** (aparati PP, hidranti…). Ili na Integration tests listi klikni **Popuni** na redu **Profil firme** (sam otvara izmenu i popuni). Zatim **Sačuvaj**.
+9. Na Ličnoj karti → **Dodaj kontakt-lice** → na listi **B → Popuni** → **Sačuvaj**.
 10. Vratim se na **Pregled** → obaveze vezane za te instalacije više nisu „Nije primenljivo" nego dobijaju pravi status; obaveze bez tih instalacija ostaju „Nije primenljivo".
 11. Na redu sa statusom „Nedostaje"/„Kasni" → klik na **⋮** → **Ispravi** (vodi na tab gde se to rešava) ili **Nije primenljivo** (traži razlog u dijalogu, obavezno polje).
 12. Označim jednu obavezu kao „Nije primenljivo" uz razlog → red posivi, prikazuje razlog, ima dugme **Vrati**.
@@ -45,7 +45,7 @@ Podešavanje (katalog obaveza, šabloni podsetnika, nivoi rizika, šabloni dokum
 >
 > Kliknem **Završi** i odmah me izbaci na tab **Pregled** — to je checklista svih zakonskih obaveza firme, podeljena na bezbednost na radu i zaštitu od požara, svaka sa statusom i pravnim osnovom. Ne čekam da neko napravi izveštaj — tu odmah vidim šta firma treba da ima.
 >
-> Ali statusi su tačni tek kad kažem aplikaciji šta firma stvarno poseduje. Idem na **Lična karta → Izmeni podatke** — ZOP kategorija, da li je delatnost povećanog rizika, koje instalacije ima. Primer koji i pokažem: firma **bez** hidranata — na Pregledu ispitivanje hidrantske mreže stoji „nije primenljivo". Čim u profilu **čekiram hidrante** i sačuvam, vratim se na **Pregled** — taj red dobija pravi rok. Ne teram firmu da ima obavezu za nešto što fizički nema.
+> Ali statusi su tačni tek kad kažem aplikaciji šta firma stvarno poseduje. Otvorim tab **Lična karta**, kliknem **Izmeni podatke** — tu su **ZOP kategorija**, prekidač **Delatnost visokog rizika**, i čekeri **Instalacije** (aparati za gašenje, hidranti…). Primer koji i pokažem: firma **bez** hidranata — na Pregledu ispitivanje hidrantske mreže stoji „nije primenljivo". Čim **čekiram hidrante** i sačuvam, vratim se na **Pregled** — taj red dobija pravi rok. Ne teram firmu da ima obavezu za nešto što fizički nema.
 >
 > Ako nešto stvarno ne važi samo za ovu firmu, na **Pregledu** otvorim meni na redu i obeležim **Nije primenljivo** — ali dijalog traži **razlog**, bez toga ne prolazi. Sutra kolega ili inspekcija mora da vidi *zašto* je isključeno, ne da neko samo klikne. I uvek mogu da vratim ako se predomislim.
 

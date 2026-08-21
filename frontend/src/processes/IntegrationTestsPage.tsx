@@ -241,7 +241,7 @@ class IntegrationTestsPage extends Component<
                 }}
             >
                 <Chip
-                    label={section.id}
+                    label={section.badge ?? section.id}
                     size="small"
                     variant={clicked ? "filled" : "outlined"}
                     color={clicked ? "success" : "default"}

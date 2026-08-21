@@ -74,8 +74,9 @@ export const TEST_FLOW_SECTIONS: TestFlowSectionMeta[] = [
     {
         id: "P_PROFIL",
         phaseId: "01_unos_firme",
-        label: "Profil firme (ZOP/rizik/instalacije)",
-        hint: "Tab Lična karta → Izmeni podatke",
+        badge: "Profil",
+        label: "Profil firme (ZOP / rizik / instalacije)",
+        hint: "Firma → tab Lična karta (Popuni sam otvara Izmeni podatke)",
     },
     {
         id: "B",

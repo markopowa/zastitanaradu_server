@@ -42,6 +42,7 @@ export interface TestFlowSectionMeta {
     label: string;
     hint: string;
     phaseId: string;
+    badge?: string;
     route?: string;
     routeLabel?: string;
 }
