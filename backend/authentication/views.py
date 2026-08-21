@@ -242,5 +242,13 @@ def permissions_list_view(request):
         .exclude(content_type__model="permission")
         .order_by("content_type__app_label", "content_type__model", "codename")
     )
+    if not request.user.is_superuser:
+        if hasattr(request.user, "_perm_cache"):
+            del request.user._perm_cache
+        allowed = set(request.user.get_all_permissions())
+        perms = [
+            p for p in perms
+            if f"{p.content_type.app_label}.{p.codename}" in allowed
+        ]
     serializer = PermissionSerializer(perms, many=True)
     return Response(serializer.data)

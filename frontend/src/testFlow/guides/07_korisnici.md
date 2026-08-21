@@ -21,9 +21,9 @@ Zašto: korisnici koji su staff i imaju upisan email automatski dobijaju interna
 ## Šta reći u videu
 > Tri uloge, razlika namerna — i to odmah pokažem: odjavim se, ulogujem kao **anita**, pa kao **admin**, uporedim levi meni.
 >
-> **Operativa** radi ceo dnevni posao — firme, zaposleni, oprema, aktivnosti, slanja — ali ne dira podešavanja: vrste obaveza, šablone, nivoe rizika. **Pregled** dodaje samo čitanje tih podešavanja, bez izmene. **Admin** vidi i **Korisnike / Uloge** — to nije svakodnevni posao. Permisije menjam na **Administracija → Uloge**, ne na svakom korisniku pojedinačno.
+> **Operativa** radi ceo dnevni posao — firme, zaposleni, oprema, aktivnosti, slanja — ali ne dira katalog podešavanja: vrste obaveza, šablone, nivoe rizika, dokumente. **Pregled** otvara samo **Korisnici** i **Uloge** (bez Admin korisnika/uloge; u ulozi može čekirati samo permisije koje sam ima). **Admin** vidi ceo setup. Primer: Anita = samo Operativa — nema Administracije. Zoran = Operativa + Pregled — dnevni posao plus korisnici/uloge. Ja kao Admin — i Nivoi rizika, šabloni…
 >
-> Kad pravim korisnika u **Korisnici**, upišem podatke i ulogu. Bitno: **email** mora da stoji — interni podsetnici „nama u MAK" idu na te adrese; to se vidi i u **Slanjima** kao primalac. Kad se prijavi, vidi tačno koliko uloga dozvoljava — dugme bez prava se ni ne pojavi. Primer: Anita = Operativa — **Firme**, **Danas**, bez Administracije. Ja kao Admin — i Korisnici, Uloge, Nivoi rizika.
+> Kad pravim korisnika u **Korisnici**, upišem podatke i ulogu. Bitno: **email** mora da stoji — interni podsetnici „nama u MAK" idu na te adrese; to se vidi i u **Slanjima** kao primalac. Kad se prijavi, vidi tačno koliko uloga dozvoljava — dugme bez prava se ni ne pojavi.
 
 ## Video
 - Status: **opciono** — administrativno, snima se samo ako treba uputstvo za podešavanje tima.

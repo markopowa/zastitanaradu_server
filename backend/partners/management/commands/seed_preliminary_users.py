@@ -22,8 +22,8 @@ ROLE_PREGLED = "Pregled"
 # (username, first_name, last_name, email, is_superuser, [role groups])
 # Note: `marko` is intentionally omitted — that person already has the existing
 # `admin` superuser account.
-# Zoran = Operativa (full operational, no setup editing) + Pregled (read-only
-# view of the Administracija/setup screens, but cannot change them).
+# Zoran = Operativa (daily work, no catalog setup) + Pregled (Korisnici/Uloge
+# only; cannot see Admin user/role or grant permissions he does not have).
 PRELIMINARY_USERS = [
     ("bogdan", "Bogdan", "Pantić", "bogdan.pantic@yahoo.com", True, [ROLE_ADMIN]),
     ("anita", "Anita", "Kostić", "maktotalsafety@gmail.com", False, [ROLE_OPERATIVA]),

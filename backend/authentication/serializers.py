@@ -4,6 +4,12 @@ from rest_framework import serializers
 
 User = get_user_model()
 
+ADMIN_GROUP_NAME = "Admin"
+
+
+def _permission_key(permission: Permission) -> str:
+    return f"{permission.content_type.app_label}.{permission.codename}"
+
 
 class PermissionSerializer(serializers.ModelSerializer):
     class Meta:
@@ -78,6 +84,30 @@ class UserAdminSerializer(serializers.ModelSerializer):
             "password",
         )
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        if user is not None and not user.is_superuser:
+            self.fields["roles"].queryset = Group.objects.exclude(
+                name=ADMIN_GROUP_NAME
+            )
+
+    def validate(self, attrs):
+        request = self.context.get("request")
+        actor = getattr(request, "user", None)
+        groups = attrs.get("groups")
+        if (
+            groups is not None
+            and actor is not None
+            and not actor.is_superuser
+            and any(g.name == ADMIN_GROUP_NAME for g in groups)
+        ):
+            raise serializers.ValidationError(
+                {"roles": "Ne možete dodeliti Admin ulogu."}
+            )
+        return attrs
+
     def create(self, validated_data):
         password = validated_data.pop("password", None)
         user = super().create(validated_data)
@@ -115,3 +145,41 @@ class GroupAdminSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = ("id", "name", "permissions")
+
+    def validate_name(self, value):
+        request = self.context.get("request")
+        actor = getattr(request, "user", None)
+        if (
+            actor is not None
+            and not actor.is_superuser
+            and value == ADMIN_GROUP_NAME
+        ):
+            raise serializers.ValidationError(
+                "Ne možete kreirati ili preimenovati ulogu u Admin."
+            )
+        return value
+
+    def validate_permissions(self, value):
+        request = self.context.get("request")
+        actor = getattr(request, "user", None)
+        if actor is None or actor.is_superuser:
+            return value
+        if hasattr(actor, "_perm_cache"):
+            del actor._perm_cache
+        allowed = set(actor.get_all_permissions())
+        existing = set()
+        if self.instance is not None:
+            existing = {
+                _permission_key(p) for p in self.instance.permissions.all()
+            }
+        forbidden = [
+            _permission_key(p)
+            for p in value
+            if _permission_key(p) not in allowed
+            and _permission_key(p) not in existing
+        ]
+        if forbidden:
+            raise serializers.ValidationError(
+                "Ne možete dodeliti permisije koje sami nemate."
+            )
+        return value

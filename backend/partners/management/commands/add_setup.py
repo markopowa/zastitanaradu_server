@@ -170,8 +170,12 @@ def _role_permissions(name):
         ).exclude(content_type__model__in=SETUP_MODELS)
     if name == ROLE_PREGLED:
         return base.filter(
-            content_type__app_label__in=WORK_APPS,
-            codename__startswith="view_",
+            content_type__app_label="auth",
+            content_type__model__in=("user", "group"),
+        ).filter(
+            Q(codename__startswith="view_")
+            | Q(codename__startswith="add_")
+            | Q(codename__startswith="change_")
         )
     return Permission.objects.none()
 
