@@ -38,6 +38,9 @@ import {
     fetchEquipmentList,
 } from "../store/processesSlice";
 import { setLastPath } from "../store/locationSlice";
+import { setupTestFill } from "../testFlow/registerTestFill";
+import { TEST_FLOW } from "../testFlow/fixture";
+import { idByCode, idByName } from "../testFlow/helpers";
 
 import type { AppDispatch, RootState } from "../store";
 import type { EquipmentItem } from "../types/processes";
@@ -51,6 +54,8 @@ class EquipmentListPageInner extends Component<
     EquipmentListPageProps,
     EquipmentListPageState
 > {
+    private testFillCleanup: (() => void) | null = null;
+
     state: EquipmentListPageState = {
         client_company_id: "",
         dialogOpen: false,
@@ -72,7 +77,57 @@ class EquipmentListPageInner extends Component<
         this.props.setLastPath("/equipment");
         this.props.ensureClientCompanies();
         this.load();
+        this.testFillCleanup = setupTestFill(
+            "EQ1",
+            () => {
+                const eq = TEST_FLOW.equipment;
+                const types = this.state.equipmentProcessTypes;
+                if (types.length === 0) {
+                    this.loadEquipmentProcessTypes();
+                    return false;
+                }
+                const serviceTypeId =
+                    idByCode(types, eq.service_process_type_code) ||
+                    idByName(types, eq.service_process_type_name);
+                const companies = this.props.clientCompanies;
+                const companyId =
+                    this.state.client_company_id ||
+                    (companies[0] ? String(companies[0].id) : "");
+                if (!companyId || !serviceTypeId) return false;
+                this.setState((prev) => ({
+                    ...prev,
+                    dialogOpen: true,
+                    name: eq.name,
+                    category: eq.category,
+                    inventory_number: eq.inventory_number,
+                    location: eq.location,
+                    notes: "",
+                    new_client_company_id: companyId,
+                    service_process_type: serviceTypeId,
+                }));
+                return true;
+            },
+            () => true,
+        );
+        this.loadEquipmentProcessTypes();
     }
+
+    componentWillUnmount(): void {
+        this.testFillCleanup?.();
+    }
+
+    loadEquipmentProcessTypes = (): void => {
+        getProcessTypes()
+            .then((types) =>
+                this.setState((prev) => ({
+                    ...prev,
+                    equipmentProcessTypes: types.filter(
+                        (t) => t.subject_kind === "EQUIPMENT",
+                    ),
+                })),
+            )
+            .catch(() => undefined);
+    };
 
     openCreate = (): void => {
         this.setState((prev) => ({
@@ -86,16 +141,7 @@ class EquipmentListPageInner extends Component<
             service_process_type: "",
         }));
         if (this.state.equipmentProcessTypes.length === 0) {
-            getProcessTypes()
-                .then((types) =>
-                    this.setState((prev) => ({
-                        ...prev,
-                        equipmentProcessTypes: types.filter(
-                            (t) => t.subject_kind === "EQUIPMENT",
-                        ),
-                    })),
-                )
-                .catch(() => undefined);
+            this.loadEquipmentProcessTypes();
         }
     };
 

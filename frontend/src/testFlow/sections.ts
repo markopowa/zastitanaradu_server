@@ -116,14 +116,14 @@ export const TEST_FLOW_SECTIONS: TestFlowSectionMeta[] = [
     {
         id: "F2",
         phaseId: "03_zaposleni",
-        label: "Zaposleni random",
-        hint: "Dialog Dodaj zaposlenog",
+        label: "Zaposleni (povećan rizik)",
+        hint: "Dialog Dodaj zaposlenog — Viljuškarista",
     },
     {
         id: "F3",
         phaseId: "03_zaposleni",
-        label: "Zaposleni random",
-        hint: "Dialog Dodaj zaposlenog",
+        label: "Zaposleni (Umeren rizik)",
+        hint: "Dialog Dodaj zaposlenog — Magacioner",
     },
     {
         id: "K",
@@ -136,7 +136,7 @@ export const TEST_FLOW_SECTIONS: TestFlowSectionMeta[] = [
     {
         id: "EQ1",
         phaseId: "05_oprema_nalazi",
-        label: "Oprema",
+        label: "Oprema (PP aparat + servis)",
         hint: "Oprema → Dodaj (dialog)",
         route: "/equipment",
         routeLabel: "Oprema",

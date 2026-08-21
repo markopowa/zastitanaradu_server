@@ -40,7 +40,7 @@ import type {
 } from "../types/processPages";
 import { setupTestFill } from "../testFlow/registerTestFill";
 import { TEST_FLOW, bindingTermDateDisplay } from "../testFlow/fixture";
-import { idByName } from "../testFlow/helpers";
+import { idByCode, idByName } from "../testFlow/helpers";
 
 function suggestedNextRunAt(processType: ProcessType | undefined): string {
     if (!processType?.default_period_months) return "";
@@ -73,10 +73,15 @@ class AddProcessBindingDialogInner extends Component<
         this.testFillCleanup = setupTestFill(
             "J1",
             () => {
-                const typeId = idByName(
-                    this.state.processTypes,
-                    TEST_FLOW.processBinding.process_type_name,
-                );
+                const typeId =
+                    idByCode(
+                        this.state.processTypes,
+                        TEST_FLOW.processBinding.process_type_code,
+                    ) ||
+                    idByName(
+                        this.state.processTypes,
+                        TEST_FLOW.processBinding.process_type_name,
+                    );
                 this.setState({
                     processTypeId: typeId || this.state.processTypeId,
                     nextRunAt: bindingTermDateDisplay(),

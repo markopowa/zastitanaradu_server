@@ -221,8 +221,12 @@ class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
 
     handleCreateAct = (): void => {
         const { clientCompanyId } = this.props;
+        const { actDateValue } = this.state;
+        const actDate = actDateValue.trim()
+            ? (displayDateToIso(actDateValue) ?? null)
+            : null;
         this.setState({ creating: true });
-        createRiskAssessmentAct(clientCompanyId)
+        createRiskAssessmentAct(clientCompanyId, actDate)
             .then((act) => {
                 this.setState({
                     act,

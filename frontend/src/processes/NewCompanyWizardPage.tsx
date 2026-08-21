@@ -47,8 +47,8 @@ import type {
     RiskLevel,
 } from "../types/processes";
 import { setupTestFill } from "../testFlow/registerTestFill";
-import { TEST_FLOW } from "../testFlow/fixture";
-import { riskLevelIdByLabel } from "../testFlow/helpers";
+import { TEST_FLOW, refreshTestCompanyFixture } from "../testFlow/fixture";
+import { riskLevelIdByCode } from "../testFlow/helpers";
 
 const WIZARD_STEPS = [
     "Lična karta",
@@ -202,11 +202,12 @@ class NewCompanyWizardPage extends Component<Props, State> {
 
     bindTestFillHandlers = (): void => {
         this.clearTestFillHandlers();
-        const c = TEST_FLOW.company;
         this.testFillCleanups.push(
             setupTestFill(
                 "A1",
                 () => {
+                    refreshTestCompanyFixture();
+                    const c = TEST_FLOW.company;
                     this.setState({
                         name: c.name,
                         tax_id: c.tax_id,
@@ -228,9 +229,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
                     const jr = TEST_FLOW.jobRoleWizard;
                     this.setState({
                         roleName: jr.name,
-                        roleRiskLevelId: riskLevelIdByLabel(
+                        roleRiskLevelId: riskLevelIdByCode(
                             this.state.riskLevels,
-                            jr.riskLevelLabel,
+                            jr.riskLevelCode,
                         ),
                         roleDescription: "",
                     });

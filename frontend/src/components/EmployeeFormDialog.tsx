@@ -40,7 +40,8 @@ import type {
 import type { Employee } from "../types/processes";
 import { setupTestFill } from "../testFlow/registerTestFill";
 import {
-    randomTestEmployee,
+    TEST_EMPLOYEE_HIGH_RISK,
+    TEST_EMPLOYEE_LOW_RISK,
     TEST_EMPLOYEE_PRIMARY,
     type TestEmployeeFixture,
 } from "../testFlow/employeeFixture";
@@ -107,8 +108,8 @@ export class EmployeeFormDialog extends Component<
         };
         this.testFillCleanups.push(
             setupTestFill("F1", () => apply(TEST_EMPLOYEE_PRIMARY), isOpen),
-            setupTestFill("F2", () => apply(randomTestEmployee()), isOpen),
-            setupTestFill("F3", () => apply(randomTestEmployee()), isOpen),
+            setupTestFill("F2", () => apply(TEST_EMPLOYEE_HIGH_RISK), isOpen),
+            setupTestFill("F3", () => apply(TEST_EMPLOYEE_LOW_RISK), isOpen),
         );
     };
 

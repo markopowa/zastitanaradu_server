@@ -13,13 +13,12 @@ export interface TestEmployeeFixture {
 }
 
 export const TEST_OWNER_EMAIL = "markovuckovic1992@gmail.com";
-export const TEST_OWNER_NATIONAL_ID = buildValidJmbg("010299071012");
 
 export const TEST_EMPLOYEE_PRIMARY: TestEmployeeFixture = {
     first_name: "Marko",
     last_name: "Petrović",
     father_name: "Stevan",
-    national_id: TEST_OWNER_NATIONAL_ID,
+    national_id: buildValidJmbg("010299071012"),
     place_of_birth: "Niš",
     email: TEST_OWNER_EMAIL,
     org_unit: "Proizvodnja",
@@ -27,85 +26,28 @@ export const TEST_EMPLOYEE_PRIMARY: TestEmployeeFixture = {
     job_role_name: "Viljuškarista",
 };
 
-const FIRST_NAMES = [
-    "Marko",
-    "Ana",
-    "Nikola",
-    "Jelena",
-    "Milan",
-    "Ivana",
-    "Stefan",
-    "Marija",
-    "Luka",
-    "Teodora",
-];
+export const TEST_EMPLOYEE_HIGH_RISK: TestEmployeeFixture = {
+    first_name: "Petar",
+    last_name: "Jović",
+    father_name: "Miloš",
+    national_id: buildValidJmbg("150598571001"),
+    place_of_birth: "Beograd",
+    email: TEST_OWNER_EMAIL,
+    org_unit: "Proizvodnja",
+    position: "Viljuškarista",
+    job_role_name: "Viljuškarista",
+};
 
-const LAST_NAMES = [
-    "Petrović",
-    "Jović",
-    "Nikolić",
-    "Ilić",
-    "Đorđević",
-    "Stojanović",
-    "Pavlović",
-    "Marković",
-];
+export const TEST_EMPLOYEE_LOW_RISK: TestEmployeeFixture = {
+    first_name: "Ana",
+    last_name: "Nikolić",
+    father_name: "Dragan",
+    national_id: buildValidJmbg("220897571002"),
+    place_of_birth: "Novi Sad",
+    email: TEST_OWNER_EMAIL,
+    org_unit: "Magacin",
+    position: "Magacioner",
+    job_role_name: "Magacioner",
+};
 
-const FATHER_NAMES = [
-    "Stevan",
-    "Miloš",
-    "Dragan",
-    "Zoran",
-    "Petar",
-    "Nemanja",
-    "Boško",
-];
-
-const CITIES = [
-    "Niš",
-    "Beograd",
-    "Novi Sad",
-    "Kragujevac",
-    "Subotica",
-    "Čačak",
-    "Kraljevo",
-];
-
-const ORG_UNITS = [
-    "Proizvodnja",
-    "Magacin",
-    "Administracija",
-    "Održavanje",
-    "Logistika",
-];
-
-const POSITIONS = [
-    "Viljuškarista",
-    "Magacioner",
-    "Operater",
-    "Administrativni radnik",
-    "Mehaničar",
-];
-
-function pick<T>(items: readonly T[]): T {
-    return items[Math.floor(Math.random() * items.length)]!;
-}
-
-let randomEmployeeSeq = 0;
-
-export function randomTestEmployee(): TestEmployeeFixture {
-    randomEmployeeSeq += 1;
-    const position = pick(POSITIONS);
-    const seq = String(randomEmployeeSeq).padStart(3, "0");
-    return {
-        first_name: pick(FIRST_NAMES),
-        last_name: `${pick(LAST_NAMES)} ${randomEmployeeSeq}`,
-        father_name: pick(FATHER_NAMES),
-        national_id: buildValidJmbg(`010299071${seq}`),
-        place_of_birth: pick(CITIES),
-        email: TEST_OWNER_EMAIL,
-        org_unit: pick(ORG_UNITS),
-        position,
-        job_role_name: position,
-    };
-}
+export const TEST_OWNER_NATIONAL_ID = TEST_EMPLOYEE_PRIMARY.national_id;

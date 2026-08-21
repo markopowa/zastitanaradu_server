@@ -14,7 +14,7 @@ Pored obaveza koje se ponavljaju (pregledi, ispitivanja — to je proces `04`), 
 1. Tab **Dokumentacija → Obavezna dokumentacija**: na stavci (npr. Pravilnik o BZNR) klikni **Priloži** → izaberi `.docx` → fajl se automatski prebaci u PDF (piše: „Word fajlovi se automatski prebacuju u PDF."). Priloži i jedan PDF na drugu stavku — ostaje PDF.
 2. Brojač **X / N priloženo** raste; opcione stavke (Ocena medicine rada, **Obrazac 1 — evidencija lekarskih pregleda**, **Evidencija radnih mesta sa povećanim rizikom**) ne ulaze u brojač — te dve poslednje se popune same kad se generišu iz drugih procesa (Obrazac 1 iz `04`), ili se prilažu ručno kao gotov fajl. Lista stavki je dinamička (učitava se iz kataloga tipova dokumenata), ne fiksirana u kodu.
 3. **Akt o proceni rizika**:
-   - **D_DATE → Popuni** (datum donošenja) → **Dodaj Akt**.
+   - **D_DATE → Popuni** (datum donošenja) → **Dodaj Akt** (datum ide u create).
    - Priloži sekcije; pri izmeni sekcije **D_REASON → Popuni** (razlog izmene) + fajl.
    - **Objedini u PDF** → jedan spojen PDF.
 4. **Izmene i dopune Akta**: **Dodaj izmenu** → **D_AMD → Popuni** (naslov + napomena) → priloži fajl → amandman se pojavi u listi, kao ravnopravan dokument pored Akta.

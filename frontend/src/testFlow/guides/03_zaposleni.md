@@ -19,9 +19,9 @@ Osposobljenost se može proveriti i **testom**: zaposleni odgovara na pitanja, i
 2. Sekcija **Vrste obuka**: **Dodaj vrstu obuke** → upiši naziv i opis (npr. „Obuka za rad na visini") → **Sačuvaj**. Na redu klikni **Otpremi** da priložiš blanko potvrdu za tu vrstu obuke — kad je priložena, red pokazuje **Pregled** / **Ukloni**. Ovo je preduslov za dugme **Potvrda (čl. 5)** na zaposlenom.
 
 ## Koraci — zaposleni
-3. **Zaposleni → Dodaj zaposlenog** → **F2 → Popuni** → izaberi radno mesto sa **povećanim rizikom** → **Sačuvaj**.
+3. **Zaposleni → Dodaj zaposlenog** → **F2 → Popuni** (Petar / Viljuškarista, povećan rizik) → **Sačuvaj**.
 4. Otvori tog zaposlenog → vidi se lista obaveza, automatski otvorenih pri zaposlenju: osposobljavanje BZR, ZOP obuka, LZO zaduženje, i **prethodni lekarski** (jer je rizik povećan) — periodični lekarski se ne otvara odmah (čeka lančanje, `04`).
-5. Dodaj zaposlenog na radno mesto **bez** povećanog rizika (**F3 → Popuni**) → dobija obuke/ZOP/LZO, ali ne lekarski.
+5. Dodaj zaposlenog na radno mesto **Magacioner** (**F3 → Popuni**, umeren rizik) → dobija obuke/ZOP/LZO, ali ne lekarski.
 6. Na zaposlenom, polje **Nivo rizika** pokazuje efektivni nivo i odakle je (iz radnog mesta / izuzetak). U formi izmene, polje **Rizik — izuzetak** menja efektivni nivo bez diranja radnog mesta.
 
 ## Koraci — Obrazac 6 / revers na zaposlenom

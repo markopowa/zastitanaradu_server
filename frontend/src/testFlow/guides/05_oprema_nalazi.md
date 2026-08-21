@@ -12,8 +12,8 @@ Oprema je, kao i zaposleni, nosilac obaveza: dodam PP aparat, aplikacija otvori 
 - `01` odrađen (firma sa profilom — instalacije određuju koji su nalazi relevantni).
 
 ## Koraci — oprema
-1. **Oprema → Dodaj opremu** → **EQ1 → Popuni**: Firma, Naziv, Kategorija, Inventarski broj, Lokacija, Beleške, **Vrsta obaveze servisa/pregleda** → **Sačuvaj**.
-2. Oprema se pojavi u listi, vezana za firmu; obaveza servisa/pregleda je otvorena sa rokom.
+1. **Oprema → Dodaj opremu** → **EQ1 → Popuni**: Firma, PP aparat, inventarski broj, lokacija, **Vrsta obaveze = Servis PP aparata** → **Sačuvaj**.
+2. Oprema se pojavi u listi, vezana za firmu; obaveza servisa je otvorena sa rokom.
 
 ## Koraci — stručni nalazi
 3. Tab **Dokumentacija → Stručni nalazi**: za tip (npr. oprema za rad) klikni upload → **L_DATE → Popuni** (datum izdavanja) → priloži fajl.

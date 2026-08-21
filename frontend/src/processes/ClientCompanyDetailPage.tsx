@@ -131,7 +131,7 @@ import type {
 } from "../types/processes";
 import { setupTestFill } from "../testFlow/registerTestFill";
 import { TEST_FLOW } from "../testFlow/fixture";
-import { riskLevelIdByLabel } from "../testFlow/helpers";
+import { riskLevelIdByCode } from "../testFlow/helpers";
 
 const formatDate = (v?: string | null) => formatDateDisplay(v);
 
@@ -958,9 +958,9 @@ class ClientCompanyDetailPageInner extends Component<
                         roleDialogOpen: true,
                         editingRoleId: null,
                         role_name: ja.name,
-                        role_risk_level: riskLevelIdByLabel(
+                        role_risk_level: riskLevelIdByCode(
                             this.state.riskLevels,
-                            ja.riskLevelLabel,
+                            ja.riskLevelCode,
                         ),
                         role_description: "",
                         roleError: null,
@@ -1008,6 +1008,16 @@ class ClientCompanyDetailPageInner extends Component<
                 "EQ1",
                 () => {
                     const eq = TEST_FLOW.equipment;
+                    if (this.state.equipmentProcessTypes.length === 0) {
+                        return false;
+                    }
+                    const serviceType =
+                        this.state.equipmentProcessTypes.find(
+                            (t) => t.code === eq.service_process_type_code,
+                        ) ??
+                        this.state.equipmentProcessTypes.find(
+                            (t) => t.name === eq.service_process_type_name,
+                        );
                     this.setState({
                         eqDialogOpen: true,
                         equipmentError: null,
@@ -1016,8 +1026,9 @@ class ClientCompanyDetailPageInner extends Component<
                         eq_inventory_number: eq.inventory_number,
                         eq_location: eq.location,
                         eq_notes: "",
+                        eq_service_process_type: serviceType?.id ?? null,
                     });
-                    return true;
+                    return serviceType != null;
                 },
                 () =>
                     parseCompanyTab(this.props.location.search) === "employees",
