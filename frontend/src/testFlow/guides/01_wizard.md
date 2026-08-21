@@ -1,14 +1,12 @@
-# 01 — Čarobnjak (nova firma)
+# 01 — Čarobnjak
 
-Skripta je **u redu levo**. Zeleno = prošao.
-
-## Cilj
-Pet koraka → Završi → tab Pregled.
+Skripta levo. Zeleno = prošao.
 
 ## Koraci
-1. **A1** — Lična karta: Popuni → matični → Uvezi → Sledeći.
-2. **C01_WIZARD_DOCS** — Obavezna dokumentacija: preskoči → Sledeći.
-3. **A3** — Radno mesto → Popuni → Sledeći.
-4. **F1** — Zaposleni → Popuni → Sačuvaj → Sledeći.
-5. **J1** — Obaveze (opciono) → Popuni → Sledeći.
-6. **C01_FINISH** — Završi → otvara firmu na **Pregledu**.
+1. **Šta je ova aplikacija** — Jedna rečenica: alat za MAK, BZR/ZOP obaveze klijenata.
+2. **A1** — Lična karta + **profil** (ZOP / visok rizik delatnosti / instalacije). Dva rizika: firma vs mesto.
+3. **C01_WIZARD_DOCS** — Preskoči dokumentaciju (papiri ≠ obaveze sa rokom).
+4. **A3** — Radno mesto + rizik **mesta**.
+5. **F1** — Zaposleni → auto-obaveze.
+6. **J1** — Ručna obaveza (opciono).
+7. **C01_FINISH** → tab **Plan obaveza**.

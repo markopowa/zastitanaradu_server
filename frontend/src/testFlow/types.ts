@@ -17,6 +17,7 @@ export type TestFlowSection =
     | "EQ1";
 
 export type TestFlowManualId =
+    | "C00_INTRO"
     | "C01_WIZARD_DOCS"
     | "C01_FINISH"
     | "C02_OVERVIEW_LIST"

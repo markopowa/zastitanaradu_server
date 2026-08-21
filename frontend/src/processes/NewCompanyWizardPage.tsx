@@ -5,11 +5,20 @@ import {
     Alert,
     Box,
     Button,
+    Checkbox,
     CircularProgress,
+    FormControl,
+    FormControlLabel,
+    FormGroup,
+    FormLabel,
+    InputLabel,
+    MenuItem,
     Paper,
+    Select,
     Step,
     StepLabel,
     Stepper,
+    Switch,
     TextField,
     Typography,
 } from "@mui/material";
@@ -58,6 +67,14 @@ const WIZARD_STEPS = [
     "Obaveze",
 ] as const;
 
+const WIZARD_INSTALLATIONS: { value: string; label: string }[] = [
+    { value: "HYDRANT_NETWORK", label: "Hidrantska mreža" },
+    { value: "FIRE_ALARM_SYSTEM", label: "Sistem za detekciju požara" },
+    { value: "LIGHTNING_PROTECTION", label: "Gromobranska zaštita" },
+    { value: "STABLE_EXTINGUISHING_SYSTEM", label: "Stabilni sistem za gašenje" },
+    { value: "FIRE_EXTINGUISHERS", label: "Aparati za gašenje požara" },
+];
+
 interface DispatchProps {
     setLastPath: (path: string) => void;
     setBreadcrumbs: (items: { label: string; path?: string }[]) => void;
@@ -77,6 +94,9 @@ interface State {
     website: string;
     notes: string;
     activity_code: string;
+    zop_category: string;
+    high_risk_activity: boolean;
+    installations: string[];
     registryImporting: boolean;
     saving: boolean;
     stepError: string | null;
@@ -110,6 +130,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
         website: "",
         notes: "",
         activity_code: "",
+        zop_category: "",
+        high_risk_activity: false,
+        installations: [],
         registryImporting: false,
         saving: false,
         stepError: null,
@@ -208,6 +231,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
                 () => {
                     refreshTestCompanyFixture();
                     const c = TEST_FLOW.company;
+                    const p = TEST_FLOW.companyProfile;
                     this.setState({
                         name: c.name,
                         tax_id: c.tax_id,
@@ -218,6 +242,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
                         website: "",
                         notes: c.notes,
                         activity_code: c.activity_code,
+                        zop_category: p.zop_category,
+                        high_risk_activity: p.high_risk_activity,
+                        installations: [...p.installations],
                     });
                     return true;
                 },
@@ -288,6 +315,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
             website,
             notes,
             activity_code,
+            zop_category,
+            high_risk_activity,
+            installations,
         } = this.state;
         if (companyId != null) return Promise.resolve(companyId);
         if (!name.trim() || !tax_id.trim()) {
@@ -308,6 +338,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
             website: website.trim() || undefined,
             notes: notes.trim() || undefined,
             activity_code: activity_code.trim() || undefined,
+            zop_category: zop_category || null,
+            high_risk_activity,
+            installations,
         })
             .then((created) => {
                 this.setState((prev) => ({
@@ -466,6 +499,9 @@ class NewCompanyWizardPage extends Component<Props, State> {
             website,
             notes,
             activity_code,
+            zop_category,
+            high_risk_activity,
+            installations,
             registryImporting,
             saving,
             stepError,
@@ -604,6 +640,85 @@ class NewCompanyWizardPage extends Component<Props, State> {
                             }))
                         }
                     />
+                    <Alert severity="info">
+                        Profil firme — od ovoga zavisi šta na Planu obaveza
+                        važi, a šta je „nije primenljivo“ (lekarski, hidranti,
+                        PP…). Može i kasnije na Ličnoj karti.
+                    </Alert>
+                    <FormControl fullWidth>
+                        <InputLabel id="wizard-zop-cat-label">
+                            ZOP kategorija
+                        </InputLabel>
+                        <Select
+                            labelId="wizard-zop-cat-label"
+                            label="ZOP kategorija"
+                            value={zop_category}
+                            onChange={(e) =>
+                                this.setState((prev) => ({
+                                    ...prev,
+                                    zop_category: String(e.target.value),
+                                }))
+                            }
+                        >
+                            <MenuItem value="">
+                                <em>Nije određena</em>
+                            </MenuItem>
+                            <MenuItem value="I">Kategorija I</MenuItem>
+                            <MenuItem value="II">Kategorija II</MenuItem>
+                            <MenuItem value="III">Kategorija III</MenuItem>
+                        </Select>
+                    </FormControl>
+                    <FormControlLabel
+                        control={
+                            <Switch
+                                checked={high_risk_activity}
+                                onChange={(e) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        high_risk_activity: e.target.checked,
+                                    }))
+                                }
+                            />
+                        }
+                        label="Delatnost visokog rizika"
+                    />
+                    <Typography variant="caption" color="text.secondary">
+                        Uključeno → lekarski na Planu obaveza više nisu sivi.
+                    </Typography>
+                    <FormControl component="fieldset">
+                        <FormLabel component="legend">Instalacije</FormLabel>
+                        <FormGroup>
+                            {WIZARD_INSTALLATIONS.map((inst) => (
+                                <FormControlLabel
+                                    key={inst.value}
+                                    control={
+                                        <Checkbox
+                                            size="small"
+                                            checked={installations.includes(
+                                                inst.value,
+                                            )}
+                                            onChange={(e) => {
+                                                const next = e.target.checked
+                                                    ? [
+                                                          ...installations,
+                                                          inst.value,
+                                                      ]
+                                                    : installations.filter(
+                                                          (v) =>
+                                                              v !== inst.value,
+                                                      );
+                                                this.setState((prev) => ({
+                                                    ...prev,
+                                                    installations: next,
+                                                }));
+                                            }}
+                                        />
+                                    }
+                                    label={inst.label}
+                                />
+                            ))}
+                        </FormGroup>
+                    </FormControl>
                     {saving && (
                         <Box sx={{ display: "flex", justifyContent: "center" }}>
                             <CircularProgress size={24} />

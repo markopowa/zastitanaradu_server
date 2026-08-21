@@ -378,18 +378,24 @@ class IntegrationTestsPage extends Component<
                         gap: 1.5,
                     }}
                 >
-                    <Chip
-                        label={section.badge ?? section.id}
-                        size="small"
-                        variant={done ? "filled" : "outlined"}
-                        color={done ? "success" : "default"}
-                        sx={{
-                            minWidth: 52,
-                            fontWeight: 600,
-                            fontSize: "0.7rem",
-                            mt: 0.25,
-                        }}
-                    />
+                <Chip
+                    label={
+                        section.badge ??
+                        (section.kind === "fill"
+                            ? section.id
+                            : section.label)
+                    }
+                    size="small"
+                    variant={done ? "filled" : "outlined"}
+                    color={done ? "success" : "default"}
+                    sx={{
+                        minWidth: section.kind === "fill" ? 52 : undefined,
+                        maxWidth: section.kind === "check" ? 160 : undefined,
+                        fontWeight: 600,
+                        fontSize: "0.7rem",
+                        mt: 0.25,
+                    }}
+                />
                     <Box sx={{ flex: 1, minWidth: 0 }}>
                         <Typography variant="body2" fontWeight={600}>
                             {section.label}
@@ -595,8 +601,9 @@ class IntegrationTestsPage extends Component<
                         Integration tests
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                        Red: čarobnjak → tabovi firme 1→6 → Danas/Slanja →
-                        korisnici. Skripta u redu. Zeleno = prošlo (lista + MD).
+                        Red: čarobnjak → tabovi firme → Danas/Slanja →
+                        korisnici. Skripta u redu objašnjava sve. Zeleno =
+                        prošlo. Tabovi: Plan obaveza / Aktivne obaveze.
                     </Typography>
                     <Stack
                         direction="row"

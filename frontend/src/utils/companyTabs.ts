@@ -7,12 +7,12 @@ export type CompanyTabKey =
     | "obligations";
 
 export const COMPANY_TABS: { key: CompanyTabKey; label: string }[] = [
-    { key: "overview", label: "Pregled" },
+    { key: "overview", label: "Plan obaveza" },
     { key: "identity", label: "Lična karta" },
     { key: "documents", label: "Dokumentacija" },
     { key: "job_roles", label: "Radna mesta i rizik" },
     { key: "employees", label: "Zaposleni" },
-    { key: "obligations", label: "Obaveze/Aktivnosti" },
+    { key: "obligations", label: "Aktivne obaveze" },
 ];
 
 const VALID_KEYS = new Set(COMPANY_TABS.map((t) => t.key));
