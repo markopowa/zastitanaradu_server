@@ -27,6 +27,7 @@ import {
 import { FormActions } from "../design";
 import { isoDateToFormDisplay, StringToDate } from "../utils/date";
 import {
+    isJmbgChecksumValid,
     isJmbgComplete,
     jmbgMatchesDate,
     jmbgToDateString,
@@ -287,20 +288,43 @@ export class EmployeeFormDialog extends Component<
                 onSaved(saved);
                 onClose();
             })
-            .catch(
-                (
-                    err:
-                        | { message?: string }
-                        | { response?: { data?: { detail?: string } } },
-                ) => {
-                    const msg =
-                        (err as { response?: { data?: { detail?: string } } })
-                            .response?.data?.detail ??
+            .catch((err: unknown) => {
+                    const data = (
+                        err as {
+                            response?: {
+                                data?:
+                                    | string
+                                    | { detail?: string }
+                                    | Record<string, string | string[]>;
+                            };
+                            message?: string;
+                        }
+                    ).response?.data;
+                    let msg =
                         (err as { message?: string }).message ??
                         "Greška pri čuvanju zaposlenog.";
+                    if (typeof data === "string" && data.trim()) {
+                        msg = data;
+                    } else if (data && typeof data === "object") {
+                        if (
+                            "detail" in data &&
+                            typeof data.detail === "string"
+                        ) {
+                            msg = data.detail;
+                        } else {
+                            const parts = Object.entries(data).flatMap(
+                                ([key, val]) => {
+                                    const text = Array.isArray(val)
+                                        ? val.join(" ")
+                                        : String(val);
+                                    return text ? [`${key}: ${text}`] : [];
+                                },
+                            );
+                            if (parts.length > 0) msg = parts.join(" ");
+                        }
+                    }
                     this.setState({ saving: false, error: msg });
-                },
-            );
+                });
     };
 
     render() {
@@ -423,6 +447,12 @@ export class EmployeeFormDialog extends Component<
                                 {jmbgToDateString(national_id)}).
                             </Alert>
                         )}
+                        {isJmbgComplete(national_id) &&
+                            !isJmbgChecksumValid(national_id) && (
+                                <Alert severity="error" sx={{ mt: 1 }}>
+                                    JMBG nije ispravan (kontrolna cifra).
+                                </Alert>
+                            )}
                     </Box>
                     <TextField
                         margin="dense"

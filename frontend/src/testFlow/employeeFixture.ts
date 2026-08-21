@@ -1,3 +1,5 @@
+import { buildValidJmbg } from "../utils/jmbg";
+
 export interface TestEmployeeFixture {
     first_name: string;
     last_name: string;
@@ -11,7 +13,7 @@ export interface TestEmployeeFixture {
 }
 
 export const TEST_OWNER_EMAIL = "markovuckovic1992@gmail.com";
-export const TEST_OWNER_NATIONAL_ID = "0102990710123";
+export const TEST_OWNER_NATIONAL_ID = buildValidJmbg("010299071012");
 
 export const TEST_EMPLOYEE_PRIMARY: TestEmployeeFixture = {
     first_name: "Marko",
@@ -94,11 +96,12 @@ let randomEmployeeSeq = 0;
 export function randomTestEmployee(): TestEmployeeFixture {
     randomEmployeeSeq += 1;
     const position = pick(POSITIONS);
+    const seq = String(randomEmployeeSeq).padStart(3, "0");
     return {
         first_name: pick(FIRST_NAMES),
         last_name: `${pick(LAST_NAMES)} ${randomEmployeeSeq}`,
         father_name: pick(FATHER_NAMES),
-        national_id: TEST_OWNER_NATIONAL_ID,
+        national_id: buildValidJmbg(`010299071${seq}`),
         place_of_birth: pick(CITIES),
         email: TEST_OWNER_EMAIL,
         org_unit: pick(ORG_UNITS),
