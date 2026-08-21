@@ -1404,3 +1404,36 @@ export async function submitTestAttempt(
     );
     return data;
 }
+
+export interface IntegrationTestCompanyRow {
+    id: number;
+    name: string;
+    tax_id: string;
+    notes: string;
+}
+
+export interface IntegrationTestCleanupPreview {
+    count: number;
+    companies: IntegrationTestCompanyRow[];
+}
+
+export interface IntegrationTestCleanupResult {
+    dry_run: boolean;
+    deleted: number;
+    companies: IntegrationTestCompanyRow[];
+}
+
+export async function previewIntegrationTestCleanup(): Promise<IntegrationTestCleanupPreview> {
+    const { data } = await api.get<IntegrationTestCleanupPreview>(
+        "/api/processes/integration-test-cleanup/",
+    );
+    return data;
+}
+
+export async function runIntegrationTestCleanup(): Promise<IntegrationTestCleanupResult> {
+    const { data } = await api.post<IntegrationTestCleanupResult>(
+        "/api/processes/integration-test-cleanup/",
+        { confirm: true },
+    );
+    return data;
+}

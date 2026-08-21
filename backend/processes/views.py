@@ -55,8 +55,26 @@ from .tasks import (
     process_lead_for_run,
 )
 from .utils import binding_subject_snapshot
+from .integration_cleanup import delete_test_companies, preview_test_companies
 
 logger = logging.getLogger(__name__)
+
+
+class IntegrationTestCleanupView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        companies = preview_test_companies()
+        return Response({"count": len(companies), "companies": companies})
+
+    def post(self, request):
+        if request.data.get("confirm") is not True:
+            return Response(
+                {"detail": "Pošalji {\"confirm\": true} da obrišeš."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        result = delete_test_companies(dry_run=False)
+        return Response(result)
 
 
 class ActivityLogView(ListAPIView):

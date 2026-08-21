@@ -4,6 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ActivityLogView,
     EmployeeSendNowView,
+    IntegrationTestCleanupView,
     NotificationOutboxViewSet,
     ProcessBindingViewSet,
     ProcessRunViewSet,
@@ -32,5 +33,10 @@ urlpatterns = [
          name="dashboard-upcoming-deadlines"),
     path("employees/<int:pk>/send-now/", EmployeeSendNowView.as_view(),
          name="employee-send-now"),
+    path(
+        "integration-test-cleanup/",
+        IntegrationTestCleanupView.as_view(),
+        name="integration-test-cleanup",
+    ),
     path("", include(router.urls)),
 ]

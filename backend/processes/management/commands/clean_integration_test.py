@@ -26,6 +26,7 @@ from partners.models import (
     RiskAssessmentSectionRevision,
     RiskLevel,
 )
+from processes.integration_cleanup import delete_test_companies
 from processes.models import (
     ActivityLog,
     CodeSequence,
@@ -110,33 +111,56 @@ FILE_FIELDS = {
 
 class Command(BaseCommand):
     help = (
-        "Delete everything created while running the integration test flow "
-        "(companies, employees, equipment, documents, acts, obligations, "
-        "activities, reminders) and, by default, the seeded catalog too. "
-        "Keeps superusers and the APR company registry."
+        "Clean integration-test data. Default: only test companies "
+        "(UKRAS TEST / VERIFY_TMP / notes=Integration test). "
+        "Use --purge-all for the nuclear wipe (optionally keep catalog)."
     )
 
     def add_arguments(self, parser):
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="Print counts without deleting anything.",
+            help="Print what would be deleted without deleting.",
+        )
+        parser.add_argument(
+            "--purge-all",
+            action="store_true",
+            help=(
+                "Delete ALL companies/process data (and catalog unless "
+                "--keep-catalog). Dangerous on production."
+            ),
         )
         parser.add_argument(
             "--keep-catalog",
             action="store_true",
-            help=(
-                "Keep the seeded catalog (obligation types, templates, "
-                "document categories, risk levels); delete only test data."
-            ),
+            help="With --purge-all: keep seeded catalog rows.",
         )
         parser.add_argument(
             "--include-users",
             action="store_true",
-            help="Also delete non-superuser users created during the flow.",
+            help="With --purge-all: also delete non-superuser users.",
         )
 
     def handle(self, *args, **options):
+        if not options["purge_all"]:
+            result = delete_test_companies(dry_run=options["dry_run"])
+            companies = result["companies"]
+            if options["dry_run"]:
+                self.stdout.write("Dry run — test companies:")
+                if not companies:
+                    self.stdout.write("  (none)")
+                    return
+                for c in companies:
+                    self.stdout.write(
+                        f"  #{c['id']} {c['name']} PIB={c['tax_id']}"
+                    )
+                return
+            names = ", ".join(c["name"] for c in companies) or "nothing"
+            self.stdout.write(self.style.SUCCESS(
+                f"OK: deleted {result['deleted']} rows for: {names}."
+            ))
+            return
+
         keep_catalog = options["keep_catalog"]
         include_users = options["include_users"]
 
@@ -145,7 +169,7 @@ class Command(BaseCommand):
             groups += list(CATALOG_DATA)
 
         if options["dry_run"]:
-            self.stdout.write("Dry run — nothing deleted:")
+            self.stdout.write("Dry run — purge-all:")
             for model in groups:
                 self.stdout.write(
                     f"  {model.__name__}: {model.objects.count()}"

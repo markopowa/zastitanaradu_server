@@ -17,6 +17,8 @@ import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import StopIcon from "@mui/icons-material/Stop";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import CheckIcon from "@mui/icons-material/Check";
+import DeleteSweepIcon from "@mui/icons-material/DeleteSweep";
+import { enqueueSnackbar } from "notistack";
 
 import {
     broadcastTestFill,
@@ -40,8 +42,14 @@ import doc07 from "../testFlow/guides/07_korisnici.md?raw";
 import { TEST_FLOW_PHASES, TEST_FLOW_SECTIONS } from "../testFlow/sections";
 import type { TestFlowSection, TestFlowSectionMeta } from "../testFlow/types";
 import { setLastPath } from "../store/locationSlice";
+import {
+    previewIntegrationTestCleanup,
+    runIntegrationTestCleanup,
+} from "../api/processes";
+import { ConfirmDialog } from "../design";
 
 import type { AppDispatch, RootState } from "../store";
+import type { IntegrationTestCompanyRow } from "../api/processes";
 
 const DOCS_BY_NUM: Record<string, string> = {
     "01": doc01,
@@ -67,6 +75,9 @@ interface State {
     clickedSections: Partial<Record<TestFlowSection, boolean>>;
     lastResults: Partial<Record<TestFlowSection, boolean>>;
     activeNum: string;
+    cleanupPreview: IntegrationTestCompanyRow[];
+    cleanupConfirmOpen: boolean;
+    cleanupLoading: boolean;
 }
 
 class IntegrationTestsPage extends Component<
@@ -81,6 +92,9 @@ class IntegrationTestsPage extends Component<
         clickedSections: {},
         lastResults: {},
         activeNum: "01",
+        cleanupPreview: [],
+        cleanupConfirmOpen: false,
+        cleanupLoading: false,
     };
 
     componentDidMount(): void {
@@ -92,11 +106,73 @@ class IntegrationTestsPage extends Component<
                 }));
             },
         );
+        this.refreshCleanupPreview();
     }
 
     componentWillUnmount(): void {
         this.unsubscribeResults?.();
     }
+
+    refreshCleanupPreview = (): void => {
+        previewIntegrationTestCleanup()
+            .then((data) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    cleanupPreview: data.companies,
+                }));
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, cleanupPreview: [] }));
+            });
+    };
+
+    handleOpenCleanupConfirm = (): void => {
+        this.setState((prev) => ({ ...prev, cleanupLoading: true }));
+        previewIntegrationTestCleanup()
+            .then((data) => {
+                this.setState((prev) => ({
+                    ...prev,
+                    cleanupPreview: data.companies,
+                    cleanupConfirmOpen: data.companies.length > 0,
+                    cleanupLoading: false,
+                }));
+                if (data.companies.length === 0) {
+                    enqueueSnackbar("Nema test firmi za brisanje.", {
+                        variant: "info",
+                    });
+                }
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, cleanupLoading: false }));
+                enqueueSnackbar("Greška pri učitavanju liste test firmi.", {
+                    variant: "error",
+                });
+            });
+    };
+
+    handleConfirmCleanup = (): void => {
+        this.setState((prev) => ({ ...prev, cleanupLoading: true }));
+        runIntegrationTestCleanup()
+            .then((result) => {
+                const n = result.companies.length;
+                this.setState((prev) => ({
+                    ...prev,
+                    cleanupLoading: false,
+                    cleanupConfirmOpen: false,
+                    cleanupPreview: [],
+                }));
+                enqueueSnackbar(
+                    n === 0
+                        ? "Nema šta da se obriše."
+                        : `Obrisano ${n} test firmi (i vezani podaci).`,
+                    { variant: "success" },
+                );
+            })
+            .catch(() => {
+                this.setState((prev) => ({ ...prev, cleanupLoading: false }));
+                enqueueSnackbar("Brisanje nije uspelo.", { variant: "error" });
+            });
+    };
 
     handleStartSession = (): void => {
         const id = crypto.randomUUID();
@@ -292,10 +368,18 @@ class IntegrationTestsPage extends Component<
             return <Navigate to="/danas" replace />;
         }
 
-        const { sessionActive } = this.state;
+        const {
+            sessionActive,
+            cleanupPreview,
+            cleanupConfirmOpen,
+            cleanupLoading,
+        } = this.state;
         const total = TEST_FLOW_SECTIONS.length;
         const done = this.clickedCount();
         const progress = total > 0 ? (done / total) * 100 : 0;
+        const cleanupNames = cleanupPreview
+            .map((c) => c.name)
+            .join(", ");
 
         return (
             <Box
@@ -313,6 +397,32 @@ class IntegrationTestsPage extends Component<
                     <Typography variant="body2" color="text.secondary">
                         Otvori formu u app tabu → Popuni. Zeleno = kliknuto.
                     </Typography>
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
+                        sx={{ mt: 1.5 }}
+                        flexWrap="wrap"
+                        useFlexGap
+                    >
+                        <Button
+                            variant="outlined"
+                            color="error"
+                            size="small"
+                            startIcon={<DeleteSweepIcon />}
+                            disabled={cleanupLoading}
+                            onClick={this.handleOpenCleanupConfirm}
+                        >
+                            Očisti test firme
+                            {cleanupPreview.length > 0
+                                ? ` (${cleanupPreview.length})`
+                                : ""}
+                        </Button>
+                        <Typography variant="caption" color="text.secondary">
+                            Briše UKRAS TEST / VERIFY_TMP / Integration test —
+                            ne katalog, ne prave klijente.
+                        </Typography>
+                    </Stack>
                 </Box>
 
                 {!sessionActive ? (
@@ -435,6 +545,24 @@ class IntegrationTestsPage extends Component<
                         </Paper>
                     </Box>
                 )}
+                <ConfirmDialog
+                    open={cleanupConfirmOpen}
+                    title="Očisti test firme?"
+                    message={
+                        cleanupPreview.length === 0
+                            ? "Nema test firmi."
+                            : `Obrisati ${cleanupPreview.length} firmi i sav vezani sadržaj (zaposleni, oprema, akti, aktivnosti)?\n\n${cleanupNames}`
+                    }
+                    confirmLabel="Obriši"
+                    loading={cleanupLoading}
+                    onConfirm={this.handleConfirmCleanup}
+                    onClose={() =>
+                        this.setState((prev) => ({
+                            ...prev,
+                            cleanupConfirmOpen: false,
+                        }))
+                    }
+                />
             </Box>
         );
     }
