@@ -22,6 +22,7 @@ export const paths = {
     processOutbox: "/processes/outbox",
     processRunDetail: (id: number) => `/processes/runs/${id}`,
     trainingTest: (employeeId: number) => `/testing/${employeeId}`,
+    integrationTests: "/integration-tests",
 } as const;
 
 const pathToTitle: Record<string, string> = {
@@ -43,6 +44,7 @@ const pathToTitle: Record<string, string> = {
     [paths.processRuns]: "Aktivnosti",
     [paths.processUpcoming]: "Aktivnosti",
     [paths.processOutbox]: "Slanja",
+    [paths.integrationTests]: "Integration tests",
 };
 
 export function getPageTitle(pathname: string): string {

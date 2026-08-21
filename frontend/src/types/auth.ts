@@ -5,6 +5,7 @@ export interface AuthUser {
     last_name: string;
     email: string;
     is_active: boolean;
+    is_staff?: boolean;
     is_superuser?: boolean;
     roles?: number[];
     permissions?: string[];

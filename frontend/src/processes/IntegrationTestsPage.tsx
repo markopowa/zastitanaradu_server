@@ -54,7 +54,7 @@ const DOCS_BY_NUM: Record<string, string> = {
 };
 
 interface StateProps {
-    isSuperuser: boolean;
+    isStaff: boolean;
 }
 
 interface DispatchProps {
@@ -288,7 +288,7 @@ class IntegrationTestsPage extends Component<
     };
 
     render() {
-        if (!this.props.isSuperuser) {
+        if (!this.props.isStaff) {
             return <Navigate to="/danas" replace />;
         }
 
@@ -441,7 +441,7 @@ class IntegrationTestsPage extends Component<
 }
 
 const mapStateToProps = (state: RootState): StateProps => ({
-    isSuperuser: state.auth.user?.is_superuser === true,
+    isStaff: state.auth.user?.is_staff === true,
 });
 
 const mapDispatchToProps = (dispatch: AppDispatch): DispatchProps => ({

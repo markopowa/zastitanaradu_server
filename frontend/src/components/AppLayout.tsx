@@ -35,6 +35,7 @@ import BuildIcon from "@mui/icons-material/Build";
 import TodayIcon from "@mui/icons-material/Today";
 import SendIcon from "@mui/icons-material/Send";
 import LinkIcon from "@mui/icons-material/Link";
+import ScienceIcon from "@mui/icons-material/Science";
 import { enqueueSnackbar } from "notistack";
 
 import type { RootState, AppDispatch } from "../store";
@@ -649,6 +650,17 @@ class AppLayoutInner extends Component<Props, State> {
                             <PersonIcon sx={{ mr: 1, fontSize: 20 }} />
                             Profil
                         </MenuItem>
+                        {user?.is_staff === true && (
+                            <MenuItem
+                                onClick={() => {
+                                    this.handleMenuClose();
+                                    this.props.navigate("/integration-tests");
+                                }}
+                            >
+                                <ScienceIcon sx={{ mr: 1, fontSize: 20 }} />
+                                Integration tests
+                            </MenuItem>
+                        )}
                         <MenuItem onClick={this.handleLogout}>
                             <LogoutIcon sx={{ mr: 1, fontSize: 20 }} />
                             Odjava
