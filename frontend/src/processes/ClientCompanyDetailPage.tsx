@@ -1845,7 +1845,10 @@ class ClientCompanyDetailPageInner extends Component<
 
                 {activeTab === "job_roles" && (
                     <SectionCard title="Procena rizika po radnom mestu">
-                        <WorkplaceRiskAssessmentPanel jobRoles={jobRoles} />
+                        <WorkplaceRiskAssessmentPanel
+                            jobRoles={jobRoles}
+                            onChanged={() => this.loadExtra(item.id)}
+                        />
                     </SectionCard>
                 )}
 

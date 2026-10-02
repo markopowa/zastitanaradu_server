@@ -298,7 +298,7 @@ class DanasPageInner extends Component<Props, State> {
                     </Box>
                     <Divider />
                     {overdueFiltered.length === 0 ? (
-                        <EmptyState message="Nema zakaslelih aktivnosti." />
+                        <EmptyState message="Nema zakasnelih aktivnosti." />
                     ) : (
                         <List disablePadding>
                             {overdueFiltered.map((row, idx) => (

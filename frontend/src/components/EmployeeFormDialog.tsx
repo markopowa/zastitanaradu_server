@@ -203,21 +203,12 @@ export class EmployeeFormDialog extends Component<
         const {
             first_name,
             last_name,
-            email,
-            org_unit,
-            position,
             client_company_id,
             job_role,
         } = this.state;
-        return [
-            first_name,
-            last_name,
-            email,
-            org_unit,
-            position,
-            client_company_id,
-            job_role,
-        ].every((v) => v.trim() !== "");
+        return [first_name, last_name, client_company_id, job_role].every(
+            (v) => v.trim() !== "",
+        );
     };
 
     handleSave = (): void => {
@@ -483,7 +474,6 @@ export class EmployeeFormDialog extends Component<
                         margin="dense"
                         label="Email"
                         fullWidth
-                        required
                         value={email}
                         onChange={(e) =>
                             this.setState({ email: e.target.value })
@@ -493,7 +483,6 @@ export class EmployeeFormDialog extends Component<
                         margin="dense"
                         label="Organizaciona jedinica"
                         fullWidth
-                        required
                         value={org_unit}
                         onChange={(e) =>
                             this.setState({ org_unit: e.target.value })
@@ -503,7 +492,6 @@ export class EmployeeFormDialog extends Component<
                         margin="dense"
                         label="Pozicija"
                         fullWidth
-                        required
                         value={position}
                         onChange={(e) =>
                             this.setState({ position: e.target.value })
@@ -548,7 +536,7 @@ export class EmployeeFormDialog extends Component<
                             sx={{ display: "block", mt: 0.5 }}
                         >
                             Nivo rizika se nasleđuje iz radnog mesta:{" "}
-                            {inheritedRisk.label} (R={inheritedRisk.score})
+                            {inheritedRisk.label}
                         </Typography>
                     )}
                     {this.props.mode === "edit" ? (

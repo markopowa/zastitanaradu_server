@@ -40,6 +40,7 @@ import type { JobRole } from "../types/processes";
 
 interface Props {
     jobRoles: JobRole[];
+    onChanged?: () => void;
 }
 
 type ScaleMap = Record<KinneyFactor, KinneyScaleOption[]>;
@@ -65,7 +66,7 @@ function categoryChip(row: JobRoleHazard) {
     );
 }
 
-export function WorkplaceRiskAssessmentPanel({ jobRoles }: Props) {
+export function WorkplaceRiskAssessmentPanel({ jobRoles, onChanged }: Props) {
     const [hazards, setHazards] = useState<Hazard[]>([]);
     const [scale, setScale] = useState<ScaleMap>({ V: [], I: [], P: [] });
     const [rowsByRole, setRowsByRole] = useState<
@@ -159,6 +160,7 @@ export function WorkplaceRiskAssessmentPanel({ jobRoles }: Props) {
                 [roleId]: [...(prev[roleId] ?? []), created],
             }));
             setDraft({ hazard: "", v: "", i: "", p: "", mere: "" });
+            onChanged?.();
         } catch {
             enqueueSnackbar(
                 "Greška pri dodavanju (možda je ta opasnost već uneta).",

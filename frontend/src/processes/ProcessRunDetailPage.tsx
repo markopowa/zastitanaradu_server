@@ -369,6 +369,7 @@ class ProcessRunDetailPageInner extends Component<
                 enqueueSnackbar("Aktivnost je završena.", {
                     variant: "success",
                 });
+                this.loadAll();
             })
             .catch((err: { response?: { data?: { detail?: string } } }) => {
                 this.setState({ completing: false });
@@ -598,6 +599,12 @@ class ProcessRunDetailPageInner extends Component<
                                 {result.report_number ? (
                                     <Typography>
                                         Broj izveštaja: {result.report_number}
+                                    </Typography>
+                                ) : null}
+                                {result.health_institution ? (
+                                    <Typography>
+                                        Zdravstvena ustanova:{" "}
+                                        {result.health_institution}
                                     </Typography>
                                 ) : null}
                                 {result.fitness_assessment ? (

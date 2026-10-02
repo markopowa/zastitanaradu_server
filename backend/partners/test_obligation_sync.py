@@ -266,3 +266,40 @@ class TrainingCompletesObligationTest(TestCase):
                 status=ProcessRun.STATUS_COMPLETED,
             ).exists()
         )
+
+
+class PlanCountsTest(TestCase):
+    def setUp(self):
+        self.company = ClientCompany.objects.create(
+            name="Firma", tax_id=uuid.uuid4().hex[:9])
+        for code in ("OSPOSOBLJAVANJE_BZR", "ZOP_OBUKA", "LZO_ZADUZENJE"):
+            make_type(code)
+        self.employee = Employee.objects.create(
+            client_company=self.company, first_name="Ana", last_name="Anic")
+        sync_employee_obligations(self.employee)
+
+    def rows(self):
+        from partners.obligation_plan import build_obligation_plan
+
+        return {r["process_type"]["code"]: r for r in build_obligation_plan(self.company)}
+
+    def test_untrained_employee_is_not_counted_as_covered(self):
+        row = self.rows()["OSPOSOBLJAVANJE_BZR"]
+        self.assertEqual(row["counts"], {"covered": 0, "total": 1})
+
+    def test_obligation_without_subjects_is_not_applicable(self):
+        row = self.rows()["LZO_ZADUZENJE"]
+        self.assertEqual(row["status"], "NOT_APPLICABLE")
+        self.assertEqual(row["counts"]["total"], 0)
+
+    def test_completed_training_counts_as_covered(self):
+        from processes.process_run_completion import apply_process_run_completion
+
+        run = ProcessRun.objects.get(
+            process_binding__employee=self.employee,
+            process_type__code="OSPOSOBLJAVANJE_BZR",
+            status=ProcessRun.STATUS_PENDING,
+        )
+        apply_process_run_completion(run, {"performed_at": timezone.localdate()})
+        row = self.rows()["OSPOSOBLJAVANJE_BZR"]
+        self.assertEqual(row["counts"], {"covered": 1, "total": 1})

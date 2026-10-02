@@ -277,7 +277,7 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                             <MenuItem value="">Svi</MenuItem>
                             {riskLevels.map((rl) => (
                                 <MenuItem key={rl.id} value={String(rl.id)}>
-                                    {rl.label} (R={rl.score})
+                                    {rl.label}
                                 </MenuItem>
                             ))}
                         </Select>

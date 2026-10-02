@@ -126,7 +126,10 @@ def _employee_obligation_status(process_type: ProcessType, company):
         else STATUS_MISSING
         for e in subjects
     ]
-    covered = sum(1 for st in statuses if st in (STATUS_OK, STATUS_DUE_SOON))
+    covered = sum(
+        1 for e in subjects
+        if e.id in bindings and _has_valid_completion(bindings[e.id], today)
+    )
     counts = {"covered": covered, "total": len(subjects)}
 
     if coverage_any:
@@ -139,11 +142,25 @@ def _employee_obligation_status(process_type: ProcessType, company):
         return STATUS_MISSING, counts
 
     if not subjects:
-        return STATUS_OK, counts
+        return STATUS_NOT_APPLICABLE, counts
     worst = STATUS_OK
     for st in statuses:
         worst = _escalate(worst, st)
     return worst, counts
+
+
+def _has_valid_completion(binding, today) -> bool:
+    completed = (
+        ProcessRun.objects.filter(
+            process_binding=binding,
+            status=ProcessRun.STATUS_COMPLETED,
+        )
+        .order_by("-performed_at", "-id")
+        .first()
+    )
+    if completed is None:
+        return False
+    return completed.valid_until is None or completed.valid_until >= today
 
 
 def _escalate(current: str, candidate: str) -> str:
