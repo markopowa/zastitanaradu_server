@@ -53,11 +53,12 @@ class JobRole(models.Model):
         blank=True,
     )
     special_health_conditions = models.TextField(
-        "Posebni zdravstveni uslovi", blank=True)
+        "Posebni zdravstveni uslovi", blank=True, default="")
     safety_measures = models.TextField(
-        "Mere za bezbedan i zdrav rad na radnom mestu", blank=True)
+        "Mere za bezbedan i zdrav rad na radnom mestu", blank=True, default="")
     supervised_roles = models.TextField(
-        "Radna mesta koja rukovodilac prati i kontroliše", blank=True)
+        "Radna mesta koja rukovodilac prati i kontroliše", blank=True,
+        default="")
 
     class Meta:
         verbose_name = "Job role"
@@ -417,7 +418,7 @@ class RiskAssessmentAct(models.Model):
         related_name="risk_assessment_act",
     )
     act_date = models.DateField(null=True, blank=True)
-    act_number = models.CharField(max_length=64, blank=True)
+    act_number = models.CharField(max_length=64, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -881,7 +882,8 @@ class Hazard(models.Model):
     label = models.CharField(max_length=255)
     kind = models.CharField(max_length=16, choices=KIND_CHOICES)
     official_code = models.CharField(
-        "Šifra opasnosti/štetnosti (01-40)", max_length=2, blank=True)
+        "Šifra opasnosti/štetnosti (01-40)", max_length=2, blank=True,
+        default="")
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -966,7 +968,7 @@ class JobRoleLZO(models.Model):
     name = models.CharField(max_length=255)
     standard = models.CharField(max_length=255, blank=True)
     interval_months = models.PositiveIntegerField(null=True, blank=True)
-    description = models.CharField(max_length=255, blank=True)
+    description = models.CharField(max_length=255, blank=True, default="")
     quantity = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
 
