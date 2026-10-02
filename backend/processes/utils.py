@@ -1,10 +1,5 @@
-import copy
-import io
 import logging
-import re
 
-import docx
-from docx.table import _Row
 from jinja2 import Template
 
 from django.conf import settings
@@ -14,7 +9,6 @@ from django.core.files.base import ContentFile
 from core.email_context import company_email_test_mode
 from core.email_sender import get_email_sender
 from documents.models import DocumentCategory, DocumentFile
-from documents.utils import _resolve_field_value, generate_visual_pdf
 
 from .date_format import format_date_display
 from .models import (
@@ -22,7 +16,6 @@ from .models import (
     ProcessRun,
     ProcessRunDocument,
     ProcessTemplate,
-    get_next_code,
 )
 from .result_data import (
     normalize_client_snapshot_tax_id,
@@ -95,10 +88,9 @@ def binding_subject_snapshot(binding: ProcessBinding) -> dict:
                 ),
                 "place_of_birth": getattr(e, "place_of_birth", "") or "",
                 "occupation": getattr(e, "occupation", "") or "",
-                "high_risk_position_name": getattr(
-                    e, "high_risk_position_name", ""
-                )
-                or "",
+                "high_risk_position_name": (
+                    e.job_role.name if e.is_high_risk else ""
+                ),
             },
         }
         if client is not None:
@@ -216,10 +208,6 @@ def _build_document_context(run: ProcessRun, snapshot: dict) -> dict:
     ctx["valid_until"] = format_date_display(run.valid_until)
     ctx["process_type_name"] = run.process_type.name if run.process_type_id else ""
     ctx["run_id"] = run.id
-    try:
-        ctx["instruction_number"] = get_next_code("instruction", "UP")
-    except Exception:
-        ctx["instruction_number"] = ""
     last_exam_date = ""
     try:
         binding = run.process_binding
@@ -257,12 +245,6 @@ def _build_document_context(run: ProcessRun, snapshot: dict) -> dict:
     return ctx
 
 
-_UPUT_TEMPLATE_KINDS = {
-    "Uput za prethodni lekarski pregled": "prethodni",
-    "Uput za lekarski pregled": "periodicni",
-}
-
-
 def _render_template_body(body: str, context: dict) -> str:
     if not body.strip():
         return ""
@@ -270,212 +252,43 @@ def _render_template_body(body: str, context: dict) -> str:
     return t.render(**{k: (v if v is not None else "") for k, v in context.items()})
 
 
-def _fill_cell_map_cells(doc: docx.Document, config: dict, context: dict) -> None:
-    for entry in config.get("cells") or []:
-        table_index = int(entry.get("table", 0))
-        row_index = int(entry.get("row", 0))
-        col_index = int(entry.get("col", 0))
-        field_key = entry.get("fieldKey", "")
-        try:
-            table = doc.tables[table_index]
-            cell = table.rows[row_index].cells[col_index]
-        except IndexError:
-            continue
-        value = _resolve_field_value(field_key, context)
-        cell.text = value
+def _render_run_document(run, doc_template, snapshot):
+    from documents.word_engine import render_docx
+    from partners.document_service import (
+        COMPANY_CODES,
+        EMPLOYEE_CODES,
+        UPUT_CODE_BY_PROCESS_TYPE,
+        render_company_document,
+        render_employee_document,
+    )
 
-
-def _fill_cell_map_paragraphs(doc: docx.Document, config: dict, context: dict) -> None:
-    for entry in config.get("paragraphs") or []:
-        contains = entry.get("contains", "")
-        field_key = entry.get("fieldKey", "")
-        if not contains:
-            continue
-        try:
-            target = next(
-                para for para in doc.paragraphs if contains in (para.text or "")
-            )
-        except StopIteration:
-            continue
-        value = _resolve_field_value(field_key, context)
-        text = target.text or ""
-        sep_index = text.find(": ")
-        if sep_index != -1:
-            new_text = f"{text[:sep_index + 2]}{value}"
-        else:
-            new_text = f"{text} {value}".strip()
-        target.clear()
-        target.add_run(new_text)
-
-
-def apply_cell_map_fill(doc: docx.Document, config: dict, context: dict) -> None:
-    _fill_cell_map_cells(doc, config, context)
-    _fill_cell_map_paragraphs(doc, config, context)
-
-
-_PLACEHOLDER_TAG_RE = re.compile(r"\{\{\s*([^{}]+?)\s*\}\}")
-
-
-def _replace_placeholder_tags(text: str, context: dict) -> str:
-    def _sub(match: "re.Match") -> str:
-        return _resolve_field_value(match.group(1), context)
-
-    return _PLACEHOLDER_TAG_RE.sub(_sub, text)
-
-
-def _fill_placeholder_paragraph(para, context: dict) -> None:
-    text = para.text or ""
-    if "{{" not in text:
-        return
-    rendered = _replace_placeholder_tags(text, context)
-    if not para.runs:
-        para.add_run(rendered)
-        return
-    para.runs[0].text = rendered
-    for run in para.runs[1:]:
-        run.text = ""
-
-
-def _iter_table_paragraphs(table):
-    for row in table.rows:
-        for cell in row.cells:
-            for para in cell.paragraphs:
-                yield para
-            for nested_table in cell.tables:
-                yield from _iter_table_paragraphs(nested_table)
-
-
-def _iter_all_paragraphs(doc: docx.Document):
-    for para in doc.paragraphs:
-        yield para
-    for table in doc.tables:
-        yield from _iter_table_paragraphs(table)
-
-
-def apply_placeholder_fill(doc: docx.Document, context: dict) -> None:
-    for para in _iter_all_paragraphs(doc):
-        _fill_placeholder_paragraph(para, context)
-
-
-def _row_has_placeholder(row) -> bool:
-    return any("{{" in (cell.text or "") for cell in row.cells)
-
-
-def _find_series_template_row(table):
-    for row in table.rows:
-        if _row_has_placeholder(row):
-            return row
-    return None
-
-
-def _iter_row_paragraphs(row):
-    for cell in row.cells:
-        for para in cell.paragraphs:
-            yield para
-        for nested_table in cell.tables:
-            yield from _iter_table_paragraphs(nested_table)
-
-
-def _fill_row_placeholders(row, row_context: dict) -> None:
-    for para in _iter_row_paragraphs(row):
-        _fill_placeholder_paragraph(para, row_context)
-
-
-def apply_series_fill(doc: docx.Document, config: dict, context: dict, entity) -> None:
-    from .series_sources import get_series_source
-
-    series_list = config.get("series") or []
-    for series in series_list:
-        try:
-            table_index = int(series.get("table", 0))
-        except (TypeError, ValueError):
-            continue
-        try:
-            table = doc.tables[table_index]
-        except IndexError:
-            continue
-        template_row = _find_series_template_row(table)
-        if template_row is None:
-            continue
-        pristine_tr = copy.deepcopy(template_row._tr)
-        source_fn = get_series_source(series.get("source"))
-        items = source_fn(entity, context) if source_fn else []
-        anchor_tr = template_row._tr
-        for i, item in enumerate(items, start=1):
-            new_tr = copy.deepcopy(pristine_tr)
-            anchor_tr.addnext(new_tr)
-            new_row = _Row(new_tr, table)
-            row_context = dict(context)
-            row_data = dict(item) if isinstance(item, dict) else {}
-            row_data["rbr"] = i
-            row_context["r"] = row_data
-            _fill_row_placeholders(new_row, row_context)
-            anchor_tr = new_tr
-        template_row._tr.getparent().remove(template_row._tr)
-
-
-def apply_docx_fill(
-    doc: docx.Document,
-    mode: str,
-    config: dict,
-    context: dict,
-    entity=None,
-) -> None:
-    if mode == "DOCX_PLACEHOLDER":
-        if entity is not None and config.get("series"):
-            apply_series_fill(doc, config, context, entity)
-        apply_placeholder_fill(doc, context)
-    else:
-        apply_cell_map_fill(doc, config, context)
-
-
-def _generate_docx_fill(
-    run: ProcessRun,
-    fill_file,
-    snapshot: dict,
-    mode: str,
-    config: dict,
-) -> bytes:
-    context = _build_document_context(run, snapshot)
-    with fill_file.open("rb") as fh:
-        doc = docx.Document(io.BytesIO(fh.read()))
-    apply_docx_fill(doc, mode, config, context, entity=run)
-    buf = io.BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-    return buf.read()
-
-
-def _build_company_document_context(company) -> dict:
-    return {
-        "client": {
-            "id": company.id,
-            "name": company.name,
-            "tax_id": company.tax_id or "",
-            "registration_number": company.registration_number or "",
-            "address": company.address or "",
-            "phone": company.phone or "",
-            "email": company.email or "",
-        },
-    }
-
-
-def generate_company_document(doc_template, company) -> bytes | None:
-    if not doc_template.template_file:
-        return None
-    name = getattr(doc_template.template_file, "name", "") or ""
-    if not name.lower().endswith(".docx"):
-        return None
-    generation_config = getattr(doc_template, "generation_config", None) or {}
-    mode = generation_config.get("mode") or "DOCX_PLACEHOLDER"
-    context = _build_company_document_context(company)
-    with doc_template.template_file.open("rb") as fh:
-        doc = docx.Document(io.BytesIO(fh.read()))
-    apply_docx_fill(doc, mode, generation_config, context, entity=company)
-    buf = io.BytesIO()
-    doc.save(buf)
-    buf.seek(0)
-    return buf.read()
+    binding = run.process_binding
+    employee = binding.employee if binding.employee_id else None
+    company = _binding_company(binding)
+    code = doc_template.code
+    if code is None and employee is not None:
+        code = UPUT_CODE_BY_PROCESS_TYPE.get(run.process_type.code)
+    try:
+        if code in EMPLOYEE_CODES and employee is not None:
+            return render_employee_document(code, employee, run=run), ".docx"
+        if code in COMPANY_CODES and company is not None:
+            return render_company_document(code, company), ".docx"
+        name = getattr(doc_template.template_file, "name", "") or ""
+        if name.lower().endswith(".docx"):
+            with doc_template.template_file.open("rb") as handle:
+                source = handle.read()
+            context = _build_document_context(run, snapshot)
+            return render_docx(source, context), ".docx"
+        if doc_template.template_body:
+            context = _build_document_context(run, snapshot)
+            rendered = _render_template_body(doc_template.template_body, context)
+            return rendered.encode("utf-8"), ".txt"
+    except Exception as exc:
+        logger.warning(
+            "Failed to render document for run id=%s template id=%s: %s",
+            run.id, doc_template.id, exc,
+        )
+    return None, ".docx"
 
 
 def _get_system_user():
@@ -486,36 +299,20 @@ def _generate_document_for_run(
     run: ProcessRun,
     template: ProcessTemplate,
     snapshot: dict,
+    regenerate: bool = False,
 ) -> DocumentFile | None:
     doc_template = template.document_template
     if not doc_template:
         return None
 
-    existing_prd = (
-        ProcessRunDocument.objects.filter(
-            process_run=run,
-            generated_by_template=template,
-        )
-        .select_related("document_file")
-        .first()
+    previous = ProcessRunDocument.objects.filter(
+        process_run=run,
+        generated_by_template=template,
     )
-    if existing_prd and existing_prd.document_file_id:
+    existing_prd = previous.select_related("document_file").first()
+    if not regenerate and existing_prd and existing_prd.document_file_id:
         return existing_prd.document_file
-
-    fill_file = doc_template.template_file
-    role_blank_file = None
-    blank_placements: list = []
-    binding = run.process_binding
-    emp = getattr(binding, "employee", None)
-    role = getattr(emp, "job_role", None) if emp else None
-    if role and getattr(role, "obrazac6_template", None):
-        role_blank_file = role.obrazac6_template
-        blank_placements = role.obrazac6_fields or []
-    elif role and getattr(role, "lzo_revers_template", None):
-        role_blank_file = role.lzo_revers_template
-        blank_placements = role.lzo_revers_fields or []
-    if role_blank_file:
-        fill_file = role_blank_file
+    previous_ids = list(previous.values_list("id", flat=True))
 
     system_user = _get_system_user()
     if not system_user:
@@ -535,111 +332,7 @@ def _generate_document_for_run(
         )
         return None
 
-    context = _build_document_context(run, snapshot)
-    content_bytes: bytes | None = None
-    ext = ".docx"
-    title_suffix = f"Run #{run.id}"
-
-    generation_config = getattr(doc_template, "generation_config", None) or {}
-    mode = generation_config.get("mode")
-
-    _tname = (doc_template.name or "").strip()
-    uput_kind = _UPUT_TEMPLATE_KINDS.get(_tname)
-    if uput_kind and emp is not None:
-        try:
-            from partners.uput import generate_uput
-            content_bytes = generate_uput(
-                emp, kind=uput_kind, performed_on=run.scheduled_for)
-            ext = ".docx"
-        except Exception as e:
-            logger.warning(
-                "Failed to generate uput for run id=%s: %s", run.id, e)
-
-    if not content_bytes and emp is not None:
-        try:
-            if _tname.startswith("Obrazac 6"):
-                from partners.obrazac6 import generate_obrazac6
-                content_bytes = generate_obrazac6(
-                    emp, context, doc_template.template_file)
-                ext = ".docx"
-            elif _tname.startswith("Karton zaduženja LZO"):
-                from partners.lzo_revers import generate_lzo_revers
-                content_bytes = generate_lzo_revers(
-                    emp,
-                    context=context,
-                    template_file=doc_template.template_file,
-                )
-                ext = ".docx"
-        except Exception as e:
-            logger.warning(
-                "Failed data-driven generation for run id=%s: %s", run.id, e)
-
-    if not content_bytes and mode == "TEMPLATE_BODY" and doc_template.template_body:
-        try:
-            rendered = _render_template_body(
-                doc_template.template_body, context)
-            content_bytes = rendered.encode("utf-8")
-            ext = ".txt"
-        except Exception as e:
-            logger.warning(
-                "Failed to render template_body for run id=%s: %s",
-                run.id,
-                e,
-            )
-
-    active_file = fill_file
-    if not content_bytes and active_file:
-        name = getattr(active_file, "name", "") or ""
-
-        if mode == "VISUAL":
-            try:
-                content_bytes = generate_visual_pdf(
-                    doc_template,
-                    context,
-                    blank_file=role_blank_file,
-                    blank_placements=blank_placements,
-                    entity=run,
-                )
-                ext = ".pdf"
-            except Exception as e:
-                logger.warning(
-                    "Failed to generate visual PDF for run id=%s: %s",
-                    run.id,
-                    e,
-                )
-        elif mode in ("DOCX_CELL_MAP", "DOCX_PLACEHOLDER"):
-            if name and name.lower().endswith(".docx"):
-                try:
-                    content_bytes = _generate_docx_fill(
-                        run,
-                        active_file,
-                        snapshot,
-                        mode,
-                        generation_config,
-                    )
-                    ext = ".docx"
-                except Exception as e:
-                    logger.warning(
-                        "Failed to generate %s docx for run id=%s: %s",
-                        mode,
-                        run.id,
-                        e,
-                    )
-            else:
-                logger.warning(
-                    "%s requires a .docx template file for run id=%s template id=%s",
-                    mode,
-                    run.id,
-                    template.id,
-                )
-        else:
-            logger.warning(
-                "Unsupported or missing generation mode '%s' for run id=%s template id=%s",
-                mode,
-                run.id,
-                template.id,
-            )
-
+    content_bytes, ext = _render_run_document(run, doc_template, snapshot)
     if not content_bytes:
         logger.warning(
             "No content for document generation run id=%s template id=%s (missing template_body and valid template_file)",
@@ -648,7 +341,7 @@ def _generate_document_for_run(
         )
         return None
 
-    title = f"{doc_template.name} – {title_suffix}"
+    title = f"{doc_template.name}, {run.subject_snapshot.get('name') or ''}".strip(", ")
     doc_file = DocumentFile(
         category=category,
         title=title,
@@ -657,12 +350,14 @@ def _generate_document_for_run(
         valid_until=run.valid_until,
     )
     doc_file.file.save(
-        f"process_run_{run.id}_{doc_template.id}{ext}",
+        f"{(doc_template.code or 'dokument').lower()}_{run.id}{ext}",
         ContentFile(content_bytes),
         save=True,
     )
     doc_file.save()
 
+    if previous_ids:
+        ProcessRunDocument.objects.filter(id__in=previous_ids).delete()
     ProcessRunDocument.objects.create(
         process_run=run,
         document_file=doc_file,

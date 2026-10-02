@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 
-import { api } from "../api/client";
+import { api, getAll } from "../api/client";
 import type {
     DocumentCategory,
     DocumentFile,
@@ -18,11 +18,7 @@ export const fetchDocumentCategories = createAsyncThunk(
     "documents/fetchCategories",
     async (_, { rejectWithValue }) => {
         try {
-            const response = await api.get<
-                DocumentCategory[] | { results: DocumentCategory[] }
-            >("/api/documents/categories/");
-            const data = response.data;
-            return Array.isArray(data) ? data : (data?.results ?? []);
+            return await getAll<DocumentCategory>("/api/documents/categories/");
         } catch (error: unknown) {
             return rejectWithValue("Neuspešno učitavanje kategorija");
         }
@@ -33,11 +29,7 @@ export const fetchDocuments = createAsyncThunk(
     "documents/fetchDocuments",
     async (_, { rejectWithValue }) => {
         try {
-            const response = await api.get<
-                DocumentFile[] | { results: DocumentFile[] }
-            >("/api/documents/");
-            const data = response.data;
-            return Array.isArray(data) ? data : (data?.results ?? []);
+            return await getAll<DocumentFile>("/api/documents/");
         } catch (error: unknown) {
             return rejectWithValue("Neuspešno učitavanje dokumenata");
         }

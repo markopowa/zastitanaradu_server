@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 
 import * as tokenManager from "../api/tokenManager";
-import { api } from "../api/client";
+import { api, getAll } from "../api/client";
 import type { AuthState, AuthUser, Permission, Role } from "../types/auth";
 
 const initialState: AuthState = {
@@ -102,11 +102,7 @@ export const loadUsers = createAsyncThunk(
     "auth/loadUsers",
     async (_, { rejectWithValue }) => {
         try {
-            const response = await api.get<
-                AuthUser[] | { results: AuthUser[] }
-            >("/auth/users/");
-            const data = response.data;
-            return Array.isArray(data) ? data : (data?.results ?? []);
+            return await getAll<AuthUser>("/auth/users/");
         } catch (error: unknown) {
             return rejectWithValue("Neuspešno učitavanje korisnika");
         }
@@ -117,11 +113,7 @@ export const loadRoles = createAsyncThunk(
     "auth/loadRoles",
     async (_, { rejectWithValue }) => {
         try {
-            const response = await api.get<Role[] | { results: Role[] }>(
-                "/auth/roles/",
-            );
-            const data = response.data;
-            return Array.isArray(data) ? data : (data?.results ?? []);
+            return await getAll<Role>("/auth/roles/");
         } catch (error: unknown) {
             return rejectWithValue("Neuspešno učitavanje rola");
         }

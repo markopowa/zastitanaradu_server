@@ -46,11 +46,13 @@ const OUTBOX_DAYS = 7;
 function isoDateNowPlus(days: number): string {
     const d = new Date();
     d.setDate(d.getDate() + days);
-    return d.toISOString().slice(0, 10);
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${month}-${day}`;
 }
 
 function isoDateToday(): string {
-    return new Date().toISOString().slice(0, 10);
+    return isoDateNowPlus(0);
 }
 
 interface DispatchProps {
@@ -94,7 +96,6 @@ class DanasPageInner extends Component<Props, State> {
         this.setState({ loading: true, error: null });
         try {
             const today = isoDateToday();
-            const soonEnd = isoDateNowPlus(SOON_DAYS);
             const outboxEnd = isoDateNowPlus(OUTBOX_DAYS);
 
             const [deadlines, failed, pending] = await Promise.all([
@@ -107,14 +108,8 @@ class DanasPageInner extends Component<Props, State> {
                 } as OutboxParams),
             ]);
 
-            const soonEnd8601 = soonEnd;
             const overdue = deadlines.filter((d) => d.is_overdue);
-            const soon = deadlines.filter(
-                (d) =>
-                    !d.is_overdue &&
-                    d.valid_until != null &&
-                    d.valid_until <= soonEnd8601,
-            );
+            const soon = deadlines.filter((d) => !d.is_overdue);
 
             this.setState({
                 overdue,
@@ -404,7 +399,7 @@ class DanasPageInner extends Component<Props, State> {
                     </Box>
                     <Divider />
                     {soonFiltered.length === 0 ? (
-                        <EmptyState message="Nema predstojecih rokova u narednih 14 dana." />
+                        <EmptyState message="Nema predstojećih rokova u narednih 30 dana." />
                     ) : (
                         <List disablePadding>
                             {soonFiltered.map((row, idx) => (

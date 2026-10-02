@@ -2,6 +2,7 @@ from datetime import date
 
 from django.core.management.base import BaseCommand
 
+from partners.obligation_sync import deactivate_departed_employees
 from processes.tasks import ensure_open_runs_for_active_bindings
 
 
@@ -23,7 +24,11 @@ class Command(BaseCommand):
             )
             return
 
+        deactivated = deactivate_departed_employees()
         created = ensure_open_runs_for_active_bindings()
         self.stdout.write(
-            self.style.SUCCESS(f"Done. Created {created} run(s).")
+            self.style.SUCCESS(
+                f"Done. Deactivated {deactivated} binding(s) of departed "
+                f"employees, created {created} run(s)."
+            )
         )

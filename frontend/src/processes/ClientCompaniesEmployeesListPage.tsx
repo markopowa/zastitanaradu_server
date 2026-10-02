@@ -379,7 +379,6 @@ class ClientCompaniesEmployeesListPageInner extends Component<
                                                 <RiskBadge
                                                     riskLevel={
                                                         row.effective_risk_level ??
-                                                        row.risk_level_override_detail ??
                                                         row.job_role_risk_level
                                                     }
                                                 />

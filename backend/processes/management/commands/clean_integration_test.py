@@ -12,10 +12,8 @@ from documents.models import (
 )
 from partners.models import (
     ClientCompany,
-    CompanyComplianceFinding,
     CompanyDocument,
     CompanyObligationExclusion,
-    ComplianceFindingType,
     ContactPerson,
     Employee,
     EquipmentItem,
@@ -64,7 +62,6 @@ PROCESS_DATA = [
 ]
 
 COMPANY_DATA = [
-    CompanyComplianceFinding,
     RiskAssessmentSectionRevision,
     RiskAssessmentActAmendment,
     RiskAssessmentSection,
@@ -79,7 +76,6 @@ COMPANY_DATA = [
 ]
 
 CATALOG_DATA = [
-    ComplianceFindingType,
     ProcessTemplate,
     ProcessType,
     DocumentFileAIFormat,
@@ -93,7 +89,6 @@ CATALOG_DATA = [
 ]
 
 FILE_FIELDS = {
-    CompanyComplianceFinding: ("file",),
     RiskAssessmentSectionRevision: ("file",),
     RiskAssessmentActAmendment: ("file",),
     RiskAssessmentSection: ("current_file",),

@@ -1,6 +1,8 @@
+import io
 import uuid
 from datetime import date
 
+import docx
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.test import TestCase
@@ -185,15 +187,10 @@ class PotvrdaClan5GenerationTestCase(TestCase):
         self.client.force_authenticate(user=self.user)
         self.category = DocumentCategory.objects.create(name="Test kategorija")
         self.doc_template = DocumentTemplate.objects.create(
-            name="Potvrda po članu 5",
+            code="POTVRDA_CLAN5",
+            name="Potvrda o osposobljenosti za rad na opremi",
             context_type=DocumentTemplate.CONTEXT_EMPLOYEE,
             category=self.category,
-            generation_config={
-                "mode": "DOCX_CELL_MAP",
-                "cells": [
-                    {"table": 0, "row": 0, "col": 1, "fieldKey": "employee.full_name"},
-                ],
-            },
         )
         self.process_type = make_process_type("OSPOSOBLJAVANJE_BZR")
         self.company = make_company(name="Firma Potvrda")
@@ -207,9 +204,15 @@ class PotvrdaClan5GenerationTestCase(TestCase):
         )
 
     def _attach_blank(self):
+        document = docx.Document()
+        table = document.add_table(rows=1, cols=2)
+        table.cell(0, 0).text = "Zaposleni"
+        table.cell(0, 1).text = "{{ employee.full_name }}"
+        buffer = io.BytesIO()
+        document.save(buffer)
         self.training_type.potvrda_template.save(
             "potvrda_blank.docx",
-            ContentFile(build_cell_docx()),
+            ContentFile(buffer.getvalue()),
             save=True,
         )
 
@@ -257,16 +260,20 @@ class PotvrdaClan5GenerationTestCase(TestCase):
             )
         self.assertIn("nije pronađena", str(ctx.exception))
 
-    def test_training_type_without_blank_raises(self):
+    def test_training_type_without_blank_uses_master(self):
         self._make_binding_and_run()
-        with self.assertRaises(ValueError) as ctx:
-            generate_employee_document(
-                self.employee, "POTVRDA_CLAN5", training_type_id=self.training_type.id,
-            )
-        self.assertIn(
-            "Vrsta obuke nema blanko potvrdu — otpremite je na vrsti obuke.",
-            str(ctx.exception),
+        _, content_bytes = generate_employee_document(
+            self.employee, "POTVRDA_CLAN5", training_type_id=self.training_type.id,
         )
+        document = docx.Document(io.BytesIO(content_bytes))
+        text = "\n".join(
+            cell.text
+            for table in document.tables
+            for row in table.rows
+            for cell in row.cells
+        ) + "\n".join(p.text for p in document.paragraphs)
+        self.assertIn("Petar Petrovic", text)
+        self.assertIn("Rukovanje viljuškarom", text)
 
     def test_no_binding_raises(self):
         self._attach_blank()
@@ -276,15 +283,15 @@ class PotvrdaClan5GenerationTestCase(TestCase):
             )
         self.assertIn("nema obavezu", str(ctx.exception))
 
-    def test_endpoint_400_without_blank(self):
+    def test_endpoint_400_without_training_type(self):
         self._make_binding_and_run()
         response = self.client.post(
             f"/api/partners/employees/{self.employee.id}/generate-document/",
-            {"kind": "POTVRDA_CLAN5", "training_type_id": self.training_type.id},
+            {"kind": "POTVRDA_CLAN5"},
             format="json",
         )
         self.assertEqual(response.status_code, 400)
-        self.assertIn("blanko potvrdu", response.data["detail"])
+        self.assertIn("vrstu obuke", response.data["detail"])
 
     def test_endpoint_returns_docx_download_on_happy_path(self):
         self._attach_blank()

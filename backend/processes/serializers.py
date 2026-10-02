@@ -14,6 +14,7 @@ from .models import (
     ProcessType,
     TaskAssignment,
 )
+from .period_resolution import resolve_period_months
 from .tasks import get_open_run_for_binding
 from .utils import _resolve_email_recipients
 
@@ -249,6 +250,7 @@ class ProcessRunSerializer(serializers.ModelSerializer):
     process_binding_id = serializers.IntegerField(
         source="process_binding.id", read_only=True)
     trigger_runs = ProcessTriggerRunSerializer(many=True, read_only=True)
+    period_months = serializers.SerializerMethodField()
 
     class Meta:
         model = ProcessRun
@@ -266,6 +268,7 @@ class ProcessRunSerializer(serializers.ModelSerializer):
             "notes",
             "result_data",
             "trigger_runs",
+            "period_months",
         )
         read_only_fields = (
             "process_binding",
@@ -275,10 +278,22 @@ class ProcessRunSerializer(serializers.ModelSerializer):
             "trigger_runs",
         )
 
+    def get_period_months(self, obj):
+        view = self.context.get("view")
+        if getattr(view, "action", None) != "retrieve":
+            return None
+        binding = obj.process_binding
+        if binding.custom_period_months:
+            return binding.custom_period_months
+        subject = (
+            binding.employee or binding.equipment_item or binding.client_company
+        )
+        return resolve_period_months(obj.process_type, subject)
+
 
 class ProcessRunCompleteSerializer(serializers.Serializer):
     performed_at = serializers.DateField(required=False, allow_null=True)
-    valid_until = serializers.DateField(required=True)
+    valid_until = serializers.DateField(required=False, allow_null=True)
     notes = serializers.CharField(required=False, allow_blank=True, default="")
     result_data = serializers.JSONField(required=False, allow_null=True)
 

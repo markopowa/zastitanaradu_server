@@ -185,21 +185,26 @@ class ApplyProcessRunCompletionTest(TestCase):
         binding.refresh_from_db()
         return binding
 
-    def test_next_run_at_calculated_from_valid_until_and_period(self):
-        from dateutil.relativedelta import relativedelta
+    def test_next_run_at_is_valid_until(self):
         pt = make_process_type(period_months=12)
         b = make_binding(pt, next_run_at=TODAY)
         valid_until = TODAY + timedelta(days=365)
         self._complete(b, valid_until=valid_until)
-        self.assertEqual(b.next_run_at, valid_until + relativedelta(months=12))
+        self.assertEqual(b.next_run_at, valid_until)
+
+    def test_next_run_at_from_performed_at_when_no_valid_until(self):
+        from dateutil.relativedelta import relativedelta
+        pt = make_process_type(period_months=12)
+        b = make_binding(pt, next_run_at=TODAY)
+        self._complete(b, valid_until=None)
+        self.assertEqual(b.next_run_at, TODAY + relativedelta(months=12))
 
     def test_custom_period_months_overrides_process_type(self):
         from dateutil.relativedelta import relativedelta
         pt = make_process_type(period_months=12)
         b = make_binding(pt, next_run_at=TODAY)
-        valid_until = TODAY + timedelta(days=365)
-        self._complete(b, valid_until=valid_until, period_override=6)
-        self.assertEqual(b.next_run_at, valid_until + relativedelta(months=6))
+        self._complete(b, valid_until=None, period_override=6)
+        self.assertEqual(b.next_run_at, TODAY + relativedelta(months=6))
 
     def test_no_period_leaves_next_run_at_none(self):
         pt = ProcessType.objects.create(
@@ -227,9 +232,8 @@ class ApplyProcessRunCompletionTest(TestCase):
         from dateutil.relativedelta import relativedelta
         pt = make_process_type(lead_time_days=30, period_months=12)
         b = make_binding(pt, next_run_at=TODAY, lead_time_days=30)
-        valid_until = TODAY + timedelta(days=180)
-        self._complete(b, valid_until=valid_until)
-        expected_next_run_at = valid_until + relativedelta(months=12)
+        self._complete(b, valid_until=None)
+        expected_next_run_at = TODAY + relativedelta(months=12)
         expected_fire_date = expected_next_run_at - timedelta(days=30)
         self.assertEqual(b.next_run_at, expected_next_run_at)
         self.assertEqual(expected_fire_date,
@@ -349,6 +353,37 @@ class EnsureProcessRunIdempotencyTest(TestCase):
         )
 
 
+class OutboxCatchUpTest(TestCase):
+
+    def test_only_latest_past_reminder_stays_pending(self):
+        pt = make_process_type()
+        pt.reminder_offsets = [-30, 0, 7, 15, 30]
+        pt.save()
+        b = make_binding(pt, next_run_at=TODAY - timedelta(days=60))
+        run = make_run(b, scheduled_for=TODAY - timedelta(days=60))
+        materialize_outbox_for_run(run)
+        pending = set(
+            NotificationOutbox.objects.filter(
+                process_run=run, status=NotificationOutbox.STATUS_PENDING
+            ).values_list("offset_days", flat=True)
+        )
+        self.assertEqual(pending, {0, 30})
+
+    def test_future_reminders_untouched(self):
+        pt = make_process_type()
+        pt.reminder_offsets = [-15, 0, 7]
+        pt.save()
+        b = make_binding(pt, next_run_at=TODAY + timedelta(days=30))
+        run = make_run(b, scheduled_for=TODAY + timedelta(days=30))
+        materialize_outbox_for_run(run)
+        self.assertEqual(
+            NotificationOutbox.objects.filter(
+                process_run=run, status=NotificationOutbox.STATUS_PENDING
+            ).count(),
+            3,
+        )
+
+
 class OutboxSendingTest(TestCase):
 
     def _make_send_setup(self, offset=0, scheduled_for=None, status=ProcessRun.STATUS_PENDING):
@@ -367,6 +402,31 @@ class OutboxSendingTest(TestCase):
             status=NotificationOutbox.STATUS_PENDING,
         )
         return run, outbox, tmpl
+
+    def test_scheduled_row_skipped_when_already_sent_manually(self):
+        run, outbox, tmpl = self._make_send_setup(offset=0)
+        ProcessTriggerRun.objects.create(
+            process_run=run,
+            process_template=tmpl,
+            trigger=ProcessTriggerRun.TRIGGER_ON_SCHEDULED,
+            executed_at=timezone.now(),
+            email_sent=True,
+        )
+        with patch("processes.tasks._send_email_for_template") as send:
+            run_process_reminders(today=TODAY)
+        send.assert_not_called()
+        outbox.refresh_from_db()
+        self.assertEqual(outbox.status, NotificationOutbox.STATUS_CANCELLED)
+
+    def test_row_skipped_when_template_email_disabled(self):
+        run, outbox, tmpl = self._make_send_setup(offset=7)
+        tmpl.send_email = False
+        tmpl.save()
+        with patch("processes.tasks._send_email_for_template") as send:
+            run_process_reminders(today=TODAY)
+        send.assert_not_called()
+        outbox.refresh_from_db()
+        self.assertEqual(outbox.status, NotificationOutbox.STATUS_CANCELLED)
 
     def test_successful_send_sets_status_sent(self):
         run, outbox, tmpl = self._make_send_setup(offset=0)

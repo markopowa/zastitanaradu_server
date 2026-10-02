@@ -5,7 +5,6 @@ from django.db.models import Q
 
 from .models import (
     ClientCompany,
-    CompanyComplianceFinding,
     CompanyDocument,
     CompanyDocumentKind,
     RiskAssessmentAct,
@@ -53,14 +52,6 @@ def _risk_assessment_act(company, supported, paths, skipped):
         _check_field(amendment.file, supported, paths, skipped)
 
 
-def _compliance_findings(company, supported, paths, skipped):
-    findings = CompanyComplianceFinding.objects.filter(
-        client_company=company,
-    ).order_by("finding_type__order")
-    for finding in findings:
-        _check_field(finding.file, supported, paths, skipped)
-
-
 def _generated_documents(company, supported, paths, skipped):
     from processes.models import ProcessRunDocument
 
@@ -89,7 +80,6 @@ def build_inspection_bundle(company: ClientCompany):
 
     _company_documents(company, supported, paths, skipped)
     _risk_assessment_act(company, supported, paths, skipped)
-    _compliance_findings(company, supported, paths, skipped)
     _generated_documents(company, supported, paths, skipped)
 
     return paths, skipped[0]

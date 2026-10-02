@@ -1,4 +1,9 @@
-import { api, filenameFromResponse, triggerBlobDownload } from "./client";
+import {
+    api,
+    filenameFromResponse,
+    getAll,
+    triggerBlobDownload,
+} from "./client";
 
 export type HazardKind = "OPASNOST" | "STETNOST";
 export type KinneyFactor = "V" | "I" | "P";
@@ -39,19 +44,11 @@ export interface JobRoleHazard {
     order: number;
 }
 
-type ListResponse<T> = T[] | { results?: T[] };
-
-function asList<T>(data: ListResponse<T> | undefined): T[] {
-    if (Array.isArray(data)) return data;
-    return data?.results ?? [];
-}
-
 export async function getHazards(activeOnly = false): Promise<Hazard[]> {
-    const { data } = await api.get<ListResponse<Hazard>>(
+    return getAll<Hazard>(
         "/api/partners/hazards/",
-        { params: activeOnly ? { is_active: true } : {} },
+        activeOnly ? { is_active: true } : {},
     );
-    return asList(data);
 }
 
 export async function createHazard(
@@ -80,20 +77,16 @@ export async function deleteHazard(id: number): Promise<void> {
 }
 
 export async function getKinneyScaleOptions(): Promise<KinneyScaleOption[]> {
-    const { data } = await api.get<ListResponse<KinneyScaleOption>>(
-        "/api/partners/kinney-scale-options/",
-    );
-    return asList(data);
+    return getAll<KinneyScaleOption>("/api/partners/kinney-scale-options/");
 }
 
 export async function getJobRoleHazards(
     jobRoleId: number,
 ): Promise<JobRoleHazard[]> {
-    const { data } = await api.get<ListResponse<JobRoleHazard>>(
+    return getAll<JobRoleHazard>(
         "/api/partners/job-role-hazards/",
-        { params: { job_role_id: jobRoleId } },
+        { job_role_id: jobRoleId },
     );
-    return asList(data);
 }
 
 export async function createJobRoleHazard(
@@ -175,6 +168,8 @@ export interface JobRoleLZO {
     name: string;
     standard: string;
     interval_months: number | null;
+    description?: string;
+    quantity?: number;
     order: number;
 }
 

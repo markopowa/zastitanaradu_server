@@ -8,7 +8,7 @@ from rest_framework.test import APIClient
 
 from documents.models import DocumentCategory, DocumentFile
 from partners.models import ClientCompany, CompanyDocument, Employee
-from partners.medical_exam_record import generate_medical_exam_record
+from partners.document_service import OBRAZAC1, render_company_document
 from processes.models import (
     ProcessBinding,
     ProcessRun,
@@ -189,7 +189,6 @@ class Obrazac1PersistenceTest(TestCase):
             client_company=self.company,
             first_name="Ivan",
             last_name="Ivic",
-            high_risk_position_name="Rukovalac viljuškarom",
         )
         self.process_type = make_process_type()
         self.binding = ProcessBinding.objects.create(
@@ -254,6 +253,6 @@ class Obrazac1PersistenceTest(TestCase):
         self.assertTrue(second.file)
         self.assertTrue(first_file_name)
 
-    def test_generate_medical_exam_record_function_still_works(self):
-        content = generate_medical_exam_record(self.company.id)
-        self.assertTrue(len(content) > 0)
+    def test_obrazac1_renders_from_master(self):
+        content = render_company_document(OBRAZAC1, self.company)
+        self.assertEqual(content[:2], b"PK")

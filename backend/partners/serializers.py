@@ -13,11 +13,9 @@ from .models import (
     ClientCompany,
     ClientIntakeLink,
     ClientIntakeSubmission,
-    CompanyComplianceFinding,
     CompanyDocument,
     CompanyDocumentKind,
     CompanyObligationExclusion,
-    ComplianceFindingType,
     ContactPerson,
     Employee,
     EmployeeTraining,
@@ -57,6 +55,8 @@ class JobRoleSerializer(serializers.ModelSerializer):
         source="risk_level", read_only=True)
     employee_count = serializers.IntegerField(
         source="employees.count", read_only=True)
+    is_high_risk = serializers.BooleanField(read_only=True)
+    kinney_suggests_high_risk = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = JobRole
@@ -68,6 +68,11 @@ class JobRoleSerializer(serializers.ModelSerializer):
             "risk_level",
             "risk_level_detail",
             "employee_count",
+            "is_high_risk",
+            "kinney_suggests_high_risk",
+            "special_health_conditions",
+            "safety_measures",
+            "supervised_roles",
             "obrazac6_template",
             "lzo_revers_template",
             "potvrda_clan5_template",
@@ -100,11 +105,11 @@ class ClientCompanySerializer(serializers.ModelSerializer):
             "risk_assessment_act_name",
             "risk_assessment_act_date",
             "zop_category",
-            "high_risk_activity",
+            "has_high_risk_roles",
             "installations",
             "email_test_mode",
         )
-        read_only_fields = ("risk_assessment_act_file",)
+        read_only_fields = ("risk_assessment_act_file", "has_high_risk_roles")
 
     def _user_can_manage_email_test_mode(self) -> bool:
         request = self.context.get("request")
@@ -127,6 +132,19 @@ class ClientCompanySerializer(serializers.ModelSerializer):
     def validate_tax_id(self, value):
         return validate_pib(value)
 
+    def validate_installations(self, value):
+        from .obligation_rules import INSTALLATION_CODES
+
+        if value is None:
+            return None
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Instalacije moraju biti lista.")
+        unknown = [v for v in value if v not in INSTALLATION_CODES]
+        if unknown:
+            raise serializers.ValidationError(
+                "Nepoznata instalacija: " + ", ".join(map(str, unknown)))
+        return sorted(set(value))
+
     def validate_registration_number(self, value):
         return validate_maticni_broj(value)
 
@@ -146,9 +164,8 @@ class EmployeeSerializer(serializers.ModelSerializer):
         source="job_role.name", read_only=True)
     job_role_risk_level = RiskLevelSerializer(
         source="job_role.risk_level", read_only=True)
-    risk_level_override_detail = RiskLevelSerializer(
-        source="risk_level_override", read_only=True)
     effective_risk_level = RiskLevelSerializer(read_only=True)
+    is_employed = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Employee
@@ -166,13 +183,12 @@ class EmployeeSerializer(serializers.ModelSerializer):
             "org_unit",
             "position",
             "occupation",
-            "high_risk_position_name",
             "job_role",
             "job_role_name",
             "job_role_risk_level",
-            "risk_level_override",
-            "risk_level_override_detail",
             "effective_risk_level",
+            "employment_end_date",
+            "is_employed",
         )
 
     def validate_national_id(self, value):
@@ -180,6 +196,22 @@ class EmployeeSerializer(serializers.ModelSerializer):
 
     def validate_date_of_birth(self, value):
         return validate_birth_date(value)
+
+    def validate(self, attrs):
+        instance = self.instance
+        company = attrs.get(
+            "client_company",
+            instance.client_company if instance else None,
+        )
+        job_role = attrs.get(
+            "job_role",
+            instance.job_role if instance else None,
+        )
+        if job_role and company and job_role.client_company_id != company.id:
+            raise serializers.ValidationError(
+                {"job_role": "Radno mesto ne pripada izabranoj firmi."}
+            )
+        return attrs
 
 
 class ContactPersonSerializer(serializers.ModelSerializer):
@@ -246,6 +278,8 @@ class CompanyDocumentKindSerializer(serializers.ModelSerializer):
 class TrainingTypeSerializer(serializers.ModelSerializer):
     client_company_name = serializers.CharField(
         source="client_company.name", read_only=True)
+    process_type_name = serializers.CharField(
+        source="process_type.name", read_only=True, default="")
 
     class Meta:
         model = TrainingType
@@ -256,8 +290,24 @@ class TrainingTypeSerializer(serializers.ModelSerializer):
             "name",
             "description",
             "potvrda_template",
+            "process_type",
+            "process_type_name",
             "is_active",
         )
+
+    def validate_potvrda_template(self, value):
+        if value and not value.name.lower().endswith(".docx"):
+            raise serializers.ValidationError(
+                "Blanko potvrde mora biti Word dokument (.docx) sa poljima.")
+        return value
+
+    def validate_process_type(self, value):
+        from processes.models import ProcessType
+
+        if value is not None and value.subject_kind != ProcessType.SUBJECT_EMPLOYEE:
+            raise serializers.ValidationError(
+                "Obuka može da ispuni samo obavezu zaposlenog.")
+        return value
 
 
 class EmployeeTrainingSerializer(serializers.ModelSerializer):
@@ -296,68 +346,6 @@ class EmployeeTrainingSerializer(serializers.ModelSerializer):
                 {"valid_until": "Datum isteka ne može biti pre datuma "
                                 "završetka obuke."})
         return attrs
-
-
-class ComplianceFindingTypeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ComplianceFindingType
-        fields = (
-            "id",
-            "code",
-            "name",
-            "description",
-            "default_validity_months",
-            "process_type",
-            "is_active",
-            "order",
-        )
-
-
-class CompanyComplianceFindingSerializer(serializers.ModelSerializer):
-    finding_type_name = serializers.CharField(
-        source="finding_type.name",
-        read_only=True,
-    )
-    finding_type_code = serializers.CharField(
-        source="finding_type.code",
-        read_only=True,
-    )
-    file = serializers.SerializerMethodField()
-    file_name = serializers.SerializerMethodField()
-    status = serializers.CharField(read_only=True)
-
-    class Meta:
-        model = CompanyComplianceFinding
-        fields = (
-            "id",
-            "client_company",
-            "finding_type",
-            "finding_type_name",
-            "finding_type_code",
-            "file",
-            "file_name",
-            "issued_date",
-            "valid_until",
-            "status",
-            "process_binding",
-            "uploaded_at",
-            "updated_at",
-        )
-        read_only_fields = ("valid_until", "process_binding")
-
-    def get_file(self, obj):
-        f = obj.file
-        if not f:
-            return None
-        return f.url
-
-    def get_file_name(self, obj):
-        f = obj.file
-        if not f:
-            return ""
-        base = os.path.basename(f.name)
-        name, _ = os.path.splitext(base)
-        return name
 
 
 class RiskAssessmentSectionRevisionSerializer(serializers.ModelSerializer):
@@ -455,6 +443,7 @@ class RiskAssessmentActSerializer(serializers.ModelSerializer):
             "id",
             "client_company",
             "act_date",
+            "act_number",
             "created_at",
             "updated_at",
             "sections",
@@ -609,6 +598,7 @@ class ObligationPlanRowSerializer(serializers.Serializer):
     excluded = serializers.BooleanField()
     exclusion_reason = serializers.CharField(allow_blank=True)
     status = serializers.CharField()
+    counts = serializers.DictField(allow_null=True, required=False)
 
 
 class HazardSerializer(serializers.ModelSerializer):
@@ -623,6 +613,7 @@ class HazardSerializer(serializers.ModelSerializer):
             "label",
             "kind",
             "kind_display",
+            "official_code",
             "description",
             "order",
             "is_active",
@@ -685,6 +676,8 @@ class JobRoleLZOSerializer(serializers.ModelSerializer):
             "name",
             "standard",
             "interval_months",
+            "description",
+            "quantity",
             "order",
         )
 

@@ -7,6 +7,7 @@ from django.utils import timezone
 from .activity_log import log_activity
 from .date_format import format_date_display
 from .dates import add_months
+from .period_resolution import resolve_period_months
 from .models import (
     ActivityLog,
     NotificationOutbox,
@@ -81,6 +82,13 @@ def materialize_outbox_for_run(run: ProcessRun) -> int:
         return 0
 
     offsets = _effective_offsets(binding)
+    today = timezone.localdate()
+    past_offsets = [
+        offset
+        for offset in offsets
+        if offset != 0 and run.scheduled_for + timedelta(days=offset) < today
+    ]
+    latest_past = max(past_offsets) if past_offsets else None
     created = 0
     for offset in offsets:
         trigger = _trigger_for_offset(offset)
@@ -91,6 +99,7 @@ def materialize_outbox_for_run(run: ProcessRun) -> int:
         ).first()
 
         send_on = run.scheduled_for + timedelta(days=offset)
+        superseded = offset in past_offsets and offset != latest_past
 
         _, inserted = NotificationOutbox.objects.get_or_create(
             process_run=run,
@@ -98,7 +107,11 @@ def materialize_outbox_for_run(run: ProcessRun) -> int:
             defaults={
                 "process_template": template,
                 "scheduled_send_on": send_on,
-                "status": NotificationOutbox.STATUS_PENDING,
+                "status": (
+                    NotificationOutbox.STATUS_CANCELLED
+                    if superseded
+                    else NotificationOutbox.STATUS_PENDING
+                ),
             },
         )
         if inserted:
@@ -236,7 +249,9 @@ def ensure_open_runs_for_active_bindings() -> int:
         ProcessBinding.objects.filter(
             is_active=True,
             next_run_at__isnull=False,
+            process_type__is_active=True,
         )
+        .exclude(equipment_item__is_active=False)
         .annotate(has_open=Exists(open_run_qs))
         .filter(has_open=False)
         .select_related("process_type", "employee", "equipment_item", "client_company")
@@ -327,10 +342,14 @@ def run_on_completed_trigger(run: ProcessRun) -> None:
                 is_active=True,
             )
 
-        base_date = run.valid_until or run.performed_at or date.today()
+        base_date = run.performed_at or date.today()
         followup_period_months = (
             followup_binding.custom_period_months
-            or followup_type.default_period_months
+            or resolve_period_months(
+                followup_type,
+                binding.employee or binding.equipment_item
+                or binding.client_company,
+            )
             or 12
         )
         followup_binding.next_run_at = add_months(
@@ -390,6 +409,27 @@ def _send_outbox_row(outbox: NotificationOutbox, now) -> None:
             process_run=run,
             process_binding=binding,
         )
+        return
+
+    if not template.send_email:
+        outbox.status = NotificationOutbox.STATUS_CANCELLED
+        outbox.last_error = "Slanje mejla je isključeno na šablonu."
+        outbox.save(update_fields=["status", "last_error"])
+        return
+
+    trigger = _trigger_for_offset(outbox.offset_days)
+    if (
+        trigger == ProcessTemplate.TRIGGER_ON_SCHEDULED
+        and ProcessTriggerRun.objects.filter(
+            process_run=run,
+            process_template=template,
+            trigger=trigger,
+            email_sent=True,
+        ).exists()
+    ):
+        outbox.status = NotificationOutbox.STATUS_CANCELLED
+        outbox.last_error = "Već poslato ručno."
+        outbox.save(update_fields=["status", "last_error"])
         return
 
     existing_doc = None
@@ -565,7 +605,11 @@ def run_process_reminders(*, today: date | None = None) -> int:
             "process_template__document_template",
             "process_template__notification_role_group",
         )
-        .filter(process_run__status__in=OPEN_RUN_STATUSES)
+        .filter(
+            process_run__status__in=OPEN_RUN_STATUSES,
+            process_run__process_binding__is_active=True,
+            process_run__process_type__is_active=True,
+        )
     )
     now = timezone.now()
     n = 0

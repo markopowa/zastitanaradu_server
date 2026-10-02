@@ -12,6 +12,9 @@ export interface JobRoleFormValues {
     name: string;
     riskLevelId: string;
     description: string;
+    specialHealthConditions?: string;
+    safetyMeasures?: string;
+    supervisedRoles?: string;
 }
 
 export interface JobRoleFormFieldsProps {
@@ -20,6 +23,7 @@ export interface JobRoleFormFieldsProps {
     onChange: (values: JobRoleFormValues) => void;
     disabled?: boolean;
     requireRiskLevel?: boolean;
+    showDetails?: boolean;
 }
 
 export function jobRoleFormIsValid(
@@ -37,6 +41,7 @@ export function JobRoleFormFields({
     onChange,
     disabled = false,
     requireRiskLevel = false,
+    showDetails = false,
 }: JobRoleFormFieldsProps) {
     const { name, riskLevelId, description } = values;
 
@@ -76,14 +81,14 @@ export function JobRoleFormFields({
                     )}
                     {riskLevels.map((rl) => (
                         <MenuItem key={rl.id} value={String(rl.id)}>
-                            {rl.label} (R={rl.score})
+                            {rl.label}
                         </MenuItem>
                     ))}
                 </Select>
             </FormControl>
             <TextField
                 margin="dense"
-                label="Opis"
+                label="Opis poslova"
                 fullWidth
                 multiline
                 minRows={2}
@@ -93,6 +98,55 @@ export function JobRoleFormFields({
                     onChange({ ...values, description: e.target.value })
                 }
             />
+            {showDetails ? (
+                <>
+                    <TextField
+                        margin="dense"
+                        label="Mere za bezbedan i zdrav rad"
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        disabled={disabled}
+                        value={values.safetyMeasures ?? ""}
+                        onChange={(e) =>
+                            onChange({
+                                ...values,
+                                safetyMeasures: e.target.value,
+                            })
+                        }
+                        helperText="Ako ostane prazno, koriste se mere uz opasnosti."
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Posebni zdravstveni uslovi"
+                        fullWidth
+                        multiline
+                        minRows={2}
+                        disabled={disabled}
+                        value={values.specialHealthConditions ?? ""}
+                        onChange={(e) =>
+                            onChange({
+                                ...values,
+                                specialHealthConditions: e.target.value,
+                            })
+                        }
+                        helperText="Upisuje se na uput za lekarski pregled."
+                    />
+                    <TextField
+                        margin="dense"
+                        label="Radna mesta koja rukovodilac prati i kontroliše"
+                        fullWidth
+                        disabled={disabled}
+                        value={values.supervisedRoles ?? ""}
+                        onChange={(e) =>
+                            onChange({
+                                ...values,
+                                supervisedRoles: e.target.value,
+                            })
+                        }
+                    />
+                </>
+            ) : null}
         </>
     );
 }

@@ -42,18 +42,22 @@ class JobRole(models.Model):
         null=True,
         blank=True,
     )
-    obrazac6_fields = models.JSONField(default=list, blank=True)
     lzo_revers_template = models.FileField(
         upload_to="job_role_templates/lzo/",
         null=True,
         blank=True,
     )
-    lzo_revers_fields = models.JSONField(default=list, blank=True)
     potvrda_clan5_template = models.FileField(
         upload_to="job_role_templates/potvrda_clan5/",
         null=True,
         blank=True,
     )
+    special_health_conditions = models.TextField(
+        "Posebni zdravstveni uslovi", blank=True)
+    safety_measures = models.TextField(
+        "Mere za bezbedan i zdrav rad na radnom mestu", blank=True)
+    supervised_roles = models.TextField(
+        "Radna mesta koja rukovodilac prati i kontroliše", blank=True)
 
     class Meta:
         verbose_name = "Job role"
@@ -63,6 +67,17 @@ class JobRole(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def is_high_risk(self) -> bool:
+        return bool(self.risk_level_id and self.risk_level.is_high_risk)
+
+    @property
+    def kinney_suggests_high_risk(self) -> bool:
+        from .kinney import HIGH_RISK_CATEGORIES
+
+        return self.hazards.filter(
+            risk_category__in=HIGH_RISK_CATEGORIES).exists()
 
 
 class ClientCompany(models.Model):
@@ -111,13 +126,10 @@ class ClientCompany(models.Model):
         default="",
         verbose_name="ZOP kategorija",
     )
-    high_risk_activity = models.BooleanField(
-        default=False,
-        verbose_name="Delatnost visokog rizika",
-    )
     installations = models.JSONField(
-        default=list,
+        null=True,
         blank=True,
+        default=None,
         verbose_name="Instalacije",
         help_text=(
             "Kodovi instalacija koje firma ima: HYDRANT_NETWORK, FIRE_ALARM_SYSTEM, "
@@ -136,6 +148,10 @@ class ClientCompany(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+    @property
+    def has_high_risk_roles(self) -> bool:
+        return self.job_roles.filter(risk_level__is_high_risk=True).exists()
 
 
 class Employee(models.Model):
@@ -177,11 +193,6 @@ class Employee(models.Model):
         blank=True,
         help_text="Zanimanje zaposlenog (prema lekarskom obrascu).",
     )
-    high_risk_position_name = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="Naziv radnog mesta sa povećanim rizikom.",
-    )
     job_role = models.ForeignKey(
         JobRole,
         on_delete=models.SET_NULL,
@@ -189,10 +200,8 @@ class Employee(models.Model):
         null=True,
         blank=True,
     )
-    risk_level_override = models.ForeignKey(
-        RiskLevel,
-        on_delete=models.SET_NULL,
-        related_name="employee_overrides",
+    employment_end_date = models.DateField(
+        "Datum prestanka radnog odnosa",
         null=True,
         blank=True,
     )
@@ -205,12 +214,21 @@ class Employee(models.Model):
         return f"{self.first_name} {self.last_name}".strip()
 
     @property
+    def is_employed(self) -> bool:
+        if self.employment_end_date is None:
+            return True
+        return self.employment_end_date > timezone.localdate()
+
+    @property
     def effective_risk_level(self) -> "RiskLevel | None":
-        if self.risk_level_override_id:
-            return self.risk_level_override
         if self.job_role_id:
             return self.job_role.risk_level
         return None
+
+    @property
+    def is_high_risk(self) -> bool:
+        level = self.effective_risk_level
+        return bool(level and level.is_high_risk)
 
 
 class TrainingType(models.Model):
@@ -226,7 +244,14 @@ class TrainingType(models.Model):
         null=True,
         blank=True,
     )
-    potvrda_fields = models.JSONField(default=list, blank=True)
+    process_type = models.ForeignKey(
+        "processes.ProcessType",
+        on_delete=models.SET_NULL,
+        related_name="training_types",
+        null=True,
+        blank=True,
+        verbose_name="Obaveza koju obuka ispunjava",
+    )
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -392,6 +417,7 @@ class RiskAssessmentAct(models.Model):
         related_name="risk_assessment_act",
     )
     act_date = models.DateField(null=True, blank=True)
+    act_number = models.CharField(max_length=64, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -505,89 +531,6 @@ class RiskAssessmentActAmendment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} ({self.act_id})"
-
-
-class ComplianceFindingType(models.Model):
-    code = models.CharField(max_length=64, unique=True)
-    name = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    default_validity_months = models.PositiveIntegerField(default=36)
-    process_type = models.ForeignKey(
-        "processes.ProcessType",
-        on_delete=models.SET_NULL,
-        related_name="compliance_finding_types",
-        null=True,
-        blank=True,
-    )
-    is_active = models.BooleanField(default=True)
-    order = models.PositiveIntegerField(default=0)
-
-    class Meta:
-        verbose_name = "Tip stručnog nalaza"
-        verbose_name_plural = "Tipovi stručnih nalaza"
-        ordering = ("order", "name")
-
-    def __str__(self) -> str:
-        return self.name
-
-
-class CompanyComplianceFinding(models.Model):
-    STATUS_VALID = "VALID"
-    STATUS_EXPIRING = "EXPIRING"
-    STATUS_EXPIRED = "EXPIRED"
-    STATUS_MISSING = "MISSING"
-
-    EXPIRING_THRESHOLD_DAYS = 30
-
-    client_company = models.ForeignKey(
-        ClientCompany,
-        on_delete=models.CASCADE,
-        related_name="compliance_findings",
-    )
-    finding_type = models.ForeignKey(
-        ComplianceFindingType,
-        on_delete=models.PROTECT,
-        related_name="company_findings",
-    )
-    file = models.FileField(
-        upload_to="compliance_findings/",
-        null=True,
-        blank=True,
-    )
-    issued_date = models.DateField(null=True, blank=True)
-    valid_until = models.DateField(null=True, blank=True)
-    process_binding = models.ForeignKey(
-        "processes.ProcessBinding",
-        on_delete=models.SET_NULL,
-        related_name="compliance_findings",
-        null=True,
-        blank=True,
-    )
-    uploaded_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        verbose_name = "Stručni nalaz firme"
-        verbose_name_plural = "Stručni nalazi firme"
-        ordering = ("client_company", "finding_type__order")
-        unique_together = ("client_company", "finding_type")
-
-    def __str__(self) -> str:
-        return f"{self.finding_type} ({self.client_company_id})"
-
-    @property
-    def status(self) -> str:
-        if not self.file or not self.valid_until:
-            return self.STATUS_MISSING
-        from django.utils import timezone
-
-        today = timezone.localdate()
-        if self.valid_until < today:
-            return self.STATUS_EXPIRED
-        days_left = (self.valid_until - today).days
-        if days_left <= self.EXPIRING_THRESHOLD_DAYS:
-            return self.STATUS_EXPIRING
-        return self.STATUS_VALID
 
 
 class EquipmentItem(models.Model):
@@ -937,6 +880,8 @@ class Hazard(models.Model):
     code = models.CharField(max_length=32, unique=True)
     label = models.CharField(max_length=255)
     kind = models.CharField(max_length=16, choices=KIND_CHOICES)
+    official_code = models.CharField(
+        "Šifra opasnosti/štetnosti (01-40)", max_length=2, blank=True)
     description = models.TextField(blank=True)
     order = models.PositiveIntegerField(default=0)
     is_active = models.BooleanField(default=True)
@@ -1021,6 +966,8 @@ class JobRoleLZO(models.Model):
     name = models.CharField(max_length=255)
     standard = models.CharField(max_length=255, blank=True)
     interval_months = models.PositiveIntegerField(null=True, blank=True)
+    description = models.CharField(max_length=255, blank=True)
+    quantity = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
 
     class Meta:

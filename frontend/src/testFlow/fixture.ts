@@ -80,7 +80,6 @@ export const TEST_FLOW = {
     },
     companyProfile: {
         zop_category: "III" as const,
-        high_risk_activity: true,
         installations: ["FIRE_EXTINGUISHERS", "HYDRANT_NETWORK"] as const,
     },
     actAmendment: {

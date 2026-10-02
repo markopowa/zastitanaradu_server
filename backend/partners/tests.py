@@ -97,12 +97,18 @@ class ApplicabilityEvaluationTest(TestCase):
         self.assertFalse(evaluate_applicability(pt, company))
 
     def test_high_risk_only_match(self):
-        company = make_company(high_risk_activity=True)
+        company = make_company()
+        JobRole.objects.create(
+            client_company=company,
+            name="Viljuškarista",
+            risk_level=RiskLevel.objects.create(
+                code="HR", label="Povećan", score=6, is_high_risk=True),
+        )
         pt = make_process_type(applicability_rule={"high_risk_only": True})
         self.assertTrue(evaluate_applicability(pt, company))
 
     def test_high_risk_only_no_match(self):
-        company = make_company(high_risk_activity=False)
+        company = make_company()
         pt = make_process_type(applicability_rule={"high_risk_only": True})
         self.assertFalse(evaluate_applicability(pt, company))
 
@@ -143,13 +149,12 @@ class PeriodResolutionTest(TestCase):
             risk_level=self.risk_low,
         )
 
-    def _make_employee(self, job_role=None, override=None):
+    def _make_employee(self, job_role=None):
         return Employee.objects.create(
             client_company=self.company,
             first_name="Test",
             last_name="Zaposleni",
             job_role=job_role,
-            risk_level_override=override,
         )
 
     def test_high_risk_employee_gets_12_months(self):
@@ -169,15 +174,6 @@ class PeriodResolutionTest(TestCase):
         emp = self._make_employee(job_role=self.job_role_low)
         result = resolve_period_months(pt, emp)
         self.assertEqual(result, 36)
-
-    def test_override_high_risk_gets_12_months(self):
-        pt = make_process_type(
-            period_rules=[{"when": {"risk": "high"}, "months": 12}],
-            default_period_months=36,
-        )
-        emp = self._make_employee(override=self.risk_high)
-        result = resolve_period_months(pt, emp)
-        self.assertEqual(result, 12)
 
     def test_no_rules_returns_default(self):
         pt = make_process_type(period_rules=[], default_period_months=24)
@@ -317,7 +313,18 @@ class ExclusionFlowTest(TestCase):
         self.assertEqual(row["status"], STATUS_EXCLUDED)
         self.assertEqual(row["exclusion_reason"], "Nije primenljivo")
 
+    def test_unanswered_installations_show_needs_profile(self):
+        pt = make_process_type(
+            applicability_rule={"requires_installation": "HYDRANT_NETWORK"},
+            shape=ProcessType.SHAPE_PERIODIC,
+        )
+        plan = build_obligation_plan(self.company)
+        row = next(r for r in plan if r["process_type"]["id"] == pt.id)
+        self.assertEqual(row["status"], "NEEDS_PROFILE")
+
     def test_not_applicable_but_not_excluded_shows_not_applicable(self):
+        self.company.installations = []
+        self.company.save()
         pt = make_process_type(
             applicability_rule={"requires_installation": "HYDRANT_NETWORK"},
             shape=ProcessType.SHAPE_PERIODIC,
@@ -347,7 +354,7 @@ class ExclusionFlowTest(TestCase):
 
 class NotApplicablePlanRowTest(TestCase):
     def setUp(self):
-        self.company = make_company(high_risk_activity=False, zop_category="")
+        self.company = make_company(zop_category="")
 
     def test_non_applicable_row_has_not_applicable_status(self):
         pt = make_process_type(
@@ -572,13 +579,12 @@ class AutoSpawnBindingsTest(TestCase):
                 },
             )
 
-    def _make_employee(self, job_role=None, override=None):
+    def _make_employee(self, job_role=None):
         return Employee.objects.create(
             client_company=self.company,
             first_name="Test",
             last_name="Auto",
             job_role=job_role,
-            risk_level_override=override,
         )
 
     def _bindings_for(self, employee):
@@ -962,16 +968,6 @@ class SeedComplianceFindingTypesGromobranTest(TestCase):
         self.assertEqual(pt.default_period_months, 24)
         self.assertEqual(pt.legal_basis, "Pravilnik 76/2024 čl. 9")
 
-    def test_gromobran_finding_type_validity_is_24_months(self):
-        from django.core.management import call_command
-
-        from partners.models import ComplianceFindingType
-
-        call_command("seed_compliance_finding_types", verbosity=0)
-        ft = ComplianceFindingType.objects.get(code="LIGHTNING_PROTECTION")
-        self.assertEqual(ft.default_validity_months, 24)
-        self.assertIn("24", ft.description)
-
 
 class ReconcileObligationCatalogSyncTest(TestCase):
     def test_reconcile_updates_stale_gromobran_values(self):
@@ -985,19 +981,11 @@ class ReconcileObligationCatalogSyncTest(TestCase):
         pt.legal_basis = ""
         pt.save(update_fields=["default_period_months", "legal_basis"])
 
-        from partners.models import ComplianceFindingType
-
-        ft = ComplianceFindingType.objects.get(code="LIGHTNING_PROTECTION")
-        ft.default_validity_months = 36
-        ft.save(update_fields=["default_validity_months"])
-
         call_command("reconcile_obligation_catalog", verbosity=0)
 
         pt.refresh_from_db()
-        ft.refresh_from_db()
         self.assertEqual(pt.default_period_months, 24)
         self.assertEqual(pt.legal_basis, "Pravilnik 76/2024 čl. 9")
-        self.assertEqual(ft.default_validity_months, 24)
 
 
 class LzoZaduzenjeAutoSpawnTest(TestCase):
@@ -1022,13 +1010,36 @@ class LzoZaduzenjeAutoSpawnTest(TestCase):
                 },
             )
 
-    def test_lzo_zaduzenje_spawned_for_every_employee(self):
+    def _role_with_lzo(self):
+        from partners.models import JobRoleLZO
+
+        role = JobRole.objects.create(client_company=self.company, name="Magacioner")
+        JobRoleLZO.objects.create(job_role=role, name="Zaštitne cipele")
+        return role
+
+    def test_lzo_zaduzenje_not_spawned_without_lzo_items(self):
         from partners.employee_bindings import ensure_default_bindings_for_employee
 
         employee = Employee.objects.create(
             client_company=self.company,
             first_name="Ana",
             last_name="Anić",
+        )
+        ensure_default_bindings_for_employee(employee)
+        self.assertFalse(
+            ProcessBinding.objects.filter(
+                employee=employee, process_type__code="LZO_ZADUZENJE"
+            ).exists()
+        )
+
+    def test_lzo_zaduzenje_spawned_for_role_with_lzo_items(self):
+        from partners.employee_bindings import ensure_default_bindings_for_employee
+
+        employee = Employee.objects.create(
+            client_company=self.company,
+            first_name="Ana",
+            last_name="Anić",
+            job_role=self._role_with_lzo(),
         )
         ensure_default_bindings_for_employee(employee)
         codes = {
@@ -1048,6 +1059,7 @@ class LzoZaduzenjeAutoSpawnTest(TestCase):
             client_company=self.company,
             first_name="Petar",
             last_name="Petrović",
+            job_role=self._role_with_lzo(),
         )
         ensure_default_bindings_for_employee(employee)
         ensure_default_bindings_for_employee(employee)

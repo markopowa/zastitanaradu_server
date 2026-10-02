@@ -7,7 +7,7 @@ from partners.management.commands.seed_compliance_finding_types import (
     FINDING_TYPE_PROCESS_TYPES,
 )
 from partners.management.commands.seed_obligation_catalog import CATALOG
-from partners.models import ComplianceFindingType
+from partners.obligation_sync import deactivate_bindings
 from processes.models import ProcessBinding, ProcessRun, ProcessType
 
 PROCESS_TYPE_SYNC_FIELDS = (
@@ -47,27 +47,8 @@ def _sync_process_type_fields(pt, data):
     return bool(updates)
 
 
-def _sync_finding_type_fields(ft, data):
-    updates = {}
-    values = {
-        "name": data["name"],
-        "description": data.get("description", ""),
-        "default_validity_months": data.get("default_validity_months", 36),
-        "order": data["order"],
-    }
-    for field, value in values.items():
-        if getattr(ft, field) != value:
-            updates[field] = value
-    if updates:
-        for field, value in updates.items():
-            setattr(ft, field, value)
-        ft.save(update_fields=list(updates.keys()))
-    return bool(updates)
-
-
 def sync_canonical_fields():
     updated_pt = 0
-    updated_ft = 0
 
     for entry in CATALOG:
         try:
@@ -86,14 +67,7 @@ def sync_canonical_fields():
         if _sync_process_type_fields(pt, pt_data):
             updated_pt += 1
 
-        try:
-            ft = ComplianceFindingType.objects.get(code=item["code"])
-        except ComplianceFindingType.DoesNotExist:
-            continue
-        if _sync_finding_type_fields(ft, item):
-            updated_ft += 1
-
-    return updated_pt, updated_ft
+    return updated_pt
 
 
 class Command(BaseCommand):
@@ -107,7 +81,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--delete",
             action="store_true",
-            help="Delete strays without activities; otherwise deactivate them.",
+            help="Delete strays without completed activities; otherwise deactivate them.",
         )
         parser.add_argument(
             "--no-seed",
@@ -121,11 +95,10 @@ class Command(BaseCommand):
         do_delete = options["delete"]
 
         updated_pt = 0
-        updated_ft = 0
         if not options["no_seed"] and not dry_run:
             call_command("seed_compliance_finding_types")
             call_command("seed_obligation_catalog")
-            updated_pt, updated_ft = sync_canonical_fields()
+            updated_pt = sync_canonical_fields()
 
         canonical = canonical_codes()
         strays = ProcessType.objects.exclude(
@@ -137,7 +110,11 @@ class Command(BaseCommand):
             if dry_run:
                 self.stdout.write(f"  stray: {pt.code} — {pt.name}")
                 continue
-            if do_delete:
+            has_history = ProcessRun.objects.filter(
+                process_type=pt,
+                status=ProcessRun.STATUS_COMPLETED,
+            ).exists()
+            if do_delete and not has_history:
                 ProcessRun.objects.filter(process_type=pt).delete()
                 ProcessBinding.objects.filter(process_type=pt).delete()
                 pt.templates.all().delete()
@@ -147,6 +124,9 @@ class Command(BaseCommand):
                     continue
                 except ProtectedError:
                     pass
+            deactivate_bindings(
+                ProcessBinding.objects.filter(process_type=pt, is_active=True)
+            )
             if pt.is_active:
                 pt.is_active = False
                 pt.save(update_fields=["is_active"])
@@ -166,7 +146,6 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"Catalog reconciled: {len(canonical)} canonical kept, "
                 f"{deleted} deleted, {deactivated} deactivated, "
-                f"{updated_pt} ProcessType(s) synced, "
-                f"{updated_ft} ComplianceFindingType(s) synced."
+                f"{updated_pt} ProcessType(s) synced."
             )
         )

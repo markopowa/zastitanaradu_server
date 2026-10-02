@@ -13,7 +13,8 @@ export type PlanStatus =
     | "OVERDUE"
     | "MISSING"
     | "EXCLUDED"
-    | "NOT_APPLICABLE";
+    | "NOT_APPLICABLE"
+    | "NEEDS_PROFILE";
 export type OutboxStatus = "PENDING" | "SENT" | "FAILED" | "CANCELLED";
 
 export interface StatusMeta {
@@ -43,6 +44,7 @@ const PLAN_STATUS_META: Record<PlanStatus, StatusMeta> = {
     MISSING: { label: "Nedostaje", color: "default" },
     EXCLUDED: { label: "Isključeno", color: "default" },
     NOT_APPLICABLE: { label: "Nije primenljivo", color: "default" },
+    NEEDS_PROFILE: { label: "Nedostaje podatak u profilu", color: "warning" },
 };
 
 const OUTBOX_STATUS_META: Record<OutboxStatus, StatusMeta> = {

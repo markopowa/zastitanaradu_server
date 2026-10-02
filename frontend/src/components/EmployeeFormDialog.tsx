@@ -21,11 +21,14 @@ import DateTextFieldWithPicker from "./DateTextFieldWithPicker";
 import {
     createEmployee,
     getJobRoles,
-    getRiskLevels,
     updateEmployee,
 } from "../api/processes";
 import { FormActions } from "../design";
-import { isoDateToFormDisplay, StringToDate } from "../utils/date";
+import {
+    displayDateToIso,
+    isoDateToFormDisplay,
+    StringToDate,
+} from "../utils/date";
 import {
     isJmbgChecksumValid,
     isJmbgComplete,
@@ -49,7 +52,7 @@ import { employeeFormFillFields } from "../testFlow/applyEmployeeFill";
 
 const emptyForm = (): Omit<
     EmployeeFormDialogState,
-    "jobRoles" | "riskLevels" | "saving" | "error"
+    "jobRoles" | "saving" | "error"
 > => ({
     client_company_id: "",
     first_name: "",
@@ -62,9 +65,8 @@ const emptyForm = (): Omit<
     org_unit: "",
     position: "",
     occupation: "",
-    high_risk_position_name: "",
     job_role: "",
-    risk_level_override: "",
+    employment_end_date: "",
 });
 
 export class EmployeeFormDialog extends Component<
@@ -76,7 +78,6 @@ export class EmployeeFormDialog extends Component<
     state: EmployeeFormDialogState = {
         ...emptyForm(),
         jobRoles: [],
-        riskLevels: [],
         saving: false,
         error: null,
     };
@@ -145,13 +146,11 @@ export class EmployeeFormDialog extends Component<
                 org_unit: initial.org_unit ?? "",
                 position: initial.position ?? "",
                 occupation: initial.occupation ?? "",
-                high_risk_position_name: initial.high_risk_position_name ?? "",
                 job_role:
                     initial.job_role != null ? String(initial.job_role) : "",
-                risk_level_override:
-                    initial.risk_level_override != null
-                        ? String(initial.risk_level_override)
-                        : "",
+                employment_end_date: isoDateToFormDisplay(
+                    initial.employment_end_date,
+                ),
             });
         } else if (lockedClientCompanyId != null) {
             base.client_company_id = String(lockedClientCompanyId);
@@ -163,13 +162,9 @@ export class EmployeeFormDialog extends Component<
         this.setState({
             ...base,
             jobRoles: [],
-            riskLevels: [],
-            saving: false,
+                saving: false,
             error: null,
         });
-        void getRiskLevels().then((riskLevels) =>
-            this.setState({ riskLevels }),
-        );
         const companyId = base.client_company_id;
         if (companyId) {
             this.loadJobRoles(companyId);
@@ -237,10 +232,9 @@ export class EmployeeFormDialog extends Component<
             org_unit,
             position,
             occupation,
-            high_risk_position_name,
             client_company_id,
             job_role,
-            risk_level_override,
+            employment_end_date,
         } = this.state;
         if (!this.isValid()) return;
 
@@ -263,13 +257,11 @@ export class EmployeeFormDialog extends Component<
             org_unit: org_unit.trim(),
             position: position.trim(),
             occupation: occupation.trim() || undefined,
-            high_risk_position_name:
-                high_risk_position_name.trim() || undefined,
             job_role: job_role ? Number(job_role) : null,
-            risk_level_override: risk_level_override
-                ? Number(risk_level_override)
-                : null,
             client_company: Number(client_company_id),
+            employment_end_date: employment_end_date.trim()
+                ? (displayDateToIso(employment_end_date) ?? null)
+                : null,
         };
 
         this.setState({ saving: true, error: null });
@@ -343,11 +335,8 @@ export class EmployeeFormDialog extends Component<
             org_unit,
             position,
             occupation,
-            high_risk_position_name,
             job_role,
-            risk_level_override,
             jobRoles,
-            riskLevels,
             saving,
             error,
         } = this.state;
@@ -529,17 +518,6 @@ export class EmployeeFormDialog extends Component<
                             this.setState({ occupation: e.target.value })
                         }
                     />
-                    <TextField
-                        margin="dense"
-                        label="Naziv radnog mesta sa povećanim rizikom"
-                        fullWidth
-                        value={high_risk_position_name}
-                        onChange={(e) =>
-                            this.setState({
-                                high_risk_position_name: e.target.value,
-                            })
-                        }
-                    />
 
                     <Typography variant="subtitle2" sx={{ mt: 2 }}>
                         Radno mesto i rizik
@@ -573,35 +551,26 @@ export class EmployeeFormDialog extends Component<
                             {inheritedRisk.label} (R={inheritedRisk.score})
                         </Typography>
                     )}
-                    <FormControl margin="dense" fullWidth size="small">
-                        <InputLabel>Rizik — izuzetak</InputLabel>
-                        <Select
-                            label="Rizik — izuzetak"
-                            value={risk_level_override}
-                            onChange={(e) =>
-                                this.setState({
-                                    risk_level_override: String(e.target.value),
-                                })
-                            }
-                        >
-                            <MenuItem value="">
-                                <em>Nasleđeno iz radnog mesta</em>
-                            </MenuItem>
-                            {riskLevels.map((rl) => (
-                                <MenuItem key={rl.id} value={String(rl.id)}>
-                                    {rl.label} (R={rl.score})
-                                </MenuItem>
-                            ))}
-                        </Select>
-                    </FormControl>
-                    <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ display: "block", mt: 0.5, mb: 1 }}
-                    >
-                        Popuni samo ako se rizik za ovog zaposlenog razlikuje od
-                        rizika radnog mesta.
-                    </Typography>
+                    {this.props.mode === "edit" ? (
+                        <Box sx={{ mt: 1 }}>
+                            <DateTextFieldWithPicker
+                                label="Datum prestanka radnog odnosa (dd.mm.yyyy)"
+                                value={this.state.employment_end_date}
+                                allowPast
+                                onChange={(v) =>
+                                    this.setState({ employment_end_date: v })
+                                }
+                            />
+                            <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "block", mt: 0.5 }}
+                            >
+                                Od tog datuma zaposleni nema obaveze ni
+                                podsetnike. Istorija ostaje sačuvana.
+                            </Typography>
+                        </Box>
+                    ) : null}
                 </DialogContent>
                 <FormActions
                     onCancel={this.handleClose}

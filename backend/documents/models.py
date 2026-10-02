@@ -82,6 +82,8 @@ class DocumentTemplate(models.Model):
         (CONTEXT_MIXED, "Mešovito"),
     )
 
+    code = models.CharField(
+        max_length=64, unique=True, null=True, blank=True)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
     category = models.ForeignKey(

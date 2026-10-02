@@ -7,10 +7,11 @@ docker compose exec -T backend python manage.py reconcile_obligation_catalog < /
 docker compose exec -T backend python manage.py seed_default_test < /dev/null
 ```
 
-Po unosu radnih mesta pilot firme:
+Kad se masteri dokumenata promene u repou (npr. posle prelaska na Word šablone), jednom:
 ```bash
-docker compose exec -T backend python manage.py attach_obrazac6_blanks --company "<ime>" --kind all < /dev/null
+docker compose exec -T backend python manage.py add_setup --replace-masters < /dev/null
 ```
+Ovo pregazi fajl svakog šablona dokumenta masterom iz repoa; ručne izmene šablona u aplikaciji se gube.
 
 Posle izmene `backend.env` (Postmark, domen, itd.) — **restart nije dovoljan**:
 ```bash

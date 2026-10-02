@@ -13,7 +13,6 @@ export interface EmployeeFormFillFields {
     org_unit: string;
     position: string;
     occupation: string;
-    high_risk_position_name: string;
     job_role: string;
 }
 
@@ -37,7 +36,6 @@ export function employeeFormFillFields(
         org_unit: fixture.org_unit,
         position: fixture.position,
         occupation: jobRoleName,
-        high_risk_position_name: jobRoleName,
         job_role: role ? String(role.id) : "",
     };
 }

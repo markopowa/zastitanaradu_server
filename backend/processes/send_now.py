@@ -2,7 +2,13 @@ from datetime import date
 
 from django.utils import timezone
 
-from .models import ProcessRun, ProcessTemplate, ProcessTriggerRun
+from .models import (
+    NotificationOutbox,
+    ProcessRun,
+    ProcessTemplate,
+    ProcessTriggerRun,
+)
+from .tasks import materialize_outbox_for_run
 from .trigger_utils import trigger_already_executed
 from .utils import binding_subject_snapshot, execute_template_actions
 
@@ -74,5 +80,12 @@ def send_now_for_binding(binding, *, user=None):
             email_error=email_error,
             document_file=generated_document,
         )
+
+    materialize_outbox_for_run(run)
+    NotificationOutbox.objects.filter(
+        process_run=run,
+        offset_days__lt=0,
+        status=NotificationOutbox.STATUS_PENDING,
+    ).update(status=NotificationOutbox.STATUS_CANCELLED)
 
     return run, True

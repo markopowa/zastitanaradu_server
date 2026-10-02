@@ -4,11 +4,9 @@ from .models import (
     ClientCompany,
     ClientIntakeLink,
     ClientIntakeSubmission,
-    CompanyComplianceFinding,
     CompanyDocument,
     CompanyDocumentKind,
     CompanyObligationExclusion,
-    ComplianceFindingType,
     ContactPerson,
     Employee,
     EmployeeTraining,
@@ -74,7 +72,6 @@ class EmployeeAdmin(admin.ModelAdmin):
         "org_unit",
         "position",
         "occupation",
-        "high_risk_position_name",
     )
     list_filter = ("client_company", "job_role")
 
@@ -119,31 +116,6 @@ class EmployeeTrainingAdmin(admin.ModelAdmin):
                     "completed_at", "valid_until")
     list_filter = ("training_type",)
     search_fields = ("employee__first_name", "employee__last_name")
-
-
-@admin.register(ComplianceFindingType)
-class ComplianceFindingTypeAdmin(admin.ModelAdmin):
-    list_display = (
-        "order",
-        "code",
-        "name",
-        "default_validity_months",
-        "process_type",
-        "is_active",
-    )
-    list_filter = ("is_active",)
-    search_fields = ("code", "name")
-
-
-@admin.register(CompanyComplianceFinding)
-class CompanyComplianceFindingAdmin(admin.ModelAdmin):
-    list_display = (
-        "client_company",
-        "finding_type",
-        "issued_date",
-        "valid_until",
-    )
-    list_filter = ("finding_type",)
 
 
 @admin.register(RiskAssessmentAct)
@@ -210,7 +182,8 @@ class CompanyObligationExclusionAdmin(admin.ModelAdmin):
 
 @admin.register(Hazard)
 class HazardAdmin(admin.ModelAdmin):
-    list_display = ("label", "kind", "code", "order", "is_active")
+    list_display = ("label", "kind", "official_code", "code", "order", "is_active")
+    list_editable = ("official_code",)
     list_filter = ("kind", "is_active")
     search_fields = ("code", "label")
 

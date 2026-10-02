@@ -1,10 +1,10 @@
 import {
     api,
-    apiBaseUrl,
     filenameFromResponse,
+    getAll,
+    getRecent,
     triggerBlobDownload,
 } from "./client";
-import type { VisualPlaceholder } from "./documents";
 import type {
     ActivityLog,
     ActivityLogEventType,
@@ -35,8 +35,7 @@ import type {
     ProcessTemplate,
     ProcessType,
     TaskAssignment,
-    CompanyComplianceFindingRow,
-    ComplianceFindingType,
+    CompanyObligationRow,
     RiskAssessmentAct,
     RiskAssessmentActAmendment,
     RiskAssessmentSectionType,
@@ -92,8 +91,7 @@ export async function getActivityLog(
     const url = qs
         ? `/api/processes/dashboard/activity-log?${qs}`
         : "/api/processes/dashboard/activity-log";
-    const { data } = await api.get<ListResponse<ActivityLog>>(url);
-    return asList(data);
+    return getRecent<ActivityLog>(url);
 }
 
 export async function getClientCompanies(params?: {
@@ -106,8 +104,7 @@ export async function getClientCompanies(params?: {
     const url = qs
         ? `/api/partners/client-companies/?${qs}`
         : "/api/partners/client-companies/";
-    const { data } = await api.get<ListResponse<ClientCompany>>(url);
-    return asList(data);
+    return getAll<ClientCompany>(url);
 }
 
 export async function getClientCompany(id: number): Promise<ClientCompany> {
@@ -225,10 +222,13 @@ export async function createRiskAssessmentAct(
 export async function updateRiskAssessmentActDate(
     actId: number,
     actDate: string | null,
+    actNumber?: string,
 ): Promise<RiskAssessmentAct> {
     const { data } = await api.patch<RiskAssessmentAct>(
         `/api/partners/risk-assessment-acts/${actId}/`,
-        { act_date: actDate },
+        actNumber === undefined
+            ? { act_date: actDate }
+            : { act_date: actDate, act_number: actNumber },
     );
     return data;
 }
@@ -263,56 +263,35 @@ export async function downloadRiskAssessmentActMergedPdf(
     return data;
 }
 
-export async function getComplianceFindingTypes(): Promise<
-    ComplianceFindingType[]
-> {
-    const { data } = await api.get<ListResponse<ComplianceFindingType>>(
-        "/api/partners/compliance-finding-types/",
-        { params: { is_active: true } },
-    );
-    return asList(data);
-}
-
-export async function getCompanyComplianceFindings(
+export async function getCompanyObligations(
     companyId: number,
-): Promise<CompanyComplianceFindingRow[]> {
-    const { data } = await api.get<CompanyComplianceFindingRow[]>(
-        `/api/partners/client-companies/${companyId}/compliance-findings/`,
+): Promise<CompanyObligationRow[]> {
+    const { data } = await api.get<CompanyObligationRow[]>(
+        `/api/partners/client-companies/${companyId}/company-obligations/`,
     );
     return data;
 }
 
-export async function uploadCompanyComplianceFinding(
+export async function uploadCompanyObligationProof(
     companyId: number,
     typeId: number,
     file: File,
-    issuedDate: string,
-): Promise<CompanyComplianceFindingRow> {
+    performedAt: string,
+    validUntil: string | null,
+): Promise<void> {
     const form = new FormData();
     form.append("file", file);
-    form.append("issued_date", issuedDate);
-    const { data } = await api.post<CompanyComplianceFindingRow>(
-        `/api/partners/client-companies/${companyId}/compliance-findings/${typeId}/`,
+    form.append("performed_at", performedAt);
+    if (validUntil) form.append("valid_until", validUntil);
+    await api.post(
+        `/api/partners/client-companies/${companyId}/company-obligations/${typeId}/proof/`,
         form,
         { headers: { "Content-Type": "multipart/form-data" } },
-    );
-    return data;
-}
-
-export async function deleteCompanyComplianceFinding(
-    companyId: number,
-    typeId: number,
-): Promise<void> {
-    await api.delete(
-        `/api/partners/client-companies/${companyId}/compliance-findings/${typeId}/`,
     );
 }
 
 export async function getRiskLevels(): Promise<RiskLevel[]> {
-    const { data } = await api.get<ListResponse<RiskLevel>>(
-        "/api/partners/risk-levels/",
-    );
-    return asList(data);
+    return getAll<RiskLevel>("/api/partners/risk-levels/");
 }
 
 export async function createRiskLevel(
@@ -350,8 +329,7 @@ export async function getJobRoles(params?: {
     const url = qs
         ? `/api/partners/job-roles/?${qs}`
         : "/api/partners/job-roles/";
-    const { data } = await api.get<ListResponse<JobRole>>(url);
-    return asList(data);
+    return getAll<JobRole>(url);
 }
 
 export async function createJobRole(
@@ -408,10 +386,12 @@ export async function getEmployees(params?: {
     client_company_id?: number;
     search?: string;
     risk_level_id?: number;
+    include_departed?: boolean;
 }): Promise<EmployeeSummary[]> {
     const search = new URLSearchParams();
     if (params?.client_company_id != null)
         search.set("client_company_id", String(params.client_company_id));
+    if (params?.include_departed) search.set("include_departed", "1");
     if (params?.search?.trim()) search.set("search", params.search.trim());
     if (params?.risk_level_id != null)
         search.set("risk_level_id", String(params.risk_level_id));
@@ -419,8 +399,7 @@ export async function getEmployees(params?: {
     const url = qs
         ? `/api/partners/employees/?${qs}`
         : "/api/partners/employees/";
-    const { data } = await api.get<ListResponse<EmployeeSummary>>(url);
-    return asList(data);
+    return getAll<EmployeeSummary>(url);
 }
 
 export async function getEmployee(id: number): Promise<Employee> {
@@ -459,8 +438,7 @@ export async function getEquipment(params?: {
     const url = qs
         ? `/api/partners/equipment/?${qs}`
         : "/api/partners/equipment/";
-    const { data } = await api.get<ListResponse<EquipmentItem>>(url);
-    return asList(data);
+    return getAll<EquipmentItem>(url);
 }
 
 export async function getEquipmentItem(id: number): Promise<EquipmentItem> {
@@ -492,10 +470,7 @@ export async function updateEquipmentItem(
 }
 
 export async function getProcessTypes(): Promise<ProcessType[]> {
-    const { data } = await api.get<ListResponse<ProcessType>>(
-        "/api/processes/types/",
-    );
-    return asList(data);
+    return getAll<ProcessType>("/api/processes/types/");
 }
 
 export async function getProcessType(id: number): Promise<ProcessType> {
@@ -579,8 +554,7 @@ export async function getProcessBindings(
     const url = qs
         ? `/api/processes/bindings/?${qs}`
         : "/api/processes/bindings/";
-    const { data } = await api.get<ListResponse<ProcessBinding>>(url);
-    return asList(data);
+    return getAll<ProcessBinding>(url);
 }
 
 export async function createProcessBinding(
@@ -637,18 +611,18 @@ export async function getProcessRuns(
         search.set("to_valid_until", params.to_valid_until);
     const qs = search.toString();
     const url = qs ? `/api/processes/runs/?${qs}` : "/api/processes/runs/";
-    const { data } = await api.get<ListResponse<ProcessRun>>(url);
-    return asList(data);
+    return getAll<ProcessRun>(url);
 }
 
 export interface CompleteProcessRunPayload {
-    valid_until: string;
+    valid_until: string | null;
     performed_at?: string;
     notes?: string;
     result_data?: {
         report_number?: string;
         fitness_assessment?: string;
         measures_taken?: string;
+        health_institution?: string;
     };
 }
 
@@ -759,8 +733,7 @@ export async function getUpcomingDeadlines(params?: {
     const url = qs
         ? `/api/processes/dashboard/upcoming-deadlines?${qs}`
         : "/api/processes/dashboard/upcoming-deadlines";
-    const { data } = await api.get<ListResponse<UpcomingDeadline>>(url);
-    return asList(data);
+    return getAll<UpcomingDeadline>(url);
 }
 
 export async function generateHighRiskRegistry(
@@ -892,10 +865,9 @@ export async function getContactPersons(params: {
 }): Promise<ContactPerson[]> {
     const search = new URLSearchParams();
     search.set("client_company_id", String(params.client_company_id));
-    const { data } = await api.get<ListResponse<ContactPerson>>(
+    return getAll<ContactPerson>(
         `/api/partners/contact-persons/?${search.toString()}`,
     );
-    return asList(data);
 }
 
 export async function createContactPerson(
@@ -928,10 +900,9 @@ export async function getCompanyDocuments(params: {
 }): Promise<CompanyDocument[]> {
     const search = new URLSearchParams();
     search.set("client_company_id", String(params.client_company_id));
-    const { data } = await api.get<ListResponse<CompanyDocument>>(
+    return getAll<CompanyDocument>(
         `/api/partners/company-documents/?${search.toString()}`,
     );
-    return asList(data);
 }
 
 export async function uploadCompanyDocument(
@@ -960,10 +931,9 @@ export async function getWorkInjuries(params: {
 }): Promise<WorkInjury[]> {
     const search = new URLSearchParams();
     search.set("client_company_id", String(params.client_company_id));
-    const { data } = await api.get<ListResponse<WorkInjury>>(
+    return getAll<WorkInjury>(
         `/api/partners/work-injuries/?${search.toString()}`,
     );
-    return asList(data);
 }
 
 export async function createWorkInjury(payload: {
@@ -998,10 +968,9 @@ export async function getIntakeLinks(params: {
 }): Promise<ClientIntakeLink[]> {
     const search = new URLSearchParams();
     search.set("client_company_id", String(params.client_company_id));
-    const { data } = await api.get<ListResponse<ClientIntakeLink>>(
+    return getAll<ClientIntakeLink>(
         `/api/partners/intake-links/?${search.toString()}`,
     );
-    return asList(data);
 }
 
 export async function createIntakeLink(
@@ -1032,10 +1001,9 @@ export async function getIntakeSubmissions(params: {
     const search = new URLSearchParams();
     search.set("client_company_id", String(params.client_company_id));
     if (params.status) search.set("status", params.status);
-    const { data } = await api.get<ListResponse<ClientIntakeSubmission>>(
+    return getAll<ClientIntakeSubmission>(
         `/api/partners/intake-submissions/?${search.toString()}`,
     );
-    return asList(data);
 }
 
 export async function approveIntakeSubmission(
@@ -1094,8 +1062,7 @@ export async function getOutbox(
     if (params.date_to) search.set("date_to", params.date_to);
     const qs = search.toString();
     const url = qs ? `/api/processes/outbox/?${qs}` : "/api/processes/outbox/";
-    const { data } = await api.get<ListResponse<NotificationOutbox>>(url);
-    return asList(data);
+    return getAll<NotificationOutbox>(url);
 }
 
 export async function retryOutboxRow(id: number): Promise<NotificationOutbox> {
@@ -1118,10 +1085,9 @@ export async function previewOutboxRow(
 export async function getTaskAssignments(
     processRunId: number,
 ): Promise<TaskAssignment[]> {
-    const { data } = await api.get<ListResponse<TaskAssignment>>(
+    return getAll<TaskAssignment>(
         `/api/processes/task-assignments/?process_run_id=${processRunId}`,
     );
-    return asList(data);
 }
 
 export async function createTaskAssignment(payload: {
@@ -1206,19 +1172,17 @@ export async function createObligationExclusion(
 export async function getEmployeeDocuments(
     employeeId: number,
 ): Promise<EmployeeDocumentRow[]> {
-    const { data } = await api.get<ListResponse<EmployeeDocumentRow>>(
+    return getAll<EmployeeDocumentRow>(
         `/api/partners/employees/${employeeId}/documents/`,
     );
-    return asList(data);
 }
 
 export async function getCompanyGeneratedDocuments(
     companyId: number,
 ): Promise<CompanyGeneratedDocumentRow[]> {
-    const { data } = await api.get<ListResponse<CompanyGeneratedDocumentRow>>(
+    return getAll<CompanyGeneratedDocumentRow>(
         `/api/partners/client-companies/${companyId}/generated-documents/`,
     );
-    return asList(data);
 }
 
 export async function deleteObligationExclusion(
@@ -1240,8 +1204,7 @@ export async function getTrainingTypes(params?: {
     const url = qs
         ? `/api/partners/training-types/?${qs}`
         : "/api/partners/training-types/";
-    const { data } = await api.get<ListResponse<TrainingType>>(url);
-    return asList(data);
+    return getAll<TrainingType>(url);
 }
 
 export async function createTrainingType(
@@ -1298,48 +1261,6 @@ export type BlankTemplateTarget =
     | "job-role-lzo"
     | "training-type-potvrda";
 
-export function blankTemplatePagesStreamUrl(
-    target: BlankTemplateTarget,
-    id: number,
-): string {
-    return `${apiBaseUrl}/api/partners/blank-templates/${target}/${id}/pages/stream/`;
-}
-
-export async function regenerateBlankTemplatePages(
-    target: BlankTemplateTarget,
-    id: number,
-): Promise<void> {
-    await api.post(
-        `/api/partners/blank-templates/${target}/${id}/regenerate-pages/`,
-    );
-}
-
-export async function getBlankTemplateFields(
-    target: BlankTemplateTarget,
-    id: number,
-): Promise<{
-    placeholders: VisualPlaceholder[];
-    master_placeholders: VisualPlaceholder[];
-}> {
-    const { data } = await api.get<{
-        placeholders: VisualPlaceholder[];
-        master_placeholders: VisualPlaceholder[];
-    }>(`/api/partners/blank-templates/${target}/${id}/fields/`);
-    return data;
-}
-
-export async function saveBlankTemplateFields(
-    target: BlankTemplateTarget,
-    id: number,
-    placeholders: VisualPlaceholder[],
-): Promise<VisualPlaceholder[]> {
-    const { data } = await api.post<{ placeholders: VisualPlaceholder[] }>(
-        `/api/partners/blank-templates/${target}/${id}/fields/`,
-        { placeholders },
-    );
-    return data.placeholders;
-}
-
 export async function getEmployeeTrainings(params: {
     employee_id?: number;
     client_company_id?: number;
@@ -1353,8 +1274,7 @@ export async function getEmployeeTrainings(params: {
     const url = qs
         ? `/api/partners/employee-trainings/?${qs}`
         : "/api/partners/employee-trainings/";
-    const { data } = await api.get<ListResponse<EmployeeTraining>>(url);
-    return asList(data);
+    return getAll<EmployeeTraining>(url);
 }
 
 export async function createEmployeeTraining(
@@ -1374,10 +1294,9 @@ export async function deleteEmployeeTraining(id: number): Promise<void> {
 export async function getCompanyDocumentKinds(): Promise<
     CompanyDocumentKindDef[]
 > {
-    const { data } = await api.get<ListResponse<CompanyDocumentKindDef>>(
+    return getAll<CompanyDocumentKindDef>(
         "/api/partners/company-document-kinds/",
     );
-    return asList(data);
 }
 
 export async function getTestQuestions(
@@ -1391,8 +1310,7 @@ export async function getTestQuestions(
     const url = qs
         ? `/api/testing/questions/?${qs}`
         : "/api/testing/questions/";
-    const { data } = await api.get<ListResponse<TestQuestion>>(url);
-    return asList(data);
+    return getAll<TestQuestion>(url);
 }
 
 export async function submitTestAttempt(

@@ -5,7 +5,6 @@ from .serializers import (
     CompanyDocumentKindSerializer,
     CompanyDocumentSerializer,
     CompanyObligationExclusionSerializer,
-    ComplianceFindingTypeSerializer,
     ContactPersonSerializer,
     EmployeeSerializer,
     EmployeeTrainingSerializer,
@@ -34,11 +33,9 @@ from .models import (
     ClientCompany,
     ClientIntakeLink,
     ClientIntakeSubmission,
-    CompanyComplianceFinding,
     CompanyDocument,
     CompanyDocumentKind,
     CompanyObligationExclusion,
-    ComplianceFindingType,
     ContactPerson,
     Employee,
     EmployeeTraining,
@@ -60,50 +57,35 @@ from .models import (
     notify_severe_work_injury,
 )
 from documents.conversion import ConversionError, _is_office_file, convert_office_to_pdf
-from documents.models import DocumentTemplate
-from .medical_exam_record import generate_medical_exam_record
-from .high_risk_registry import generate_high_risk_registry
-from processes.utils import generate_company_document
-from .compliance_findings import (
-    compliance_finding_row,
-    compute_valid_until,
-    deactivate_compliance_finding_binding,
-    sync_compliance_finding_binding,
+from .document_service import (
+    AKT_PROCENA_RIZIKA,
+    OBRAZAC1,
+    REGISTAR_RM,
+    render_company_document,
 )
 from .models import CompanyRegistrySnapshot
 from .company_registry import lookup_company_by_registration_number
-from .blank_templates import (
-    BLANK_TARGETS,
-    JOB_ROLE_TPL_KEY_TO_TARGET,
-    blank_cache_key,
-    invalidate_blank_cache,
-    master_placeholders_for_target,
-)
-import json
-import time
 from datetime import datetime
 from pathlib import Path
 
-from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db.models import ProtectedError, Q
-from django.http import HttpResponse, StreamingHttpResponse
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 
-from rest_framework import mixins, permissions, serializers, status, viewsets
+from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from documents.serializers import validate_visual_placeholders
 from documents.utils import (
     existing_page_urls,
     get_page_generation_status,
     merge_section_files_to_pdf,
     start_page_generation,
 )
-from documents.views import ServerSentEventRenderer
 
 _JOB_ROLE_TEMPLATE_FIELDS = {
     "obrazac6": "obrazac6_template",
@@ -151,6 +133,14 @@ class RiskLevelViewSet(viewsets.ModelViewSet):
     serializer_class = RiskLevelSerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
+    def perform_update(self, serializer):
+        from .obligation_sync import sync_risk_level_employees
+
+        was_high_risk = serializer.instance.is_high_risk
+        risk_level = serializer.save()
+        if risk_level.is_high_risk != was_high_risk:
+            sync_risk_level_employees(risk_level)
+
     def destroy(self, request, *args, **kwargs):
         try:
             return super().destroy(request, *args, **kwargs)
@@ -166,6 +156,14 @@ class JobRoleViewSet(viewsets.ModelViewSet):
         "client_company", "risk_level").all().order_by("client_company", "name")
     serializer_class = JobRoleSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+
+    def perform_update(self, serializer):
+        from .obligation_sync import sync_role_employees
+
+        previous_risk_level_id = serializer.instance.risk_level_id
+        job_role = serializer.save()
+        if job_role.risk_level_id != previous_risk_level_id:
+            sync_role_employees(job_role)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -204,6 +202,9 @@ class JobRoleViewSet(viewsets.ModelViewSet):
         items = JobRoleLZOSerializer(
             role.lzo_items.all().order_by("order", "id"), many=True
         ).data
+        from .obligation_sync import sync_role_employees
+
+        sync_role_employees(role)
         return Response({"created": created, "items": items})
 
     @action(
@@ -220,15 +221,12 @@ class JobRoleViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         role = self.get_object()
-        blank_target = JOB_ROLE_TPL_KEY_TO_TARGET.get(tpl_key)
         if request.method == "DELETE":
             field = getattr(role, field_name)
             if field:
                 field.delete(save=False)
                 setattr(role, field_name, None)
                 role.save(update_fields=[field_name])
-            if blank_target:
-                invalidate_blank_cache(blank_target, role.pk)
             return Response(self.get_serializer(role).data)
         file_obj = request.FILES.get("file")
         if file_obj is None:
@@ -236,45 +234,26 @@ class JobRoleViewSet(viewsets.ModelViewSet):
                 {"detail": "Nije priložen fajl (polje 'file')."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if not file_obj.name.lower().endswith(".docx"):
+            return Response(
+                {"detail": "Blanko mora biti Word dokument (.docx) sa poljima."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         existing = getattr(role, field_name)
         if existing:
             existing.delete(save=False)
         setattr(role, field_name, file_obj)
         role.save(update_fields=[field_name])
-        if blank_target:
-            invalidate_blank_cache(blank_target, role.pk)
         return Response(self.get_serializer(role).data)
 
 
-class ComplianceFindingTypeViewSet(viewsets.ModelViewSet):
-    queryset = ComplianceFindingType.objects.all().order_by("order", "name")
-    serializer_class = ComplianceFindingTypeSerializer
-    permission_classes = [permissions.DjangoModelPermissions]
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        is_active = self.request.query_params.get("is_active")
-        if is_active is not None and is_active != "":
-            queryset = queryset.filter(is_active=(is_active.lower() == "true"))
-        return queryset
-
-
-def _company_document_via_template(source_key: str, company, fallback):
-    templates = DocumentTemplate.objects.filter(
-        context_type=DocumentTemplate.CONTEXT_CLIENT_COMPANY,
-    ).exclude(template_file="")
-    for tpl in templates:
-        series = (tpl.generation_config or {}).get("series") or []
-        if not any(s.get("source") == source_key for s in series):
-            continue
-        try:
-            content = generate_company_document(tpl, company)
-        except Exception:
-            content = None
-        if content:
-            return content
-        break
-    return fallback(company.id)
+class CanChangeClientCompany(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.has_perm("partners.change_clientcompany")
+        )
 
 
 class ClientCompanyViewSet(viewsets.ModelViewSet):
@@ -282,14 +261,19 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
     serializer_class = ClientCompanySerializer
     permission_classes = [permissions.DjangoModelPermissions]
 
+    def perform_update(self, serializer):
+        from .obligation_sync import sync_company_obligations
+
+        instance = serializer.instance
+        before = (instance.zop_category, instance.installations)
+        company = serializer.save()
+        if (company.zop_category, company.installations) != before:
+            sync_company_obligations(company)
+
     @action(detail=True, methods=["get"], url_path="medical-exam-record")
     def medical_exam_record(self, request, pk=None):
         company = self.get_object()
-        content = _company_document_via_template(
-            "completed_medical_exams_for_company",
-            company,
-            generate_medical_exam_record,
-        )
+        content = render_company_document(OBRAZAC1, company)
         slug = company.name.replace(" ", "_")[:40]
         filename = f"obrazac1_{slug}.docx"
         user = request.user if request.user.is_authenticated else None
@@ -318,11 +302,7 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["get"], url_path="high-risk-registry")
     def high_risk_registry(self, request, pk=None):
         company = self.get_object()
-        content = _company_document_via_template(
-            "high_risk_employees_for_company",
-            company,
-            generate_high_risk_registry,
-        )
+        content = render_company_document(REGISTAR_RM, company)
         slug = company.name.replace(" ", "_")[:40]
         filename = f"evidencija_povecan_rizik_{slug}.docx"
         user = request.user if request.user.is_authenticated else None
@@ -350,10 +330,8 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["get"], url_path="risk-assessment-act-generated")
     def risk_assessment_act_generated(self, request, pk=None):
-        from .risk_assessment_act import generate_risk_assessment_act
-
         company = self.get_object()
-        content = generate_risk_assessment_act(company.id)
+        content = render_company_document(AKT_PROCENA_RIZIKA, company)
         slug = company.name.replace(" ", "_")[:40]
         filename = f"akt_o_proceni_rizika_{slug}.docx"
         response = HttpResponse(
@@ -475,81 +453,70 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
         company.save(update_fields=["risk_assessment_act_file"])
         return Response(self.get_serializer(company).data)
 
-    @action(detail=True, methods=["get"], url_path="compliance-findings")
-    def compliance_findings(self, request, pk=None):
+    @action(detail=True, methods=["get"], url_path="company-obligations")
+    def company_obligations(self, request, pk=None):
+        from .obligation_proofs import company_obligation_rows
+
         company = self.get_object()
-        types = ComplianceFindingType.objects.filter(
-            is_active=True,
-        ).order_by("order", "name")
-        existing = {
-            f.finding_type_id: f
-            for f in CompanyComplianceFinding.objects.filter(
-                client_company=company,
-            ).select_related("finding_type")
-        }
-        rows = [
-            compliance_finding_row(t, existing.get(t.id))
-            for t in types
-        ]
-        return Response(rows)
+        return Response(company_obligation_rows(company, request))
 
     @action(
         detail=True,
-        methods=["post", "delete"],
-        url_path=r"compliance-findings/(?P<type_id>[0-9]+)",
+        methods=["post"],
+        url_path=r"company-obligations/(?P<type_id>[0-9]+)/proof",
         parser_classes=[MultiPartParser, FormParser],
+        permission_classes=[CanChangeClientCompany],
     )
-    def upload_compliance_finding(self, request, pk=None, type_id=None):
+    def company_obligation_proof(self, request, pk=None, type_id=None):
+        from processes.models import ProcessType as PT
+
+        from .obligation_proofs import ProofError, record_proof
+
         company = self.get_object()
-        finding_type = get_object_or_404(ComplianceFindingType, pk=type_id)
-        if request.method == "DELETE":
-            try:
-                finding = CompanyComplianceFinding.objects.get(
-                    client_company=company,
-                    finding_type=finding_type,
-                )
-            except CompanyComplianceFinding.DoesNotExist:
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            deactivate_compliance_finding_binding(finding)
-            if finding.file:
-                finding.file.delete(save=False)
-            finding.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+        process_type = get_object_or_404(
+            PT, pk=type_id, subject_kind=PT.SUBJECT_CLIENT_COMPANY)
         file_obj = request.FILES.get("file")
         if file_obj is None:
             return Response(
                 {"detail": "Nije priložen fajl (polje 'file')."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        issued_raw = request.data.get("issued_date")
         try:
-            parsed_issued = datetime.strptime(
-                issued_raw,
-                "%Y-%m-%d",
-            ).date()
-        except (TypeError, ValueError):
+            performed_at = datetime.strptime(
+                request.data.get("performed_at") or "", "%Y-%m-%d").date()
+        except ValueError:
             return Response(
                 {"detail": "Nedostaje ili je neispravan datum izdavanja."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-        finding, _ = CompanyComplianceFinding.objects.get_or_create(
-            client_company=company,
-            finding_type=finding_type,
-        )
-        if finding.file:
-            finding.file.delete(save=False)
-        finding.file = file_obj
-        finding.issued_date = parsed_issued
-        finding.valid_until = compute_valid_until(
-            parsed_issued,
-            finding_type,
-        )
-        finding.save()
-        sync_compliance_finding_binding(finding)
-        finding.refresh_from_db()
-        return Response(
-            compliance_finding_row(finding_type, finding),
-        )
+        valid_until = None
+        valid_raw = request.data.get("valid_until")
+        if valid_raw:
+            try:
+                valid_until = datetime.strptime(valid_raw, "%Y-%m-%d").date()
+            except ValueError:
+                return Response(
+                    {"detail": "Neispravan datum važenja."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if valid_until <= performed_at:
+                return Response(
+                    {"detail": "Važi do mora biti posle datuma izdavanja."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        try:
+            record_proof(
+                process_type,
+                company,
+                performed_at=performed_at,
+                valid_until=valid_until,
+                uploaded=file_obj,
+                user=request.user,
+            )
+        except ProofError as exc:
+            return Response(
+                {"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(detail=True, methods=["post"], url_path="generate-obrazac6-all")
     def generate_obrazac6_all(self, request, pk=None):
@@ -601,9 +568,12 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
         detail=True,
         methods=["post", "delete"],
         url_path=r"obligation-plan/(?P<type_id>[0-9]+)/exclusion",
+        permission_classes=[CanChangeClientCompany],
     )
     def obligation_exclusion(self, request, pk=None, type_id=None):
         from processes.models import ProcessType as PT
+
+        from .obligation_sync import sync_company_obligations
 
         company = self.get_object()
         process_type = get_object_or_404(PT, pk=type_id)
@@ -614,6 +584,7 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
                 process_type=process_type,
             ).delete()
             if deleted:
+                sync_company_obligations(company)
                 return Response(status=status.HTTP_204_NO_CONTENT)
             return Response(
                 {"detail": "Isključenje nije pronađeno."},
@@ -636,6 +607,8 @@ class ClientCompanyViewSet(viewsets.ModelViewSet):
         if not created:
             exclusion.reason = reason
             exclusion.save(update_fields=["reason"])
+        else:
+            sync_company_obligations(company)
         return Response(
             CompanyObligationExclusionSerializer(exclusion).data,
             status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
@@ -647,7 +620,6 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         "client_company",
         "job_role",
         "job_role__risk_level",
-        "risk_level_override",
     ).all().order_by("last_name", "first_name")
     serializer_class = EmployeeSerializer
     permission_classes = [permissions.DjangoModelPermissions]
@@ -658,11 +630,29 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         employee = serializer.save()
         ensure_default_bindings_for_employee(employee)
 
+    def perform_update(self, serializer):
+        from .obligation_sync import sync_employee_obligations
+
+        instance = serializer.instance
+        before = (instance.job_role_id, instance.employment_end_date)
+        employee = serializer.save()
+        after = (employee.job_role_id, employee.employment_end_date)
+        if before != after:
+            sync_employee_obligations(employee)
+
     def get_queryset(self):
         queryset = super().get_queryset()
         client_company_id = self.request.query_params.get("client_company_id")
         if client_company_id is not None and client_company_id != "":
             queryset = queryset.filter(client_company_id=client_company_id)
+        if (
+            self.action == "list"
+            and self.request.query_params.get("include_departed") != "1"
+        ):
+            queryset = queryset.filter(
+                Q(employment_end_date__isnull=True)
+                | Q(employment_end_date__gt=timezone.localdate())
+            )
         search = (self.request.query_params.get("search") or "").strip()
         if search:
             queryset = queryset.filter(
@@ -673,10 +663,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             )
         risk_level_id = self.request.query_params.get("risk_level_id")
         if risk_level_id is not None and risk_level_id != "":
-            queryset = queryset.filter(
-                Q(risk_level_override_id=risk_level_id)
-                | Q(job_role__risk_level_id=risk_level_id)
-            )
+            queryset = queryset.filter(job_role__risk_level_id=risk_level_id)
         return queryset
 
     @action(detail=True, methods=["get"], url_path="documents")
@@ -750,20 +737,29 @@ class TrainingTypeViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-    def perform_update(self, serializer):
-        instance = serializer.instance
-        old_name = instance.potvrda_template.name if instance.potvrda_template else None
-        updated = serializer.save()
-        new_name = updated.potvrda_template.name if updated.potvrda_template else None
-        if old_name != new_name:
-            invalidate_blank_cache("training-type-potvrda", updated.pk)
-
 
 class EmployeeTrainingViewSet(viewsets.ModelViewSet):
     queryset = EmployeeTraining.objects.select_related(
         "employee", "training_type").all()
     serializer_class = EmployeeTrainingSerializer
     permission_classes = [permissions.DjangoModelPermissions]
+
+    def perform_create(self, serializer):
+        from .obligation_proofs import complete_obligation_for_training
+
+        training = serializer.save()
+        complete_obligation_for_training(training, self.request.user)
+
+    def perform_update(self, serializer):
+        from .obligation_proofs import complete_obligation_for_training
+
+        previous = (
+            serializer.instance.completed_at,
+            serializer.instance.training_type_id,
+        )
+        training = serializer.save()
+        if (training.completed_at, training.training_type_id) != previous:
+            complete_obligation_for_training(training, self.request.user)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -850,6 +846,19 @@ class JobRoleLZOViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.DjangoModelPermissions]
     pagination_class = None
 
+    def perform_create(self, serializer):
+        from .obligation_sync import sync_role_employees
+
+        item = serializer.save()
+        sync_role_employees(item.job_role)
+
+    def perform_destroy(self, instance):
+        from .obligation_sync import sync_role_employees
+
+        job_role = instance.job_role
+        instance.delete()
+        sync_role_employees(job_role)
+
     def get_queryset(self):
         queryset = super().get_queryset()
         job_role_id = self.request.query_params.get("job_role_id")
@@ -887,6 +896,19 @@ class EquipmentItemViewSet(viewsets.ModelViewSet):
 
         equipment = serializer.save()
         ensure_default_bindings_for_equipment(equipment)
+
+    def perform_update(self, serializer):
+        from .obligation_sync import sync_equipment_obligations
+
+        instance = serializer.instance
+        previous_type_id = instance.service_process_type_id
+        was_active = instance.is_active
+        equipment = serializer.save()
+        if (
+            equipment.service_process_type_id != previous_type_id
+            or equipment.is_active != was_active
+        ):
+            sync_equipment_obligations(equipment, previous_type_id)
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -1312,143 +1334,3 @@ class CompanyRegistryLookupView(APIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         return Response(data)
-
-
-def _blank_target_or_400(target_key: str):
-    target = BLANK_TARGETS.get(target_key)
-    if not target:
-        return None, Response(
-            {"detail": "Nepoznat tip blanko obrasca."},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-    return target, None
-
-
-def _require_blank_change_permission(request, target):
-    opts = target.model._meta
-    perm = f"{opts.app_label}.change_{opts.model_name}"
-    if not request.user.has_perm(perm):
-        return Response(
-            {"detail": "Nemate dozvolu za ovu akciju."},
-            status=status.HTTP_403_FORBIDDEN,
-        )
-    return None
-
-
-class BlankTemplatePagesStreamView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    renderer_classes = [ServerSentEventRenderer]
-
-    SSE_MAX_DURATION_SECONDS = 240
-    SSE_POLL_INTERVAL_SECONDS = 1.5
-
-    def get(self, request, target, pk, *args, **kwargs):
-        target_cfg, error = _blank_target_or_400(target)
-        if error:
-            return error
-        instance = get_object_or_404(target_cfg.model, pk=pk)
-        file_field = getattr(instance, target_cfg.file_field, None)
-        if not file_field:
-            return Response(
-                {"detail": "Blanko obrazac nema fajl."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        cache_key = blank_cache_key(target, instance.pk)
-        file_path = Path(fr"{file_field.path}")
-
-        def media_urls(rel_paths):
-            from documents.views import versioned_media_url
-            return [versioned_media_url(request, p) for p in rel_paths]
-
-        def event_stream():
-            yield "retry: 3000\n\n"
-
-            if existing_page_urls(cache_key) is None:
-                gen = get_page_generation_status(cache_key)
-                if gen["state"] not in ("generating", "error"):
-                    start_page_generation(cache_key, file_path)
-
-            deadline = time.monotonic() + self.SSE_MAX_DURATION_SECONDS
-            while time.monotonic() < deadline:
-                rel_paths = existing_page_urls(cache_key)
-                if rel_paths is not None:
-                    payload = json.dumps(
-                        {"status": "ready", "pages": media_urls(rel_paths)})
-                    yield f"event: done\ndata: {payload}\n\n"
-                    return
-                gen = get_page_generation_status(cache_key)
-                if gen["state"] == "error":
-                    payload = json.dumps(
-                        {"status": "error", "detail": gen["detail"]})
-                    yield f"event: failed\ndata: {payload}\n\n"
-                    return
-                yield ": keepalive\n\n"
-                time.sleep(self.SSE_POLL_INTERVAL_SECONDS)
-
-        response = StreamingHttpResponse(
-            event_stream(), content_type="text/event-stream")
-        response["Cache-Control"] = "no-cache"
-        response["X-Accel-Buffering"] = "no"
-        return response
-
-
-class BlankTemplateRegeneratePagesView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, target, pk, *args, **kwargs):
-        target_cfg, error = _blank_target_or_400(target)
-        if error:
-            return error
-        instance = get_object_or_404(target_cfg.model, pk=pk)
-        perm_error = _require_blank_change_permission(request, target_cfg)
-        if perm_error:
-            return perm_error
-        file_field = getattr(instance, target_cfg.file_field, None)
-        if not file_field:
-            return Response(
-                {"detail": "Blanko obrazac nema fajl."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        cache_key = blank_cache_key(target, instance.pk)
-        invalidate_blank_cache(target, instance.pk)
-        start_page_generation(cache_key, Path(fr"{file_field.path}"))
-        return Response(
-            {"status": "generating"},
-            status=status.HTTP_202_ACCEPTED,
-        )
-
-
-class BlankTemplateFieldsView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, target, pk, *args, **kwargs):
-        target_cfg, error = _blank_target_or_400(target)
-        if error:
-            return error
-        instance = get_object_or_404(target_cfg.model, pk=pk)
-        placeholders = getattr(instance, target_cfg.fields_field) or []
-        master_placeholders = master_placeholders_for_target(target_cfg)
-        return Response(
-            {
-                "placeholders": placeholders,
-                "master_placeholders": master_placeholders,
-            }
-        )
-
-    def post(self, request, target, pk, *args, **kwargs):
-        target_cfg, error = _blank_target_or_400(target)
-        if error:
-            return error
-        instance = get_object_or_404(target_cfg.model, pk=pk)
-        perm_error = _require_blank_change_permission(request, target_cfg)
-        if perm_error:
-            return perm_error
-        placeholders = request.data.get("placeholders")
-        if placeholders is None:
-            raise serializers.ValidationError(
-                {"placeholders": "Ovo polje je obavezno."}
-            )
-        validate_visual_placeholders(placeholders)
-        setattr(instance, target_cfg.fields_field, placeholders)
-        instance.save(update_fields=[target_cfg.fields_field])
-        return Response({"placeholders": placeholders})

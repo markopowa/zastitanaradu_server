@@ -322,17 +322,30 @@ class CompanyObligationPlanPanelInner extends Component<
                                     </TableHead>
                                     <TableBody>
                                         {domainRows.map((row) => {
+                                            const needsProfile =
+                                                row.status === "NEEDS_PROFILE";
                                             const effectiveStatus = row.excluded
                                                 ? "EXCLUDED"
-                                                : row.applicable
+                                                : row.applicable || needsProfile
                                                   ? row.status
                                                   : "NOT_APPLICABLE";
-                                            const meta =
+                                            const statusMeta =
                                                 planStatusMeta(effectiveStatus);
+                                            const counts = row.counts;
+                                            const meta = {
+                                                ...statusMeta,
+                                                label:
+                                                    counts && counts.total > 0
+                                                        ? `${statusMeta.label} (${counts.covered}/${counts.total})`
+                                                        : statusMeta.label,
+                                            };
                                             const muted =
-                                                row.excluded || !row.applicable;
+                                                row.excluded ||
+                                                (!row.applicable &&
+                                                    !needsProfile);
                                             const hasMenu =
                                                 row.excluded ||
+                                                needsProfile ||
                                                 (row.applicable &&
                                                     effectiveStatus !==
                                                         "NOT_APPLICABLE");

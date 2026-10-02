@@ -4,12 +4,9 @@ import { connect } from "react-redux";
 
 import {
     Box,
-    Checkbox,
     Chip,
     FormControl,
     FormControlLabel,
-    FormGroup,
-    FormLabel,
     InputLabel,
     Link,
     MenuItem,
@@ -43,6 +40,8 @@ import EditIcon from "@mui/icons-material/Edit";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import NotesIcon from "@mui/icons-material/Notes";
 import { enqueueSnackbar } from "notistack";
+import { apiErrorMessage } from "../utils/apiError";
+import InstallationsField from "../components/InstallationsField";
 
 import DateTextFieldWithPicker from "../components/DateTextFieldWithPicker";
 import {
@@ -95,7 +94,7 @@ import { CompanyTabBar } from "../components/CompanyTabBar";
 import { ContactPersonsPanel } from "../components/ContactPersonsPanel";
 import { ClientIntakePanel } from "../components/ClientIntakePanel";
 import { WorkInjuriesPanel } from "../components/WorkInjuriesPanel";
-import { ComplianceFindingsPanel } from "../components/ComplianceFindingsPanel";
+import { CompanyObligationsPanel } from "../components/CompanyObligationsPanel";
 import { RiskAssessmentActPanel } from "../components/RiskAssessmentActPanel";
 import { WorkplaceRiskAssessmentPanel } from "../components/WorkplaceRiskAssessmentPanel";
 import { JobRoleLZOPanel } from "../components/JobRoleLZOPanel";
@@ -214,8 +213,7 @@ class ClientCompanyDetailPageInner extends Component<
         editNotes: "",
         editActivity_code: "",
         editZop_category: "",
-        editHigh_risk_activity: false,
-        editInstallations: [] as string[],
+        editInstallations: null as string[] | null,
         editEmailTestMode: true,
         registryImporting: false,
         riskLevels: [],
@@ -225,6 +223,9 @@ class ClientCompanyDetailPageInner extends Component<
         role_name: "",
         role_risk_level: "",
         role_description: "",
+        role_special_health_conditions: "",
+        role_safety_measures: "",
+        role_supervised_roles: "",
         savingRole: false,
         roleError: null,
         roleDeleteTarget: null,
@@ -303,8 +304,6 @@ class ClientCompanyDetailPageInner extends Component<
             org_unit: created.org_unit,
             position: created.position,
             job_role_risk_level: created.job_role_risk_level,
-            risk_level_override: created.risk_level_override,
-            risk_level_override_detail: created.risk_level_override_detail,
             effective_risk_level: created.effective_risk_level,
         };
         this.setState((prev) => ({
@@ -408,7 +407,30 @@ class ClientCompanyDetailPageInner extends Component<
             role_name: "",
             role_risk_level: "",
             role_description: "",
+            role_special_health_conditions: "",
+            role_safety_measures: "",
+            role_supervised_roles: "",
         }));
+    };
+
+    markRoleHighRisk = (role: JobRole): void => {
+        const { item, riskLevels } = this.state;
+        const level = riskLevels.find((l) => l.is_high_risk);
+        if (!item || !level) return;
+        updateJobRole(role.id, { risk_level: level.id })
+            .then(() => {
+                enqueueSnackbar(
+                    `Radno mesto ${role.name} je označeno kao povećan rizik.`,
+                    { variant: "success" },
+                );
+                this.loadExtra(item.id);
+            })
+            .catch((err: unknown) => {
+                enqueueSnackbar(
+                    apiErrorMessage(err, "Izmena radnog mesta nije uspela."),
+                    { variant: "error" },
+                );
+            });
     };
 
     openRoleEdit = (role: JobRole): void => {
@@ -420,6 +442,9 @@ class ClientCompanyDetailPageInner extends Component<
             role_name: role.name,
             role_risk_level: role.risk_level ? String(role.risk_level) : "",
             role_description: role.description ?? "",
+            role_special_health_conditions: role.special_health_conditions ?? "",
+            role_safety_measures: role.safety_measures ?? "",
+            role_supervised_roles: role.supervised_roles ?? "",
         }));
     };
 
@@ -471,13 +496,23 @@ class ClientCompanyDetailPageInner extends Component<
 
     saveRole = (): void => {
         const companyId = Number(this.props.id);
-        const { editingRoleId, role_name, role_risk_level, role_description } =
-            this.state;
+        const {
+            editingRoleId,
+            role_name,
+            role_risk_level,
+            role_description,
+            role_special_health_conditions,
+            role_safety_measures,
+            role_supervised_roles,
+        } = this.state;
         if (!role_name.trim()) return;
         const payload: Partial<JobRole> = {
             name: role_name.trim(),
-            description: role_description.trim() || undefined,
+            description: role_description.trim(),
             risk_level: role_risk_level ? Number(role_risk_level) : null,
+            special_health_conditions: role_special_health_conditions.trim(),
+            safety_measures: role_safety_measures.trim(),
+            supervised_roles: role_supervised_roles.trim(),
         };
         this.setState((prev) => ({
             ...prev,
@@ -538,10 +573,9 @@ class ClientCompanyDetailPageInner extends Component<
             editNotes: item.notes ?? "",
             editActivity_code: item.activity_code ?? "",
             editZop_category: item.zop_category ?? "",
-            editHigh_risk_activity: item.high_risk_activity ?? false,
             editInstallations: Array.isArray(item.installations)
                 ? item.installations
-                : [],
+                : null,
             editEmailTestMode: item.email_test_mode ?? true,
         }));
     };
@@ -603,7 +637,6 @@ class ClientCompanyDetailPageInner extends Component<
             editNotes,
             editActivity_code,
             editZop_category,
-            editHigh_risk_activity,
             editInstallations,
             editEmailTestMode,
         } = this.state;
@@ -619,8 +652,7 @@ class ClientCompanyDetailPageInner extends Component<
             website: editWebsite.trim() || undefined,
             notes: editNotes.trim() || undefined,
             activity_code: editActivity_code.trim() || undefined,
-            zop_category: editZop_category || null,
-            high_risk_activity: editHigh_risk_activity,
+            zop_category: editZop_category || "",
             installations: editInstallations,
             email_test_mode: editEmailTestMode,
         })
@@ -743,7 +775,7 @@ class ClientCompanyDetailPageInner extends Component<
 
     loadExtra = (id: number): void => {
         Promise.all([
-            getEmployees({ client_company_id: id }),
+            getEmployees({ client_company_id: id, include_departed: true }),
             getEquipment({ client_company_id: id }),
             getProcessBindings({ client_company_id: id }),
             getProcessRuns({ client_company_id: id }),
@@ -760,6 +792,15 @@ class ClientCompanyDetailPageInner extends Component<
                     jobRoles,
                     riskLevels,
                 }));
+            },
+            (err: unknown) => {
+                enqueueSnackbar(
+                    apiErrorMessage(
+                        err,
+                        "Greška pri učitavanju podataka firme.",
+                    ),
+                    { variant: "error" },
+                );
             },
         );
     };
@@ -1009,7 +1050,6 @@ class ClientCompanyDetailPageInner extends Component<
                         editNotes: item.notes ?? "",
                         editActivity_code: item.activity_code ?? "",
                         editZop_category: p.zop_category,
-                        editHigh_risk_activity: p.high_risk_activity,
                         editInstallations: [...p.installations],
                         editEmailTestMode: item.email_test_mode ?? true,
                     }));
@@ -1075,7 +1115,6 @@ class ClientCompanyDetailPageInner extends Component<
             editNotes,
             editActivity_code,
             editZop_category,
-            editHigh_risk_activity,
             editInstallations,
             editEmailTestMode,
             registryImporting,
@@ -1359,84 +1398,15 @@ class ClientCompanyDetailPageInner extends Component<
                                     </MenuItem>
                                 </Select>
                             </FormControl>
-                            <FormControlLabel
-                                sx={{ mt: 1 }}
-                                control={
-                                    <Switch
-                                        checked={editHigh_risk_activity}
-                                        onChange={(e) =>
-                                            this.setState((prev) => ({
-                                                ...prev,
-                                                editHigh_risk_activity:
-                                                    e.target.checked,
-                                            }))
-                                        }
-                                    />
+                            <InstallationsField
+                                value={editInstallations}
+                                onChange={(next) =>
+                                    this.setState((prev) => ({
+                                        ...prev,
+                                        editInstallations: next,
+                                    }))
                                 }
-                                label="Delatnost visokog rizika"
                             />
-                            <FormControl component="fieldset" margin="dense">
-                                <FormLabel component="legend">
-                                    Instalacije
-                                </FormLabel>
-                                <FormGroup>
-                                    {[
-                                        {
-                                            value: "HYDRANT_NETWORK",
-                                            label: "Hidrantska mreža",
-                                        },
-                                        {
-                                            value: "FIRE_ALARM_SYSTEM",
-                                            label: "Sistem za detekciju požara",
-                                        },
-                                        {
-                                            value: "LIGHTNING_PROTECTION",
-                                            label: "Gromobranska zaštita",
-                                        },
-                                        {
-                                            value: "STABLE_EXTINGUISHING_SYSTEM",
-                                            label: "Stabilni sistem za gašenje",
-                                        },
-                                        {
-                                            value: "FIRE_EXTINGUISHERS",
-                                            label: "Aparati za gašenje požara",
-                                        },
-                                    ].map((inst) => (
-                                        <FormControlLabel
-                                            key={inst.value}
-                                            control={
-                                                <Checkbox
-                                                    size="small"
-                                                    checked={editInstallations.includes(
-                                                        inst.value,
-                                                    )}
-                                                    onChange={(e) => {
-                                                        const next = e.target
-                                                            .checked
-                                                            ? [
-                                                                  ...editInstallations,
-                                                                  inst.value,
-                                                              ]
-                                                            : editInstallations.filter(
-                                                                  (v) =>
-                                                                      v !==
-                                                                      inst.value,
-                                                              );
-                                                        this.setState(
-                                                            (prev) => ({
-                                                                ...prev,
-                                                                editInstallations:
-                                                                    next,
-                                                            }),
-                                                        );
-                                                    }}
-                                                />
-                                            }
-                                            label={inst.label}
-                                        />
-                                    ))}
-                                </FormGroup>
-                            </FormControl>
                             <PermissionGate permission="auth.view_user">
                                 <FormControlLabel
                                     sx={{ mt: 1, display: "block" }}
@@ -1518,7 +1488,7 @@ class ClientCompanyDetailPageInner extends Component<
                                             color="primary"
                                         />
                                     )}
-                                    {item.high_risk_activity && (
+                                    {item.has_high_risk_roles && (
                                         <Chip
                                             label="Povećan rizik"
                                             size="small"
@@ -1683,9 +1653,9 @@ class ClientCompanyDetailPageInner extends Component<
                                     }
                                 />
                                 <DetailField
-                                    label="Delatnost visokog rizika"
+                                    label="Radna mesta sa povećanim rizikom"
                                     value={
-                                        item.high_risk_activity ? "Da" : "Ne"
+                                        item.has_high_risk_roles ? "Da" : "Ne"
                                     }
                                 />
                             </DetailFieldGrid>
@@ -1748,7 +1718,7 @@ class ClientCompanyDetailPageInner extends Component<
                 )}
 
                 {activeTab === "documents" && (
-                    <ComplianceFindingsPanel clientCompanyId={item.id} />
+                    <CompanyObligationsPanel clientCompanyId={item.id} />
                 )}
 
                 {activeTab === "documents" && (
@@ -1800,6 +1770,30 @@ class ClientCompanyDetailPageInner extends Component<
                                                             r.risk_level_detail
                                                         }
                                                     />
+                                                    {r.kinney_suggests_high_risk &&
+                                                    !r.is_high_risk ? (
+                                                        <PermissionGate permission="partners.change_jobrole">
+                                                            <Tooltip title="Procena opasnosti ukazuje na povećan rizik.">
+                                                                <Button
+                                                                    size="small"
+                                                                    color="warning"
+                                                                    variant="outlined"
+                                                                    sx={{
+                                                                        ml: 1,
+                                                                    }}
+                                                                    onClick={() =>
+                                                                        this.markRoleHighRisk(
+                                                                            r,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Označi kao
+                                                                    povećan
+                                                                    rizik
+                                                                </Button>
+                                                            </Tooltip>
+                                                        </PermissionGate>
+                                                    ) : null}
                                                 </TableCell>
                                                 <TableCell>
                                                     {r.employee_count ?? 0}
@@ -1900,7 +1894,19 @@ class ClientCompanyDetailPageInner extends Component<
                                                 emptyMessage="Nema zaposlenih."
                                             />
                                         ) : (
-                                            employees.map((e) => (
+                                            [...employees]
+                                                .sort(
+                                                    (a, b) =>
+                                                        Number(
+                                                            a.is_employed ===
+                                                                false,
+                                                        ) -
+                                                        Number(
+                                                            b.is_employed ===
+                                                                false,
+                                                        ),
+                                                )
+                                                .map((e) => (
                                                 <TableRow
                                                     key={e.id}
                                                     hover
@@ -1916,6 +1922,14 @@ class ClientCompanyDetailPageInner extends Component<
                                                     </TableCell>
                                                     <TableCell>
                                                         {e.last_name}
+                                                        {e.is_employed ===
+                                                        false ? (
+                                                            <Chip
+                                                                size="small"
+                                                                label="Bivši"
+                                                                sx={{ ml: 1 }}
+                                                            />
+                                                        ) : null}
                                                     </TableCell>
                                                     <TableCell>
                                                         {e.email ?? "—"}
@@ -1924,7 +1938,6 @@ class ClientCompanyDetailPageInner extends Component<
                                                         <RiskBadge
                                                             riskLevel={
                                                                 e.effective_risk_level ??
-                                                                e.risk_level_override_detail ??
                                                                 e.job_role_risk_level
                                                             }
                                                         />
@@ -2362,15 +2375,27 @@ class ClientCompanyDetailPageInner extends Component<
                                 name: this.state.role_name,
                                 riskLevelId: this.state.role_risk_level,
                                 description: this.state.role_description,
+                                specialHealthConditions:
+                                    this.state.role_special_health_conditions,
+                                safetyMeasures: this.state.role_safety_measures,
+                                supervisedRoles:
+                                    this.state.role_supervised_roles,
                             }}
                             riskLevels={riskLevels}
                             disabled={this.state.savingRole}
+                            showDetails
                             onChange={(v: JobRoleFormValues) =>
                                 this.setState((prev) => ({
                                     ...prev,
                                     role_name: v.name,
                                     role_risk_level: v.riskLevelId,
                                     role_description: v.description,
+                                    role_special_health_conditions:
+                                        v.specialHealthConditions ?? "",
+                                    role_safety_measures:
+                                        v.safetyMeasures ?? "",
+                                    role_supervised_roles:
+                                        v.supervisedRoles ?? "",
                                 }))
                             }
                         />

@@ -36,9 +36,21 @@ interface Props {
     jobRoles: JobRole[];
 }
 
-type Draft = { name: string; standard: string; interval: string };
+type Draft = {
+    name: string;
+    standard: string;
+    interval: string;
+    description: string;
+    quantity: string;
+};
 
-const EMPTY_DRAFT: Draft = { name: "", standard: "", interval: "" };
+const EMPTY_DRAFT: Draft = {
+    name: "",
+    standard: "",
+    interval: "",
+    description: "",
+    quantity: "1",
+};
 
 export function JobRoleLZOPanel({ jobRoles }: Props) {
     const [rowsByRole, setRowsByRole] = useState<Record<number, JobRoleLZO[]>>(
@@ -129,6 +141,8 @@ export function JobRoleLZOPanel({ jobRoles }: Props) {
                 interval_months: draft.interval
                     ? Number(draft.interval)
                     : null,
+                description: draft.description.trim(),
+                quantity: Number(draft.quantity) || 1,
             });
             setRowsByRole((prev) => ({
                 ...prev,
@@ -210,6 +224,8 @@ export function JobRoleLZOPanel({ jobRoles }: Props) {
                                                 <TableCell>
                                                     Rok upotrebe (meseci)
                                                 </TableCell>
+                                                <TableCell>Opis</TableCell>
+                                                <TableCell>Komada</TableCell>
                                                 <TableCell />
                                             </TableRow>
                                         </TableHead>
@@ -300,6 +316,65 @@ export function JobRoleLZOPanel({ jobRoles }: Props) {
                                                             }}
                                                         />
                                                     </TableCell>
+                                                    <TableCell>
+                                                        <TextField
+                                                            size="small"
+                                                            fullWidth
+                                                            defaultValue={
+                                                                row.description ??
+                                                                ""
+                                                            }
+                                                            onBlur={(e) => {
+                                                                const v =
+                                                                    e.target.value.trim();
+                                                                if (
+                                                                    v !==
+                                                                    (row.description ??
+                                                                        "")
+                                                                )
+                                                                    void patchRow(
+                                                                        role.id,
+                                                                        row,
+                                                                        {
+                                                                            description:
+                                                                                v,
+                                                                        },
+                                                                    );
+                                                            }}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <TextField
+                                                            size="small"
+                                                            type="number"
+                                                            sx={{
+                                                                minWidth: 70,
+                                                            }}
+                                                            defaultValue={
+                                                                row.quantity ??
+                                                                1
+                                                            }
+                                                            onBlur={(e) => {
+                                                                const v =
+                                                                    Number(
+                                                                        e.target
+                                                                            .value,
+                                                                    ) || 1;
+                                                                if (
+                                                                    v !==
+                                                                    row.quantity
+                                                                )
+                                                                    void patchRow(
+                                                                        role.id,
+                                                                        row,
+                                                                        {
+                                                                            quantity:
+                                                                                v,
+                                                                        },
+                                                                    );
+                                                            }}
+                                                        />
+                                                    </TableCell>
                                                     <TableCell align="right">
                                                         <IconButton
                                                             size="small"
@@ -357,6 +432,38 @@ export function JobRoleLZOPanel({ jobRoles }: Props) {
                                                             setDraft((d) => ({
                                                                 ...d,
                                                                 interval:
+                                                                    e.target
+                                                                        .value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <TextField
+                                                        size="small"
+                                                        fullWidth
+                                                        placeholder="npr. S3"
+                                                        value={draft.description}
+                                                        onChange={(e) =>
+                                                            setDraft((d) => ({
+                                                                ...d,
+                                                                description:
+                                                                    e.target
+                                                                        .value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <TextField
+                                                        size="small"
+                                                        type="number"
+                                                        sx={{ minWidth: 70 }}
+                                                        value={draft.quantity}
+                                                        onChange={(e) =>
+                                                            setDraft((d) => ({
+                                                                ...d,
+                                                                quantity:
                                                                     e.target
                                                                         .value,
                                                             }))

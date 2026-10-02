@@ -5,12 +5,8 @@ import {
     Alert,
     Box,
     Button,
-    Checkbox,
     CircularProgress,
     FormControl,
-    FormControlLabel,
-    FormGroup,
-    FormLabel,
     InputLabel,
     MenuItem,
     Paper,
@@ -18,7 +14,6 @@ import {
     Step,
     StepLabel,
     Stepper,
-    Switch,
     TextField,
     Typography,
 } from "@mui/material";
@@ -58,6 +53,8 @@ import type {
 import { setupTestFill } from "../testFlow/registerTestFill";
 import { TEST_FLOW, refreshTestCompanyFixture } from "../testFlow/fixture";
 import { riskLevelIdByCode } from "../testFlow/helpers";
+import { apiErrorMessage } from "../utils/apiError";
+import InstallationsField from "../components/InstallationsField";
 
 const WIZARD_STEPS = [
     "Lična karta",
@@ -66,14 +63,6 @@ const WIZARD_STEPS = [
     "Zaposleni",
     "Obaveze",
 ] as const;
-
-const WIZARD_INSTALLATIONS: { value: string; label: string }[] = [
-    { value: "HYDRANT_NETWORK", label: "Hidrantska mreža" },
-    { value: "FIRE_ALARM_SYSTEM", label: "Sistem za detekciju požara" },
-    { value: "LIGHTNING_PROTECTION", label: "Gromobranska zaštita" },
-    { value: "STABLE_EXTINGUISHING_SYSTEM", label: "Stabilni sistem za gašenje" },
-    { value: "FIRE_EXTINGUISHERS", label: "Aparati za gašenje požara" },
-];
 
 interface DispatchProps {
     setLastPath: (path: string) => void;
@@ -95,8 +84,7 @@ interface State {
     notes: string;
     activity_code: string;
     zop_category: string;
-    high_risk_activity: boolean;
-    installations: string[];
+    installations: string[] | null;
     registryImporting: boolean;
     saving: boolean;
     stepError: string | null;
@@ -131,8 +119,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
         notes: "",
         activity_code: "",
         zop_category: "",
-        high_risk_activity: false,
-        installations: [],
+        installations: null,
         registryImporting: false,
         saving: false,
         stepError: null,
@@ -243,7 +230,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
                         notes: c.notes,
                         activity_code: c.activity_code,
                         zop_category: p.zop_category,
-                        high_risk_activity: p.high_risk_activity,
                         installations: [...p.installations],
                     });
                     return true;
@@ -316,7 +302,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
             notes,
             activity_code,
             zop_category,
-            high_risk_activity,
             installations,
         } = this.state;
         if (companyId != null) return Promise.resolve(companyId);
@@ -338,8 +323,7 @@ class NewCompanyWizardPage extends Component<Props, State> {
             website: website.trim() || undefined,
             notes: notes.trim() || undefined,
             activity_code: activity_code.trim() || undefined,
-            zop_category: zop_category || null,
-            high_risk_activity,
+            zop_category: zop_category || "",
             installations,
         })
             .then((created) => {
@@ -351,11 +335,14 @@ class NewCompanyWizardPage extends Component<Props, State> {
                 enqueueSnackbar("Firma je kreirana.", { variant: "success" });
                 return created.id;
             })
-            .catch(() => {
+            .catch((err: unknown) => {
                 this.setState((prev) => ({
                     ...prev,
                     saving: false,
-                    stepError: "Greška pri kreiranju firme.",
+                    stepError: apiErrorMessage(
+                        err,
+                        "Greška pri kreiranju firme.",
+                    ),
                 }));
                 return null;
             });
@@ -500,7 +487,6 @@ class NewCompanyWizardPage extends Component<Props, State> {
             notes,
             activity_code,
             zop_category,
-            high_risk_activity,
             installations,
             registryImporting,
             saving,
@@ -668,57 +654,15 @@ class NewCompanyWizardPage extends Component<Props, State> {
                             <MenuItem value="III">Kategorija III</MenuItem>
                         </Select>
                     </FormControl>
-                    <FormControlLabel
-                        control={
-                            <Switch
-                                checked={high_risk_activity}
-                                onChange={(e) =>
-                                    this.setState((prev) => ({
-                                        ...prev,
-                                        high_risk_activity: e.target.checked,
-                                    }))
-                                }
-                            />
+                    <InstallationsField
+                        value={installations}
+                        onChange={(next) =>
+                            this.setState((prev) => ({
+                                ...prev,
+                                installations: next,
+                            }))
                         }
-                        label="Delatnost visokog rizika"
                     />
-                    <Typography variant="caption" color="text.secondary">
-                        Uključeno → lekarski na Planu obaveza više nisu sivi.
-                    </Typography>
-                    <FormControl component="fieldset">
-                        <FormLabel component="legend">Instalacije</FormLabel>
-                        <FormGroup>
-                            {WIZARD_INSTALLATIONS.map((inst) => (
-                                <FormControlLabel
-                                    key={inst.value}
-                                    control={
-                                        <Checkbox
-                                            size="small"
-                                            checked={installations.includes(
-                                                inst.value,
-                                            )}
-                                            onChange={(e) => {
-                                                const next = e.target.checked
-                                                    ? [
-                                                          ...installations,
-                                                          inst.value,
-                                                      ]
-                                                    : installations.filter(
-                                                          (v) =>
-                                                              v !== inst.value,
-                                                      );
-                                                this.setState((prev) => ({
-                                                    ...prev,
-                                                    installations: next,
-                                                }));
-                                            }}
-                                        />
-                                    }
-                                    label={inst.label}
-                                />
-                            ))}
-                        </FormGroup>
-                    </FormControl>
                     {saving && (
                         <Box sx={{ display: "flex", justifyContent: "center" }}>
                             <CircularProgress size={24} />

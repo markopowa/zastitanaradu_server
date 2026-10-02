@@ -3,7 +3,6 @@ from django.db.models import Q
 
 from partners.models import (
     ClientCompany,
-    CompanyComplianceFinding,
     CompanyDocument,
     JobRole,
     RiskAssessmentActAmendment,
@@ -21,7 +20,6 @@ TEST_COMPANY_FILTER = (
 )
 
 FILE_FIELDS = {
-    CompanyComplianceFinding: ("file",),
     RiskAssessmentSectionRevision: ("file",),
     RiskAssessmentActAmendment: ("file",),
     RiskAssessmentSection: ("current_file",),
@@ -60,8 +58,6 @@ def _purge_files_for_companies(company_ids):
         elif model is JobRole:
             qs = model.objects.filter(client_company_id__in=company_ids)
         elif model is CompanyDocument:
-            qs = model.objects.filter(client_company_id__in=company_ids)
-        elif model is CompanyComplianceFinding:
             qs = model.objects.filter(client_company_id__in=company_ids)
         elif model is RiskAssessmentSection:
             qs = model.objects.filter(act__client_company_id__in=company_ids)

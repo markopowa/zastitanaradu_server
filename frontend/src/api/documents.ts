@@ -1,4 +1,4 @@
-import { api, apiBaseUrl } from "./client";
+import { api, apiBaseUrl, getAll } from "./client";
 import type { DocumentCategory, DocumentFile } from "../types/documents";
 
 export interface DocumentTemplate {
@@ -13,31 +13,16 @@ export interface DocumentTemplate {
     generation_config?: Record<string, unknown> | null;
 }
 
-type ListResponse<T> = T[] | { results?: T[] };
-
-function asList<T>(data: ListResponse<T>): T[] {
-    if (Array.isArray(data)) return data;
-    return data.results ?? [];
-}
-
 export async function getDocumentCategories(): Promise<DocumentCategory[]> {
-    const { data } = await api.get<ListResponse<DocumentCategory>>(
-        "/api/documents/categories/",
-    );
-    return asList(data);
+    return getAll<DocumentCategory>("/api/documents/categories/");
 }
 
 export async function getDocumentTemplates(): Promise<DocumentTemplate[]> {
-    const { data } = await api.get<ListResponse<DocumentTemplate>>(
-        "/api/documents/templates/",
-    );
-    return asList(data);
+    return getAll<DocumentTemplate>("/api/documents/templates/");
 }
 
 export async function getDocumentFiles(): Promise<DocumentFile[]> {
-    const { data } =
-        await api.get<ListResponse<DocumentFile>>("/api/documents/");
-    return asList(data);
+    return getAll<DocumentFile>("/api/documents/");
 }
 
 export async function createDocumentTemplateFromDocument(payload: {
@@ -131,18 +116,6 @@ export async function deleteDocumentTemplate(id: number): Promise<void> {
     await api.delete(`/api/documents/templates/${id}/`);
 }
 
-export interface VisualPlaceholder {
-    id: string;
-    fieldKey: string;
-    page: number;
-    xPct: number;
-    yPct: number;
-    widthPct: number;
-    heightPct: number;
-    fixedText?: string;
-    fontSize?: number;
-}
-
 export interface TemplateFieldDefinition {
     id: number;
     key: string;
@@ -155,16 +128,9 @@ export interface TemplateFieldDefinition {
 export async function getTemplateFieldDefinitions(): Promise<
     TemplateFieldDefinition[]
 > {
-    const { data } = await api.get<ListResponse<TemplateFieldDefinition>>(
-        "/api/documents/template-fields/",
-    );
-    return asList(data);
+    return getAll<TemplateFieldDefinition>("/api/documents/template-fields/");
 }
 
-// Page images are rendered asynchronously on the backend (can take minutes for
-// large documents). Clients subscribe to the SSE stream below and are pushed a
-// `done` event with the ready image URLs — no polling. The plain endpoint below
-// stays available for non-streaming callers (200 = ready, 202 = generating).
 export type TemplatePagesResult =
     | { status: "ready"; pages: string[] }
     | { status: "generating" };
@@ -182,10 +148,6 @@ export async function getDocumentTemplatePages(
     return { status: "ready", pages: res.data as string[] };
 }
 
-// URL for the Server-Sent Events stream that pushes page-image progress. The
-// backend starts generation on connect and emits a `done` (or `failed`) event
-// when finished; the browser's EventSource reconnects on its own if the
-// connection drops mid-generation.
 export function documentTemplatePagesStreamUrl(id: number): string {
     return `${apiBaseUrl}/api/documents/templates/${id}/pages/stream/`;
 }
@@ -204,37 +166,10 @@ export async function getDocumentTemplatePlaceholderTags(
     return Array.isArray(data) ? data : [];
 }
 
-export async function saveVisualPlaceholders(
-    id: number,
-    placeholders: VisualPlaceholder[],
-    existingConfig?: Record<string, unknown> | null,
-): Promise<DocumentTemplate> {
-    const currentMode =
-        typeof existingConfig?.mode === "string" ? existingConfig.mode : "";
-    const mode =
-        currentMode === "DOCX_PLACEHOLDER" || currentMode === "DOCX_CELL_MAP"
-            ? currentMode
-            : "VISUAL";
-    const { data } = await api.patch<DocumentTemplate>(
-        `/api/documents/templates/${id}/`,
-        {
-            generation_config: {
-                ...(existingConfig ?? {}),
-                mode,
-                placeholders,
-            },
-        },
-    );
-    return data;
-}
-
-export async function previewTemplate(
-    id: number,
-    placeholders: VisualPlaceholder[],
-): Promise<Blob> {
+export async function previewTemplate(id: number): Promise<Blob> {
     const { data } = await api.post<Blob>(
         `/api/documents/templates/${id}/preview/`,
-        { placeholders },
+        {},
         { responseType: "blob" },
     );
     return data;

@@ -1,4 +1,4 @@
-import { Component, useState } from "react";
+import { Component } from "react";
 import { connect } from "react-redux";
 
 import {
@@ -31,10 +31,10 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import BuildIcon from "@mui/icons-material/Build";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import { enqueueSnackbar } from "notistack";
 
-import TemplateStructureEditorDialog from "./TemplateStructureEditorDialog";
 import { PermissionGate } from "../components/PermissionGate";
 import RowActionsMenu from "../components/RowActionsMenu";
 import {
@@ -47,6 +47,7 @@ import {
     setDocumentTemplateFile,
     deleteDocumentTemplate,
     type DocumentTemplate,
+    previewTemplate,
 } from "../api/documents";
 import { setLastPath } from "../store/locationSlice";
 
@@ -420,21 +421,6 @@ class DocumentTemplatesListPageInner extends Component<
                                                             tpl.id,
                                                         )
                                                     }
-                                                    onTemplateUpdated={(
-                                                        updated,
-                                                    ) => {
-                                                        this.setState(
-                                                            (prev) => ({
-                                                                items: prev.items.map(
-                                                                    (t) =>
-                                                                        t.id ===
-                                                                        updated.id
-                                                                            ? updated
-                                                                            : t,
-                                                                ),
-                                                            }),
-                                                        );
-                                                    }}
                                                 />
                                             </TableCell>
                                         </TableRow>
@@ -709,20 +695,14 @@ function RowActions({
     template,
     onEdit,
     onDelete,
-    onTemplateUpdated,
 }: {
     template: DocumentTemplate;
     onEdit: () => void;
     onDelete: () => void;
-    onTemplateUpdated: (updated: DocumentTemplate) => void;
 }) {
-    const [structureOpen, setStructureOpen] = useState(false);
-    const generationMode = (
-        template.generation_config as { mode?: string } | null | undefined
-    )?.mode;
-    const isAutoFill =
-        generationMode === "DOCX_CELL_MAP" ||
-        generationMode === "DOCX_PLACEHOLDER";
+    const isAutoFill = Boolean(
+        template.template_file?.toLowerCase().includes(".docx"),
+    );
 
     return (
         <>
@@ -735,6 +715,24 @@ function RowActions({
                         onClick: onEdit,
                     },
                     {
+                        label: "Pregled sa primerom",
+                        icon: <VisibilityIcon fontSize="small" />,
+                        permission: "documents.view_documenttemplate",
+                        hidden: !isAutoFill,
+                        onClick: () => {
+                            previewTemplate(template.id)
+                                .then((blob) => {
+                                    const url = URL.createObjectURL(blob);
+                                    window.open(url, "_blank");
+                                })
+                                .catch(() =>
+                                    enqueueSnackbar("Pregled nije uspeo.", {
+                                        variant: "error",
+                                    }),
+                                );
+                        },
+                    },
+                    {
                         label: "Preuzmi fajl",
                         icon: <FileDownloadIcon fontSize="small" />,
                         permission: "documents.view_documenttemplate",
@@ -744,13 +742,6 @@ function RowActions({
                                 window.open(template.template_file, "_blank");
                             }
                         },
-                    },
-                    {
-                        label: "Uredi polja",
-                        icon: <BuildIcon fontSize="small" />,
-                        permission: "documents.change_documenttemplate",
-                        hidden: !template.template_file,
-                        onClick: () => setStructureOpen(true),
                     },
                     {
                         label: "Popunjava se automatski",
@@ -771,17 +762,6 @@ function RowActions({
                     },
                 ]}
             />
-            {structureOpen && (
-                <TemplateStructureEditorDialog
-                    open={structureOpen}
-                    template={template}
-                    onClose={() => setStructureOpen(false)}
-                    onSaved={(updated) => {
-                        onTemplateUpdated(updated);
-                        setStructureOpen(false);
-                    }}
-                />
-            )}
         </>
     );
 }

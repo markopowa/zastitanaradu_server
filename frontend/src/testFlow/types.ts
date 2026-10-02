@@ -37,7 +37,7 @@ export type TestFlowManualId =
     | "C05_LZO"
     | "C05_TRAINING_TYPE"
     | "C06_OPEN_EMP"
-    | "C06_RISK_OVERRIDE"
+    | "C06_ROLE_RISK"
     | "C06_OBRAZAC6"
     | "C06_REVERS"
     | "C06_POTVRDA"

@@ -22,20 +22,15 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from documents.models import DocumentTemplate
-from partners.compliance_findings import (
-    compute_valid_until,
-    sync_compliance_finding_binding,
-)
 from partners.employee_bindings import ensure_default_bindings_for_employee
 from partners.equipment_bindings import ensure_default_bindings_for_equipment
-from partners.medical_exam_record import generate_medical_exam_record
+from partners.document_service import OBRAZAC1, render_company_document
 from partners.models import (
     ClientCompany,
-    CompanyComplianceFinding,
-    ComplianceFindingType,
     Employee,
     EquipmentItem,
     JobRole,
+    JobRoleLZO,
     RiskLevel,
 )
 from processes.models import (
@@ -113,7 +108,6 @@ class FullOnboardingToOperationsFlowTest(TestCase):
             tax_id="109988771",
             email="uprava@ukras.rs",
             installations=["FIRE_EXTINGUISHERS"],
-            high_risk_activity=True,
         )
 
         risk_high = RiskLevel.objects.filter(is_high_risk=True).first()
@@ -126,6 +120,7 @@ class FullOnboardingToOperationsFlowTest(TestCase):
             name="Rukovalac viljuškarom",
             risk_level=risk_high,
         )
+        JobRoleLZO.objects.create(job_role=role_high, name="Zaštitne cipele")
         role_low = JobRole.objects.create(
             client_company=company,
             name="Administrativni referent",
@@ -187,7 +182,7 @@ class FullOnboardingToOperationsFlowTest(TestCase):
         low_bindings = bindings_for(emp_low)
         self.assertIn("OSPOSOBLJAVANJE_BZR", low_bindings)
         self.assertIn("ZOP_OBUKA", low_bindings)
-        self.assertIn("LZO_ZADUZENJE", low_bindings)
+        self.assertNotIn("LZO_ZADUZENJE", low_bindings)
         self.assertNotIn("PRETHODNI_LEKARSKI", low_bindings)
         self.assertNotIn("LEKARSKI_PREGLED", low_bindings)
 
@@ -259,79 +254,79 @@ class FullOnboardingToOperationsFlowTest(TestCase):
         )
 
         # ------------------------------------------------------------------
-        # STEP 7: COMPLIANCE FINDING / alarm (guide 05/08) - uploading a
-        # stručni nalaz computes valid_until from the finding type's
-        # validity period and syncs a company-level ProcessBinding whose
-        # next_run_at tracks that expiry. We mirror exactly what
-        # ClientCompanyViewSet.upload_compliance_finding does.
+        # STEP 7: EXPERT FINDING - uploading a stručni nalaz completes the
+        # company-level obligation; the next cycle follows the validity.
         # ------------------------------------------------------------------
-        finding_type_equipment = ComplianceFindingType.objects.get(
-            code="WORK_EQUIPMENT")
-        finding_type_electrical = ComplianceFindingType.objects.get(
-            code="ELECTRICAL_INSTALLATIONS")
+        from django.contrib.auth import get_user_model
+        from django.core.files.uploadedfile import SimpleUploadedFile
 
-        # 7a. A freshly issued finding: valid_until = issued_date + 36
-        # months, well outside the 30-day expiry threshold -> VALID.
-        finding_valid = CompanyComplianceFinding.objects.create(
-            client_company=company,
-            finding_type=finding_type_equipment,
-            issued_date=self.today,
+        from partners.obligation_plan import (
+            STATUS_DUE_SOON,
+            STATUS_OK,
+            _binding_status,
         )
-        finding_valid.file.save(
-            "strucni_nalaz_oprema.pdf",
-            ContentFile(b"%PDF-1.4 fake finding"),
-            save=False,
-        )
-        finding_valid.valid_until = compute_valid_until(
-            self.today, finding_type_equipment)
-        finding_valid.save()
+        from partners.obligation_proofs import record_proof
 
-        self.assertEqual(
-            finding_valid.valid_until,
-            self.today + relativedelta(months=36),
+        proof_user = get_user_model().objects.create_user(
+            "proof_user", password="x")
+        pt_equipment = ProcessType.objects.get(code="STRUCNI_NALAZ_OPREMA")
+        pt_electrical = ProcessType.objects.get(code="STRUCNI_NALAZ_ELEKTRO")
+
+        run_valid = record_proof(
+            pt_equipment,
+            company,
+            performed_at=self.today,
+            uploaded=SimpleUploadedFile(
+                "strucni_nalaz_oprema.pdf", b"%PDF-1.4 fake finding"),
+            user=proof_user,
         )
         self.assertEqual(
-            finding_valid.status, CompanyComplianceFinding.STATUS_VALID)
+            run_valid.valid_until,
+            self.today + relativedelta(
+                months=pt_equipment.default_period_months),
+        )
+        self.assertTrue(run_valid.documents.exists())
+        binding_valid = run_valid.process_binding
+        binding_valid.refresh_from_db()
+        self.assertEqual(binding_valid.next_run_at, run_valid.valid_until)
+        self.assertEqual(
+            _binding_status(binding_valid, self.today), STATUS_OK)
 
-        # 7b. A finding issued ~36 months ago (minus 20 days), so its
-        # valid_until falls within the EXPIRING_THRESHOLD_DAYS (30) window
-        # -> EXPIRING.
         issued_almost_expired = (
-            self.today - relativedelta(months=36) + timedelta(days=20)
+            self.today
+            - relativedelta(months=pt_electrical.default_period_months)
+            + timedelta(days=20)
         )
-        finding_expiring = CompanyComplianceFinding.objects.create(
-            client_company=company,
-            finding_type=finding_type_electrical,
-            issued_date=issued_almost_expired,
+        run_expiring = record_proof(
+            pt_electrical,
+            company,
+            performed_at=issued_almost_expired,
+            uploaded=SimpleUploadedFile(
+                "strucni_nalaz_elektro.pdf", b"%PDF-1.4 fake finding 2"),
+            user=proof_user,
         )
-        finding_expiring.file.save(
-            "strucni_nalaz_elektro.pdf",
-            ContentFile(b"%PDF-1.4 fake finding 2"),
-            save=False,
-        )
-        finding_expiring.valid_until = compute_valid_until(
-            issued_almost_expired, finding_type_electrical)
-        finding_expiring.save()
-
-        days_left = (finding_expiring.valid_until - self.today).days
-        self.assertLessEqual(days_left, CompanyComplianceFinding.EXPIRING_THRESHOLD_DAYS)
-        self.assertGreaterEqual(days_left, 0)
         self.assertEqual(
-            finding_expiring.status, CompanyComplianceFinding.STATUS_EXPIRING)
+            _binding_status(run_expiring.process_binding, self.today),
+            STATUS_DUE_SOON,
+        )
 
-        # Sync both: each should materialize/refresh a company-level
-        # ProcessBinding whose next_run_at mirrors valid_until.
-        binding_valid = sync_compliance_finding_binding(finding_valid)
-        binding_expiring = sync_compliance_finding_binding(finding_expiring)
-
-        self.assertIsNotNone(binding_valid)
-        self.assertEqual(binding_valid.subject_kind,
-                         ProcessBinding.SUBJECT_CLIENT_COMPANY)
-        self.assertEqual(binding_valid.client_company_id, company.id)
-        self.assertEqual(binding_valid.next_run_at, finding_valid.valid_until)
-
-        self.assertIsNotNone(binding_expiring)
-        self.assertEqual(binding_expiring.next_run_at, finding_expiring.valid_until)
+        run_renewed = record_proof(
+            pt_electrical,
+            company,
+            performed_at=self.today,
+            uploaded=SimpleUploadedFile(
+                "strucni_nalaz_elektro_novi.pdf", b"%PDF-1.4 renewed"),
+            user=proof_user,
+        )
+        self.assertEqual(
+            run_renewed.process_binding_id, run_expiring.process_binding_id)
+        self.assertFalse(
+            NotificationOutbox.objects.filter(
+                process_run__process_binding=run_renewed.process_binding,
+                process_run__performed_at__lt=self.today,
+                status=NotificationOutbox.STATUS_PENDING,
+            ).exists()
+        )
 
         # ------------------------------------------------------------------
         # STEP 8: REMINDERS (guide 08) - run the two scheduler commands the
@@ -385,7 +380,7 @@ class FullOnboardingToOperationsFlowTest(TestCase):
         pt_prethodni = ProcessType.objects.get(code="PRETHODNI_LEKARSKI")
         self.assertTrue(pt_prethodni.include_in_medical_exam_record)
 
-        docx_bytes = generate_medical_exam_record(company.id)
+        docx_bytes = render_company_document(OBRAZAC1, company)
         self.assertIsInstance(docx_bytes, bytes)
         self.assertGreater(len(docx_bytes), 0)
         # A real .docx is a zip archive - sanity check the magic header.

@@ -22,7 +22,7 @@ export interface ClientCompany {
     risk_assessment_act_name?: string;
     risk_assessment_act_date?: string | null;
     zop_category?: string | null;
-    high_risk_activity?: boolean;
+    has_high_risk_roles?: boolean;
     installations?: string[] | null;
     email_test_mode?: boolean;
 }
@@ -65,6 +65,7 @@ export interface RiskAssessmentAct {
     id: number;
     client_company: number;
     act_date: string | null;
+    act_number?: string;
     created_at: string;
     updated_at: string;
     sections: RiskAssessmentSection[];
@@ -72,34 +73,17 @@ export interface RiskAssessmentAct {
     is_complete: boolean;
 }
 
-export interface ComplianceFindingType {
-    id: number;
-    code: string;
-    name: string;
-    description?: string;
-    default_validity_months: number;
-    process_type: number | null;
-    is_active: boolean;
-    order: number;
-}
-
-export type ComplianceFindingStatus =
-    | "VALID"
-    | "EXPIRING"
-    | "EXPIRED"
-    | "MISSING";
-
-export interface CompanyComplianceFindingRow {
-    finding_type: number;
-    finding_type_name: string;
-    finding_type_code: string;
-    default_validity_months: number;
-    id?: number | null;
-    file?: string | null;
-    file_name?: string;
-    issued_date?: string | null;
-    valid_until?: string | null;
-    status: ComplianceFindingStatus;
+export interface CompanyObligationRow {
+    process_type: number;
+    process_type_name: string;
+    process_type_code: string;
+    period_months: number | null;
+    binding: number | null;
+    performed_at: string | null;
+    valid_until: string | null;
+    document_url: string | null;
+    document_name: string;
+    status: string;
 }
 
 export type ContactPersonRole =
@@ -160,6 +144,8 @@ export interface TrainingType {
     name: string;
     description?: string;
     potvrda_template: string | null;
+    process_type?: number | null;
+    process_type_name?: string;
     is_active: boolean;
 }
 
@@ -193,6 +179,11 @@ export interface JobRole {
     risk_level: number | null;
     risk_level_detail?: RiskLevel | null;
     employee_count?: number;
+    is_high_risk?: boolean;
+    kinney_suggests_high_risk?: boolean;
+    special_health_conditions?: string;
+    safety_measures?: string;
+    supervised_roles?: string;
     obrazac6_template: string | null;
     lzo_revers_template: string | null;
     potvrda_clan5_template: string | null;
@@ -214,13 +205,12 @@ export interface Employee {
     org_unit?: string;
     position?: string;
     occupation?: string;
-    high_risk_position_name?: string;
     job_role?: number | null;
     job_role_name?: string | null;
     job_role_risk_level?: RiskLevel | null;
-    risk_level_override?: number | null;
-    risk_level_override_detail?: RiskLevel | null;
     effective_risk_level?: RiskLevel | null;
+    employment_end_date?: string | null;
+    is_employed?: boolean;
 }
 
 export interface EmployeeSummary {
@@ -233,9 +223,9 @@ export interface EmployeeSummary {
     org_unit?: string;
     position?: string;
     job_role_risk_level?: RiskLevel | null;
-    risk_level_override?: number | null;
-    risk_level_override_detail?: RiskLevel | null;
     effective_risk_level?: RiskLevel | null;
+    employment_end_date?: string | null;
+    is_employed?: boolean;
 }
 
 export interface EquipmentItem {
@@ -345,6 +335,7 @@ export interface ProcessRun {
     notes?: string;
     result_data?: Record<string, unknown>;
     trigger_runs: ProcessTriggerRun[];
+    period_months?: number | null;
 }
 
 export interface ProcessRunNote {
@@ -493,7 +484,8 @@ export type ObligationPlanStatus =
     | "OVERDUE"
     | "MISSING"
     | "EXCLUDED"
-    | "NOT_APPLICABLE";
+    | "NOT_APPLICABLE"
+    | "NEEDS_PROFILE";
 
 export interface ObligationPlanProcessType {
     id: number;
@@ -512,6 +504,7 @@ export interface ObligationPlanRow {
     excluded: boolean;
     exclusion_reason: string;
     status: ObligationPlanStatus;
+    counts?: { covered: number; total: number } | null;
 }
 
 export interface EmployeeDocumentRow {

@@ -21,6 +21,22 @@ def _has_active_binding(process_type: ProcessType, employee) -> bool:
 
 
 def _create_binding(process_type: ProcessType, employee, next_run_at) -> ProcessBinding:
+    inactive = (
+        ProcessBinding.objects.filter(
+            process_type=process_type,
+            subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
+            employee=employee,
+            is_active=False,
+        )
+        .order_by("-id")
+        .first()
+    )
+    if inactive is not None:
+        inactive.is_active = True
+        if inactive.next_run_at is None:
+            inactive.next_run_at = next_run_at
+        inactive.save(update_fields=["is_active", "next_run_at"])
+        return inactive
     return ProcessBinding.objects.create(
         process_type=process_type,
         subject_kind=ProcessBinding.SUBJECT_EMPLOYEE,
@@ -31,22 +47,20 @@ def _create_binding(process_type: ProcessType, employee, next_run_at) -> Process
 
 
 def ensure_default_bindings_for_employee(employee) -> None:
+    from .obligation_rules import AUTO_EMPLOYEE_CODES, employee_needs, is_required
+
+    if not employee.is_employed:
+        return
     today = timezone.localdate()
+    company = employee.client_company
 
-    rl = employee.effective_risk_level
-    is_high_risk = bool(rl and rl.is_high_risk)
-
-    for code in ("OSPOSOBLJAVANJE_BZR", "ZOP_OBUKA", "LZO_ZADUZENJE"):
+    for code in AUTO_EMPLOYEE_CODES:
+        if not employee_needs(code, employee):
+            continue
         pt = _get_active_type(code)
-        if pt is None:
+        if pt is None or not is_required(pt, company):
             continue
         if _has_active_binding(pt, employee):
             continue
         binding = _create_binding(pt, employee, today)
         ensure_process_run_for_binding(binding)
-
-    if is_high_risk:
-        pt_prethodni = _get_active_type("PRETHODNI_LEKARSKI")
-        if pt_prethodni is not None and not _has_active_binding(pt_prethodni, employee):
-            binding = _create_binding(pt_prethodni, employee, today)
-            ensure_process_run_for_binding(binding)

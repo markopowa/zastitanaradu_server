@@ -161,6 +161,7 @@ class ProcessRunDetailPageInner extends Component<
         complete_performed_at: "",
         complete_notes: "",
         complete_report_number: "",
+        complete_health_institution: "",
         complete_fitness_assessment: "",
         complete_measures_taken: "",
         completing: false,
@@ -325,21 +326,27 @@ class ProcessRunDetailPageInner extends Component<
             complete_performed_at,
             complete_notes,
             complete_report_number,
+            complete_health_institution,
             complete_fitness_assessment,
             complete_measures_taken,
         } = this.state;
-        if (!run || !complete_valid_until.trim()) return;
-        const validUntilIso = displayDateToIso(complete_valid_until);
-        if (!validUntilIso) return;
+        if (!run) return;
+        const validUntilIso = complete_valid_until.trim()
+            ? displayDateToIso(complete_valid_until)
+            : null;
+        if (complete_valid_until.trim() && !validUntilIso) return;
         const performedIso = complete_performed_at.trim()
             ? displayDateToIso(complete_performed_at)
             : undefined;
         const result_data =
             complete_report_number.trim() ||
+            complete_health_institution.trim() ||
             complete_fitness_assessment.trim() ||
             complete_measures_taken.trim()
                 ? {
                       report_number: complete_report_number.trim() || undefined,
+                      health_institution:
+                          complete_health_institution.trim() || undefined,
                       fitness_assessment:
                           complete_fitness_assessment.trim() || undefined,
                       measures_taken:
@@ -348,7 +355,7 @@ class ProcessRunDetailPageInner extends Component<
                 : undefined;
         this.setState({ completing: true });
         void completeProcessRun(run.id, {
-            valid_until: validUntilIso,
+            valid_until: validUntilIso ?? null,
             performed_at: performedIso,
             notes: complete_notes || undefined,
             result_data,
@@ -860,13 +867,16 @@ class ProcessRunDetailPageInner extends Component<
                                     startIcon={<CheckCircleIcon />}
                                     onClick={() => {
                                         const today = todayLocalDate();
+                                        const period = run?.period_months;
                                         this.setState({
                                             showCompleteForm: true,
                                             complete_performed_at:
                                                 DateToString(today),
-                                            complete_valid_until: DateToString(
-                                                addMonths(today, 12),
-                                            ),
+                                            complete_valid_until: period
+                                                ? DateToString(
+                                                      addMonths(today, period),
+                                                  )
+                                                : "",
                                         });
                                     }}
                                     sx={BTN_SX}
@@ -918,6 +928,17 @@ class ProcessRunDetailPageInner extends Component<
                                     onChange={(e) =>
                                         this.setState({
                                             complete_report_number:
+                                                e.target.value,
+                                        })
+                                    }
+                                />
+                                <TextField
+                                    label="Zdravstvena ustanova"
+                                    fullWidth
+                                    value={this.state.complete_health_institution}
+                                    onChange={(e) =>
+                                        this.setState({
+                                            complete_health_institution:
                                                 e.target.value,
                                         })
                                     }

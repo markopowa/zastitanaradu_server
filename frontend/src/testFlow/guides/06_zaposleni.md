@@ -8,7 +8,7 @@ Skripta levo. Zeleno = prošao.
 
 ## Koraci — kartica zaposlenog
 3. **C06_OPEN_EMP** — Otvori zaposlenog, auto-obaveze.
-4. **C06_RISK_OVERRIDE** — Rizik — izuzetak.
+4. **C06_ROLE_RISK** — Promena rizika radnog mesta.
 5. **C06_OBRAZAC6** — Obrazac 6.
 6. **C06_REVERS** — Revers LZO.
 7. **C06_POTVRDA** — Potvrda (čl. 5).

@@ -3,7 +3,6 @@ from datetime import date
 
 from django.test import TestCase
 
-from documents.utils import build_preview_context
 from partners.models import ClientCompany, ContactPerson, Employee
 from processes.models import ProcessBinding, ProcessRun, ProcessType
 from processes.utils import _build_document_context, binding_subject_snapshot
@@ -119,17 +118,3 @@ class ClientContactContextTest(TestCase):
         self.assertEqual(client["contact_name"], "")
         self.assertEqual(client["contact_phone"], "")
         self.assertEqual(client["contact_email"], "")
-
-    def test_build_preview_context_contains_client_contact_keys(self):
-        ctx = build_preview_context()
-        client = ctx["client"]
-        for key in (
-            "director_name",
-            "director_phone",
-            "director_email",
-            "contact_name",
-            "contact_phone",
-            "contact_email",
-        ):
-            self.assertIn(key, client)
-            self.assertTrue(client[key])

@@ -143,7 +143,7 @@ CATALOG = [
         "default_period_months": 60,
         "period_rules": [],
         "reminder_offsets": [-15, 7, 15, 30],
-        "applicability_rule": {"always": True},
+        "applicability_rule": {"always": True, "coverage": "any"},
         "company_document_kind": "",
         "include_in_medical_exam_record": False,
     },

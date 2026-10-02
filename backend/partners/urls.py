@@ -2,16 +2,12 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .views import (
-    BlankTemplateFieldsView,
-    BlankTemplatePagesStreamView,
-    BlankTemplateRegeneratePagesView,
     CompanyRegistryLookupView,
     ClientCompanyViewSet,
     ClientIntakeLinkViewSet,
     ClientIntakeSubmissionViewSet,
     CompanyDocumentKindViewSet,
     CompanyDocumentViewSet,
-    ComplianceFindingTypeViewSet,
     ContactPersonViewSet,
     EmployeeTrainingViewSet,
     EmployeeViewSet,
@@ -36,11 +32,6 @@ router.register("client-companies", ClientCompanyViewSet,
 router.register("employees", EmployeeViewSet, basename="employees")
 router.register("equipment", EquipmentItemViewSet, basename="equipment")
 router.register("risk-levels", RiskLevelViewSet, basename="risk-levels")
-router.register(
-    "compliance-finding-types",
-    ComplianceFindingTypeViewSet,
-    basename="compliance-finding-types",
-)
 router.register("job-roles", JobRoleViewSet, basename="job-roles")
 router.register("contact-persons", ContactPersonViewSet,
                 basename="contact-persons")
@@ -111,21 +102,6 @@ urlpatterns = [
         "registry-lookup/",
         CompanyRegistryLookupView.as_view(),
         name="registry-lookup",
-    ),
-    path(
-        "blank-templates/<str:target>/<int:pk>/pages/stream/",
-        BlankTemplatePagesStreamView.as_view(),
-        name="blank-template-pages-stream",
-    ),
-    path(
-        "blank-templates/<str:target>/<int:pk>/regenerate-pages/",
-        BlankTemplateRegeneratePagesView.as_view(),
-        name="blank-template-regenerate-pages",
-    ),
-    path(
-        "blank-templates/<str:target>/<int:pk>/fields/",
-        BlankTemplateFieldsView.as_view(),
-        name="blank-template-fields",
     ),
     path("", include(router.urls)),
 ]

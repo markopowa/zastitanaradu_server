@@ -158,15 +158,10 @@ class TestAttemptApiCompletionTest(TestCase):
         )
         self.category = DocumentCategory.objects.create(name="Test kategorija")
         self.doc_template = DocumentTemplate.objects.create(
-            name="Obrazac 6 — evidencija o osposobljenosti za bezbedan rad",
+            code="OBRAZAC6",
+            name="Obrazac 6",
             context_type=DocumentTemplate.CONTEXT_EMPLOYEE,
             category=self.category,
-            generation_config={
-                "mode": "DOCX_CELL_MAP",
-                "cells": [
-                    {"table": 0, "row": 0, "col": 1, "fieldKey": "employee.full_name"},
-                ],
-            },
         )
         self.process_type = ProcessType.objects.create(
             code="OSPOSOBLJAVANJE_BZR",

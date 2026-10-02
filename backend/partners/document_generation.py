@@ -1,174 +1,113 @@
-import io
-
-import docx
-
 from django.core.files.base import ContentFile
 
 from documents.models import DocumentCategory, DocumentFile, DocumentTemplate
-from documents.utils import generate_visual_pdf
+from documents.word_engine import TemplateError
 from processes.models import ProcessBinding, ProcessRun, ProcessRunDocument, ProcessType
-from processes.utils import (
-    _build_document_context,
-    _get_system_user,
-    apply_docx_fill,
-    binding_subject_snapshot,
+from processes.utils import _get_system_user
+
+from .document_service import (
+    LZO_REVERS,
+    OBRAZAC6,
+    POTVRDA_CLAN5,
+    DocumentUnavailable,
+    render_employee_document,
 )
 from .models import TrainingType
 
-KIND_OBRAZAC6 = "OBRAZAC6"
-KIND_LZO_REVERS = "LZO_REVERS"
-KIND_POTVRDA_CLAN5 = "POTVRDA_CLAN5"
+KIND_OBRAZAC6 = OBRAZAC6
+KIND_LZO_REVERS = LZO_REVERS
+KIND_POTVRDA_CLAN5 = POTVRDA_CLAN5
 
-KIND_CONFIG = {
-    KIND_OBRAZAC6: {
-        "role_field": "obrazac6_template",
-        "role_fields_field": "obrazac6_fields",
-        "template_name": "Obrazac 6 — evidencija o osposobljenosti za bezbedan rad",
-        "process_code": "OSPOSOBLJAVANJE_BZR",
-        "file_prefix": "obrazac6",
-    },
-    KIND_LZO_REVERS: {
-        "role_field": "lzo_revers_template",
-        "role_fields_field": "lzo_revers_fields",
-        "template_name": "Karton zaduženja LZO (revers)",
-        "process_code": "LZO_ZADUZENJE",
-        "file_prefix": "lzo_revers",
-    },
-    KIND_POTVRDA_CLAN5: {
-        "template_name": "Potvrda po članu 5",
-        "process_code": "OSPOSOBLJAVANJE_BZR",
-        "file_prefix": "potvrda_clan5",
-    },
+PROCESS_CODES = {
+    OBRAZAC6: "OSPOSOBLJAVANJE_BZR",
+    LZO_REVERS: "LZO_ZADUZENJE",
+    POTVRDA_CLAN5: "OSPOSOBLJAVANJE_BZR",
+}
+
+TITLES = {
+    OBRAZAC6: "Obrazac 6",
+    LZO_REVERS: "Karton zaduženja LZO",
+    POTVRDA_CLAN5: "Potvrda o osposobljenosti",
+}
+
+FILE_PREFIXES = {
+    OBRAZAC6: "obrazac6",
+    LZO_REVERS: "lzo_revers",
+    POTVRDA_CLAN5: "potvrda",
 }
 
 
-def _resolve_blank_file(employee, kind: str, config: dict, training_type_id):
-    if kind == KIND_POTVRDA_CLAN5:
-        if not training_type_id:
-            raise ValueError("Potrebno je izabrati vrstu obuke.")
-        training_type = TrainingType.objects.filter(pk=training_type_id).first()
-        if not training_type:
-            raise ValueError("Vrsta obuke nije pronađena.")
-        if not training_type.potvrda_template:
-            raise ValueError(
-                "Vrsta obuke nema blanko potvrdu — otpremite je na vrsti obuke."
-            )
-        return training_type.potvrda_template, training_type.potvrda_fields or []
+def _training_type(training_type_id):
+    if not training_type_id:
+        raise ValueError("Potrebno je izabrati vrstu obuke.")
+    training_type = TrainingType.objects.filter(pk=training_type_id).first()
+    if training_type is None:
+        raise ValueError("Vrsta obuke nije pronađena.")
+    return training_type
 
-    role = getattr(employee, "job_role", None)
-    blank_file = getattr(role, config["role_field"], None) if role else None
-    if not role or not blank_file:
-        raise ValueError(
-            "Radno mesto nema blanko obrazac — otpremite ga na radnom mestu."
-        )
-    blank_placements = getattr(role, config["role_fields_field"], None) or []
-    return blank_file, blank_placements
+
+def _run_for(employee, process_type):
+    binding = (
+        ProcessBinding.objects.filter(employee=employee, process_type=process_type)
+        .order_by("-is_active", "-id")
+        .first()
+    )
+    if binding is None:
+        return None
+    completed = (
+        binding.runs.filter(status=ProcessRun.STATUS_COMPLETED)
+        .order_by("-performed_at", "-id")
+        .first()
+    )
+    return completed or binding.runs.order_by("-id").first()
 
 
 def generate_employee_document(
     employee, kind: str, training_type_id=None,
 ) -> tuple[DocumentFile, bytes]:
-    config = KIND_CONFIG.get(kind)
-    if not config:
+    if kind not in PROCESS_CODES:
         raise ValueError(f"Nepoznat tip obrasca: {kind}")
 
-    if kind in (KIND_OBRAZAC6, KIND_LZO_REVERS):
-        blank_file, blank_placements = None, []
-    else:
-        blank_file, blank_placements = _resolve_blank_file(
-            employee, kind, config, training_type_id)
+    training_type = None
+    process_type = None
+    if kind == POTVRDA_CLAN5:
+        training_type = _training_type(training_type_id)
+        process_type = training_type.process_type
+    if process_type is None:
+        process_type = ProcessType.objects.filter(code=PROCESS_CODES[kind]).first()
+    if process_type is None:
+        raise ValueError(f"Vrsta obaveze {PROCESS_CODES[kind]} nije podešena.")
 
-    doc_template = DocumentTemplate.objects.filter(
-        name=config["template_name"],
-    ).first()
-    if not doc_template:
-        raise ValueError(f"Šablon dokumenta „{config['template_name']}” nije podešen.")
-
-    process_type = ProcessType.objects.filter(code=config["process_code"]).first()
-    if not process_type:
-        raise ValueError(f"Vrsta obaveze {config['process_code']} nije podešena.")
-
-    binding = (
-        ProcessBinding.objects.filter(employee=employee, process_type=process_type)
-        .order_by("-id")
-        .first()
-    )
-    run = None
-    if binding:
-        run = (
-            binding.runs.filter(
-                status__in=[ProcessRun.STATUS_PENDING, ProcessRun.STATUS_SENT],
-            )
-            .order_by("-id")
-            .first()
-        )
-        if not run:
-            run = binding.runs.order_by("-id").first()
-    if not binding or not run:
+    run = _run_for(employee, process_type)
+    if run is None:
         raise ValueError(f"Zaposleni nema obavezu {process_type.name}.")
 
-    snapshot = binding_subject_snapshot(binding)
-    context = _build_document_context(run, snapshot)
-    if kind == KIND_POTVRDA_CLAN5 and training_type_id:
-        training_type = TrainingType.objects.filter(pk=training_type_id).first()
-        if training_type:
-            context["training"] = {"name": training_type.name}
-    generation_config = doc_template.generation_config or {}
-    mode = generation_config.get("mode")
-
-    if kind == KIND_OBRAZAC6:
-        from .obrazac6 import generate_obrazac6
-        content_bytes = generate_obrazac6(
-            employee,
-            context,
-            doc_template.template_file,
-        )
-        extension = "docx"
-    elif kind == KIND_LZO_REVERS:
-        from .lzo_revers import generate_lzo_revers
-        content_bytes = generate_lzo_revers(
-            employee,
-            context=context,
-            template_file=doc_template.template_file,
-        )
-        extension = "docx"
-    elif mode == "VISUAL":
-        content_bytes = generate_visual_pdf(
-            doc_template,
-            context,
-            blank_file=blank_file,
-            blank_placements=blank_placements,
-            entity=run,
-        )
-        extension = "pdf"
-    else:
-        with blank_file.open("rb") as fh:
-            doc = docx.Document(io.BytesIO(fh.read()))
-        apply_docx_fill(doc, mode, generation_config, context)
-        buf = io.BytesIO()
-        doc.save(buf)
-        buf.seek(0)
-        content_bytes = buf.read()
-        extension = "docx"
+    try:
+        content_bytes = render_employee_document(
+            kind, employee, run=run, training_type=training_type)
+    except (DocumentUnavailable, TemplateError) as exc:
+        raise ValueError(str(exc)) from exc
 
     system_user = _get_system_user()
     if not system_user:
         raise ValueError("Nema sistemskog korisnika za generisanje dokumenta.")
 
-    category = doc_template.category or DocumentCategory.objects.first()
+    template = DocumentTemplate.objects.filter(code=kind).first()
+    category = (template.category if template else None) or (
+        DocumentCategory.objects.first())
     if not category:
         raise ValueError("Nema kategorije dokumenata za generisanje.")
 
     doc_file = DocumentFile(
         category=category,
-        title=f"{doc_template.name} – {employee}",
+        title=f"{TITLES[kind]}, {employee}",
         uploaded_by=system_user,
-        valid_from=run.scheduled_for,
+        valid_from=run.performed_at or run.scheduled_for,
         valid_until=run.valid_until,
     )
-    file_name = f"{config['file_prefix']}_{employee.id}_{run.id}.{extension}"
+    slug = f"{employee.last_name}_{employee.first_name}".replace(" ", "_")
+    file_name = f"{FILE_PREFIXES[kind]}_{slug}.docx"
     doc_file.file.save(file_name, ContentFile(content_bytes), save=True)
-    doc_file.save()
 
     ProcessRunDocument.objects.create(
         process_run=run,

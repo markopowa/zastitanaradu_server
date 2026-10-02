@@ -9,6 +9,7 @@ import {
     DialogContent,
     DialogTitle,
     Link,
+    MenuItem,
     Table,
     TableBody,
     TableCell,
@@ -22,7 +23,6 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import VisibilityIcon from "@mui/icons-material/Visibility";
-import BuildIcon from "@mui/icons-material/Build";
 import { enqueueSnackbar } from "notistack";
 
 import {
@@ -32,21 +32,15 @@ import {
     getTrainingTypes,
     updateTrainingType,
     uploadTrainingTypeTemplate,
-    blankTemplatePagesStreamUrl,
-    getBlankTemplateFields,
-    saveBlankTemplateFields,
+    getProcessTypes,
 } from "../api/processes";
 import { PermissionGate } from "./PermissionGate";
 import RowActionsMenu from "./RowActionsMenu";
 import { ConfirmDialog, SectionCard, TableStateRow } from "../design";
-import TemplateStructureEditorDialog from "../documents/TemplateStructureEditorDialog";
-import type { DocumentTemplate } from "../api/documents";
 
-import type { TrainingType } from "../types/processes";
+import type { ProcessType, TrainingType } from "../types/processes";
 
-const POTVRDA_TARGET = "training-type-potvrda" as const;
-
-const ACCEPT = ".doc,.docx,.pdf";
+const ACCEPT = ".docx";
 
 interface TrainingTypesPanelProps {
     clientCompanyId: number;
@@ -60,11 +54,12 @@ interface TrainingTypesPanelState {
     editingId: number | null;
     formName: string;
     formDescription: string;
+    formProcessType: string;
+    employeeObligations: ProcessType[];
     saving: boolean;
     deleteId: number | null;
     deleting: boolean;
     busyTemplateId: number | null;
-    editingFieldsFor: TrainingType | null;
 }
 
 export class TrainingTypesPanel extends Component<
@@ -79,15 +74,25 @@ export class TrainingTypesPanel extends Component<
         editingId: null,
         formName: "",
         formDescription: "",
+        formProcessType: "",
+        employeeObligations: [],
         saving: false,
         deleteId: null,
         deleting: false,
         busyTemplateId: null,
-        editingFieldsFor: null,
     };
 
     componentDidMount(): void {
         this.load();
+        getProcessTypes()
+            .then((types) =>
+                this.setState({
+                    employeeObligations: types.filter(
+                        (t) => t.is_active && t.subject_kind === "EMPLOYEE",
+                    ),
+                }),
+            )
+            .catch(() => undefined);
     }
 
     componentDidUpdate(prevProps: TrainingTypesPanelProps): void {
@@ -117,6 +122,7 @@ export class TrainingTypesPanel extends Component<
             editingId: null,
             formName: "",
             formDescription: "",
+            formProcessType: "",
         });
     };
 
@@ -126,6 +132,8 @@ export class TrainingTypesPanel extends Component<
             editingId: item.id,
             formName: item.name,
             formDescription: item.description ?? "",
+            formProcessType:
+                item.process_type != null ? String(item.process_type) : "",
         });
     };
 
@@ -134,13 +142,15 @@ export class TrainingTypesPanel extends Component<
     };
 
     save = (): void => {
-        const { editingId, formName, formDescription } = this.state;
+        const { editingId, formName, formDescription, formProcessType } =
+            this.state;
         if (!formName.trim()) return;
         const { clientCompanyId } = this.props;
         const payload: Partial<TrainingType> = {
             client_company: clientCompanyId,
             name: formName.trim(),
             description: formDescription.trim() || undefined,
+            process_type: formProcessType ? Number(formProcessType) : null,
         };
         this.setState({ saving: true });
         const request =
@@ -270,14 +280,6 @@ export class TrainingTypesPanel extends Component<
             });
     };
 
-    openFieldsEditor = (item: TrainingType): void => {
-        this.setState({ editingFieldsFor: item });
-    };
-
-    closeFieldsEditor = (): void => {
-        this.setState({ editingFieldsFor: null });
-    };
-
     render() {
         const {
             items,
@@ -291,7 +293,6 @@ export class TrainingTypesPanel extends Component<
             deleteId,
             deleting,
             busyTemplateId,
-            editingFieldsFor,
         } = this.state;
 
         return (
@@ -388,21 +389,6 @@ export class TrainingTypesPanel extends Component<
                                                                         <VisibilityIcon fontSize="small" />
                                                                         Pregled
                                                                     </Link>
-                                                                    <PermissionGate permission="partners.change_trainingtype">
-                                                                        <Button
-                                                                            size="small"
-                                                                            startIcon={
-                                                                                <BuildIcon fontSize="small" />
-                                                                            }
-                                                                            onClick={() =>
-                                                                                this.openFieldsEditor(
-                                                                                    item,
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            Uredi polja
-                                                                        </Button>
-                                                                    </PermissionGate>
                                                                     <PermissionGate permission="partners.change_trainingtype">
                                                                         <Button
                                                                             size="small"
@@ -537,6 +523,28 @@ export class TrainingTypesPanel extends Component<
                                 })
                             }
                         />
+                        <TextField
+                            select
+                            margin="dense"
+                            label="Obaveza koju obuka ispunjava"
+                            fullWidth
+                            value={this.state.formProcessType}
+                            onChange={(e) =>
+                                this.setState({
+                                    formProcessType: e.target.value,
+                                })
+                            }
+                            helperText="Kad se obuka upiše zaposlenom, ova obaveza se zatvara."
+                        >
+                            <MenuItem value="">
+                                <em>Nijedna</em>
+                            </MenuItem>
+                            {this.state.employeeObligations.map((pt) => (
+                                <MenuItem key={pt.id} value={String(pt.id)}>
+                                    {pt.name}
+                                </MenuItem>
+                            ))}
+                        </TextField>
                     </DialogContent>
                     <DialogActions>
                         <Button onClick={this.closeDialog} disabled={saving}>
@@ -561,39 +569,6 @@ export class TrainingTypesPanel extends Component<
                     onClose={this.cancelDelete}
                 />
 
-                {editingFieldsFor && (
-                    <TemplateStructureEditorDialog
-                        open={Boolean(editingFieldsFor)}
-                        template={
-                            {
-                                id: editingFieldsFor.id,
-                                name: `Blanko potvrda — ${editingFieldsFor.name}`,
-                                category: null,
-                                context_type: "EMPLOYEE",
-                                generation_config: null,
-                            } as DocumentTemplate
-                        }
-                        streamUrl={blankTemplatePagesStreamUrl(
-                            POTVRDA_TARGET,
-                            editingFieldsFor.id,
-                        )}
-                        loadFields={() =>
-                            getBlankTemplateFields(
-                                POTVRDA_TARGET,
-                                editingFieldsFor.id,
-                            )
-                        }
-                        saveFields={(placeholders) =>
-                            saveBlankTemplateFields(
-                                POTVRDA_TARGET,
-                                editingFieldsFor.id,
-                                placeholders,
-                            )
-                        }
-                        onClose={this.closeFieldsEditor}
-                        onSaved={this.closeFieldsEditor}
-                    />
-                )}
             </>
         );
     }

@@ -146,6 +146,7 @@ export interface ProcessRunDetailPageState {
     complete_performed_at: string;
     complete_notes: string;
     complete_report_number: string;
+    complete_health_institution: string;
     complete_fitness_assessment: string;
     complete_measures_taken: string;
     completing: boolean;
@@ -249,8 +250,7 @@ export interface ClientCompanyDetailPageState {
     editNotes: string;
     editActivity_code: string;
     editZop_category: string;
-    editHigh_risk_activity: boolean;
-    editInstallations: string[];
+    editInstallations: string[] | null;
     editEmailTestMode: boolean;
     registryImporting: boolean;
     riskLevels: RiskLevel[];
@@ -260,6 +260,9 @@ export interface ClientCompanyDetailPageState {
     role_name: string;
     role_risk_level: string;
     role_description: string;
+    role_special_health_conditions: string;
+    role_safety_measures: string;
+    role_supervised_roles: string;
     savingRole: boolean;
     roleError: string | null;
     roleDeleteTarget: JobRole | null;
@@ -409,11 +412,9 @@ export interface EmployeeFormDialogState {
     org_unit: string;
     position: string;
     occupation: string;
-    high_risk_position_name: string;
     job_role: string;
-    risk_level_override: string;
+    employment_end_date: string;
     jobRoles: JobRole[];
-    riskLevels: RiskLevel[];
     saving: boolean;
     error: string | null;
 }

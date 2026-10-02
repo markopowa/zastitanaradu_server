@@ -3,6 +3,24 @@ from django.core.management.base import BaseCommand
 from partners.kinney import DEFAULT_SCALE_OPTIONS
 from partners.models import Hazard, KinneyScaleOption
 
+OFFICIAL_CODES = {
+    "MEH_POVREDE": "01",
+    "PAD_VISINA": "08",
+    "PAD_NIVO": "10",
+    "EL_STRUJA": "15",
+    "POZAR_EKSPLOZIJA": "04",
+    "VOZILA_SAOBRACAJ": "03",
+    "PODIZANJE_TERET": "32",
+    "BUKA": "25",
+    "VIBRACIJE": "25",
+    "MIKROKLIMA": "27",
+    "OSVETLJENJE": "28",
+    "HEM_STETNOSTI": "23",
+    "BIO_STETNOSTI": "26",
+    "NAPOR_POLOZAJ": "33",
+    "PSIH_OPTERECENJE": "34",
+}
+
 STARTER_HAZARDS = [
     ("MEH_POVREDE", "Mehaničke opasnosti (povrede)", Hazard.KIND_OPASNOST),
     ("PAD_VISINA", "Pad sa visine", Hazard.KIND_OPASNOST),
@@ -47,10 +65,13 @@ class Command(BaseCommand):
 
         hazard_count = 0
         for order, (code, label, kind) in enumerate(STARTER_HAZARDS):
-            _, created = Hazard.objects.update_or_create(
+            hazard, created = Hazard.objects.update_or_create(
                 code=code,
                 defaults={"label": label, "kind": kind, "order": order},
             )
+            if not hazard.official_code and code in OFFICIAL_CODES:
+                hazard.official_code = OFFICIAL_CODES[code]
+                hazard.save(update_fields=["official_code"])
             if created:
                 hazard_count += 1
 

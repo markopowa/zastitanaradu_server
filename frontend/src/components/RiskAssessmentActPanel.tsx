@@ -69,6 +69,7 @@ interface State {
     error: string | null;
     savingDate: boolean;
     actDateValue: string;
+    actNumberValue: string;
     creating: boolean;
     merging: boolean;
     editDialogOpen: boolean;
@@ -121,6 +122,7 @@ class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
         error: null,
         savingDate: false,
         actDateValue: "",
+        actNumberValue: "",
         creating: false,
         merging: false,
         editDialogOpen: false,
@@ -209,6 +211,7 @@ class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
                     act,
                     loading: false,
                     actDateValue: dateToDisplay(act?.act_date),
+                    actNumberValue: act?.act_number ?? "",
                 });
             })
             .catch(() => {
@@ -246,7 +249,7 @@ class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
     };
 
     saveActDate = (): void => {
-        const { act, actDateValue } = this.state;
+        const { act, actDateValue, actNumberValue } = this.state;
         if (act == null) return;
         let dateSent: string | null = null;
         if (actDateValue.trim()) {
@@ -258,14 +261,17 @@ class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
             dateSent = displayDateToIso(actDateValue) ?? null;
         }
         this.setState({ savingDate: true });
-        updateRiskAssessmentActDate(act.id, dateSent)
+        updateRiskAssessmentActDate(act.id, dateSent, actNumberValue.trim())
             .then((updated) => {
                 this.setState({
                     act: updated,
                     savingDate: false,
                     actDateValue: dateToDisplay(updated.act_date),
+                    actNumberValue: updated.act_number ?? "",
                 });
-                enqueueSnackbar("Datum je sačuvan.", { variant: "success" });
+                enqueueSnackbar("Podaci o Aktu su sačuvani.", {
+                    variant: "success",
+                });
             })
             .catch(() => {
                 this.setState({ savingDate: false });
@@ -643,6 +649,17 @@ class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
                             flexWrap: "wrap",
                         }}
                     >
+                        <TextField
+                            size="small"
+                            label="Broj Akta"
+                            value={this.state.actNumberValue}
+                            onChange={(e) =>
+                                this.setState({
+                                    actNumberValue: e.target.value,
+                                })
+                            }
+                            sx={{ minWidth: 140, mt: 1 }}
+                        />
                         <Box sx={{ flex: 1, minWidth: 200 }}>
                             <DateTextFieldWithPicker
                                 label="Datum donošenja (dd.mm.yyyy)"
@@ -660,7 +677,7 @@ class RiskAssessmentActPanelInner extends Component<InnerProps, State> {
                             onClick={this.saveActDate}
                             sx={{ mt: 1 }}
                         >
-                            {savingDate ? "Čuvam..." : "Sačuvaj datum"}
+                            {savingDate ? "Čuvam..." : "Sačuvaj"}
                         </Button>
                     </Box>
                 </PermissionGate>

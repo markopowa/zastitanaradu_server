@@ -524,7 +524,6 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
         const employeeName = `${item.first_name} ${item.last_name}`.trim();
         const effectiveRisk =
             item.effective_risk_level ??
-            item.risk_level_override_detail ??
             item.job_role_risk_level;
 
         return (
@@ -710,17 +709,11 @@ class ClientCompanyEmployeesDetailPageInner extends Component<
                                 label="Pozicija"
                                 value={item.position}
                             />
-                            {item.high_risk_position_name && (
-                                <DetailField
-                                    label="Radno mesto sa povećanim rizikom"
-                                    value={item.high_risk_position_name}
-                                />
-                            )}
                             <DetailField
                                 label="Nivo rizika"
                                 value={
                                     item.effective_risk_level
-                                        ? `${item.effective_risk_level.label} (R=${item.effective_risk_level.score}) — ${item.risk_level_override ? "izuzetak" : "iz radnog mesta"}`
+                                        ? item.effective_risk_level.label
                                         : undefined
                                 }
                             />

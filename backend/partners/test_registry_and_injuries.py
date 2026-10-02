@@ -69,7 +69,6 @@ class HighRiskRegistryEndpointTest(TestCase):
             first_name="Ivan",
             last_name="Ivic",
             job_role=self.job_role_high,
-            high_risk_position_name="Rukovalac viljuškarom",
         )
         self.low_risk_employee = Employee.objects.create(
             client_company=self.company,

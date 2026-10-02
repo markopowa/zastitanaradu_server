@@ -11,9 +11,6 @@ from rest_framework.response import Response
 
 
 class ServerSentEventRenderer(renderers.BaseRenderer):
-    """Lets DRF content negotiation accept the EventSource `text/event-stream`
-    Accept header. The actual body is a StreamingHttpResponse, so render() is
-    never invoked, but the media type must be advertised to avoid a 406."""
 
     media_type = "text/event-stream"
     format = "event-stream"
@@ -37,9 +34,8 @@ from .serializers import (
     TemplateFieldDefinitionSerializer,
 )
 from .utils import (
-    build_preview_context,
+    convert_document_to_pdf,
     existing_page_urls,
-    fill_pdf_at_coordinates,
     get_page_generation_status,
     invalidate_page_images,
     list_docx_placeholder_tags,
@@ -86,11 +82,6 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         out = DocumentTemplatePageImageUrlListSerializer(instance=urls)
         return Response(out.data)
 
-    @staticmethod
-    def _use_badges(instance: "DocumentTemplate") -> bool:
-        generation_config = getattr(instance, "generation_config", None) or {}
-        return generation_config.get("mode") != "VISUAL"
-
     @action(detail=True, methods=["get"], url_path="pages")
     def pages(self, request, *args, **kwargs):
         instance: DocumentTemplate = self.get_object()
@@ -117,15 +108,12 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         if gen["state"] != "generating":
             path = Path(fr"{file_field.path}")
             start_page_generation(
-                instance.pk, path, use_badges=self._use_badges(instance))
+                instance.pk, path)
         return Response(
             {"status": "generating"},
             status=status.HTTP_202_ACCEPTED,
         )
 
-    # Cap on a single SSE connection's lifetime. The browser's EventSource
-    # reconnects automatically, so generation longer than this just resumes on
-    # the next connection — no client-side polling code involved.
     SSE_MAX_DURATION_SECONDS = 240
     SSE_POLL_INTERVAL_SECONDS = 1.5
 
@@ -139,13 +127,11 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         instance: DocumentTemplate = self.get_object()
         file_field = getattr(instance, "template_file", None)
         template_id = instance.pk
-        use_badges = self._use_badges(instance)
 
         def media_urls(rel_paths):
             return [versioned_media_url(request, p) for p in rel_paths]
 
         def event_stream():
-            # Hint the browser's reconnect delay (ms).
             yield "retry: 3000\n\n"
 
             if not file_field:
@@ -154,13 +140,11 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                 yield f"event: failed\ndata: {payload}\n\n"
                 return
 
-            # Kick off generation if it hasn't started (idempotent).
             if existing_page_urls(template_id) is None:
                 gen = get_page_generation_status(template_id)
                 if gen["state"] not in ("generating", "error"):
                     start_page_generation(
-                        template_id, Path(fr"{file_field.path}"),
-                        use_badges=use_badges)
+                        template_id, Path(fr"{file_field.path}"))
 
             deadline = time.monotonic() + self.SSE_MAX_DURATION_SECONDS
             while time.monotonic() < deadline:
@@ -176,15 +160,12 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                         {"status": "error", "detail": gen["detail"]})
                     yield f"event: failed\ndata: {payload}\n\n"
                     return
-                # Comment line keeps the connection (and nginx) alive.
                 yield ": keepalive\n\n"
                 time.sleep(self.SSE_POLL_INTERVAL_SECONDS)
-            # Lifetime exceeded — EventSource will reconnect and keep watching.
 
         response = StreamingHttpResponse(
             event_stream(), content_type="text/event-stream")
         response["Cache-Control"] = "no-cache"
-        # Disable nginx proxy buffering for this response only.
         response["X-Accel-Buffering"] = "no"
         return response
 
@@ -200,7 +181,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
         invalidate_page_images(instance.pk)
         path = Path(fr"{file_field.path}")
         start_page_generation(
-            instance.pk, path, use_badges=self._use_badges(instance))
+            instance.pk, path)
         return Response(
             {"status": "generating"},
             status=status.HTTP_202_ACCEPTED,
@@ -227,37 +208,32 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=["post"], url_path="preview")
     def preview(self, request, *args, **kwargs):
+        import tempfile
+
+        from partners.document_contexts import preview_context
+
+        from .word_engine import render_docx
+
         instance: DocumentTemplate = self.get_object()
         file_field = getattr(instance, "template_file", None)
-        if not file_field:
+        if not file_field or not file_field.name.lower().endswith(".docx"):
             return Response(
-                {"detail": "Template has no file."},
+                {"detail": "Šablon nema Word fajl."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        placeholders = request.data.get("placeholders")
-        if placeholders is None:
-            generation_config = getattr(
-                instance, "generation_config", None) or {}
-            placeholders = generation_config.get("placeholders") or []
-
-        if not isinstance(placeholders, list):
-            return Response(
-                {"detail": "placeholders must be a list."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         try:
-            path = Path(file_field.path)
-            pdf_bytes = fill_pdf_at_coordinates(
-                path, placeholders, build_preview_context())
+            with file_field.open("rb") as handle:
+                rendered = render_docx(handle.read(), preview_context())
+            with tempfile.TemporaryDirectory() as tmp:
+                source = Path(tmp) / "pregled.docx"
+                source.write_bytes(rendered)
+                pdf_bytes = convert_document_to_pdf(source).read_bytes()
         except Exception as exc:
             logger.error("Template preview failed: %s", exc, exc_info=True)
             return Response(
-                {"detail": f"Failed to generate preview: {exc}"},
+                {"detail": f"Pregled nije uspeo: {exc}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
-
         return HttpResponse(pdf_bytes, content_type="application/pdf")
 
     @action(detail=False, methods=["post"], url_path="from-document")
@@ -376,6 +352,7 @@ class DocumentTemplateViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        invalidate_page_images(instance.pk)
         out = self.get_serializer(instance)
         return Response(out.data, status=status.HTTP_200_OK)
 

@@ -607,7 +607,8 @@ class ProcessRunViewSet(viewsets.ModelViewSet):
             or templates[0]
         )
         snapshot = binding_subject_snapshot(binding)
-        doc_file = _generate_document_for_run(run, preferred, snapshot)
+        doc_file = _generate_document_for_run(
+            run, preferred, snapshot, regenerate=True)
         if doc_file is None:
             return Response(
                 {"detail": "Generisanje dokumenta nije uspelo."},

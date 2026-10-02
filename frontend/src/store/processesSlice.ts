@@ -409,6 +409,15 @@ const processesSlice = createSlice({
         invalidateActivityLog(state) {
             state.activityLogStatus = "idle";
         },
+        invalidateAll(state) {
+            state.clientCompaniesStatus = "idle";
+            state.processTypesStatus = "idle";
+            state.bindingsStatus = "idle";
+            state.runsStatus = "idle";
+            state.equipmentStatus = "idle";
+            state.employeesStatus = "idle";
+            state.activityLogStatus = "idle";
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -595,8 +604,6 @@ const processesSlice = createSlice({
                     org_unit: row.org_unit,
                     position: row.position,
                     job_role_risk_level: row.job_role_risk_level,
-                    risk_level_override: row.risk_level_override,
-                    risk_level_override_detail: row.risk_level_override_detail,
                     effective_risk_level: row.effective_risk_level,
                 };
                 const key = state.employeesParamsKey;
@@ -633,6 +640,7 @@ export const {
     invalidateEquipment,
     invalidateEmployees,
     invalidateActivityLog,
+    invalidateAll,
 } = processesSlice.actions;
 
 export default processesSlice.reducer;

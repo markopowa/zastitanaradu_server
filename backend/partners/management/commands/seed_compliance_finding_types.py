@@ -1,7 +1,6 @@
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from partners.models import ComplianceFindingType
 from processes.models import ProcessType
 from processes.reminder_templates import (
     CAT_SERVICE,
@@ -125,13 +124,11 @@ FINDING_TYPE_PROCESS_TYPES = [
 
 
 class Command(BaseCommand):
-    help = "Seed compliance finding types and link them to catalog ProcessTypes."
+    help = "Seed the expert-finding obligations (company-level periodic inspections)."
 
     @transaction.atomic
     def handle(self, *args, **options):
-        created_ft = 0
         created_pt = 0
-        linked_ft = 0
         reminder_templates_created = 0
 
         for data in FINDING_TYPE_PROCESS_TYPES:
@@ -155,33 +152,13 @@ class Command(BaseCommand):
             if pt_was_created:
                 created_pt += 1
 
-            ft, ft_was_created = ComplianceFindingType.objects.get_or_create(
-                code=data["code"],
-                defaults={
-                    "name": data["name"],
-                    "description": data.get("description", ""),
-                    "default_validity_months": data.get("default_validity_months", 36),
-                    "is_active": True,
-                    "order": data["order"],
-                    "process_type": pt,
-                },
-            )
-            if ft_was_created:
-                created_ft += 1
-            elif ft.process_type_id is None:
-                ft.process_type = pt
-                ft.save(update_fields=["process_type"])
-                linked_ft += 1
-
             reminder_templates_created += ensure_obligation_templates(
                 pt, CAT_SERVICE, [LEAD, COMPLETED, OVERDUE]
             )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Finding types: {created_ft} created, {linked_ft} linked, "
-                f"{len(FINDING_TYPE_PROCESS_TYPES) - created_ft - linked_ft} existing left untouched. "
-                f"Process types: {created_pt} created. "
+                f"Finding obligations: {created_pt} created. "
                 f"{reminder_templates_created} reminder template(s) created.",
             ),
         )

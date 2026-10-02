@@ -15,7 +15,7 @@ import {
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutline";
 import { enqueueSnackbar } from "notistack";
 
-import { api } from "../api/client";
+import { getAll } from "../api/client";
 import {
     createTaskAssignment,
     deleteTaskAssignment,
@@ -51,13 +51,12 @@ export function TaskAssignmentsPanel({ processRunId }: Props) {
     const [description, setDescription] = useState("");
 
     const load = useCallback(async () => {
-        const [tasks, userResp] = await Promise.all([
+        const [tasks, userList] = await Promise.all([
             getTaskAssignments(processRunId),
-            api.get<AuthUser[] | { results?: AuthUser[] }>("/auth/users/"),
+            getAll<AuthUser>("/auth/users/"),
         ]);
         setRows(tasks);
-        const userData = userResp.data;
-        setUsers(Array.isArray(userData) ? userData : (userData?.results ?? []));
+        setUsers(userList);
     }, [processRunId]);
 
     useEffect(() => {

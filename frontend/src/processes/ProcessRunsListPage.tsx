@@ -84,7 +84,7 @@ function applyQuickFilter(
         return items.filter((r) => {
             if (!isOpen(r)) return false;
             if (isScheduledOverdue(r.scheduled_for)) return false;
-            const d = isoDateToLocalDate(r.valid_until);
+            const d = isoDateToLocalDate(r.scheduled_for);
             if (!d) return false;
             return d <= soonLimit;
         });

@@ -9,6 +9,32 @@ export const api = axios.create({
     withCredentials: true,
 });
 
+type PagedResponse<T> = T[] | { results?: T[]; next?: string | null };
+
+const PAGE_SIZE = 500;
+
+export async function getAll<T>(
+    url: string,
+    params?: Record<string, unknown>,
+): Promise<T[]> {
+    const items: T[] = [];
+    for (let page = 1; ; page++) {
+        const { data } = await api.get<PagedResponse<T>>(url, {
+            params: { ...params, page, page_size: PAGE_SIZE },
+        });
+        if (Array.isArray(data)) return data;
+        items.push(...(data?.results ?? []));
+        if (!data?.next) return items;
+    }
+}
+
+export async function getRecent<T>(url: string, limit = 200): Promise<T[]> {
+    const { data } = await api.get<PagedResponse<T>>(url, {
+        params: { page_size: limit },
+    });
+    return Array.isArray(data) ? data : (data?.results ?? []);
+}
+
 export function filenameFromResponse(
     headers: unknown,
     fallback: string,
